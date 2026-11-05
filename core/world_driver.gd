@@ -15,10 +15,21 @@
 ## fidelity for this cell" is a Phase 1+ addition on top, not a rearchitect.
 extends Node
 
+## Dev-default new-game parameters -- hardcoded so Phase 0's architecture
+## has something real to run end to end instead of booting to an empty
+## World with zero entities. Nothing in core/ depends on these specific
+## values; replace this with an actual new-game/save-load/menu flow once
+## Phase 1+ needs one.
+const DEV_WORLD_SEED := 1
+const DEV_GRID_WIDTH := 10
+const DEV_GRID_HEIGHT := 10
+const DEV_POPULATION_COUNT := 50
+
 var world: World = World.new()
 
 func _ready() -> void:
 	SystemRegistry.register_all(world)
+	WorldGenerator.generate_new_game(world, DEV_WORLD_SEED, DEV_GRID_WIDTH, DEV_GRID_HEIGHT, DEV_POPULATION_COUNT)
 
 func _physics_process(delta: float) -> void:
 	world.step(delta)

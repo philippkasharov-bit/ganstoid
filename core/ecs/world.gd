@@ -9,7 +9,12 @@ extends RefCounted
 ## playtesting, not a magic number baked into call sites.
 const WARM_TICK_INTERVAL := 10
 
-var entities: Dictionary = {}       # StringName -> Entity
+## StringName -> Entity. A LIVE reference, not a snapshot -- callers (and
+## systems receiving this or get_entities_with_component's result as their
+## process_entities entities param) must treat it read-only. Add/remove
+## entities only through register_entity/unregister_entity; mutating this
+## dict directly desyncs _component_index and spatial_index from it.
+var entities: Dictionary = {}
 var _hot_systems: Array[SystemBase] = []
 var _warm_systems: Array[SystemBase] = []
 var _cold_systems: Dictionary = {}  # StringName -> SystemBase, invoked on-demand only
@@ -47,7 +52,10 @@ func unregister_entity(id: StringName) -> void:
 
 ## Pre-indexed view of every entity holding component_name — O(matching),
 ## not O(all entities). Returns an empty Dictionary (never null) if no
-## entity has ever registered that component.
+## entity has ever registered that component. LIVE reference into
+## _component_index, same read-only contract as the `entities` field --
+## a system that calls .erase()/[]= on what it's handed corrupts the index
+## rather than just failing to see its own change.
 func get_entities_with_component(component_name: StringName) -> Dictionary:
 	return _component_index.get(component_name, {})
 
@@ -75,6 +83,25 @@ func reindex_position(id: StringName) -> void:
 	var position := _get_entity_position(entity)
 	if position != null:
 		spatial_index.update(id, position)
+
+## Call this after calling add_component/remove_component on an entity
+## that's already registered — same staleness problem as position, just for
+## _component_index instead of spatial_index: register_entity only indexes
+## the component set it saw at registration time, so a later add/remove
+## goes stale (entity missing from a bucket it just gained, or stuck in one
+## it just lost) until this runs. Cheap full resync rather than a delta
+## update — component sets change rarely compared to position, so there's
+## no warm-tick-budget reason to make this incremental.
+func reindex_components(id: StringName) -> void:
+	var entity: Entity = entities.get(id)
+	if entity == null:
+		return
+	for component_name in _component_index:
+		_component_index[component_name].erase(id)
+	for component_name in entity.components:
+		if not _component_index.has(component_name):
+			_component_index[component_name] = {}
+		_component_index[component_name][id] = entity
 
 ## cold_name is required for COLD systems (lookup key for trigger_cold_system);
 ## ignored otherwise.

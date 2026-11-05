@@ -25,6 +25,11 @@ func _init() -> void:
 	# not a scan of every building and gang in the city too.
 	required_component = ComponentNames.NPC
 
+## Also iterates the player's own entity (they carry NPCData too, for
+## shared physical state) -- harmless, not a bug: recognition_chance means
+## nothing for the player and nothing ever raises theirs above 0.0, so they
+## hit the early-exit below every tick at negligible cost. Not worth a
+## second marker component to exclude one always-zero entity from a loop.
 func process_entities(entities: Dictionary, _delta: float, _tick: int) -> void:
 	for entity in entities.values():
 		var npc: NPCData = entity.get_component(ComponentNames.NPC)
