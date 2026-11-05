@@ -38,7 +38,7 @@ static func _build_npc(
 	var is_employed := not workplaces.is_empty() and rng.randf() < EMPLOYMENT_RATE
 	if is_employed:
 		npc.work_building_id = workplaces[rng.randi() % workplaces.size()]
-		var workplace: BuildingData = world.entities[npc.work_building_id].get_component("BuildingData")
+		var workplace: BuildingData = world.entities[npc.work_building_id].get_component(ComponentNames.BUILDING)
 		npc.cash = workplace.daily_revenue * EMPLOYED_CASH_MULTIPLIER
 	else:
 		npc.cash = rng.randi_range(UNEMPLOYED_STARTING_CASH.x, UNEMPLOYED_STARTING_CASH.y)
@@ -50,7 +50,7 @@ static func _filter_by_type(
 ) -> Array[StringName]:
 	var matches: Array[StringName] = []
 	for id in building_ids:
-		var building: BuildingData = world.entities[id].get_component("BuildingData")
+		var building: BuildingData = world.entities[id].get_component(ComponentNames.BUILDING)
 		if building.building_type == target_type:
 			matches.append(id)
 	return matches

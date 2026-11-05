@@ -21,11 +21,14 @@ const FORGOTTEN_THRESHOLD := 0.01
 
 func _init() -> void:
 	tick_rate = GanstoidEnums.TickRate.WARM
+	# World hands this system only NPCData-bearing entities (its index),
+	# not a scan of every building and gang in the city too.
+	required_component = ComponentNames.NPC
 
 func process_entities(entities: Dictionary, _delta: float, _tick: int) -> void:
 	for entity in entities.values():
-		var npc: NPCData = entity.get_component("NPCData")
-		if npc == null or npc.recognition_chance <= 0.0:
+		var npc: NPCData = entity.get_component(ComponentNames.NPC)
+		if npc.recognition_chance <= 0.0:
 			continue
 		npc.recognition_chance *= DECAY_FACTOR_PER_WARM_TICK
 		if npc.recognition_chance < FORGOTTEN_THRESHOLD:
