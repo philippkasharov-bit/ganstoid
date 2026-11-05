@@ -39,10 +39,18 @@ static func create_visual(entity: Entity) -> Node2D:
 
 	return null
 
-static func _make_rect(size: Vector2, color: Color) -> ColorRect:
-	var rect := ColorRect.new()
-	rect.size = size
-	rect.position = -size / 2.0  # centered on the entity's position, not its corner
-	rect.color = color
-	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE  # placeholder shapes shouldn't eat clicks
-	return rect
+## Polygon2D, not ColorRect: ColorRect extends Control (a UI node, meant for
+## screen-space overlays), not Node2D -- using it for world-space entities
+## was a real type error, not a style choice, caught by Godot rejecting the
+## ColorRect-typed return against this function's Node2D-typed one.
+static func _make_rect(size: Vector2, color: Color) -> Node2D:
+	var half := size / 2.0
+	var poly := Polygon2D.new()
+	poly.polygon = PackedVector2Array([
+		Vector2(-half.x, -half.y),
+		Vector2(half.x, -half.y),
+		Vector2(half.x, half.y),
+		Vector2(-half.x, half.y),
+	])
+	poly.color = color
+	return poly

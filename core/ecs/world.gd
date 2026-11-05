@@ -37,7 +37,7 @@ func register_entity(entity: Entity) -> void:
 		if not _component_index.has(component_name):
 			_component_index[component_name] = {}
 		_component_index[component_name][entity.id] = entity
-	var position := _get_entity_position(entity)
+	var position: Variant = _get_entity_position(entity)
 	if position != null:
 		spatial_index.insert(entity.id, position)
 
@@ -80,7 +80,7 @@ func reindex_position(id: StringName) -> void:
 	var entity: Entity = entities.get(id)
 	if entity == null:
 		return
-	var position := _get_entity_position(entity)
+	var position: Variant = _get_entity_position(entity)
 	if position != null:
 		spatial_index.update(id, position)
 
