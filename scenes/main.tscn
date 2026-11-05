@@ -1,0 +1,15 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://core/world_driver.gd" id="1"]
+[ext_resource type="Script" path="res://core/render/render_sync.gd" id="2"]
+
+[node name="Main" type="Node2D"]
+
+[node name="WorldDriver" type="Node" parent="."]
+script = ExtResource("1")
+
+[node name="RenderSync" type="Node2D" parent="."]
+script = ExtResource("2")
+world_driver_path = NodePath("../WorldDriver")
+
+[node name="Camera2D" type="Camera2D" parent="."]

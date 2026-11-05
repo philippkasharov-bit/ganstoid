@@ -1,6 +1,9 @@
-## Thin scene-tree adapter: the only piece of the ECS layer that touches
-## Godot's process loop. Intended as an autoload singleton — everything else
-## in core/ecs stays engine-agnostic and testable without this node.
+## Thin scene-tree adapter: the only piece of the SIMULATION layer that
+## touches Godot's process loop — everything else in core/ecs stays
+## engine-agnostic and testable without this node. (core/render/render_sync.gd
+## is its sibling on the rendering side, reading World through this node's
+## `world` property; it's a separate concern, not a reason to route
+## rendering through here too.)
 ##
 ## Simulation-fidelity LOD (deferred, not Phase 0): the plan is that systems
 ## far from the player eventually run at reduced fidelity (longer effective
