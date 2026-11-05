@@ -5,5 +5,8 @@ extends Node
 
 var world: World = World.new()
 
+func _ready() -> void:
+	SystemRegistry.register_all(world)
+
 func _physics_process(delta: float) -> void:
 	world.step(delta)

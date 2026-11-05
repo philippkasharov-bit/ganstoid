@@ -26,10 +26,12 @@ extends Resource
 @export var crew_role: GanstoidEnums.CrewRole = GanstoidEnums.CrewRole.MUSCLE
 @export_range(0.0, 1.0) var loyalty: float = 0.5
 
-## --- Witness memory ---
-## Each entry: {event_type: StringName, witnessed_at: int (tick), severity: float}.
-## Drives snitch risk; decays/forgets over time in the witness system.
-@export var witnessed_events: Array[Dictionary] = []
+## --- Recognition (witness memory, optimized) ---
+## Scalar "does this NPC recognize the player as a criminal" chance, not an
+## event log. A witnessed crime raises it (RecognitionSystem.register_witness);
+## it decays passively otherwise (RecognitionSystem warm tick). Rolled against
+## on later encounters — recognition is a probability, not a certainty.
+@export_range(0.0, 1.0) var recognition_chance: float = 0.0
 
 ## --- Escalation (only meaningful for the player character) ---
 @export var law_tier: GanstoidEnums.LawTier = GanstoidEnums.LawTier.CLEAN
