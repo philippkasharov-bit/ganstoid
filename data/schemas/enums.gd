@@ -30,12 +30,21 @@ enum LawTier {
 }
 
 ## Beef Ladder tiers (rival gang track), per-faction. See roadmap Phase 4.
-## Tier 3 (HUNTED) is a permanent flag that only clears via gang destruction —
-## never auto-decay this tier in the economy/heat system.
+## Tiers 1-3 decay normally while player stays at/below tier-2 activity.
+## Tier 4 (CONTRACT) never passively decays — only clears via gang destruction
+## (GangData.is_destroyed). Never auto-decay CONTRACT in the heat system.
 enum BeefTier {
 	NONE,
 	WARNED,
 	RETALIATING,
 	HUNTED,           # tier 3: active hunting, informants planted
 	CONTRACT,         # tier 4: permanent assassination contract
+}
+
+## ECS system update frequency (core/ecs/world.gd). Hot = every tick,
+## warm = periodic batch, cold = on-demand/event-triggered only.
+enum TickRate {
+	HOT,
+	WARM,
+	COLD,
 }
