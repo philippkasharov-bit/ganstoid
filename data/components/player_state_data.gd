@@ -18,6 +18,17 @@ extends Resource
 ## Criminal Record Ladder tier (law track). See roadmap Phase 4.
 @export var law_tier: GanstoidEnums.LawTier = GanstoidEnums.LawTier.CLEAN
 
+## World.tick of the last escalation (rise, not decay) of law_tier. Required
+## to compute the locked "decay pauses and resets on any tier-3+ trigger"
+## rule at all — without a timestamp there's nothing to measure the pause
+## window against. EscalationTickSystem (Phase 4) is the only writer.
+@export var law_tier_last_escalation_tick: int = 0
+
 ## Beef Ladder tier (rival gang track), per-faction. faction_id (StringName,
 ## matches GangData.id) -> GanstoidEnums.BeefTier.
 @export var beef_tiers: Dictionary = {}
+
+## Same pause-on-escalation timestamp as law_tier_last_escalation_tick, kept
+## per-faction since each gang's beef track decays independently.
+## faction_id (StringName) -> int (World.tick).
+@export var beef_tier_last_escalation_ticks: Dictionary = {}
