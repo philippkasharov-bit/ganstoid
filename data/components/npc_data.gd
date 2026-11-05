@@ -33,7 +33,3 @@ extends Resource
 ## on later encounters — recognition is a probability, not a certainty.
 @export_range(0.0, 1.0) var recognition_chance: float = 0.0
 
-## --- Escalation (only meaningful for the player character) ---
-@export var law_tier: GanstoidEnums.LawTier = GanstoidEnums.LawTier.CLEAN
-## faction_id (StringName) -> GanstoidEnums.BeefTier
-@export var beef_tiers: Dictionary = {}
