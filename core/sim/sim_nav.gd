@@ -23,8 +23,8 @@ var _plans := {}          # mover_id -> {goal: Vector2, layer: String, pts: Pack
 static func install(city: CityData, centre: Vector2, radius: float) -> SimNav:
 	uninstall()
 	var nav := SimNav.new()
-	nav.navs = {"full": CityNav.new(centre, radius + 200.0, "full"), "public": CityNav.new(centre, radius + 200.0, "public")}
-	nav.navs["public"].alley_cost = 3.0   # civilians avoid alleys (night raises this later)
+	nav.navs = {"full": CityNav.new(centre, radius + 200.0, "full"),
+		"public": CityNav.new(centre, radius + 200.0, "public", 3.0)}   # civilians avoid alleys (night raises this later)
 	nav.collision = CityCollision.new(city)
 	active = nav
 	return nav
@@ -34,6 +34,13 @@ static func uninstall() -> void:
 		for n in active.navs.values():
 			n.release()
 	active = null
+
+## Both navmeshes synced (Godot syncs them in the background after install/refocus).
+func is_ready() -> bool:
+	for n in navs.values():
+		if not n.is_ready():
+			return false
+	return true
 
 ## Nearest walkable point on `layer` (wander targets must be reachable).
 func snap(p: Vector2, layer: String) -> Vector2:

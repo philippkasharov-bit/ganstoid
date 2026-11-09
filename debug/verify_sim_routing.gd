@@ -14,6 +14,7 @@ func _initialize() -> void:
 	var city := TestWorlds.city()
 	var t0 := Time.get_ticks_msec()
 	SimNav.install(city, city.spawn, TestWorlds.DISTRICT_RADIUS)
+	await TestWorlds.wait_nav(self, [SimNav.active])
 	print("navmeshes loaded in %d ms" % (Time.get_ticks_msec() - t0))
 	var col := CityCollision.new(city)
 	var movers := _movers(world)

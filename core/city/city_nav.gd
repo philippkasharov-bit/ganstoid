@@ -20,15 +20,16 @@ var alley_cost := 1.0:
 		for f in _loaded:
 			if f.begins_with("alley_"):
 				NavigationServer2D.region_set_travel_cost(_loaded[f], v)
-		if map.is_valid():
-			NavigationServer2D.map_force_update(map)
+		# (loaded regions pick the new cost up at the map's next background sync)
 var _tiles := {}    # file -> Rect2
 var _loaded := {}   # file -> region RID
+var _changed_at := -1   # AR0 (Godot 4.7): map iteration id when tiles last changed; the map syncs in the background
 
 ## layer "full": everywhere walkable (locals, crew, player). "public": sidewalks,
 ## crosswalks, paths, parks and alleys only (civilians).
-func _init(focus_point: Vector2, load_radius: float = 700.0, layer: String = "full") -> void:
+func _init(focus_point: Vector2, load_radius: float = 700.0, layer: String = "full", alley_cost_value: float = 1.0) -> void:
 	radius = load_radius
+	alley_cost = alley_cost_value
 	nav_dir = NAV_DIRS[layer]
 	map = NavigationServer2D.map_create()
 	NavigationServer2D.map_set_cell_size(map, CELL_SIZE)
@@ -59,8 +60,24 @@ func focus(p: Vector2) -> bool:
 			_loaded.erase(f)
 			changed = true
 	if changed:
-		NavigationServer2D.map_force_update(map)
+		_changed_at = NavigationServer2D.map_get_iteration_id(map)
 	return changed
+
+## True once the background sync has picked up every tile loaded so far: each
+## region is built, the map has synced since the change, and every loaded tile
+## answers a closest-point probe from inside itself. Until then paths and
+## closest points can come back empty.
+func is_ready() -> bool:
+	for f in _loaded:
+		if NavigationServer2D.region_get_iteration_id(_loaded[f]) == 0:
+			return false
+	if NavigationServer2D.map_get_iteration_id(map) <= _changed_at:
+		return false
+	for f in _loaded:
+		var t: Rect2 = _tiles[f]
+		if NavigationServer2D.map_get_closest_point(map, t.get_center()).distance_to(t.get_center()) > t.size.x * 0.75:
+			return false
+	return true
 
 func loaded_count() -> int:
 	return _loaded.size()

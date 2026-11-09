@@ -14,7 +14,7 @@ func _initialize() -> void:
 
 func _run(main: Node, args: Dictionary) -> void:
 	var driver: Node = main.get_node("WorldDriver")
-	while SimNav.active == null:
+	while SimNav.active == null or not SimNav.active.is_ready():
 		await process_frame
 	if args.has("hour"):
 		driver.world.tick = SimClock.hours(float(args["hour"]))

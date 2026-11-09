@@ -39,8 +39,7 @@ func _ready() -> void:
 	nav_focus = player_pos
 	walkers = DemoWalkers.new()
 	walkers.setup(public_nav, dark_nav, nav)
-	add_child(walkers)
-	walkers.spawn(player_pos, 60)
+	add_child(walkers)   # walkers spawn once the navmeshes have synced (see _process)
 	player_dot = _make_player_dot()
 	add_child(player_dot)
 	camera = Camera2D.new()
@@ -66,7 +65,11 @@ func _process(delta: float) -> void:
 		nav_focus = player_pos
 		for n in [nav, public_nav, dark_nav]:
 			n.focus(player_pos)
-	walkers.advance(delta)
+	if walkers.walkers.is_empty():
+		if nav.is_ready() and public_nav.is_ready() and dark_nav.is_ready():
+			walkers.spawn(player_pos, 60)
+	else:
+		walkers.advance(delta)
 	player_dot.position = player_pos
 	camera.position = player_pos
 
@@ -141,8 +144,7 @@ func _apply_cmdline() -> void:
 		elif arg.begins_with("--shot="):
 			shot = arg.substr(7)
 		elif arg.begins_with("--sim="):
-			for k in int(float(arg.substr(6)) * 10):
-				walkers.advance(0.1)
+			_sim_seconds = float(arg.substr(6))
 		elif arg.begins_with("--zoom="):
 			camera.zoom = Vector2.ONE * float(arg.substr(7))
 		elif arg.begins_with("--at="):
@@ -151,7 +153,13 @@ func _apply_cmdline() -> void:
 	if shot != "":
 		_save_shot(shot)
 
+var _sim_seconds := 0.0
+
 func _save_shot(path: String) -> void:
+	while walkers.walkers.is_empty():   # wait for the navmesh sync and the walkers
+		await get_tree().process_frame
+	for k in int(_sim_seconds * 10):
+		walkers.advance(0.1)
 	_process(0.0)
 	for i in 4:
 		await get_tree().process_frame

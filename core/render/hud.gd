@@ -29,7 +29,7 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if _world == null:
 		return
-	if SimNav.active == null:
+	if SimNav.active == null or not SimNav.active.is_ready():
 		text = "Loading the streets of the city..."
 		return
 	var player: Entity = _world.entities.get(&"player")

@@ -1,7 +1,9 @@
-# Downloads the latest Ganstoid from the private GitHub repo, then starts the city demo.
+# Downloads the latest Ganstoid from the private GitHub repo (and the right Godot version once), then starts the game.
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
-$godot = 'D:\PCash\Claude\Godot\Godot_v4.3-stable_win64.exe'
+$godotVersion = '4.7.2-stable'
+$godotDir = 'D:\PCash\Claude\Godot'
+$godot = Join-Path $godotDir "Godot_v$($godotVersion)_win64.exe"
 $repo = 'philippkasharov-bit/ganstoid'
 $tokenFile = Join-Path $root 'github_token.txt'
 try {
@@ -10,6 +12,13 @@ try {
         [IO.File]::WriteAllText($tokenFile, $typed.Trim(), [Text.Encoding]::ASCII)
     }
     $token = ([IO.File]::ReadAllText($tokenFile) -replace '[^\x21-\x7E]', '')   # keep printable ASCII only
+    if (-not (Test-Path $godot)) {   # first run on a new Godot version: fetch the official release once
+        Write-Host "Downloading Godot $godotVersion (one time, ~70 MB)..."
+        $gzip = Join-Path $root '_godot.zip'
+        Invoke-WebRequest -UseBasicParsing -Uri "https://github.com/godotengine/godot/releases/download/$godotVersion/Godot_v$($godotVersion)_win64.exe.zip" -OutFile $gzip
+        Expand-Archive -Force $gzip $godotDir
+        Remove-Item $gzip -Force
+    }
     Write-Host 'Downloading the latest Ganstoid...'
     $zip = Join-Path $root '_update.zip'
     $tmp = Join-Path $root '_update'

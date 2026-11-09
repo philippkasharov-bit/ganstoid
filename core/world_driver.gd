@@ -6,8 +6,8 @@
 ##
 ## MG1c: every new game runs on the REAL city (fixed LA map). A fresh seed per
 ## run reshuffles building roles and people; the map itself never changes.
-## Street routes for the district take several seconds to load, so they load
-## after the first frame (the HUD shows a loading line) and the sim waits.
+## Street routes for the district sync in the background (Godot 4.7, ~2 s): the
+## HUD shows a loading line and the sim waits until they are ready.
 extends Node
 
 const DISTRICT_RADIUS := 900.0   # metres around the spawn that are simulated
@@ -30,7 +30,7 @@ func _install_routes() -> void:
 	SimNav.install(city, city.spawn, DISTRICT_RADIUS)
 
 func _physics_process(delta: float) -> void:
-	if SimNav.active == null:
+	if SimNav.active == null or not SimNav.active.is_ready():
 		return   # routes still loading: nobody moves yet
 	world.step(delta)
 

@@ -9,6 +9,7 @@ func _initialize() -> void:
 	var t0 := Time.get_ticks_msec()
 	var centre := Vector2(4300, 3200)
 	var nav := CityNav.new(centre, 700.0)
+	await TestWorlds.wait_nav(self, [nav])
 	print("nav loaded in %d ms" % (Time.get_ticks_msec() - t0))
 	assert(nav.tile_count() > 100 and nav.loaded_count() > 0, "nav tiles found and streamed")
 	print("tiles: %d total, %d loaded" % [nav.tile_count(), nav.loaded_count()])

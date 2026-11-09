@@ -13,6 +13,7 @@ func _initialize() -> void:
 	var t0 := Time.get_ticks_msec()
 	var pub := CityNav.new(CENTRE, 700.0, "public")
 	var full := CityNav.new(CENTRE, 700.0, "full")
+	await TestWorlds.wait_nav(self, [pub, full])
 	print("public tiles: %d total, %d loaded in %d ms" % [pub.tile_count(), pub.loaded_count(), Time.get_ticks_msec() - t0])
 	if not _check(pub.tile_count() > 100 and pub.loaded_count() > 0, "public nav tiles found and streamed"):
 		return
@@ -45,7 +46,7 @@ func _initialize() -> void:
 		return
 	if not _check(private_steps == 0 and building_steps == 0, "civilians never trespass or clip buildings"):
 		return
-	if not _check(_civilians_avoid_alleys(pub, pts, zones), "civilians use alleys less than dark-route NPCs"):
+	if not _check(await _civilians_avoid_alleys(pub, pts, zones), "civilians use alleys less than dark-route NPCs"):
 		return
 	pub.release()
 	full.release()
@@ -58,19 +59,21 @@ func _civilians_avoid_alleys(pub: CityNav, pts: Array[Vector2], zones: Array[Dic
 	var alleys: Array[Dictionary] = zones.filter(func(z: Dictionary) -> bool: return z["kind"] == "alley")
 	var share := {}
 	for cost in [3.0, 1.0]:
-		pub.alley_cost = cost
+		var nav := CityNav.new(CENTRE, 700.0, "public", cost)   # cost fixed before the tiles sync
+		await TestWorlds.wait_nav(self, [nav])
 		var rng := RandomNumberGenerator.new()
 		rng.seed = 11
 		var in_alley := 0.0
 		var total := 0.0
 		for i in TRIPS:
-			var p := pub.path(pts[rng.randi() % pts.size()], pts[rng.randi() % pts.size()])
+			var p := nav.path(pts[rng.randi() % pts.size()], pts[rng.randi() % pts.size()])
 			for k in p.size() - 1:
 				var seg := p[k].distance_to(p[k + 1])
 				total += seg
 				if _on_public(p[k].lerp(p[k + 1], 0.5), alleys):
 					in_alley += seg
 		share[cost] = in_alley / maxf(total, 1.0)
+		nav.release()
 	print("share of route in alleys: civilian %.1f%%, dark-route %.1f%%" % [share[3.0] * 100, share[1.0] * 100])
 	return share[3.0] < share[1.0]
 

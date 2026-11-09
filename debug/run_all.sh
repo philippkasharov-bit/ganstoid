@@ -2,7 +2,7 @@
 # Runs every headless check in debug/ and prints one PASS/FAIL line each.
 # A check that freezes (failed assert in headless Godot) is killed after LIMIT s.
 # Usage: debug/run_all.sh [godot_binary] [name_filter]
-GODOT="${1:-/tmp/godot_bin/Godot_v4.3-stable_linux.x86_64}"
+GODOT="${1:-/tmp/godot_bin/Godot_v4.7.2-stable_linux.x86_64}"
 FILTER="${2:-}"
 LIMIT="${LIMIT:-240}"
 cd "$(dirname "$0")/.." || exit 1
