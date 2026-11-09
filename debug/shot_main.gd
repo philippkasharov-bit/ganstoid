@@ -1,0 +1,29 @@
+## Screenshot tool for the game scene (not a check): loads scenes/main.tscn,
+## waits for the street routes, fast-forwards the sim, saves a PNG.
+## Run: godot --rendering-driver opengl3 --path . -s debug/shot_main.gd -- --out=<png> [--sim=<seconds>] [--zoom=<px/m>] [--hour=<0-23>]
+extends SceneTree
+
+func _initialize() -> void:
+	var args := {}
+	for a in OS.get_cmdline_user_args():
+		var kv := a.trim_prefix("--").split("=")
+		args[kv[0]] = kv[1] if kv.size() > 1 else ""
+	var main: Node = load("res://scenes/main.tscn").instantiate()
+	root.add_child(main)
+	_run(main, args)
+
+func _run(main: Node, args: Dictionary) -> void:
+	var driver: Node = main.get_node("WorldDriver")
+	while SimNav.active == null:
+		await process_frame
+	if args.has("hour"):
+		driver.world.tick = SimClock.hours(float(args["hour"]))
+	for i in int(float(args.get("sim", "20")) * SimClock.TICKS_PER_SECOND):
+		driver.world.step(1.0 / SimClock.TICKS_PER_SECOND)
+	if args.has("zoom"):
+		main.get_node("Camera2D").zoom = Vector2.ONE * float(args["zoom"])
+	for i in 4:
+		await process_frame
+	await RenderingServer.frame_post_draw
+	root.get_viewport().get_texture().get_image().save_png(args.get("out", "/tmp/main.png"))
+	quit()

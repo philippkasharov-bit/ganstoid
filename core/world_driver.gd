@@ -2,41 +2,37 @@
 ## touches Godot's process loop — everything else in core/ecs stays
 ## engine-agnostic and testable without this node. (core/render/render_sync.gd
 ## is its sibling on the rendering side, reading World through this node's
-## `world` property; it's a separate concern, not a reason to route
-## rendering through here too.)
+## `world` property.)
 ##
-## Simulation-fidelity LOD (deferred, not Phase 0): the plan is that systems
-## far from the player eventually run at reduced fidelity (longer effective
-## tick interval, or skip non-essential fields) rather than full detail for
-## every NPC in the whole city at once — the same cost problem that already
-## ruled out live-LLM NPCs, just at the rule-based-sim layer instead. This is
-## a Ganstoid design choice, NOT a confirmed fact about how Zomboid's engine
-## works internally (its cell-based *map streaming* is well documented; its
-## simulation-detail behavior for distant cells isn't, in anything findable).
-## SpatialIndex (core/ecs/spatial_index.gd) is the piece this will build on —
-## cell membership is already computed, so "which systems run at what
-## fidelity for this cell" is a Phase 1+ addition on top, not a rearchitect.
+## MG1c: every new game runs on the REAL city (fixed LA map). A fresh seed per
+## run reshuffles building roles and people; the map itself never changes.
+## Street routes for the district take several seconds to load, so they load
+## after the first frame (the HUD shows a loading line) and the sim waits.
 extends Node
 
-## Dev-default new-game parameters -- hardcoded so Phase 0's architecture
-## has something real to run end to end instead of booting to an empty
-## World with zero entities. Nothing in core/ depends on these specific
-## values; replace this with an actual new-game/save-load/menu flow once
-## Phase 1+ needs one.
-const DEV_WORLD_SEED := 1
-## Bumped for the "Sprawl (LA-ish)" layout (CityGenerator) -- the irregular
-## boundary crops some of the square grid away, and two offset commercial
-## hubs plus a major/minor street hierarchy need enough lots to read
-## clearly rather than looking cramped.
-const DEV_GRID_WIDTH := 26
-const DEV_GRID_HEIGHT := 26
+const DISTRICT_RADIUS := 900.0   # metres around the spawn that are simulated
 const DEV_POPULATION_COUNT := 130
 
 var world: World = World.new()
+var city: CityData
+var seed_used := 0
 
 func _ready() -> void:
+	city = CityData.load_file()
+	seed_used = randi()
 	SystemRegistry.register_all(world)
-	WorldGenerator.generate_new_game(world, DEV_WORLD_SEED, DEV_GRID_WIDTH, DEV_GRID_HEIGHT, DEV_POPULATION_COUNT)
+	WorldGenerator.generate_real_city_game(world, seed_used, city, city.spawn, DISTRICT_RADIUS, DEV_POPULATION_COUNT)
+	_install_routes.call_deferred()
+
+func _install_routes() -> void:
+	await get_tree().process_frame   # let the loading line render first
+	await get_tree().process_frame
+	SimNav.install(city, city.spawn, DISTRICT_RADIUS)
 
 func _physics_process(delta: float) -> void:
+	if SimNav.active == null:
+		return   # routes still loading: nobody moves yet
 	world.step(delta)
+
+func _exit_tree() -> void:
+	SimNav.uninstall()

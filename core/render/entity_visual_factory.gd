@@ -5,8 +5,8 @@
 class_name EntityVisualFactory
 extends RefCounted
 
-const BUILDING_SIZE := Vector2(28.0, 28.0)
-const NPC_SIZE := Vector2(8.0, 8.0)
+const BUILDING_MARK_M := 3.0   # role marker at a building's door (the building itself is drawn by the city map)
+const NPC_SIZE := Vector2(1.6, 1.6)   # metres: one person seen from above
 
 const BUILDING_COLORS := {
 	GanstoidEnums.BuildingType.RESIDENCE: Color(0.3, 0.5, 0.8),
@@ -26,7 +26,9 @@ const PLAYER_COLOR := Color(0.1, 0.9, 0.3)
 static func create_visual(entity: Entity) -> Node2D:
 	var building: BuildingData = entity.get_component(ComponentNames.BUILDING)
 	if building != null:
-		return _make_rect(BUILDING_SIZE, BUILDING_COLORS.get(building.building_type, Color.GRAY))
+		if building.building_type == GanstoidEnums.BuildingType.RESIDENCE:
+			return null   # thousands of homes: the map already shows them
+		return _make_rect(Vector2.ONE * BUILDING_MARK_M, BUILDING_COLORS.get(building.building_type, Color.GRAY))
 
 	# Checked before the generic NPC case: the player entity carries BOTH
 	# PlayerStateData and NPCData (see PlayerFactory) -- without this order,

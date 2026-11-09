@@ -4,3 +4,4 @@ export.cfg
 export_presets.cfg
 github_token.txt
 _update*
+__pycache__/
