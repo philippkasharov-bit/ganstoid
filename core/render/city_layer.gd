@@ -15,7 +15,8 @@ func _ready() -> void:
 	city = _driver.city
 	show_markers = false
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	super._process(delta)   # builds the map tiles once the city is set
 	var f := SimClock.day_fraction(_driver.world.tick)
 	var is_night := f >= DUSK or f < DAWN
 	if is_night != night:

@@ -5,8 +5,8 @@ extends Camera2D
 @export var world_driver_path: NodePath
 
 const ZOOM_MIN := 0.5
-const ZOOM_MAX := 10.0
-const START_ZOOM := 3.0
+const ZOOM_MAX := 30.0
+const START_ZOOM := 12.0   # ~100 m across the screen: street level, walking is visible
 
 var _world: World
 

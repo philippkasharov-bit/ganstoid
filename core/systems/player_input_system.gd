@@ -19,6 +19,7 @@ class_name PlayerInputSystem
 extends SystemBase
 
 const MOVE_SPEED := SimUnits.WALK
+const RUN_SPEED := SimUnits.JOG   # hold Shift
 
 var _world_ref: WeakRef
 var _world: World:
@@ -85,12 +86,10 @@ func process_entities(entities: Dictionary, delta: float, _tick: int) -> void:
 		if not state.pending_deal.is_empty():
 			_report(state, DealSystem.advance_handoff(_world, npc, state))
 			continue  # rooted mid-handoff (batch 11) -- no movement, no new actions
-		var input_dir := Vector2(
-			Input.get_action_strength("ui_right") - Input.get_action_strength("ui_left"),
-			Input.get_action_strength("ui_down") - Input.get_action_strength("ui_up")
-		)
+		var input_dir := _move_input()
 		if input_dir != Vector2.ZERO:
-			var step := input_dir.normalized() * MOVE_SPEED * CrewSystem.player_speed_multiplier(_world, state) * delta
+			var speed := RUN_SPEED if Input.is_physical_key_pressed(KEY_SHIFT) else MOVE_SPEED
+			var step := input_dir.normalized() * speed * CrewSystem.player_speed_multiplier(_world, state) * delta
 			npc.position = SimNav.active.slide(npc.position, step) if SimNav.active != null else npc.position + step   # walls are solid
 			_world.reindex_position(npc.id)
 		if Input.is_action_just_pressed("ui_accept"):
@@ -300,3 +299,14 @@ func _find_own_grow_house(position: Vector2) -> StringName:
 		if building != null and ProductionSystem.is_grow_house(building) and building.position.distance_to(position) <= CrimeSystem.INTERACT_RADIUS:
 			return id
 	return &""
+
+## WASD or arrow keys (arrows also come through the ui_* actions for gamepads).
+static func _move_input() -> Vector2:
+	var d := Vector2(
+		Input.get_action_strength("ui_right") - Input.get_action_strength("ui_left"),
+		Input.get_action_strength("ui_down") - Input.get_action_strength("ui_up"))
+	if Input.is_physical_key_pressed(KEY_D): d.x += 1.0
+	if Input.is_physical_key_pressed(KEY_A): d.x -= 1.0
+	if Input.is_physical_key_pressed(KEY_S): d.y += 1.0
+	if Input.is_physical_key_pressed(KEY_W): d.y -= 1.0
+	return d.limit_length(1.0) if d.length() > 0.0 else d

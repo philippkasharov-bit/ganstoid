@@ -35,6 +35,8 @@ func blocked(p: Vector2, radius: float = 0.4) -> bool:
 
 ## Move from `from` by `delta`, sliding along walls instead of stopping dead.
 func slide(from: Vector2, delta: Vector2, radius: float = 0.4) -> Vector2:
+	if blocked(from, radius):
+		return from + delta   # already touching a wall (e.g. spawned on a doorstep): let them step away
 	if not blocked(from + delta, radius):
 		return from + delta
 	if not blocked(from + Vector2(delta.x, 0), radius):
