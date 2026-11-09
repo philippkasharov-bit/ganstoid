@@ -23,6 +23,9 @@ PATH_HALF = 1.25
 CROSS_THICK = 2.5
 CROSS_OFFSET = 2.5       # crosswalk centre sits this far beyond the crossing street's kerb
 JUNCTION_MERGE_M = 8.0
+CROSS_REACH_M = 40.0     # a crosswalk extends across medians/dual carriageways up to this far each way
+AGENT_RADIUS_M = 0.42    # slightly above the nav agent radius (0.4)
+MIN_ISLAND_M2 = 40.0     # walkable scraps smaller than this (after agent clearance) are dropped
 SIMPLIFY_M = 0.15
 
 
@@ -74,7 +77,7 @@ def _near(key):
     return [(key[0] + dx, key[1] + dy) for dx in (-1, 0, 1) for dy in (-1, 0, 1)]
 
 
-def crosswalks(lines, juncs):
+def crosswalks(lines, juncs, reach):
     """One crosswalk across each street arm leaving a junction."""
     tree = STRtree([ln for _, ln in lines])
     out = []
@@ -92,9 +95,24 @@ def crosswalks(lines, juncs):
                 c, c2 = ln.interpolate(at), ln.interpolate(at + sign * 1.0)
                 d = (c2.x - c.x, c2.y - c.y)
                 n = math.hypot(*d) or 1.0
-                length = ROADWAY[road["tier"]] + 2 * SIDEWALK_M
-                out.append({"c": [round(c.x, 1), round(c.y, 1)], "dir": [round(d[0] / n, 3), round(d[1] / n, 3)], "len": length})
+                dn = (d[0] / n, d[1] / n)
+                c, length = span(c, dn, reach, ROADWAY[road["tier"]] + 2 * SIDEWALK_M)
+                out.append({"c": [round(c.x, 1), round(c.y, 1)], "dir": [round(dn[0], 3), round(dn[1], 3)], "len": round(length, 1)})
     return out
+
+
+def span(c, d, reach, default_len):
+    """Stretch a crosswalk across the whole street corridor, medians included."""
+    px, py = -d[1], d[0]
+    probe = LineString([(c.x - px * CROSS_REACH_M, c.y - py * CROSS_REACH_M), (c.x + px * CROSS_REACH_M, c.y + py * CROSS_REACH_M)])
+    for part in polys_of_lines(probe.intersection(reach)):
+        if part.distance(c) < 0.1 and default_len <= part.length < 2 * CROSS_REACH_M - 1:
+            return part.interpolate(0.5, normalized=True), part.length
+    return c, default_len
+
+
+def polys_of_lines(geom):
+    return [g for g in getattr(geom, "geoms", [geom]) if g.geom_type == "LineString"]
 
 
 def crosswalk_poly(cw):
@@ -106,8 +124,11 @@ def crosswalk_poly(cw):
                     (cx - px * hl - dx * ht, cy - py * hl - dy * ht), (cx + px * hl - dx * ht, cy + py * hl - dy * ht)])
 
 
-def sidewalk_ring(lines):
-    reach = unary_union([ln.buffer(ROADWAY[r["tier"]] / 2 + SIDEWALK_M, cap_style=2) for r, ln in lines])
+def street_reach(lines):
+    return unary_union([ln.buffer(ROADWAY[r["tier"]] / 2 + SIDEWALK_M, cap_style=2) for r, ln in lines])
+
+
+def sidewalk_ring(lines, reach):
     roadway = unary_union([ln.buffer(ROADWAY[r["tier"]] / 2, cap_style=2) for r, ln in lines])
     return reach.difference(roadway)
 
@@ -116,6 +137,12 @@ def alleys_and_paths(city):
     alley = [LineString(r["pts"]).buffer(ALLEY_HALF, cap_style=2) for r in city["roads"] if r["tier"] in ("alley", "svc")]
     path = [LineString(r["pts"]).buffer(PATH_HALF, cap_style=2) for r in city["roads"] if r["tier"] in ("path", "trail")]
     return unary_union(alley), unary_union(path)
+
+
+def walkable_mask(public):
+    """Drop slivers too thin for a person and tiny cut-off scraps (crosswalk stubs, median bits)."""
+    keep = [g for g in polys(public.buffer(-AGENT_RADIUS_M)) if g.area >= MIN_ISLAND_M2]
+    return unary_union(keep).buffer(AGENT_RADIUS_M + 0.05)
 
 
 def zone_json(kind, geom):
@@ -132,12 +159,15 @@ def main(city_path, bld_path, dst):
     city, bld = load(city_path, bld_path)
     lines = street_lines(city)
     juncs = junctions(lines)
-    cws = crosswalks(lines, juncs)
+    reach = street_reach(lines)
+    cws = crosswalks(lines, juncs, reach)
     cross = unary_union([crosswalk_poly(c) for c in cws])
-    walk = unary_union([sidewalk_ring(lines), cross]).difference(bld)
+    walk = unary_union([sidewalk_ring(lines, reach), cross]).difference(bld)
     alley, path = alleys_and_paths(city)
     alley, path = alley.difference(bld), path.difference(bld)
     park = unary_union([Polygon(a["poly"]).buffer(0) for a in city["areas"] if a["kind"] == "park"]).difference(bld)
+    mask = walkable_mask(unary_union([walk, alley, path, park]))
+    walk, alley, path, park = (g.intersection(mask) for g in (walk, alley, path, park))
     zones = zone_json("sidewalk", walk) + zone_json("alley", alley) + zone_json("path", path) + zone_json("park", park)
     check(city, lines, unary_union([walk, alley, path, park]), len(juncs), len(cws))
     json.dump({"format": "ganstoid.public", "version": 1, "city": city["id"], "zones": zones, "crosswalks": cws},

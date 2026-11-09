@@ -14,7 +14,8 @@ func _initialize() -> void:
 	var pub := CityNav.new(CENTRE, 700.0, "public")
 	var full := CityNav.new(CENTRE, 700.0, "full")
 	print("public tiles: %d total, %d loaded in %d ms" % [pub.tile_count(), pub.loaded_count(), Time.get_ticks_msec() - t0])
-	assert(pub.tile_count() > 100 and pub.loaded_count() > 0, "public nav tiles found and streamed")
+	if not _check(pub.tile_count() > 100 and pub.loaded_count() > 0, "public nav tiles found and streamed"):
+		return
 	var zones := _zones_near(city, Rect2(CENTRE - Vector2(800, 800), Vector2(1600, 1600)))
 	var pts := _street_points(city, col, pub)
 	var rng := RandomNumberGenerator.new()
@@ -40,12 +41,21 @@ func _initialize() -> void:
 		ratio += _length(p) / maxf(_length(full.path(a, b)), 1.0)
 	print("civilian trips found: %d/%d, path steps on private ground: %d, through buildings: %d" % [ok, TRIPS, private_steps, building_steps])
 	print("civilian route vs shortcut route: x%.2f longer on average" % (ratio / maxf(ok, 1)))
-	assert(ok >= int(TRIPS * 0.9), "at least 90% of civilian trips are walkable on public ground")
-	assert(private_steps == 0 and building_steps == 0, "civilians never trespass or clip buildings")
+	if not _check(ok >= int(TRIPS * 0.9), "at least 90% of civilian trips are walkable on public ground"):
+		return
+	if not _check(private_steps == 0 and building_steps == 0, "civilians never trespass or clip buildings"):
+		return
 	pub.release()
 	full.release()
 	print("CITY_NAV_PUBLIC_VERIFY: PASS")
 	quit()
+
+## Fails loudly and exits (an assert would freeze a headless run in the debugger).
+func _check(ok: bool, what: String) -> bool:
+	if not ok:
+		print("CITY_NAV_PUBLIC_VERIFY: FAIL - ", what)
+		quit(1)
+	return ok
 
 ## Street points that sit on the public navmesh (start/end of civilian trips).
 func _street_points(city: CityData, col: CityCollision, pub: CityNav) -> Array[Vector2]:
@@ -71,9 +81,10 @@ func _zones_near(city: CityData, area: Rect2) -> Array[Dictionary]:
 			out.append({"bb": r, "outer": z["outer"], "holes": holes})
 	return out
 
-## On public ground = inside a zone and outside its holes (0.3 m tolerance for path corners).
+## On public ground = inside a zone and outside its holes. 0.5 m tolerance: path steps hop the
+## 0.8 m seam where two public regions meet (each is shrunk by the 0.4 m agent radius).
 func _on_public(p: Vector2, zones: Array[Dictionary]) -> bool:
-	for d in [Vector2.ZERO, Vector2(0.3, 0), Vector2(-0.3, 0), Vector2(0, 0.3), Vector2(0, -0.3)]:
+	for d in [Vector2.ZERO, Vector2(0.5, 0), Vector2(-0.5, 0), Vector2(0, 0.5), Vector2(0, -0.5)]:
 		var q: Vector2 = p + d
 		for z in zones:
 			if not z["bb"].has_point(q) or not Geometry2D.is_point_in_polygon(q, z["outer"]):
