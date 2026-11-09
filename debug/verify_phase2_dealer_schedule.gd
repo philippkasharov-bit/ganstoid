@@ -20,7 +20,7 @@ const ARRIVAL_TOLERANCE := NPCScheduleSystem.IDLE_WANDER_RADIUS + 2.0
 ## Stepping until the position actually gets close, capped at just over
 ## one full day cycle, is correct regardless of which dealer gets picked or
 ## what their offset happens to be.
-const MAX_STEPS_PER_PHASE := 2000  # > TestWorlds.FAST_DAY_TICKS (1800), covers any offset
+const MAX_STEPS_PER_PHASE := 3600  # two fast test days: covers any offset plus a ~30 m walk
 
 func _initialize() -> void:
 	var world := World.new()
@@ -34,6 +34,10 @@ func _initialize() -> void:
 	assert(dealer_npc.work_building_id != &"", "dealer should have a work_building_id")
 
 	var home: BuildingData = world.entities[dealer_npc.home_building_id].get_component(ComponentNames.BUILDING)
+	# MG1: real walking speed (1.5 m/s) on a fast test day (30 s) covers ~45 m, so
+	# give the dealer a corner on their own block -- this checks the SCHEDULE
+	# (go to work, come home), not how far a real commute is.
+	dealer_npc.work_building_id = _nearest_other_building(world, home)
 	var work: BuildingData = world.entities[dealer_npc.work_building_id].get_component(ComponentNames.BUILDING)
 	print("dealer=%s home=%s work=%s offset=%d" % [dealer_id, home.position, work.position, NPCScheduleSystem.schedule_offset(dealer_id)])
 	assert(dealer_npc.position.distance_to(home.position) < 1.0, "dealer should start at home before the sim ticks")
@@ -73,6 +77,19 @@ func _step_until_near(world: World, moving: NPCData, anchor: Vector2, tolerance:
 			return i
 		world.step(1.0 / 60.0)
 	return -1
+
+func _nearest_other_building(world: World, home: BuildingData) -> StringName:
+	var best_id: StringName = &""
+	var best := INF
+	for id in world.entities:
+		var b: BuildingData = world.entities[id].get_component(ComponentNames.BUILDING)
+		if b == null or b == home:
+			continue
+		var d := b.position.distance_to(home.position)
+		if d > 2.0 * ARRIVAL_TOLERANCE + 2.0 and d < best:   # far enough that "near work" != "near home"
+			best = d
+			best_id = id
+	return best_id
 
 func _find_a_dealer(world: World) -> StringName:
 	for id in world.entities:
