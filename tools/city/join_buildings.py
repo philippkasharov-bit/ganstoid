@@ -5,6 +5,7 @@ close house/apartment pairs get their gap filled so they read as one joined
 building. Never closes a gap that a road, alley or path uses, never joins
 across a third building, and caps a row at MAX_ROW buildings. Deterministic.
 Usage: python3 -I join_buildings.py <unjoined.json> <city_v1.json> <out buildings_v1.json>
+Then run doors.py on the output (front doors for sim entities).
 """
 import json
 import sys

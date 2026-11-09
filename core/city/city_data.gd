@@ -20,7 +20,7 @@ var rail: Array[PackedVector2Array] = []
 var dead_ends := PackedVector2Array()
 var dark_spots := PackedVector2Array()
 var spawn := Vector2.ZERO
-var buildings: Array[Dictionary] = []   # {id: StringName, kind: String, levels: int, poly: PackedVector2Array}
+var buildings: Array[Dictionary] = []   # {id: StringName, kind: String, levels: int, poly: PackedVector2Array, door: Vector2}
 var public_zones: Array[Dictionary] = []   # civilians may walk here: {kind: sidewalk|alley|path|park, outer, holes: Array[PackedVector2Array]}
 var crosswalks: Array[Dictionary] = []   # {c: Vector2, dir: Vector2, len: float}
 
@@ -50,7 +50,9 @@ func _load_buildings(path: String) -> void:
 		push_error("CityData: %s is not a buildings file" % path)
 		return
 	for b in raw.get("buildings", []):
-		buildings.append({"id": StringName(b["id"]), "kind": String(b["kind"]), "levels": int(b.get("levels", 1)), "poly": _pts(b["poly"])})
+		var poly := _pts(b["poly"])
+		var door: Vector2 = Vector2(b["door"][0], b["door"][1]) if b.has("door") else poly[0]   # door: just outside the wall, facing the street
+		buildings.append({"id": StringName(b["id"]), "kind": String(b["kind"]), "levels": int(b.get("levels", 1)), "poly": poly, "door": door})
 
 func _load_public(path: String) -> void:
 	if not FileAccess.file_exists(path):
