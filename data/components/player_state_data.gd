@@ -32,3 +32,44 @@ extends Resource
 ## per-faction since each gang's beef track decays independently.
 ## faction_id (StringName) -> int (World.tick).
 @export var beef_tier_last_escalation_ticks: Dictionary = {}
+
+## good_id (StringName, matches EconomyItemData.good_id) -> quantity held.
+## Player-only, same reasoning as the rest of this file -- an NPC dealer
+## sells from the market's abstract stock (World.economy_items), not from
+## a bag of their own, so they need no inventory of their own to track.
+@export var inventory: Dictionary = {}
+
+## Phase 2 batch 8 (locked): the player's standing with each gang (keyed
+## by GangData.id) and with each unaffiliated "solo" dealer (keyed by
+## NPCData.id), 0.0-1.0, read by DealSystem to give friendly contacts a
+## price edge -- same shape and same 0.5-is-neutral convention as
+## EconomyItemData.player_market_reputation, just scoped to WHO you're
+## dealing with instead of WHAT good. Two separate dictionaries, not one
+## keyed by "gang id or npc id, whichever applies," because a gang-wide
+## standing and one specific solo's standing are genuinely different
+## things: befriending one member of a gang should read on every member
+## of that gang, but there's no faction to generalize a solo's trust to.
+## Missing keys read as 0.5 (neutral/no history yet) via .get(key, 0.5) at
+## every call site -- never backfilled with explicit 0.5 entries, so an
+## untouched dictionary stays empty rather than growing one entry per
+## dealer/gang in the city whether the player ever met them or not.
+@export var gang_standing: Dictionary = {}
+@export var solo_standing: Dictionary = {}
+
+## Batch 11: an in-progress drug-deal handoff ({} when none). Keys:
+## dealer_id, good_id, kind ("buy"/"sell"), ticks_left. While set, the
+## player can't move and the dealer stands still -- see DealSystem.
+@export var pending_deal: Dictionary = {}
+
+## Batch 14: the latest street-voice line (StreetTalk) for the HUD, plus a
+## counter bumped on every new line so the HUD re-shows a repeated message.
+@export var last_message: String = ""
+@export var message_serial: int = 0
+
+## Batch 15: ids of NPCs in the player's crew (each also has
+## NPCData.is_crew set). Capped by CrewSystem.MAX_CREW.
+@export var crew_ids: Array[StringName] = []
+
+## Batch 24: how much of the player's NPCData.cash is dirty (crime money).
+## Clean = cash - dirty_cash. See Wallet.
+@export var dirty_cash: int = 0

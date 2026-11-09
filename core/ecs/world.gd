@@ -29,6 +29,21 @@ var _component_index: Dictionary = {}  # StringName -> Dictionary[StringName, En
 var spatial_index: SpatialIndex = SpatialIndex.new()
 var event_bus: EventBus = EventBus.new()
 
+## For in-play random rolls (crime outcomes, witness recognition) --
+## deliberately NOT the same RNG/seed as worldgen (CityGenerator,
+## PopulationSeeder each take their own explicit seed for deterministic city
+## generation). Two different playthroughs of the same city seed should
+## still have crimes land differently, so this one self-seeds by default.
+var runtime_rng: RandomNumberGenerator = RandomNumberGenerator.new()
+
+## good_id -> EconomyItemData. Not entity-backed (goods aren't positioned,
+## don't need the spatial index or component index) -- a fixed catalog
+## seeded once by GoodsCatalog at new-game start, mutated in place by
+## EconomySystem and any future buy/sell action. Same "live reference,
+## read-only to callers that aren't the owning system" contract as
+## `entities`/`_component_index` above.
+var economy_items: Dictionary = {}
+
 var tick: int = 0
 
 func register_entity(entity: Entity) -> void:

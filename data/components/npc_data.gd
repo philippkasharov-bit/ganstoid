@@ -22,9 +22,53 @@ extends Resource
 @export var cash: int = 0
 
 ## --- Crew (only meaningful if recruited; player's crew only) ---
+## Reserved since Phase 0; set by CrewSystem.recruit (batch 15). loyalty is
+## consumed by the loyalty/snitch batch.
 @export var is_crew: bool = false
-@export var crew_role: GanstoidEnums.CrewRole = GanstoidEnums.CrewRole.MUSCLE
+@export var crew_role: GanstoidEnums.CrewRole = GanstoidEnums.CrewRole.UNASSIGNED
 @export_range(0.0, 1.0) var loyalty: float = 0.5
+## Batch 17: where a LOOKOUT was posted (only meaningful for that role).
+@export var post_position: Vector2 = Vector2.ZERO
+## Batch 18: a crew DEALER's consignment (weed units) and the cash from
+## sales they're holding for you until you collect.
+@export var crew_stash: int = 0
+@export var crew_earnings: int = 0
+
+## True for cop NPCs (PopulationSeeder spawns a fixed handful, on top of
+## population_count). CopAISystem drives them instead of NPCScheduleSystem's
+## home/work loop — a bool flag, not a separate component, since a cop is
+## still fundamentally an NPC with position/cash/etc., just handled by a
+## different movement system. Reconsider as a component if cops ever need
+## fields no other NPC has.
+@export var is_cop: bool = false
+
+## True for dealer NPCs (PopulationSeeder spawns a fixed handful). Unlike
+## cops, dealers are NOT skipped by NPCScheduleSystem -- they run the same
+## work/home day-cycle as civilians, work_building_id pointing at an
+## ILLEGAL_FRONT lot instead of a LEGIT_BUSINESS one. See
+## PopulationSeeder._seed_dealers for why (two deliberate play strategies:
+## catch them out on the street, or track them down at home). Same
+## "bool flag, not a component" reasoning as is_cop.
+@export var is_dealer: bool = false
+
+## Phase 2 batch 8 (locked): which gang (GangData.id) this dealer answers
+## to, empty if they're a "solo" -- dealing on their own, no faction behind
+## them. Only ever meaningful when is_dealer is true; GangSeeder assigns it
+## at seed time. Drives DealSystem's relationship-based pricing: a
+## gang-affiliated dealer reads the player's standing with the whole gang
+## (PlayerStateData.gang_standing), a solo reads a standing tracked against
+## this one NPC specifically (PlayerStateData.solo_standing) -- see
+## DealSystem's doc comment for why those are two different dictionaries
+## instead of one keyed by "gang id or npc id, whichever applies."
+@export var gang_id: StringName = &""
+
+## Batch 11: true while this NPC is mid-handoff in a drug deal with the
+## player -- NPCScheduleSystem leaves them standing still until it clears.
+@export var is_busy: bool = false
+
+## Batch 15: this NPC turned down the player's recruitment pitch -- final,
+## so the pitch can't be re-rolled until they say yes.
+@export var recruit_refused: bool = false
 
 ## --- Recognition (witness memory, optimized) ---
 ## Scalar "does this NPC recognize the player as a criminal" chance, not an

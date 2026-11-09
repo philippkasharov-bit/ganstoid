@@ -16,6 +16,8 @@ const BUILDING_COLORS := {
 }
 
 const NPC_COLOR := Color(0.85, 0.85, 0.85)
+const COP_COLOR := Color(0.2, 0.85, 0.95)
+const DEALER_COLOR := Color(0.95, 0.55, 0.1)
 const PLAYER_COLOR := Color(0.1, 0.9, 0.3)
 
 ## Returns null for an entity with no visual yet (GangData, economy items --
@@ -35,6 +37,10 @@ static func create_visual(entity: Entity) -> Node2D:
 
 	var npc: NPCData = entity.get_component(ComponentNames.NPC)
 	if npc != null:
+		if npc.is_cop:
+			return _make_rect(NPC_SIZE, COP_COLOR)
+		if npc.is_dealer:
+			return _make_rect(NPC_SIZE, DEALER_COLOR)
 		return _make_rect(NPC_SIZE, NPC_COLOR)
 
 	return null

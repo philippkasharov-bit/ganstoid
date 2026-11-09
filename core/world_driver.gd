@@ -24,9 +24,13 @@ extends Node
 ## values; replace this with an actual new-game/save-load/menu flow once
 ## Phase 1+ needs one.
 const DEV_WORLD_SEED := 1
-const DEV_GRID_WIDTH := 10
-const DEV_GRID_HEIGHT := 10
-const DEV_POPULATION_COUNT := 50
+## Bumped for the "Sprawl (LA-ish)" layout (CityGenerator) -- the irregular
+## boundary crops some of the square grid away, and two offset commercial
+## hubs plus a major/minor street hierarchy need enough lots to read
+## clearly rather than looking cramped.
+const DEV_GRID_WIDTH := 26
+const DEV_GRID_HEIGHT := 26
+const DEV_POPULATION_COUNT := 130
 
 var world: World = World.new()
 

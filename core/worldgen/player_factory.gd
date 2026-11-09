@@ -14,11 +14,17 @@ extends RefCounted
 ## exactly one match, by construction, either way.
 const PLAYER_ENTITY_ID := &"player"
 
-static func spawn(world: World, spawn_position: Vector2, starting_cash: int = 0) -> StringName:
+## home_building_id matters now beyond flavor: CopAISystem sends the player
+## there as the Phase 1 "short jail stint" stub on arrest (see roadmap
+## Phase 1 lock). Defaulting it to &"" is still valid -- callers that don't
+## care (tests, future non-residential starts) just won't get a jail
+## destination, handled defensively where it's read.
+static func spawn(world: World, spawn_position: Vector2, home_building_id: StringName = &"", starting_cash: int = 0) -> StringName:
 	var npc := NPCData.new()
 	npc.id = PLAYER_ENTITY_ID
 	npc.display_name = "Player"
 	npc.position = spawn_position
+	npc.home_building_id = home_building_id
 	npc.cash = starting_cash
 
 	var player_state := PlayerStateData.new()
