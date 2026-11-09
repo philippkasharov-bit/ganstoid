@@ -94,6 +94,4 @@ static func step_toward(position: Vector2, target: Vector2, speed: float, delta:
 ## `.erase()`s this used to take at every such call site.
 static func clear(mover_id: StringName, targets: Dictionary, dwell_until: Dictionary) -> void:
 	targets.erase(mover_id)
-	dwell_until.erase(mover_id)
-	if SimNav.active != null:
-		SimNav.active.forget(mover_id)
+	dwell_until.erase(mover_id)   # (a SimNav route re-plans by itself when the goal changes)

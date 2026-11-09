@@ -137,7 +137,8 @@ func _initialize() -> void:
 	raid_building.crime_heat = CopAISystem.RAID_HEAT_THRESHOLD + 0.05
 	_make_test_cop(world, &"test_cop_raid", raid_building_id)
 
-	world.step(1.0 / 60.0)  # CopAISystem runs every HOT tick -- one is enough to trigger the raid
+	for i in CopAISystem.HOT_SCAN_TICKS + 1:  # MG1b: cops re-scan for hot buildings every HOT_SCAN_TICKS (0.25 s)
+		world.step(1.0 / 60.0)
 	print("raid_building crime_heat right after the raid: %.3f (was %.3f)" % [raid_building.crime_heat, CopAISystem.RAID_HEAT_THRESHOLD + 0.05])
 	assert(raid_building.crime_heat < CopAISystem.PATROL_BIAS_HEAT_THRESHOLD, "a raid must relieve the building's own crime_heat hard enough to drop it below even the patrol-bias threshold, so it can't re-trigger next tick")
 	assert(gang.cash == gang_cash_before - int(round(gang_cash_before * CopAISystem.RAID_GANG_CASH_PENALTY_FRACTION)), "a raid on gang turf must drain the owning gang's cash by exactly RAID_GANG_CASH_PENALTY_FRACTION")
@@ -163,7 +164,8 @@ func _initialize() -> void:
 		_make_test_cop(world, &"test_cop_solo_raid", solo_raid_building_id)
 		var solo_player_cash_before: int = player_npc.cash
 		var solo_law_tier_before: GanstoidEnums.LawTier = player_state.law_tier
-		world.step(1.0 / 60.0)
+		for i in CopAISystem.HOT_SCAN_TICKS + 1:  # cops re-scan hot buildings every HOT_SCAN_TICKS
+			world.step(1.0 / 60.0)
 		assert(solo_building.crime_heat < CopAISystem.PATROL_BIAS_HEAT_THRESHOLD, "a raid on a non-gang raidable building should still relieve its own heat")
 		assert(player_npc.cash == solo_player_cash_before, "a raid with no owning gang must still never touch the player's cash")
 		assert(player_state.law_tier == solo_law_tier_before, "a raid with no owning gang must still never touch the player's law_tier")

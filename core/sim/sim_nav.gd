@@ -4,8 +4,8 @@
 ## logic checks that don't need geometry).
 ##   layer "public": civilians (sidewalks, crosswalks, paths, parks, alleys)
 ##   layer "full":   cops, crew, dealers (everything walkable)
-## A mover's own doorway may sit on private ground (their yard): the route runs
-## on its layer to the nearest point, then a short straight last hop.
+## A mover's own doorway may sit on private ground (their yard): civilians reach
+## public ground and leave it again via a short route on the full mesh.
 class_name SimNav
 extends RefCounted
 
@@ -68,10 +68,19 @@ func slide(from: Vector2, delta: Vector2) -> Vector2:
 
 func _plan(pos: Vector2, goal: Vector2, layer: String) -> Dictionary:
 	var nav: CityNav = navs[layer]
+	var start := nav.closest(pos)
 	var end := nav.closest(goal)
-	var pts := nav.path(nav.closest(pos), end)
+	var pts := nav.path(start, end)
 	if pts.is_empty():
-		pts = PackedVector2Array([goal])   # off the loaded navmesh: straight line
-	elif end.distance_to(goal) <= LAST_HOP_M:
-		pts.append(goal)                   # last hop across the mover's own yard
+		pts = navs["full"].path(pos, goal)   # off this layer's loaded mesh: any walkable way
+	elif layer != "full":
+		# Getting on/off public ground crosses the mover's own yard: route those
+		# hops on the full mesh so they go around houses, not through them.
+		var head: PackedVector2Array = navs["full"].path(pos, start)
+		if end.distance_to(goal) <= LAST_HOP_M:
+			pts.append_array(navs["full"].path(end, goal))
+		head.append_array(pts)
+		pts = head
+	if pts.is_empty():
+		pts = PackedVector2Array([goal])     # nowhere on any mesh: straight line
 	return {"goal": goal, "layer": layer, "pts": pts, "i": 0}

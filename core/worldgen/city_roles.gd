@@ -1,4 +1,4 @@
-## MG1a: sim buildings from the REAL city (CityData) instead of the old grid.
+## MG1a: gives the REAL city's fixed buildings their sim roles (no geometry is generated).
 ## Each real footprint inside the active district becomes a BuildingData whose
 ## position is its front door (metres). Type comes from what the building is
 ## (house/apartments = homes, shops = businesses, industrial/garages = where
@@ -6,7 +6,7 @@
 ## = DOWNTOWN, industrial area or near a dark spot = EDGE, else SPRAWL).
 ## Civic buildings (schools, churches) get no sim role yet. Seeded: same seed
 ## and district -> same city.
-class_name RealCityGenerator
+class_name CityRoles
 extends RefCounted
 
 const EDGE_DARK_SPOT_M := 150.0   # near an underpass / rail yard = low visibility = EDGE

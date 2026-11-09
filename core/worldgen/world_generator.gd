@@ -16,7 +16,7 @@ static func generate_new_game(world: World, seed: int, grid_width: int, grid_hei
 ## MG1a: new game on the REAL city. Only buildings within `radius` metres of
 ## `centre` are simulated (the active district); positions are metres.
 static func generate_real_city_game(world: World, seed: int, city: CityData, centre: Vector2, radius: float, population_count: int) -> void:
-	var building_ids := RealCityGenerator.generate(world, seed, city, centre, radius)
+	var building_ids := CityRoles.generate(world, seed, city, centre, radius)
 	PopulationSeeder.seed(world, seed + 1, population_count, building_ids)
 	GoodsCatalog.seed_goods(world)
 	_spawn_player_near(world, building_ids, centre)
