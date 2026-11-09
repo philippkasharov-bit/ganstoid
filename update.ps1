@@ -23,8 +23,8 @@ try {
     Remove-Item $zip -Force
     Write-Host 'Preparing...'
     & $godot --headless --path $root --import 2>&1 | Out-Null
-    Write-Host 'Starting the demo.'
-    & $godot --path $root res://scenes/city_demo.tscn
+    Write-Host "Starting Ganstoid."
+    & $godot --path $root res://scenes/main.tscn
 }
 catch {
     Write-Host ''

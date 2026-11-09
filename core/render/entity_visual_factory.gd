@@ -6,7 +6,7 @@ class_name EntityVisualFactory
 extends RefCounted
 
 const BUILDING_MARK_M := 3.0   # role marker at a building's door (the building itself is drawn by the city map)
-const NPC_SIZE := Vector2(1.6, 1.6)   # metres: one person seen from above
+const PERSON_RADIUS_M := 1.0   # drawn a bit larger than a body so people read at street zoom
 
 const BUILDING_COLORS := {
 	GanstoidEnums.BuildingType.RESIDENCE: Color(0.3, 0.5, 0.8),
@@ -15,7 +15,7 @@ const BUILDING_COLORS := {
 	GanstoidEnums.BuildingType.SAFEHOUSE: Color(0.4, 0.1, 0.5),
 }
 
-const NPC_COLOR := Color(0.85, 0.85, 0.85)
+const NPC_COLOR := Color(0.36, 0.38, 0.45)   # dark enough to read on the light map
 const COP_COLOR := Color(0.2, 0.85, 0.95)
 const DEALER_COLOR := Color(0.95, 0.55, 0.1)
 const PLAYER_COLOR := Color(0.1, 0.9, 0.3)
@@ -35,15 +35,15 @@ static func create_visual(entity: Entity) -> Node2D:
 	# the player would render identically to every civilian.
 	var player_state: PlayerStateData = entity.get_component(ComponentNames.PLAYER_STATE)
 	if player_state != null:
-		return _make_rect(NPC_SIZE, PLAYER_COLOR)
+		return _make_person(PLAYER_COLOR, 1.4, Color.WHITE)
 
 	var npc: NPCData = entity.get_component(ComponentNames.NPC)
 	if npc != null:
 		if npc.is_cop:
-			return _make_rect(NPC_SIZE, COP_COLOR)
+			return _make_person(COP_COLOR)
 		if npc.is_dealer:
-			return _make_rect(NPC_SIZE, DEALER_COLOR)
-		return _make_rect(NPC_SIZE, NPC_COLOR)
+			return _make_person(DEALER_COLOR)
+		return _make_person(NPC_COLOR)
 
 	return null
 
@@ -62,3 +62,12 @@ static func _make_rect(size: Vector2, color: Color) -> Node2D:
 	])
 	poly.color = color
 	return poly
+
+## A person: filled dot with a dark rim so it reads on both day and night maps.
+static func _make_person(color: Color, scale: float = 1.0, rim: Color = Color(0.08, 0.08, 0.1)) -> Node2D:
+	var dot := Node2D.new()
+	var r := PERSON_RADIUS_M * scale
+	dot.draw.connect(func() -> void:
+		dot.draw_circle(Vector2.ZERO, r + 0.35, rim)
+		dot.draw_circle(Vector2.ZERO, r, color))
+	return dot
