@@ -6,23 +6,27 @@
 class_name CityNav
 extends RefCounted
 
-const NAV_DIR := "res://data/city/nav/"
+const NAV_DIRS := {"full": "res://data/city/nav/", "public": "res://data/city/nav_public/"}   # public = civilians only (C3d)
 const CELL_SIZE := 0.05   # must match the bake
 
 var map: RID
 var radius: float
+var nav_dir: String
 var _tiles := {}    # file -> Rect2
 var _loaded := {}   # file -> region RID
 
-func _init(focus_point: Vector2, load_radius: float = 700.0) -> void:
+## layer "full": everywhere walkable (locals, crew, player). "public": sidewalks,
+## crosswalks, paths, parks and alleys only (civilians).
+func _init(focus_point: Vector2, load_radius: float = 700.0, layer: String = "full") -> void:
 	radius = load_radius
+	nav_dir = NAV_DIRS[layer]
 	map = NavigationServer2D.map_create()
 	NavigationServer2D.map_set_cell_size(map, CELL_SIZE)
 	NavigationServer2D.map_set_edge_connection_margin(map, 2.0)
 	NavigationServer2D.map_set_active(map, true)
-	for f in DirAccess.get_files_at(NAV_DIR):
+	for f in DirAccess.get_files_at(nav_dir):
 		if f.ends_with(".res"):
-			var p := f.trim_suffix(".res").split("_")   # nav_<x>_<y>_<size>
+			var p := f.trim_suffix(".res").split("_")   # <nav|walk|alley>_<x>_<y>_<size>
 			_tiles[f] = Rect2(float(p[1]), float(p[2]), float(p[3]), float(p[3]))
 	focus(focus_point)
 
@@ -35,7 +39,7 @@ func focus(p: Vector2) -> bool:
 		if want and not _loaded.has(f):
 			var r := NavigationServer2D.region_create()
 			NavigationServer2D.region_set_map(r, map)
-			NavigationServer2D.region_set_navigation_polygon(r, load(NAV_DIR + f))
+			NavigationServer2D.region_set_navigation_polygon(r, load(nav_dir + f))
 			_loaded[f] = r
 			changed = true
 		elif not want and _loaded.has(f):
