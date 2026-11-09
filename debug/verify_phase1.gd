@@ -33,6 +33,15 @@ func _initialize() -> void:
 		if npc != null:
 			npc.recognition_chance = 1.0
 
+	# Place a cop just outside arrest range but inside radio range BEFORE the
+	# crime (MG1: real distances -- a depot cop is often beyond the 400 m radio
+	# call), then step the world and confirm it closes in and arrests.
+	var cop_id := _find_a_cop(world)
+	print("cop found: ", cop_id)
+	var cop_npc: NPCData = world.entities[cop_id].get_component(ComponentNames.NPC)
+	cop_npc.position = player_npc.position + Vector2(20, 0)   # metres: down the street
+	world.reindex_position(cop_id)
+
 	print("before: player_cash=%d victim_cash=%d law_tier=%s" % [player_npc.cash, victim_npc.cash, player_state.law_tier])
 	var result := CrimeSystem.commit_crime(world, GanstoidEnums.CrimeType.PICKPOCKET, victim_id)
 	print("crime result: ", result)
@@ -41,13 +50,6 @@ func _initialize() -> void:
 	assert(result.get("ok", false), "pickpocket should have succeeded")
 	assert(player_state.law_tier == GanstoidEnums.LawTier.WARNED, "law_tier should have escalated to WARNED on a confirmed witness")
 
-	# Place a cop just outside arrest range but inside broadcast range of the
-	# crime, then step the world and confirm it closes in and arrests.
-	var cop_id := _find_a_cop(world)
-	print("cop found: ", cop_id)
-	var cop_npc: NPCData = world.entities[cop_id].get_component(ComponentNames.NPC)
-	cop_npc.position = player_npc.position + Vector2(200, 0)
-	world.reindex_position(cop_id)
 
 	for i in 400:
 		world.step(1.0 / 60.0)

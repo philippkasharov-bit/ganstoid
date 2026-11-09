@@ -42,3 +42,8 @@ extends Resource
 
 ## Batch 25: weed sitting in your grow house waiting to be picked up.
 @export var stored_product: int = 0
+
+## R1: what a LEGIT_BUSINESS physically is: &"shop" (retail: commercial
+## buildings) or &"workshop" (warehouses, garages, workshops -- never retail).
+## Empty for every other role.
+@export var business_kind: StringName = &""

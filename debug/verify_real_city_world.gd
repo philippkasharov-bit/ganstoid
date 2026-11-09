@@ -42,6 +42,12 @@ func _initialize() -> void:
 	WorldGenerator.generate_real_city_game(again, 1, city, city.spawn, RADIUS, 130)
 	if not _check(_signature(again) == signature, "same seed -> same buildings and roles"):
 		return
+	var other := World.new()
+	WorldGenerator.generate_real_city_game(other, 2, city, city.spawn, RADIUS, 130)
+	if not _check(_signature(other) != signature, "a new game (new seed) reshuffles the roles"):
+		return
+	if not _check(_roles_logical(world, city), "every zone has every role; industrial never hosts a retail shop"):
+		return
 	print("REAL_CITY_WORLD_VERIFY: PASS")
 	quit()
 
@@ -60,6 +66,28 @@ func _people_ok(world: World, city: CityData) -> bool:
 			return false
 	print("people %d (cops %d, dealers %d)" % [npcs, cops, dealers])
 	return npcs >= 130 and cops > 0 and dealers > 0
+
+func _roles_logical(world: World, city: CityData) -> bool:
+	var kind_of := {}
+	for b in city.buildings:
+		kind_of[b["id"]] = b["kind"]
+	var per_zone := {}
+	for id in world.entities:
+		var b: BuildingData = world.entities[id].get_component(ComponentNames.BUILDING)
+		if b == null:
+			continue
+		if kind_of[id] == "industrial" and b.business_kind == &"shop":
+			print("  industrial building used as a shop: ", id)
+			return false
+		if not per_zone.has(b.zone):
+			per_zone[b.zone] = {}
+		per_zone[b.zone][b.building_type] = per_zone[b.zone].get(b.building_type, 0) + 1
+	for zone in GanstoidEnums.CityZone.values():
+		print("  zone %d roles: %s" % [zone, per_zone.get(zone, {})])
+		for t in GanstoidEnums.BuildingType.values():
+			if per_zone.get(zone, {}).get(t, 0) == 0:
+				return false
+	return true
 
 func _signature(world: World) -> String:
 	var s := ""
