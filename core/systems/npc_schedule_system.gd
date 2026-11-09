@@ -42,16 +42,16 @@
 class_name NPCScheduleSystem
 extends SystemBase
 
-const DAY_LENGTH_TICKS := 1800  # ~30 sim-seconds at 60 tick/s -- short enough to see a full day cycle quickly
+## Day length lives in SimClock (1 game day = 1 real hour).
 const WORK_FRACTION := 0.6
-const WALK_SPEED := 60.0
-const ARRIVE_EPSILON := 4.0
+const WALK_SPEED := SimUnits.WALK
+const ARRIVE_EPSILON := SimUnits.ARRIVE_M
 
 ## +/- range for the per-NPC schedule jitter, in ticks. Big enough to
 ## visibly spread 130 NPCs' commute times apart, small enough that "work"
 ## still basically means "daytime" for everyone -- this isn't meant to
 ## scramble the day/night read, just stop it being perfectly synchronized.
-const STAGGER_RANGE_TICKS := 240  # +/- 4 sim-seconds at 60 tick/s
+const STAGGER_DAY_FRACTION := 0.014  # +/- ~20 game minutes, so a street empties gradually
 
 ## Idle wander: how far an "arrived" NPC drifts around their destination,
 ## how fast they stroll while doing it (slower than a purposeful commute),
@@ -59,8 +59,8 @@ const STAGGER_RANGE_TICKS := 240  # +/- 4 sim-seconds at 60 tick/s
 ## WanderBehavior.advance each tick rather than being WanderBehavior's own
 ## constants, since CopAISystem's patrol wander wants different numbers
 ## for the same behavior.
-const IDLE_WANDER_RADIUS := 48.0
-const IDLE_WALK_SPEED := 24.0
+const IDLE_WANDER_RADIUS := 12.0   # metres: hang around the doorway / storefront
+const IDLE_WALK_SPEED := SimUnits.STROLL
 const IDLE_DWELL_MIN_TICKS := 60   # 1 sim-second
 const IDLE_DWELL_MAX_TICKS := 360  # 6 sim-seconds
 
@@ -100,19 +100,19 @@ func process_entities(entities: Dictionary, delta: float, tick: int) -> void:
 			npc.position = WanderBehavior.advance(
 				npc.id, npc.position, target, IDLE_WANDER_RADIUS, IDLE_WALK_SPEED,
 				IDLE_DWELL_MIN_TICKS, IDLE_DWELL_MAX_TICKS, delta, tick,
-				_idle_targets, _idle_dwell_until, ARRIVE_EPSILON
+				_idle_targets, _idle_dwell_until, ARRIVE_EPSILON, _layer(npc)
 			)
 			_world.reindex_position(npc.id)
 		else:
 			# Still commuting -- drop any stale idle state from the *previous*
 			# destination so arriving at the new one starts idling fresh.
 			WanderBehavior.clear(npc.id, _idle_targets, _idle_dwell_until)
-			npc.position = WanderBehavior.step_toward(npc.position, target, WALK_SPEED, delta, ARRIVE_EPSILON)
+			npc.position = WanderBehavior.step_toward(npc.position, target, WALK_SPEED, delta, ARRIVE_EPSILON, npc.id, _layer(npc))
 			_world.reindex_position(npc.id)
 
 func _target_position(npc: NPCData, tick: int) -> Variant:
 	var staggered_tick := tick + schedule_offset(npc.id)
-	var day_fraction := float(posmod(staggered_tick, DAY_LENGTH_TICKS)) / float(DAY_LENGTH_TICKS)
+	var day_fraction := SimClock.day_fraction(staggered_tick)
 	var at_work := day_fraction < WORK_FRACTION and npc.work_building_id != &""
 	var target_id: StringName = npc.work_building_id if at_work else npc.home_building_id
 	if target_id == &"" or not _world.entities.has(target_id):
@@ -129,4 +129,9 @@ func _target_position(npc: NPCData, tick: int) -> Variant:
 ## debug/verify_phase2_dealer_schedule.gd can account for it directly
 ## instead of duplicating the formula.
 static func schedule_offset(npc_id: StringName) -> int:
-	return (absi(hash(npc_id)) % (2 * STAGGER_RANGE_TICKS + 1)) - STAGGER_RANGE_TICKS
+	var stagger := int(SimClock.day_ticks * STAGGER_DAY_FRACTION)
+	return (absi(hash(npc_id)) % (2 * stagger + 1)) - stagger
+
+## Civilians keep to public ground; dealers know the shortcuts.
+static func _layer(npc: NPCData) -> String:
+	return "full" if npc.is_dealer else "public"

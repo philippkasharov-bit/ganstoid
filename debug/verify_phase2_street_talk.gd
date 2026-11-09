@@ -5,7 +5,7 @@ extends SceneTree
 func _initialize() -> void:
 	var world := World.new()
 	SystemRegistry.register_all(world)
-	WorldGenerator.generate_new_game(world, 1, 26, 26, 130)
+	TestWorlds.real_city(world)
 	var state: PlayerStateData = world.get_entities_with_component(ComponentNames.PLAYER_STATE).values()[0].get_component(ComponentNames.PLAYER_STATE)
 
 	StreetTalk.say(world, state, {"ok": true, "effect": "buy", "cost": 37, "ripped_off": false})

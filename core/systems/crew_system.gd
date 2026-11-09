@@ -20,8 +20,8 @@ const SEEN_YOU_WORK_WEIGHT := 0.35
 const MAX_WILLINGNESS := 0.9
 
 ## Trailing behavior: loiter near the player via the shared WanderBehavior.
-const FOLLOW_RADIUS := 40.0
-const FOLLOW_SPEED := 85.0
+const FOLLOW_RADIUS := 4.0
+const FOLLOW_SPEED := SimUnits.JOG
 const FOLLOW_DWELL_MIN_TICKS := 30
 const FOLLOW_DWELL_MAX_TICKS := 120
 const ARRIVE_EPSILON := 2.0
@@ -31,10 +31,10 @@ const ARRIVE_EPSILON := 2.0
 ## have recognized you gets waved off LOOKOUT_SUPPRESS_CHANCE of the time.
 ## Only ever REDUCES recognition -- never adds a law trigger. Lookouts
 ## don't stack; covered is covered.
-const LOOKOUT_RADIUS := 150.0
+const LOOKOUT_RADIUS := 80.0
 const LOOKOUT_SUPPRESS_CHANCE := 0.5
-const LOOKOUT_LOITER_RADIUS := 12.0
-const LOOKOUT_SPEED := 60.0
+const LOOKOUT_LOITER_RADIUS := 6.0
+const LOOKOUT_SPEED := SimUnits.WALK
 
 ## Batch 20 -- DRIVER. Rides with you (glued to your position, no wander)
 ## and speeds you up: DRIVER_SPEED_MULT normally, GETAWAY_SPEED_MULT while

@@ -27,7 +27,7 @@
 class_name WanderBehavior
 extends RefCounted
 
-const DEFAULT_ARRIVE_EPSILON := 4.0
+const DEFAULT_ARRIVE_EPSILON := SimUnits.ARRIVE_M
 
 ## Advances `mover_id`'s wander state by one tick and returns their new
 ## position. `anchor` is the point being wandered around (a depot, a
@@ -52,7 +52,8 @@ static func advance(
 	tick: int,
 	targets: Dictionary,
 	dwell_until: Dictionary,
-	arrive_epsilon: float = DEFAULT_ARRIVE_EPSILON
+	arrive_epsilon: float = DEFAULT_ARRIVE_EPSILON,
+	layer: String = "full"
 ) -> Vector2:
 	if dwell_until.has(mover_id) and tick < dwell_until[mover_id]:
 		return position  # paused -- a wandering mover shouldn't be in constant motion
@@ -60,10 +61,13 @@ static func advance(
 		var offset := Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0))
 		if offset == Vector2.ZERO:
 			offset = Vector2.RIGHT
-		targets[mover_id] = anchor + offset.normalized() * randf_range(0.0, radius)
+		var spot := anchor + offset.normalized() * randf_range(0.0, radius)
+		if SimNav.active != null:
+			spot = SimNav.active.snap(spot, layer)   # never a spot inside a building or off the mover's ground
+		targets[mover_id] = spot
 		dwell_until[mover_id] = tick + randi_range(dwell_min_ticks, dwell_max_ticks)
 		return position
-	return step_toward(position, targets[mover_id], speed, delta, arrive_epsilon)
+	return step_toward(position, targets[mover_id], speed, delta, arrive_epsilon, mover_id, layer)
 
 ## Plain straight-line walk toward `target` at `speed`, clamped so a single
 ## step never overshoots. The one piece of movement math every mover in
@@ -71,11 +75,15 @@ static func advance(
 ## destination, a wander drift point, a cop's live chase target) --
 ## callers that aren't wandering (NPCScheduleSystem's commute,
 ## CopAISystem's alert chase) use this directly instead of `advance`.
-static func step_toward(position: Vector2, target: Vector2, speed: float, delta: float, arrive_epsilon: float = DEFAULT_ARRIVE_EPSILON) -> Vector2:
+## With a SimNav installed and a mover_id given, the walk follows the real
+## city's routes on `layer` instead of a straight line.
+static func step_toward(position: Vector2, target: Vector2, speed: float, delta: float, arrive_epsilon: float = DEFAULT_ARRIVE_EPSILON, mover_id: StringName = &"", layer: String = "full") -> Vector2:
 	var to_target := target - position
 	var dist := to_target.length()
 	if dist <= arrive_epsilon:
 		return position
+	if SimNav.active != null and mover_id != &"":
+		return SimNav.active.step(mover_id, position, target, speed, delta, layer)
 	var step := speed * delta
 	return target if step >= dist else position + to_target / dist * step
 
@@ -87,3 +95,5 @@ static func step_toward(position: Vector2, target: Vector2, speed: float, delta:
 static func clear(mover_id: StringName, targets: Dictionary, dwell_until: Dictionary) -> void:
 	targets.erase(mover_id)
 	dwell_until.erase(mover_id)
+	if SimNav.active != null:
+		SimNav.active.forget(mover_id)

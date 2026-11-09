@@ -6,7 +6,7 @@ extends SceneTree
 func _initialize() -> void:
 	var world := World.new()
 	SystemRegistry.register_all(world)
-	WorldGenerator.generate_new_game(world, 1, 26, 26, 130)
+	TestWorlds.real_city(world)
 	var player: Entity = world.entities[PlayerFactory.PLAYER_ENTITY_ID]
 	var pnpc: NPCData = player.get_component(ComponentNames.NPC)
 	for id in world.entities:
@@ -42,7 +42,7 @@ func _initialize() -> void:
 	shop.cash_on_hand = 77
 	var before := pnpc.cash
 	assert(BusinessSystem.collect_all(world) == 77 and pnpc.cash == before + 77 and shop.cash_on_hand == 0, "till paid out")
-	for i in BusinessSystem.DAY_TICKS + 20:
+	for i in SimClock.day_ticks + 20:
 		world.step(1.0 / 60.0)
 	print("cash after a day: %d (was %d), daily_revenue=%d" % [pnpc.cash, before + 77, shop.daily_revenue])
 	assert(pnpc.cash > before + 77, "a game day later the shop paid again")

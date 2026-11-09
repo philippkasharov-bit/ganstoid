@@ -5,7 +5,7 @@ extends SceneTree
 func _initialize() -> void:
 	var world := World.new()
 	SystemRegistry.register_all(world)
-	WorldGenerator.generate_new_game(world, 1, 26, 26, 130)
+	TestWorlds.real_city(world)
 	var state: PlayerStateData = world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
 
 	assert(CrewRoster.format_roster(world, state).contains("press R"), "empty-crew hint")
@@ -28,7 +28,7 @@ func _initialize() -> void:
 	# Same seed -> same names (no worldgen drift).
 	var world2 := World.new()
 	SystemRegistry.register_all(world2)
-	WorldGenerator.generate_new_game(world2, 1, 26, 26, 130)
+	TestWorlds.real_city(world2)
 	assert(world2.entities[&"npc_5"].get_component(ComponentNames.NPC).display_name == world.entities[&"npc_5"].get_component(ComponentNames.NPC).display_name, "deterministic")
 
 	print("PHASE3_CREW_ROSTER_VERIFY: PASS")

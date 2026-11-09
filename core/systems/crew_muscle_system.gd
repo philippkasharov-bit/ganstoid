@@ -1,7 +1,7 @@
 ## Phase 3 batch 19: crew MUSCLE role. Post a crew member (M) and they lean
 ## on every legit business within MUSCLE_RADIUS for protection money:
 ## PROTECTION_FRACTION of the shop's daily_revenue, capped by what's in the
-## register, at most once per PROTECTION_COOLDOWN_TICKS (one game day) per
+## register, at most once per game day (SimClock.day_ticks) per
 ## shop. They hold the money until you collect (M again), minus their cut.
 ##
 ## Payout-source integrity: the money comes out of the shop's own
@@ -15,9 +15,9 @@
 class_name CrewMuscleSystem
 extends SystemBase
 
-const MUSCLE_RADIUS := 120.0
+const MUSCLE_RADIUS := 60.0
 const PROTECTION_FRACTION := 0.1
-const PROTECTION_COOLDOWN_TICKS := 1800
+## Cooldown = one game day: SimClock.day_ticks.
 
 var _world_ref: WeakRef
 var _world: World:
@@ -65,7 +65,7 @@ static func _eligible(world: World, id: StringName, building: BuildingData, at: 
 		return false  # batch 23: your own shops don't pay you protection
 	if building.position.distance_to(at) > MUSCLE_RADIUS:
 		return false
-	if world.tick - building.protection_paid_tick < PROTECTION_COOLDOWN_TICKS:
+	if world.tick - building.protection_paid_tick < SimClock.day_ticks:
 		return false
 	return CrimeSystem.find_territory_gang(world, id) == null
 

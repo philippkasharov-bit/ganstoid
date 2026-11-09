@@ -18,7 +18,7 @@
 class_name PlayerInputSystem
 extends SystemBase
 
-const MOVE_SPEED := 90.0
+const MOVE_SPEED := SimUnits.WALK
 
 var _world_ref: WeakRef
 var _world: World:
@@ -90,7 +90,8 @@ func process_entities(entities: Dictionary, delta: float, _tick: int) -> void:
 			Input.get_action_strength("ui_down") - Input.get_action_strength("ui_up")
 		)
 		if input_dir != Vector2.ZERO:
-			npc.position += input_dir.normalized() * MOVE_SPEED * CrewSystem.player_speed_multiplier(_world, state) * delta
+			var step := input_dir.normalized() * MOVE_SPEED * CrewSystem.player_speed_multiplier(_world, state) * delta
+			npc.position = SimNav.active.slide(npc.position, step) if SimNav.active != null else npc.position + step   # walls are solid
 			_world.reindex_position(npc.id)
 		if Input.is_action_just_pressed("ui_accept"):
 			_report(state, _attempt_interact(npc))

@@ -13,7 +13,7 @@ const PATROL_STEPS := 6000
 func _initialize() -> void:
 	var world := World.new()
 	SystemRegistry.register_all(world)
-	WorldGenerator.generate_new_game(world, 1, 26, 26, 130)
+	TestWorlds.real_city(world)
 
 	var cop_id := _find_a_cop(world)
 	assert(cop_id != &"", "PopulationSeeder should have seeded at least one cop")

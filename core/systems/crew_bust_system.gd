@@ -16,7 +16,7 @@
 class_name CrewBustSystem
 extends SystemBase
 
-const BUST_RADIUS := 40.0
+const BUST_RADIUS := 25.0
 
 var _world_ref: WeakRef
 var _world: World:

@@ -4,7 +4,7 @@
 ## Buy (B) any legit, revenue-earning building that isn't gang turf and
 ## isn't already yours, for PRICE_DAYS x its daily_revenue. Ownership is
 ## BuildingData.owner_npc_id (reserved since Phase 0) set to the player id.
-## Once per game day (DAY_TICKS) each owned shop hands you its till; the
+## Once per game day (SimClock.day_ticks) each owned shop hands you its till; the
 ## till refills over the day through EconomySystem's existing cash regen,
 ## so income tracks the shop's daily_revenue. Legit income: no crime, no
 ## witnesses, no crew cut.
@@ -20,7 +20,7 @@ class_name BusinessSystem
 extends SystemBase
 
 const PRICE_DAYS := 10
-const DAY_TICKS := 1800
+## One game day = SimClock.day_ticks.
 const LAUNDER_FEE := 0.2
 
 var _last_payout_tick := 0
@@ -35,7 +35,7 @@ func _init(world: World) -> void:
 	required_component = ComponentNames.PLAYER_STATE
 
 func process_entities(entities: Dictionary, _delta: float, tick: int) -> void:
-	if tick - _last_payout_tick < DAY_TICKS:
+	if tick - _last_payout_tick < SimClock.day_ticks:
 		return
 	_last_payout_tick = tick
 	for player in entities.values():

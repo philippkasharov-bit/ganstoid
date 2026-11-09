@@ -17,7 +17,7 @@ extends SystemBase
 
 const CONSIGNMENT := 5
 const GOOD_ID := &"weed"
-const CUSTOMER_RADIUS := 80.0
+const CUSTOMER_RADIUS := 30.0
 ## Per warm tick (6/sec) with a customer in range: ~one sale per 5 sec.
 const SALE_CHANCE := 1.0 / 30.0
 const CUSTOMER_STIFF_CHANCE := 0.15

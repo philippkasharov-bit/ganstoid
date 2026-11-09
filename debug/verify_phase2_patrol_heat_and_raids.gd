@@ -30,7 +30,7 @@ func _count_report(event_name: StringName, _payload: Dictionary) -> void:
 func _initialize() -> void:
 	var world := World.new()
 	SystemRegistry.register_all(world)
-	WorldGenerator.generate_new_game(world, 1, 26, 26, 130)
+	TestWorlds.real_city(world)
 	world.event_bus.subscribe(_count_report)
 
 	var player_entity: Entity = world.get_entities_with_component(ComponentNames.PLAYER_STATE).values()[0]

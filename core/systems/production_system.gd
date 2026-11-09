@@ -30,7 +30,7 @@ func _init(world: World) -> void:
 	required_component = ComponentNames.PLAYER_STATE
 
 func process_entities(entities: Dictionary, _delta: float, tick: int) -> void:
-	if tick - _last_harvest_tick < BusinessSystem.DAY_TICKS:
+	if tick - _last_harvest_tick < SimClock.day_ticks:
 		return
 	_last_harvest_tick = tick
 	grow_all(_world)

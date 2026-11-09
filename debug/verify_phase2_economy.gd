@@ -6,7 +6,7 @@ extends SceneTree
 func _initialize() -> void:
 	var world := World.new()
 	SystemRegistry.register_all(world)
-	WorldGenerator.generate_new_game(world, 1, 26, 26, 130)
+	TestWorlds.real_city(world)
 
 	assert(world.economy_items.has(&"weed"), "GoodsCatalog should have seeded 'weed'")
 	var weed: EconomyItemData = world.economy_items[&"weed"]

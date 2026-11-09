@@ -14,10 +14,10 @@ class_name CrimeSystem
 extends RefCounted
 
 ## How close the player must be to a potential pickpocket victim.
-const INTERACT_RADIUS := 40.0
+const INTERACT_RADIUS := 2.5   # metres: within arm's reach / at the counter
 ## How close a witness must be to roll an actual recognition (vs. just
 ## having their general recognition_chance nudged by the broadcast below).
-const ENCOUNTER_RADIUS := 48.0
+const ENCOUNTER_RADIUS := 3.0
 
 const PICKPOCKET_MIN := 5
 const PICKPOCKET_MAX := 25
@@ -47,7 +47,7 @@ const GANG_JOB_STANDING_GAIN := 0.1
 ## (BuildingData.crime_heat), and how hard one such crime bumps it. Looser
 ## than ENCOUNTER_RADIUS -- a crime doesn't have to happen on a building's
 ## exact doorstep to read as "something's going on around here."
-const CRIME_HEAT_RADIUS := 80.0
+const CRIME_HEAT_RADIUS := 60.0   # roughly the block around the crime
 const CRIME_HEAT_GAIN := 0.2
 
 ## Fixed per-crime-type severity (roadmap Phase 1 lock) -- feeds

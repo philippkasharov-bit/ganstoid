@@ -22,7 +22,7 @@ const PATROL_STEPS := 3000
 func _initialize() -> void:
 	var world := World.new()
 	SystemRegistry.register_all(world)
-	WorldGenerator.generate_new_game(world, 1, 26, 26, 130)
+	TestWorlds.real_city(world)
 
 	var player_entity: Entity = world.get_entities_with_component(ComponentNames.PLAYER_STATE).values()[0]
 	var player_npc: NPCData = player_entity.get_component(ComponentNames.NPC)

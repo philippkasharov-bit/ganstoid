@@ -6,7 +6,7 @@ extends SceneTree
 func _initialize() -> void:
 	var world := World.new()
 	SystemRegistry.register_all(world)
-	WorldGenerator.generate_new_game(world, 1, 26, 26, 130)
+	TestWorlds.real_city(world)
 	var player: Entity = world.entities[PlayerFactory.PLAYER_ENTITY_ID]
 	var pnpc: NPCData = player.get_component(ComponentNames.NPC)
 	var state: PlayerStateData = player.get_component(ComponentNames.PLAYER_STATE)
@@ -58,7 +58,7 @@ func _initialize() -> void:
 
 	# Daily system actually fires in-world.
 	house.stored_product = 0
-	for i in BusinessSystem.DAY_TICKS + 20:
+	for i in SimClock.day_ticks + 20:
 		world.step(1.0 / 60.0)
 	assert(house.stored_product > 0, "a game day later it grew on its own")
 

@@ -5,7 +5,7 @@ extends SceneTree
 func _initialize() -> void:
 	var world := World.new()
 	SystemRegistry.register_all(world)
-	WorldGenerator.generate_new_game(world, 1, 26, 26, 130)
+	TestWorlds.real_city(world)
 	world.runtime_rng.seed = 2024
 	var player: Entity = world.entities[PlayerFactory.PLAYER_ENTITY_ID]
 	var pnpc: NPCData = player.get_component(ComponentNames.NPC)

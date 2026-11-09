@@ -6,7 +6,7 @@ extends SceneTree
 func _initialize() -> void:
 	var world := World.new()
 	SystemRegistry.register_all(world)
-	WorldGenerator.generate_new_game(world, 1, 26, 26, 130)
+	TestWorlds.real_city(world)
 	var player: Entity = world.entities[PlayerFactory.PLAYER_ENTITY_ID]
 	var pnpc: NPCData = player.get_component(ComponentNames.NPC)
 	var state: PlayerStateData = player.get_component(ComponentNames.PLAYER_STATE)
@@ -46,7 +46,7 @@ func _initialize() -> void:
 	assert(crew.crew_earnings == held, "nothing more from anyone already paid")
 
 	# Next day: pays again.
-	world.tick = 5000 + CrewMuscleSystem.PROTECTION_COOLDOWN_TICKS
+	world.tick = 5000 + SimClock.day_ticks
 	CrewMuscleSystem.shake_down(world, crew)
 	assert(shop.cash_on_hand == shop.daily_revenue - expected, "pays again next day")
 

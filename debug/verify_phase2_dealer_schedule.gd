@@ -20,12 +20,12 @@ const ARRIVAL_TOLERANCE := NPCScheduleSystem.IDLE_WANDER_RADIUS + 2.0
 ## Stepping until the position actually gets close, capped at just over
 ## one full day cycle, is correct regardless of which dealer gets picked or
 ## what their offset happens to be.
-const MAX_STEPS_PER_PHASE := 2000  # > DAY_LENGTH_TICKS (1800), covers any offset
+const MAX_STEPS_PER_PHASE := 2000  # > TestWorlds.FAST_DAY_TICKS (1800), covers any offset
 
 func _initialize() -> void:
 	var world := World.new()
 	SystemRegistry.register_all(world)
-	WorldGenerator.generate_new_game(world, 1, 26, 26, 130)
+	TestWorlds.real_city(world)
 
 	var dealer_id := _find_a_dealer(world)
 	assert(dealer_id != &"", "PopulationSeeder should have seeded at least one dealer")

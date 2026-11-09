@@ -58,12 +58,12 @@
 class_name CopAISystem
 extends SystemBase
 
-const PATROL_SPEED := 70.0
-const RESPONSE_SPEED := 110.0
-const PATROL_WANDER_RADIUS := 96.0
+const PATROL_SPEED := SimUnits.WALK
+const RESPONSE_SPEED := SimUnits.SPRINT
+const PATROL_WANDER_RADIUS := 150.0   # metres around the depot
 const PATROL_DWELL_MIN_TICKS := 120  # 2 sim-seconds
 const PATROL_DWELL_MAX_TICKS := 480  # 8 sim-seconds
-const ARRIVE_EPSILON := 4.0
+const ARRIVE_EPSILON := SimUnits.ARRIVE_M
 
 ## Batch 6 (locked): the "more guarded" half of EconomySystem.apply_robbery's
 ## reserved feedback loop -- a cop whose depot is within GUARD_BIAS_RADIUS of
@@ -73,8 +73,8 @@ const ARRIVE_EPSILON := 4.0
 ## watched closer now" response, not a stat-only consequence. Checked fresh
 ## every time a cop is about to pick a new wander target (not cached), so it
 ## reacts the first patrol cycle after a robbery and never goes stale.
-const GUARD_BIAS_RADIUS := 220.0
-const GUARDED_WANDER_RADIUS := 48.0
+const GUARD_BIAS_RADIUS := 300.0
+const GUARDED_WANDER_RADIUS := 40.0
 const GUARDED_DWELL_MIN_TICKS := 30   # 0.5 sim-second
 const GUARDED_DWELL_MAX_TICKS := 150  # 2.5 sim-seconds
 
@@ -99,7 +99,7 @@ const PATROL_BIAS_HEAT_THRESHOLD := 0.3
 ## the guarded tier -- "more cops right on top of it" is half of Phil's
 ## explicit "both at once" choice for what a raid does.
 const RAID_HEAT_THRESHOLD := 0.75
-const RAID_WANDER_RADIUS := 24.0
+const RAID_WANDER_RADIUS := 15.0
 const RAID_DWELL_MIN_TICKS := 10  # ~0.17 sim-second
 const RAID_DWELL_MAX_TICKS := 60  # 1 sim-second
 
@@ -121,14 +121,14 @@ const RAID_STANDING_PENALTY := 0.3
 ## back up from fresh witnessed crime first.
 const RAID_HEAT_RELIEF_FRACTION := 0.75
 
-const BROADCAST_RADIUS := 300.0
-const ARREST_RADIUS := 20.0
+const BROADCAST_RADIUS := 400.0   # radio call reaches cops this far away
+const ARREST_RADIUS := 2.0
 ## Batch 24: share of the player's dirty money seized on arrest.
 const ARREST_SEIZE_FRACTION := 0.5
 ## If a cop never reaches the player within this many ticks of being
 ## alerted, give up and resume patrol rather than chasing forever on a
 ## stale lead.
-const ALERT_TIMEOUT_TICKS := 900
+const ALERT_TIMEOUT_TICKS := SimClock.TICKS_PER_SECOND * 90   # real distances: a 400 m run takes ~70 s
 
 ## WeakRef, not a direct World reference -- see NPCScheduleSystem's _world
 ## property doc for why (avoids a System<->World retain cycle).
@@ -253,7 +253,7 @@ func _advance_alert(npc: NPCData, delta: float, tick: int) -> void:
 	if tick - _alert_set_tick.get(npc.id, tick) > ALERT_TIMEOUT_TICKS:
 		_stand_down(npc.id)
 		return
-	npc.position = WanderBehavior.step_toward(npc.position, player_npc.position, RESPONSE_SPEED, delta, ARRIVE_EPSILON)
+	npc.position = WanderBehavior.step_toward(npc.position, player_npc.position, RESPONSE_SPEED, delta, ARRIVE_EPSILON, npc.id)
 	_world.reindex_position(npc.id)
 
 ## Phase 1 "short jail stint" stub: no real jail scene/timer yet, just the

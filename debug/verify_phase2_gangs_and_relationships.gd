@@ -11,7 +11,7 @@ const DECAY_STEPS := 3000
 func _initialize() -> void:
 	var world := World.new()
 	SystemRegistry.register_all(world)
-	WorldGenerator.generate_new_game(world, 1, 26, 26, 130)
+	TestWorlds.real_city(world)
 
 	# --- Part 1: gangs actually got seeded, with territory and (for
 	# affiliated dealers) membership wired up both directions.
