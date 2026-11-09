@@ -110,7 +110,7 @@ func _decay_crime_heat(building: BuildingData) -> void:
 
 func _regen_cash(building: BuildingData) -> void:
 	if building.daily_revenue <= 0:
-		return  # residences/fronts/safehouses carry no legitimate revenue line (see CityGenerator.REVENUE_BY_TYPE)
+		return  # residences/fronts/safehouses carry no legitimate revenue line (see CityRoles.REVENUE_BY_TYPE)
 	var gap := building.daily_revenue - building.cash_on_hand
 	if gap <= 0:
 		return  # already at or above its daily take -- nothing to regenerate

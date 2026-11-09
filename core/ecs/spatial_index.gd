@@ -12,7 +12,7 @@
 class_name SpatialIndex
 extends RefCounted
 
-## 128px buckets multiple CityGenerator.LOT_SPACING (32px) lots per cell —
+## 128 m buckets hold several real city blocks' worth of doors per cell —
 ## coarse enough that most proximity queries touch one cell, fine enough
 ## that "nearby" doesn't mean "half the city."
 const CELL_SIZE := 128.0

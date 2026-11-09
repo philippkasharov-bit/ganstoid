@@ -50,8 +50,8 @@ enum TickRate {
 	COLD,
 }
 
-## City layout zone (CityGenerator, "Sprawl" design). Computed once at
-## worldgen time from a lot's distance from city center and stored on
+## City zone of a building (CityRoles). Computed once at new-game start from
+## where the building stands (commercial area, industrial area / dark spots) and stored on
 ## BuildingData.zone — later systems (cop patrol density, pricing, where
 ## crews recruit) read the stored zone rather than recomputing geometry.
 ## DOWNTOWN = small dense business core. SPRAWL = wide residential spread

@@ -1,5 +1,5 @@
-## City batch C1: the fixed, hand-authored city loaded from frozen data
-## (data/city/city_v1.json, produced by tools/city/city_author.py).
+## City batch C1: the fixed city (real central LA from OpenStreetMap) loaded from
+## frozen data (data/city/city_v1.json, produced by tools/city/osm_import.py).
 ## Pure data: no drawing, no game rules. All IDs are namespaced ("base:...")
 ## so mods and expansions can add regions without renumbering the base city.
 class_name CityData

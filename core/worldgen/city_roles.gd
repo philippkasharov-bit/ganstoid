@@ -32,6 +32,9 @@ const ROLE_WEIGHTS := {
 	"garage": {DOWNTOWN: {BIZ: 40, FRONT: 30, SAFE: 30}, SPRAWL: {BIZ: 25, FRONT: 35, SAFE: 40}, EDGE: {BIZ: 15, FRONT: 40, SAFE: 45}},
 	"building": {DOWNTOWN: {RES: 30, BIZ: 65, FRONT: 4, SAFE: 1}, SPRAWL: {RES: 70, BIZ: 24, FRONT: 4, SAFE: 2}, EDGE: {RES: 35, BIZ: 25, FRONT: 28, SAFE: 12}},
 }
+## Revenue bands per role (daily_revenue range; cash_on_hand starts at one day's take).
+## Fronts and safehouses carry no legitimate revenue line.
+const REVENUE_BY_TYPE := {RES: Vector2i(0, 0), BIZ: Vector2i(50, 200), FRONT: Vector2i(0, 0), SAFE: Vector2i(0, 0)}
 ## What kind of legit business each building kind can host ("no shops in industrial").
 const BUSINESS_KIND := {"commercial": &"shop", "industrial": &"workshop", "garage": &"workshop", "building": &"shop"}
 
@@ -86,7 +89,7 @@ static func _set_role(building: BuildingData, role: GanstoidEnums.BuildingType, 
 	building.building_type = role
 	building.business_kind = BUSINESS_KIND.get(kind, &"shop") if role == BIZ else &""
 	building.is_raidable = role in [FRONT, SAFE]
-	var band: Vector2i = CityGenerator.REVENUE_BY_TYPE[role]
+	var band: Vector2i = REVENUE_BY_TYPE[role]
 	building.daily_revenue = rng.randi_range(band.x, band.y) if rng != null else (band.x + band.y) / 2
 	building.cash_on_hand = building.daily_revenue   # starts with one day's take banked
 

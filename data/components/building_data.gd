@@ -7,7 +7,7 @@ extends Resource
 @export var building_type: GanstoidEnums.BuildingType
 @export var position: Vector2
 
-## Which city zone this lot fell in at generation time (CityGenerator).
+## Which city zone this building stands in, set at new-game start (CityRoles).
 ## Stored, not recomputed — same pattern as everything else hardening
 ## pulled out of "figure it out live" and into "figure it out once,
 ## remember it" (RecognitionSystem, EconomyItemData.demand/supply).

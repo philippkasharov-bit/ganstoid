@@ -1,7 +1,7 @@
 ## Crime actions: the Phase 1 locked mechanics spec, made real. Not a
 ## SystemBase -- crimes are discrete player-triggered actions, not a
 ## per-tick process, so this is a static utility (same shape as
-## CityGenerator/PlayerFactory) called directly by whatever triggers a
+## CityRoles/PlayerFactory) called directly by whatever triggers a
 ## crime (PlayerInputSystem today; an NPC-vs-NPC crime, if ever added,
 ## would call the same entry point).
 ##

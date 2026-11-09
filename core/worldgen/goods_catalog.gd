@@ -1,6 +1,6 @@
 ## Fixed catalog of tradeable goods -- not generated, not an entity. World
 ## holds exactly one EconomyItemData per good_id in World.economy_items,
-## seeded once at new-game start. Kept separate from CityGenerator/
+## seeded once at new-game start. Kept separate from CityRoles/
 ## PopulationSeeder (which produce per-city, per-seed content) because
 ## goods are a fixed game-design list, same for every city/seed.
 ##

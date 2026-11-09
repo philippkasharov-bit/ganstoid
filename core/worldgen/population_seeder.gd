@@ -1,4 +1,4 @@
-## Seeds initial NPC population onto an already-generated city (CityGenerator
+## Seeds initial NPC population onto an already-generated city (CityRoles
 ## must run first — this reads building_ids it produced). Kept separate from
 ## city layout so population density/employment can be retuned independently.
 ##

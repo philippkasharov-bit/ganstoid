@@ -30,7 +30,7 @@ var spatial_index: SpatialIndex = SpatialIndex.new()
 var event_bus: EventBus = EventBus.new()
 
 ## For in-play random rolls (crime outcomes, witness recognition) --
-## deliberately NOT the same RNG/seed as worldgen (CityGenerator,
+## deliberately NOT the same RNG/seed as worldgen (CityRoles,
 ## PopulationSeeder each take their own explicit seed for deterministic city
 ## generation). Two different playthroughs of the same city seed should
 ## still have crimes land differently, so this one self-seeds by default.
