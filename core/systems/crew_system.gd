@@ -38,12 +38,12 @@ const LOOKOUT_SPEED := SimUnits.WALK
 
 ## Batch 20 -- DRIVER. Rides with you (glued to your position, no wander)
 ## and speeds you up: DRIVER_SPEED_MULT normally, GETAWAY_SPEED_MULT while
-## you have heat. Walking (90) loses a foot race to a responding cop (110);
-## with a driver you're at 126, and 144 on a getaway -- you can outrun them.
+## you have heat. Walking (1.5 m/s) loses a foot race to a responding cop
+## (6 m/s sprint); with a driver you move at 12 m/s, 16 on a getaway.
 ## Stand-in for real vehicles (later in the plan), not a replacement.
-const DRIVER_SPEED_MULT := 1.4
-const GETAWAY_SPEED_MULT := 1.6
-const DRIVER_OFFSET := Vector2(-10, 6)
+const DRIVER_SPEED_MULT := SimUnits.DRIVE / SimUnits.WALK
+const GETAWAY_SPEED_MULT := SimUnits.DRIVE_GETAWAY / SimUnits.WALK
+const DRIVER_OFFSET := Vector2(-2, 1)   # metres: in the seat next to you
 
 var _follow_targets: Dictionary = {}
 var _follow_dwell_until: Dictionary = {}

@@ -51,7 +51,7 @@ func _initialize() -> void:
 
 	# Crew trail the player.
 	var crew_npc: NPCData = world.entities[recruited].get_component(ComponentNames.NPC)
-	pnpc.position += Vector2(300, 0)
+	pnpc.position += Vector2(30, 0)   # you walk down the block; a jogging recruit catches up
 	world.reindex_position(PlayerFactory.PLAYER_ENTITY_ID)
 	for i in 600:
 		world.step(1.0 / 60.0)

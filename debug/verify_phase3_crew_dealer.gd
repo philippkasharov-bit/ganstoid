@@ -47,7 +47,7 @@ func _initialize() -> void:
 	# A customer who never leaves (and recognizes on sight) -> sales happen,
 	# the corner heats up, but the player's law tier never moves.
 	var customer: NPCData = civs[1]
-	customer.position = crew.post_position + Vector2(20, 0)
+	customer.position = crew.post_position + Vector2(8, 0)   # metres: standing at the corner
 	world.reindex_position(customer.id)
 	customer.is_busy = true  # pin them in place
 	var heat_before := _max_heat(world)

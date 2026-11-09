@@ -144,6 +144,11 @@ var _patrol_targets: Dictionary = {}      # StringName -> Vector2
 var _patrol_dwell_until: Dictionary = {}  # StringName -> int
 
 var _alerted: Dictionary = {}         # StringName -> bool
+## Buildings hot enough to draw patrols, re-scanned every HOT_SCAN_TICKS: the
+## real city has thousands of buildings, too many to scan per cop per tick.
+const HOT_SCAN_TICKS := 15
+var _hot_buildings: Array[BuildingData] = []
+var _hot_scanned_tick := -1000000
 var _alert_set_tick: Dictionary = {}  # StringName -> int
 
 func _init(world: World) -> void:
@@ -152,6 +157,9 @@ func _init(world: World) -> void:
 	required_component = ComponentNames.NPC
 
 func process_entities(entities: Dictionary, delta: float, tick: int) -> void:
+	if tick - _hot_scanned_tick >= HOT_SCAN_TICKS:
+		_collect_hot_buildings()
+		_hot_scanned_tick = tick
 	for entity in entities.values():
 		var npc: NPCData = entity.get_component(ComponentNames.NPC)
 		if not npc.is_cop:
@@ -189,11 +197,18 @@ func _advance_patrol(npc: NPCData, delta: float, tick: int) -> void:
 ## Picks the HOTTEST building within range (not just the first match), so
 ## a cop actually biases toward the worst spot on their beat rather than
 ## whichever building happens to come first in iteration order.
+func _collect_hot_buildings() -> void:
+	_hot_buildings.clear()
+	var all := _world.get_entities_with_component(ComponentNames.BUILDING)
+	for id in all:
+		var building: BuildingData = all[id].get_component(ComponentNames.BUILDING)
+		if building.crime_heat >= PATROL_BIAS_HEAT_THRESHOLD:
+			_hot_buildings.append(building)
+
 func _find_hottest_nearby_building(depot_position: Vector2) -> BuildingData:
 	var best: BuildingData = null
-	for entity in _world.get_entities_with_component(ComponentNames.BUILDING).values():
-		var building: BuildingData = entity.get_component(ComponentNames.BUILDING)
-		if building.crime_heat < PATROL_BIAS_HEAT_THRESHOLD:
+	for building in _hot_buildings:
+		if building.crime_heat < PATROL_BIAS_HEAT_THRESHOLD:   # a raid this tick may have cooled it
 			continue
 		if building.position.distance_to(depot_position) > GUARD_BIAS_RADIUS:
 			continue

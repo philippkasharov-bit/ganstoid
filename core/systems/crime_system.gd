@@ -17,7 +17,7 @@ extends RefCounted
 const INTERACT_RADIUS := 2.5   # metres: within arm's reach / at the counter
 ## How close a witness must be to roll an actual recognition (vs. just
 ## having their general recognition_chance nudged by the broadcast below).
-const ENCOUNTER_RADIUS := 3.0
+const ENCOUNTER_RADIUS := 15.0   # metres: close enough to see your face clearly
 
 const PICKPOCKET_MIN := 5
 const PICKPOCKET_MAX := 25
