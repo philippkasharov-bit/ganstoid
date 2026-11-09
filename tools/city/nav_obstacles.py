@@ -24,7 +24,7 @@ def main(city_p, bld_p, out_p):
     arts = unary_union([LineString(r["pts"]) for r in city["roads"] if r["tier"] == "art"])
     bridges = river.intersection(arts).buffer(BRIDGE_GAP)
     # freeways: no walking on them; crossing only where a street goes over/under
-    fwys = unary_union([LineString(r["pts"]).buffer(7 if r["tier"] == "fwy" else 4, cap_style=2)
+    fwys = unary_union([LineString(r["pts"]).buffer(r.get("w", 14 if r["tier"] == "fwy" else 8) / 2, cap_style=2)
                         for r in city["roads"] if r["tier"] in ("fwy", "ramp")])
     streets = unary_union([LineString(r["pts"]) for r in city["roads"] if r["tier"] in ("art", "res", "path")])
     crossings = fwys.intersection(streets).buffer(10)

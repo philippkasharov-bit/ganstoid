@@ -5,9 +5,11 @@
 class_name CityRenderer
 extends Node2D
 
-const DRAW_ORDER: Array[String] = ["trail", "path", "alley", "svc", "hill", "res", "art", "ramp", "fwy"]
+const DRAW_ORDER: Array[String] = ["trail", "path", "alley", "svc", "hill", "res", "art"]   # under buildings
+const OVER_BUILDINGS: Array[String] = ["ramp", "fwy"]   # elevated: drawn over everything
+## Fallback widths; MP1 roads carry their real roadway width ("w") and sidewalk+parkway ("side").
 const WIDTH := {"fwy": 26.0, "ramp": 6.0, "art": 14.0, "res": 6.0, "alley": 3.0, "path": 2.5, "svc": 7.0, "hill": 5.0, "trail": 2.5}
-const CASING := {"fwy": 6.0, "art": 4.0}
+const CASING := {"fwy": 3.0, "ramp": 2.0}   # elevated roads get a shadowed edge; streets use the kerb instead
 const BUILDING_DAY := {"house": Color("d9c7a8"), "apartments": Color("cdb48f"), "commercial": Color("c9b9a4"), "industrial": Color("b9b4c2"),
 	"garage": Color("d8d2c4"), "civic": Color("c7a98f"), "building": Color("cfc3ad")}
 const BUILDING_NIGHT := {"house": Color("232733"), "apartments": Color("2a2c38"), "commercial": Color("2b2a33"), "industrial": Color("1e2029"),
@@ -16,8 +18,9 @@ const DAY := {
 	"bg": Color("f1ebde"), "hills": Color("e1e7d1"), "mountains": Color("c3cfb5"), "park": Color("c7dbb3"),
 	"airfield": Color("e4e0d4"), "foothill": Color("ede4d2"), "industrial": Color("dcd8e2"), "downtown": Color("ddd0b6"), "commercial": Color("e6d9c0"),
 	"river": Color("c4cfd6"), "rail": Color("7d7468"),
-	"fwy": Color("f39a35"), "fwy_c": Color("9b5310"), "ramp": Color("e08a2c"), "art": Color("fffaf0"), "art_c": Color("b9a37a"),
-	"res": Color("b5ac99"), "alley": Color("c2baa9"), "path": Color("8c7a58"), "svc": Color("a49eb2"), "hill": Color("a89d82"), "trail": Color("9b8357"),
+	"fwy": Color("807f7a"), "fwy_c": Color("5b5a56"), "ramp": Color("8a8984"), "art": Color("8e8d89"), "art_c": Color("74726d"),
+	"res": Color("a09d96"), "alley": Color("b3ada2"), "path": Color("8c7a58"), "svc": Color("a49eb2"), "hill": Color("a89d82"), "trail": Color("9b8357"),
+	"walk": Color("d6d3cb"), "kerb": Color("b3aea3"),
 }
 const NIGHT := {
 	"bg": Color("151a26"), "hills": Color("0b0f14"), "mountains": Color("080b0f"), "park": Color("0b130d"),
@@ -25,6 +28,7 @@ const NIGHT := {
 	"river": Color("090c12"), "rail": Color("1d1c22"),
 	"fwy": Color("ffc066"), "fwy_c": Color("3b2a14"), "ramp": Color("a7782f"), "art": Color("f3a443"), "art_c": Color("6b4a1a"),
 	"res": Color("3d4054"), "alley": Color("0a0b10"), "path": Color("15161c"), "svc": Color("2a2d3e"), "hill": Color("262a33"), "trail": Color("1b1a17"),
+	"walk": Color("23262f"), "kerb": Color("191b22"),
 }
 
 var city: CityData
@@ -48,8 +52,11 @@ func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, Vector2(city.size_m, city.size_m)), pal["bg"])
 	_draw_areas(pal)
 	_draw_water_and_rail(pal)
-	_draw_buildings()
+	_draw_sidewalks(pal)
 	for tier in DRAW_ORDER:
+		_draw_tier(tier, pal)
+	_draw_buildings()   # over the street edges: where a footprint meets the kerb, the building wins
+	for tier in OVER_BUILDINGS:
 		_draw_tier(tier, pal)
 	if show_public:
 		_draw_public()
@@ -83,19 +90,31 @@ func _draw_water_and_rail(pal: Dictionary) -> void:
 		for i in range(0, line.size() - 1):
 			draw_dashed_line(line[i], line[i + 1], pal["rail"], 3.0, 14.0)
 
+## Two passes (all edges, then all fills) so one road's edge never paints over its neighbour.
 func _draw_tier(tier: String, pal: Dictionary) -> void:
-	var w: float = WIDTH[tier]
+	if CASING.has(tier):
+		for road in city.roads:
+			if road["tier"] == tier:
+				_thick_line(road["pts"], pal[tier + "_c"], road.get("w", WIDTH[tier]) + CASING[tier])
 	for road in city.roads:
-		if road["tier"] != tier:
-			continue
-		var pts: PackedVector2Array = road["pts"]
-		if tier == "alley":   # dashed so alleys never read as streets
-			for i in range(0, pts.size() - 1):
-				draw_dashed_line(pts[i], pts[i + 1], pal[tier], w, 7.0)
-			continue
-		if CASING.has(tier):
-			draw_polyline(pts, pal[tier + "_c"], w + CASING[tier])
-		draw_polyline(pts, pal[tier], w)
+		if road["tier"] == tier:
+			_thick_line(road["pts"], pal[tier], road.get("w", WIDTH[tier]))
+
+## Concrete sidewalk + parkway band each side of every street (MP1), with a darker kerb edge.
+func _draw_sidewalks(pal: Dictionary) -> void:
+	for pass_kerb in [false, true]:
+		for road in city.roads:
+			var side: float = road.get("side", 0.0)
+			if side <= 0.0:
+				continue
+			var w: float = road.get("w", WIDTH[road["tier"]])
+			_thick_line(road["pts"], pal["kerb"] if pass_kerb else pal["walk"], w + 0.6 if pass_kerb else w + 2.0 * side)
+
+## A polyline with round joints (plain wide polylines leave notches at bends).
+func _thick_line(pts: PackedVector2Array, col: Color, w: float) -> void:
+	draw_polyline(pts, col, w)
+	for p in pts:
+		draw_circle(p, w * 0.5, col)
 
 func _draw_markers() -> void:
 	for p in city.dead_ends:

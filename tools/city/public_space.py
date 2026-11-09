@@ -16,8 +16,16 @@ from shapely.geometry import LineString, Point, Polygon, box
 from shapely.ops import unary_union
 from shapely.strtree import STRtree
 
-ROADWAY = {"art": 14.0, "res": 6.0}   # same widths the renderer draws
+ROADWAY = {"art": 14.0, "res": 6.0}   # fallback widths; MP1 roads carry their own "w" / "side" (road_widths.py)
 SIDEWALK_M = 2.5
+
+
+def w_of(r):
+    return r.get("w", ROADWAY[r["tier"]])
+
+
+def side_of(r):
+    return r.get("side", SIDEWALK_M) or SIDEWALK_M
 ALLEY_HALF = 1.5
 PATH_HALF = 1.25
 CROSS_THICK = 2.5
@@ -85,7 +93,7 @@ def crosswalks(lines, juncs, reach):
         near = [lines[k] for k in tree.query(jp.buffer(4.0)) if lines[k][1].distance(jp) < 4.0]
         if len(near) < 2:
             continue
-        kerb = max(ROADWAY[r["tier"]] for r, _ in near) / 2 + CROSS_OFFSET
+        kerb = max(w_of(r) for r, _ in near) / 2 + CROSS_OFFSET
         for road, ln in near:
             s = ln.project(jp)
             for sign in (-1, 1):
@@ -96,7 +104,7 @@ def crosswalks(lines, juncs, reach):
                 d = (c2.x - c.x, c2.y - c.y)
                 n = math.hypot(*d) or 1.0
                 dn = (d[0] / n, d[1] / n)
-                c, length = span(c, dn, reach, ROADWAY[road["tier"]] + 2 * SIDEWALK_M)
+                c, length = span(c, dn, reach, w_of(road) + 2 * side_of(road))
                 out.append({"c": [round(c.x, 1), round(c.y, 1)], "dir": [round(dn[0], 3), round(dn[1], 3)], "len": round(length, 1)})
     return out
 
@@ -125,11 +133,11 @@ def crosswalk_poly(cw):
 
 
 def street_reach(lines):
-    return unary_union([ln.buffer(ROADWAY[r["tier"]] / 2 + SIDEWALK_M, cap_style=2) for r, ln in lines])
+    return unary_union([ln.buffer(w_of(r) / 2 + side_of(r), cap_style=2) for r, ln in lines])
 
 
 def sidewalk_ring(lines, reach):
-    roadway = unary_union([ln.buffer(ROADWAY[r["tier"]] / 2, cap_style=2) for r, ln in lines])
+    roadway = unary_union([ln.buffer(w_of(r) / 2, cap_style=2) for r, ln in lines])
     return reach.difference(roadway)
 
 
@@ -184,7 +192,7 @@ def check(city, lines, public, n_junc, n_cw):
     stranded = []
     for road, ln in lines:
         mid = ln.interpolate(0.5, normalized=True)
-        near = [k for k in tree.query(mid.buffer(ROADWAY[road["tier"]] / 2 + SIDEWALK_M + 1.0))]
+        near = [k for k in tree.query(mid.buffer(w_of(road) / 2 + side_of(road) + 1.0))]
         total += 1
         if any(k == 0 for k in near):
             in_main += 1
