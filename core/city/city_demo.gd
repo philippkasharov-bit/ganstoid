@@ -1,6 +1,6 @@
-## City demo scene (C1-C3): walk the real city. Blue dots = pedestrians pathfinding
-## through streets, alleys and gaps between buildings. Arrows/WASD move, Shift run,
-## Space sprint (demo-only fast travel), N night, M markers, +/- or wheel zoom.
+## City demo scene (C1-C3e): walk the real city. Pedestrians by type: blue civilians keep
+## to sidewalks/crosswalks, purple dark-route NPCs take alleys, orange locals cut through gaps.
+## Arrows/WASD move, Shift run, Space sprint (demo-only fast travel), N night, M markers, +/- or wheel zoom.
 ## Command line (after "--"): --shot=<png> saves one frame and quits; --night starts at night.
 extends Node2D
 
@@ -13,7 +13,9 @@ const ZOOM_MAX := 4.0
 var city: CityData
 var renderer: CityRenderer
 var collision: CityCollision
-var nav: CityNav
+var nav: CityNav          # full layer: player and locals (know every shortcut)
+var public_nav: CityNav   # civilians
+var dark_nav: CityNav     # dark-route NPCs: public ground, alleys at normal cost
 var walkers: DemoWalkers
 var nav_focus := Vector2.ZERO
 var player_path := PackedVector2Array()
@@ -32,9 +34,11 @@ func _ready() -> void:
 	collision = CityCollision.new(city)
 	player_pos = _free_spot(city.spawn)
 	nav = CityNav.new(player_pos)
+	public_nav = CityNav.new(player_pos, 700.0, "public")
+	dark_nav = CityNav.new(player_pos, 700.0, "public")
 	nav_focus = player_pos
 	walkers = DemoWalkers.new()
-	walkers.nav = nav
+	walkers.setup(public_nav, dark_nav, nav)
 	add_child(walkers)
 	walkers.spawn(player_pos, 60)
 	player_dot = _make_player_dot()
@@ -60,7 +64,8 @@ func _process(delta: float) -> void:
 	player_pos = (collision.slide(player_pos, step) if speed < SPRINT else player_pos + step).clamp(Vector2.ZERO, Vector2(city.size_m, city.size_m))
 	if player_pos.distance_to(nav_focus) > 350.0:   # stream nav tiles around the player
 		nav_focus = player_pos
-		nav.focus(player_pos)
+		for n in [nav, public_nav, dark_nav]:
+			n.focus(player_pos)
 	walkers.advance(delta)
 	player_dot.position = player_pos
 	camera.position = player_pos
@@ -68,7 +73,9 @@ func _process(delta: float) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		match event.physical_keycode:
-			KEY_N: renderer.night = not renderer.night
+			KEY_N:
+				renderer.night = not renderer.night
+				walkers.night = renderer.night
 			KEY_M: renderer.show_markers = not renderer.show_markers
 			KEY_P: renderer.show_public = not renderer.show_public
 			KEY_EQUAL, KEY_KP_ADD: _zoom(1.25)
@@ -120,7 +127,7 @@ func _make_hud() -> void:
 	hint.add_theme_color_override("font_color", Color.WHITE)
 	hint.add_theme_color_override("font_outline_color", Color.BLACK)
 	hint.add_theme_constant_override("outline_size", 6)
-	hint.text = "City demo (C3)  |  Arrows/WASD move  Right-click walk there  Shift run  Space fast-travel  |  N night  M markers  P public paths  +/- or wheel zoom"
+	hint.text = "City demo (C3e)  |  Blue civilians (sidewalks)  Purple dark-route (alleys)  Orange locals (shortcuts)\nArrows/WASD move  Right-click walk there  Shift run  Space fast-travel  |  N night  M markers  P public paths  +/- or wheel zoom"
 	layer.add_child(hint)
 
 func _apply_cmdline() -> void:
@@ -128,6 +135,7 @@ func _apply_cmdline() -> void:
 	for arg in OS.get_cmdline_user_args():
 		if arg == "--night":
 			renderer.night = true
+			walkers.night = true
 		elif arg == "--public":
 			renderer.show_public = true
 		elif arg.begins_with("--shot="):

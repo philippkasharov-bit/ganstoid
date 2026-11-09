@@ -45,10 +45,34 @@ func _initialize() -> void:
 		return
 	if not _check(private_steps == 0 and building_steps == 0, "civilians never trespass or clip buildings"):
 		return
+	if not _check(_civilians_avoid_alleys(pub, pts, zones), "civilians use alleys less than dark-route NPCs"):
+		return
 	pub.release()
 	full.release()
 	print("CITY_NAV_PUBLIC_VERIFY: PASS")
 	quit()
+
+## Same trips with alley cost 3 (civilian, day) vs 1 (dark-route): civilians must walk
+## a smaller share of their route in alleys.
+func _civilians_avoid_alleys(pub: CityNav, pts: Array[Vector2], zones: Array[Dictionary]) -> bool:
+	var alleys: Array[Dictionary] = zones.filter(func(z: Dictionary) -> bool: return z["kind"] == "alley")
+	var share := {}
+	for cost in [3.0, 1.0]:
+		pub.alley_cost = cost
+		var rng := RandomNumberGenerator.new()
+		rng.seed = 11
+		var in_alley := 0.0
+		var total := 0.0
+		for i in TRIPS:
+			var p := pub.path(pts[rng.randi() % pts.size()], pts[rng.randi() % pts.size()])
+			for k in p.size() - 1:
+				var seg := p[k].distance_to(p[k + 1])
+				total += seg
+				if _on_public(p[k].lerp(p[k + 1], 0.5), alleys):
+					in_alley += seg
+		share[cost] = in_alley / maxf(total, 1.0)
+	print("share of route in alleys: civilian %.1f%%, dark-route %.1f%%" % [share[3.0] * 100, share[1.0] * 100])
+	return share[3.0] < share[1.0]
 
 ## Fails loudly and exits (an assert would freeze a headless run in the debugger).
 func _check(ok: bool, what: String) -> bool:
@@ -78,7 +102,7 @@ func _zones_near(city: CityData, area: Rect2) -> Array[Dictionary]:
 				var hb := _bounds(h)
 				if hb.intersects(area):
 					holes.append([hb, h])
-			out.append({"bb": r, "outer": z["outer"], "holes": holes})
+			out.append({"kind": z["kind"], "bb": r, "outer": z["outer"], "holes": holes})
 	return out
 
 ## On public ground = inside a zone and outside its holes. 0.5 m tolerance: path steps hop the

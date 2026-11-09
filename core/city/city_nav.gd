@@ -12,6 +12,16 @@ const CELL_SIZE := 0.05   # must match the bake
 var map: RID
 var radius: float
 var nav_dir: String
+## Travel cost of alley regions (public layer only). Civilians avoid alleys (>1),
+## more so at night; dark-route NPCs use 1.0. Changing it re-costs loaded tiles.
+var alley_cost := 1.0:
+	set(v):
+		alley_cost = v
+		for f in _loaded:
+			if f.begins_with("alley_"):
+				NavigationServer2D.region_set_travel_cost(_loaded[f], v)
+		if map.is_valid():
+			NavigationServer2D.map_force_update(map)
 var _tiles := {}    # file -> Rect2
 var _loaded := {}   # file -> region RID
 
@@ -40,6 +50,8 @@ func focus(p: Vector2) -> bool:
 			var r := NavigationServer2D.region_create()
 			NavigationServer2D.region_set_map(r, map)
 			NavigationServer2D.region_set_navigation_polygon(r, load(nav_dir + f))
+			if f.begins_with("alley_"):
+				NavigationServer2D.region_set_travel_cost(r, alley_cost)
 			_loaded[f] = r
 			changed = true
 		elif not want and _loaded.has(f):
