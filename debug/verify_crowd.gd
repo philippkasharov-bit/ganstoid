@@ -52,7 +52,7 @@ func _in_the_city() -> bool:
 			SimNav.install(city, city.spawn, TestWorlds.DISTRICT_RADIUS)
 			await TestWorlds.wait_nav(self, [SimNav.active])
 		var sched: NPCScheduleSystem = world.find_system(NPCScheduleSystem)
-		sched.crowd.enabled = on
+		sched.street.crowd.enabled = on
 		world.tick = SimClock.hours(17.5)   # evening: home time plus errands and strolls
 		sched.settle_all(world.tick)
 		for i in 1800:
@@ -63,7 +63,7 @@ func _in_the_city() -> bool:
 		# beside the player, each still heading wherever they were going.
 		var spot := SimNav.active.snap(player.position + Vector2(2.0, 0.0), "public")
 		var moved := 0
-		for npc in sched._outside:
+		for npc in sched.street.outside:
 			if moved < 30 and not npc.indoors:
 				npc.position = spot + Vector2(randf_range(-0.3, 0.3), randf_range(-0.3, 0.3))
 				SimNav.active.forget(npc.id)
@@ -76,13 +76,13 @@ func _in_the_city() -> bool:
 			world.step(1.0 / 60.0)
 			if i % SAMPLE_EVERY == 0 and i >= 120:   # from 2 s on: time to step apart
 				var near: Array = []
-				for npc in sched._outside:
+				for npc in sched.street.outside:
 					if npc.position.distance_to(player.position) < Crowd.RANGE_M:
 						near.append(npc)
 						inside += int(col.blocked(npc.position, 0.0))
 				overlapping += _pairs_closer(near, 0.45)
 				samples += 1
-		result[on] = [float(overlapping) / samples, inside, (Time.get_ticks_usec() - t0) / 1000.0 / RUN_TICKS, sched.crowd.usec_spent / 1000.0 / RUN_TICKS]
+		result[on] = [float(overlapping) / samples, inside, (Time.get_ticks_usec() - t0) / 1000.0 / RUN_TICKS, sched.street.crowd.usec_spent / 1000.0 / RUN_TICKS]
 	print("30 people put on one sidewalk spot, then 1 real minute: overlapping pairs on screen per moment (after 2 s): without the rule %.2f, with it %.2f; positions inside a building with it %d; sim %.2f vs %.2f ms per tick, of it the crowd rule itself %.3f ms" % [
 		result[false][0], result[true][0], result[true][1], result[false][2], result[true][2], result[true][3]])
 	SimNav.uninstall()
@@ -95,9 +95,9 @@ func _in_the_city() -> bool:
 func _busiest(sched: NPCScheduleSystem) -> Vector2:
 	var best := Vector2.ZERO
 	var most := -1
-	for a in sched._outside:
+	for a in sched.street.outside:
 		var n := 0
-		for b in sched._outside:
+		for b in sched.street.outside:
 			n += int(a.position.distance_squared_to(b.position) < 900.0)
 		if n > most:
 			most = n
