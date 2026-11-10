@@ -19,6 +19,7 @@ func _initialize() -> void:
 			cops.append(n)
 	var cop: NPCData = cops[0]
 	var building: BuildingData = world.get_entities_with_component(ComponentNames.BUILDING).values()[0].get_component(ComponentNames.BUILDING)
+	building.is_raidable = false   # this check is about busts: a raid would cool the corner before the bust tick
 	var spot := building.position
 
 	var dealer := _crew(world, state, 0, GanstoidEnums.CrewRole.DEALER, spot)

@@ -11,6 +11,11 @@ extends RefCounted
 
 const LAST_HOP_M := 40.0   # straight walk allowed from the navmesh to the actual goal
 const REPATH_M := 3.0      # re-plan when the goal has moved this far (chases)
+const SHORT_M := 14.0      # hops this short go straight when no building is in the way
+const LINE_RADIUS_M := 0.15  # doors sit right against their wall: a full body radius would call every doorway blocked
+## A route query costs about 2 ms. Civilians share this many per tick; cops, crew
+## and dealers (layer "full") are never made to wait.
+const PUBLIC_PLANS_PER_TICK := 1
 const UNREACHED_M := 2.0   # a route ending further than this from its goal did not get there
 
 static var active: SimNav = null
@@ -51,6 +56,8 @@ func snap(p: Vector2, layer: String) -> Vector2:
 func step(mover_id: StringName, pos: Vector2, goal: Vector2, speed: float, delta: float, layer: String) -> Vector2:
 	var plan: Dictionary = _plans.get(mover_id, {})
 	if plan.is_empty() or plan["layer"] != layer or plan["goal"].distance_to(goal) > REPATH_M:
+		if layer == "public" and _public_plans_left <= 0 and not _is_short(pos, goal):
+			return pos   # civilians queue for a route; a few ticks' pause at the door
 		plan = _plan(pos, goal, layer)
 		_plans[mover_id] = plan
 	var budget := speed * delta
@@ -70,11 +77,37 @@ func step(mover_id: StringName, pos: Vector2, goal: Vector2, speed: float, delta
 func forget(mover_id: StringName) -> void:
 	_plans.erase(mover_id)
 
+## True once a mover has walked their whole route to `goal` (it may stop short
+## of the goal itself when the goal is off the mesh).
+func finished(mover_id: StringName, goal: Vector2) -> bool:
+	var plan: Dictionary = _plans.get(mover_id, {})
+	return not plan.is_empty() and plan["i"] >= plan["pts"].size() and plan["goal"].distance_to(goal) <= REPATH_M
+
+## Called once per sim tick: refills the civilians' route-planning ration.
+func new_tick() -> void:
+	_public_plans_left = PUBLIC_PLANS_PER_TICK
+
+func _is_short(pos: Vector2, goal: Vector2) -> bool:
+	return pos.distance_to(goal) <= SHORT_M and collision.line_clear(pos, goal, LINE_RADIUS_M)
+
 ## Player movement: slide along walls instead of walking through them.
 func slide(from: Vector2, delta: Vector2) -> Vector2:
 	return collision.slide(from, delta)
 
+var _public_plans_left := PUBLIC_PLANS_PER_TICK
+var plans_made := 0    # perf counters (verify_sim_perf): routes planned, and how many needed the navmesh
+var plans_routed := 0
+
+## A route for one mover. Short hops with nothing in the way are a straight
+## line and never touch the navmesh: someone drifting around a doorway, or
+## stepping from their door to the sidewalk, does not need a 2 ms path query.
 func _plan(pos: Vector2, goal: Vector2, layer: String) -> Dictionary:
+	plans_made += 1
+	if pos.distance_to(goal) <= SHORT_M and collision.line_clear(pos, goal, LINE_RADIUS_M):
+		return {"goal": goal, "layer": layer, "pts": PackedVector2Array([goal]), "i": 0}
+	plans_routed += 1
+	if layer == "public":
+		_public_plans_left -= 1
 	var nav: CityNav = navs[layer]
 	var start := nav.closest(pos)
 	var end := nav.closest(goal)
@@ -85,13 +118,18 @@ func _plan(pos: Vector2, goal: Vector2, layer: String) -> Dictionary:
 	if pts.is_empty() or pts[pts.size() - 1].distance_to(end) > UNREACHED_M:
 		pts = navs["full"].path(pos, goal)
 	elif layer != "full":
-		# Getting on/off public ground crosses the mover's own yard: route those
-		# hops on the full mesh so they go around houses, not through them.
-		var head: PackedVector2Array = navs["full"].path(pos, start)
+		# Getting on/off public ground crosses the mover's own yard: those hops go
+		# around houses (full mesh) unless the straight line is already clear.
+		var head := _hop(pos, start)
 		if end.distance_to(goal) <= LAST_HOP_M:
-			pts.append_array(navs["full"].path(end, goal))
+			pts.append_array(_hop(end, goal))
 		head.append_array(pts)
 		pts = head
 	if pts.is_empty():
 		pts = PackedVector2Array([goal])     # nowhere on any mesh: straight line
 	return {"goal": goal, "layer": layer, "pts": pts, "i": 0}
+
+func _hop(from: Vector2, to: Vector2) -> PackedVector2Array:
+	if collision.line_clear(from, to, LINE_RADIUS_M):
+		return PackedVector2Array([to])
+	return navs["full"].path(from, to)

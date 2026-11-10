@@ -9,6 +9,7 @@
 class_name PopulationSeeder
 extends RefCounted
 
+const JOB_OPENINGS_SEEN := 8   # openings a job-seeker compares; they take the nearest
 const EMPLOYMENT_RATE := 0.7  # fraction of NPCs assigned a work_building_id
 const UNEMPLOYED_STARTING_CASH := Vector2i(0, 50)
 const EMPLOYED_CASH_MULTIPLIER := 3  # starting cash scales with employer's daily_revenue
@@ -128,13 +129,26 @@ static func _build_npc(
 
 	var is_employed := not workplaces.is_empty() and rng.randf() < EMPLOYMENT_RATE
 	if is_employed:
-		npc.work_building_id = workplaces[rng.randi() % workplaces.size()]
+		npc.work_building_id = _job_near(rng, npc.position, workplaces, world)
 		var workplace: BuildingData = world.entities[npc.work_building_id].get_component(ComponentNames.BUILDING)
 		npc.cash = workplace.daily_revenue * EMPLOYED_CASH_MULTIPLIER
 	else:
 		npc.cash = rng.randi_range(UNEMPLOYED_STARTING_CASH.x, UNEMPLOYED_STARTING_CASH.y)
 
 	return npc
+
+## People on foot work near home: the closest of a handful of openings, not a
+## random building across the district (which made every commute a long march).
+static func _job_near(rng: RandomNumberGenerator, home: Vector2, workplaces: Array[StringName], world: World) -> StringName:
+	var best: StringName = workplaces[rng.randi() % workplaces.size()]
+	var best_d := INF
+	for i in JOB_OPENINGS_SEEN:
+		var id: StringName = workplaces[rng.randi() % workplaces.size()]
+		var d: float = world.entities[id].get_component(ComponentNames.BUILDING).position.distance_squared_to(home)
+		if d < best_d:
+			best_d = d
+			best = id
+	return best
 
 static func _filter_by_type(
 	world: World, building_ids: Array[StringName], target_type: GanstoidEnums.BuildingType

@@ -11,7 +11,8 @@
 extends Node
 
 const DISTRICT_RADIUS := 900.0   # metres around the spawn that are simulated
-const DEV_POPULATION_COUNT := 130
+const GAME_POPULATION := 600      # S1: the sim costs about 0.5 ms a tick at this size (verify_sim_perf)
+const START_HOUR := 8.0           # a new game begins in the morning rush, with everyone where their routine puts them
 
 var world: World = World.new()
 var city: CityData
@@ -21,7 +22,9 @@ func _ready() -> void:
 	city = CityData.load_file()
 	seed_used = randi()
 	SystemRegistry.register_all(world)
-	WorldGenerator.generate_real_city_game(world, seed_used, city, city.spawn, DISTRICT_RADIUS, DEV_POPULATION_COUNT)
+	WorldGenerator.generate_real_city_game(world, seed_used, city, city.spawn, DISTRICT_RADIUS, GAME_POPULATION)
+	world.tick = SimClock.hours(START_HOUR)
+	(world.find_system(NPCScheduleSystem) as NPCScheduleSystem).settle_all(world.tick)
 	_install_routes.call_deferred()
 
 func _install_routes() -> void:

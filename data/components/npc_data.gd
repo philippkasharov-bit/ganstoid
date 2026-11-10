@@ -66,6 +66,11 @@ extends Resource
 ## player -- NPCScheduleSystem leaves them standing still until it clears.
 @export var is_busy: bool = false
 
+## S1: inside their home or workplace. Not on the street: not drawn, not moved,
+## until their schedule sends them out again. (Interiors come later; until then
+## "inside" is a state, and the NPC rests on the building's door point.)
+@export var indoors: bool = false
+
 ## Batch 15: this NPC turned down the player's recruitment pitch -- final,
 ## so the pitch can't be re-rolled until they say yes.
 @export var recruit_refused: bool = false

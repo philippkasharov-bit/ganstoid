@@ -21,6 +21,7 @@ extends Node2D
 
 var _world: World
 var _visuals: Dictionary = {}  # StringName -> Node2D
+var _visuals_for := -1          # entity count the visuals were last built for
 
 func _ready() -> void:
 	var driver: Node = get_node(world_driver_path)
@@ -31,32 +32,32 @@ func _process(_delta: float) -> void:
 		return
 	_sync_visuals()
 
+## S1: visuals are created for any new entity, but only people are re-positioned
+## each frame (buildings never move), and people who are indoors are hidden.
 func _sync_visuals() -> void:
-	for id in _world.entities:
-		var entity: Entity = _world.entities[id]
-		if not _visuals.has(id):
-			var visual := EntityVisualFactory.create_visual(entity)
-			if visual == null:
-				continue  # no visual for this entity type yet -- see the factory
-			add_child(visual)
-			_visuals[id] = visual
-		_sync_position(id, entity)
-	_remove_stale_visuals()
+	if _visuals_for != _world.entities.size():
+		_visuals_for = _world.entities.size()
+		for id in _world.entities:
+			if not _visuals.has(id):
+				var visual := EntityVisualFactory.create_visual(_world.entities[id])
+				if visual == null:
+					continue  # no visual for this entity type yet -- see the factory
+				add_child(visual)
+				_visuals[id] = visual
+				var building: BuildingData = _world.entities[id].get_component(ComponentNames.BUILDING)
+				if building != null:
+					visual.position = building.position
+		_remove_stale_visuals()
+	var people := _world.get_entities_with_component(ComponentNames.NPC)
+	for id in people:
+		var visual: Node2D = _visuals.get(id)
+		if visual == null:
+			continue
+		var npc: NPCData = people[id].get_component(ComponentNames.NPC)
+		visual.visible = not npc.indoors
+		if visual.visible:
+			visual.position = npc.position
 
-func _sync_position(id: StringName, entity: Entity) -> void:
-	var visual: Node2D = _visuals[id]
-	var npc: NPCData = entity.get_component(ComponentNames.NPC)
-	if npc != null:
-		visual.position = npc.position
-		return
-	var building: BuildingData = entity.get_component(ComponentNames.BUILDING)
-	if building != null:
-		visual.position = building.position
-
-## Entities that left World.entities (future despawn/death systems) need
-## their visual freed too, or RenderSync leaks a Node2D per removed entity
-## forever. Iterates a snapshot (.keys()) specifically so erasing from
-## _visuals mid-loop is safe.
 func _remove_stale_visuals() -> void:
 	for id in _visuals.keys():
 		if not _world.entities.has(id):
