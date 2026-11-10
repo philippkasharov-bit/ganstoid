@@ -16,7 +16,7 @@ static func TIERS_DRAWN() -> Array:
 ## Fallback widths; MP1 roads carry their real roadway width ("w") and sidewalk+parkway ("side").
 const WIDTH := {"fwy": 26.0, "ramp": 6.0, "art": 14.0, "res": 6.0, "alley": 3.0, "path": 2.5, "svc": 7.0, "hill": 5.0, "trail": 2.5}
 const CASING := {"fwy": 3.0, "ramp": 2.0}   # elevated roads get a shadowed edge; streets use the kerb instead
-const BUILDING_DAY := {"house": Color("d9c7a8"), "apartments": Color("cdb48f"), "commercial": Color("c9b9a4"), "industrial": Color("b9b4c2"),
+const BUILDING_DAY := {"house": Color("d9c7a8"), "apartments": Color("cdb48f"), "commercial": Color("c9b9a4"), "industrial": Color("b4b8bc"),
 	"garage": Color("d8d2c4"), "civic": Color("c7a98f"), "building": Color("cfc3ad")}
 const BUILDING_NIGHT := {"house": Color("232733"), "apartments": Color("2a2c38"), "commercial": Color("2b2a33"), "industrial": Color("1e2029"),
 	"garage": Color("1c1e26"), "civic": Color("2e2a30"), "building": Color("252833")}
@@ -25,7 +25,7 @@ const DAY := {
 	"airfield": Color("e4e0d4"), "foothill": Color("ede4d2"), "industrial": Color("dcd8e2"), "downtown": Color("ddd0b6"), "commercial": Color("e6d9c0"),
 	"river": Color("c4cfd6"), "rail": Color("7d7468"),
 	"fwy": Color("807f7a"), "fwy_c": Color("5b5a56"), "ramp": Color("8a8984"), "ramp_c": Color("6a6964"), "art": Color("8e8d89"), "art_c": Color("74726d"),
-	"res": Color("a09d96"), "alley": Color("b3ada2"), "path": Color("8c7a58"), "svc": Color("a49eb2"), "hill": Color("a89d82"), "trail": Color("9b8357"),
+	"res": Color("a09d96"), "alley": Color("b0aca4"), "path": Color("cfcbc1"), "svc": Color("b5b2ab"), "hill": Color("a89d82"), "trail": Color("9b8357"),
 	"walk": Color("d6d3cb"), "kerb": Color("b3aea3"),
 	"parkway": Color("c6cdab"), "well": Color("8d7b5e"), "ramp_f": Color("e5e2d9"),
 }
@@ -34,7 +34,7 @@ const NIGHT := {
 	"airfield": Color("10131c"), "foothill": Color("141824"), "industrial": Color("111420"), "downtown": Color("2a2228"), "commercial": Color("231f26"),
 	"river": Color("090c12"), "rail": Color("1d1c22"),
 	"fwy": Color("ffc066"), "fwy_c": Color("3b2a14"), "ramp": Color("a7782f"), "ramp_c": Color("2c2414"), "art": Color("f3a443"), "art_c": Color("6b4a1a"),
-	"res": Color("3d4054"), "alley": Color("0a0b10"), "path": Color("15161c"), "svc": Color("2a2d3e"), "hill": Color("262a33"), "trail": Color("1b1a17"),
+	"res": Color("3d4054"), "alley": Color("0a0b10"), "path": Color("1f222a"), "svc": Color("2c2f3c"), "hill": Color("262a33"), "trail": Color("1b1a17"),
 	"walk": Color("23262f"), "kerb": Color("191b22"),
 	"parkway": Color("181d1a"), "well": Color("101110"), "ramp_f": Color("2b2f3a"),
 }
@@ -62,6 +62,9 @@ const JOINT_TURN_DEG := 15.0   # bends sharper than this get a round joint
 ## zoomed in far enough for it to be more than a pixel wide.
 const FINE_ZOOM := 4.0   # pixels per metre
 
+const JOIN_SNAP_M := 0.5   # road ends closer than this are the same point
+
+var _joins := {}
 var _nodes: Array[Node2D] = []
 var _fine_nodes: Array[Node2D] = []
 var _fine := true
@@ -82,6 +85,7 @@ func _redraw_all() -> void:
 
 ## One node per (layer, tile); node order = draw order (later nodes paint over earlier ones).
 func _build() -> void:
+	_find_joins()
 	_add_layer(func(ci: CanvasItem, _r: Rect2) -> void: _draw_base(ci), [Rect2()])
 	var tiles := _tile_rects()
 	var roads := _bucket(city.roads, tiles, func(r: Dictionary) -> Rect2: return _bounds(r["pts"]).grow(r.get("w", WIDTH[r["tier"]]) * 0.5 + r.get("side", 0.0)))
@@ -169,16 +173,15 @@ func _draw_sidewalks(ci: CanvasItem, roads: Array) -> void:
 			var side: float = road.get("side", 0.0)
 			if side <= 0.0:
 				continue
-			var w: float = road.get("w", WIDTH[road["tier"]])
 			match band:
 				"walk":
-					_thick_line(ci, road["pts"], pal["walk"], w + 2.0 * side)
+					_thick_line(ci, road, pal["walk"], 2.0 * side)
 				"parkway":
 					var park: float = road.get("park", 0.0)
 					if park > 0.0:
-						_thick_line(ci, road["pts"], pal["parkway"], w + 2.0 * park)
+						_thick_line(ci, road, pal["parkway"], 2.0 * park)
 				"kerb":
-					_thick_line(ci, road["pts"], pal["kerb"], w + 0.6)   # kerb face + gutter joint
+					_thick_line(ci, road, pal["kerb"], 0.6)   # kerb face + gutter joint
 
 ## What sits on that band: driveway cuts (concrete across it, over the kerb),
 ## kerb ramps at the crosswalk ends, and the tree wells MP5 will plant into.
@@ -207,10 +210,10 @@ func _draw_tiers(ci: CanvasItem, roads: Array, tiers: Array[String]) -> void:
 		if CASING.has(tier):
 			for road in roads:
 				if road["tier"] == tier:
-					_thick_line(ci, road["pts"], pal[tier + "_c"], road.get("w", WIDTH[tier]) + CASING[tier])
+					_thick_line(ci, road, pal[tier + "_c"], CASING[tier])
 		for road in roads:
 			if road["tier"] == tier:
-				_thick_line(ci, road["pts"], pal[tier], road.get("w", WIDTH[tier]))
+				_thick_line(ci, road, pal[tier], 0.0)
 
 func _draw_buildings(ci: CanvasItem, blds: Array) -> void:
 	var cols: Dictionary = BUILDING_NIGHT if night else BUILDING_DAY
@@ -223,13 +226,47 @@ func _draw_buildings(ci: CanvasItem, blds: Array) -> void:
 		ci.draw_colored_polygon(open_poly, col)
 		ci.draw_polyline(poly, col.darkened(0.3), 0.3)   # wall outline, metres
 
-## A polyline with round joints at its ends and real bends (plain wide polylines notch there).
-func _thick_line(ci: CanvasItem, pts: PackedVector2Array, col: Color, w: float) -> void:
-	ci.draw_polyline(pts, col, w)
+## A wide polyline with round joints at real bends, and at an end only where
+## another road carries on from that point. The joint there is as wide as the
+## narrower of the two, so a boulevard meeting a side street no longer bulges
+## past it; a road that simply stops (dead end, ramp merging into a freeway,
+## street running into the side of another) ends square.
+## `extra` is what this pass adds to the roadway width (sidewalk band, kerb, casing).
+func _thick_line(ci: CanvasItem, road: Dictionary, col: Color, extra: float) -> void:
+	var pts: PackedVector2Array = road["pts"]
+	var w: float = road.get("w", WIDTH[road["tier"]])
+	ci.draw_polyline(pts, col, w + extra)
 	var n := pts.size()
-	for i in n:
-		if i == 0 or i == n - 1 or absf((pts[i] - pts[i - 1]).angle_to(pts[i + 1] - pts[i])) > deg_to_rad(JOINT_TURN_DEG):
-			ci.draw_circle(pts[i], w * 0.5, col)
+	for i in range(1, n - 1):
+		if absf((pts[i] - pts[i - 1]).angle_to(pts[i + 1] - pts[i])) > deg_to_rad(JOINT_TURN_DEG):
+			ci.draw_circle(pts[i], (w + extra) * 0.5, col)
+	var joins: Vector2 = _joins.get(road["id"], Vector2.ZERO)   # width of the road met at the start / at the end
+	if joins.x > 0.0:
+		ci.draw_circle(pts[0], (minf(w, joins.x) + extra) * 0.5, col)
+	if joins.y > 0.0:
+		ci.draw_circle(pts[n - 1], (minf(w, joins.y) + extra) * 0.5, col)
+
+## road id -> (widest other road sharing its first point, widest sharing its last point); 0 = none.
+## Only roads drawn in the same pass group join: a street does not join the freeway above it.
+func _find_joins() -> void:
+	var at := {}   # [group, snapped point] -> Array of [id, w]
+	for road in city.roads:
+		var group := 1 if OVER_BUILDINGS.has(road["tier"]) else 0
+		var w: float = road.get("w", WIDTH[road["tier"]])
+		for p in [road["pts"][0], road["pts"][road["pts"].size() - 1]]:
+			var key := [group, Vector2i((p / JOIN_SNAP_M).round())]
+			if not at.has(key):
+				at[key] = []
+			at[key].append([road["id"], w])
+	for road in city.roads:
+		var group := 1 if OVER_BUILDINGS.has(road["tier"]) else 0
+		var ends := [road["pts"][0], road["pts"][road["pts"].size() - 1]]
+		var found := Vector2.ZERO
+		for e in 2:
+			for other in at[[group, Vector2i((ends[e] / JOIN_SNAP_M).round())]]:
+				if other[0] != road["id"]:
+					found[e] = maxf(found[e], other[1])
+		_joins[road["id"]] = found
 
 func _draw_overlays(ci: CanvasItem) -> void:
 	if show_public:
