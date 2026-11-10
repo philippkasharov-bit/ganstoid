@@ -71,7 +71,7 @@ def to_map(geom):
 
 
 def load(pages_dir):
-    seen, parcels = set(), []
+    seen, parcels, stacked = set(), [], {}
     for path in sorted(glob.glob(os.path.join(pages_dir, "page_*.json"))):
         for f in json.load(open(path, encoding="utf-8-sig"))["features"]:
             props = f["properties"]
@@ -83,9 +83,20 @@ def load(pages_dir):
                 if p.area < MIN_PARCEL_M2 or inside.area < MIN_ON_MAP * p.area:
                     continue
                 p = p.simplify(SIMPLIFY_M)
+                # Condominiums: the county keeps one parcel per flat, all with the same
+                # outline. On the ground that is one lot holding that many homes.
+                c = p.centroid
+                same = (round(c.x), round(c.y), round(p.area / 5.0))
+                if same in stacked:
+                    first = stacked[same]
+                    first["units"] = max(first["units"], 1) + 1
+                    if first["use"] == "house":
+                        first["use"] = "apartments"
+                    continue
                 parcels.append(({"id": "lot:%s_%d" % (props.get("AIN") or props["OBJECTID"], k), "use": use_of(props),
                                  "desc": (props.get("UseDescription") or "").strip(), "year": int(props.get("YearBuilt1") or 0),
                                  "units": int(props.get("Units1") or 0)}, p))
+                stacked[same] = parcels[-1][0]
     return parcels
 
 
