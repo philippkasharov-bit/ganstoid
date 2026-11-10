@@ -8,7 +8,7 @@ func _initialize() -> void:
 	var missing: Array[String] = []
 	for pal_name in ["DAY", "NIGHT"]:
 		var pal: Dictionary = CityRenderer.DAY if pal_name == "DAY" else CityRenderer.NIGHT
-		var need: Array = CityRenderer.TIERS_DRAWN() + ["walk", "kerb", "bg", "river", "rail"]
+		var need: Array = CityRenderer.TIERS_DRAWN() + ["walk", "kerb", "parkway", "well", "ramp_f", "bg", "river", "rail"]
 		for tier in CityRenderer.CASING:
 			need.append(tier + "_c")
 		for key in need:

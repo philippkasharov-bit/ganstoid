@@ -27,6 +27,7 @@ const DAY := {
 	"fwy": Color("807f7a"), "fwy_c": Color("5b5a56"), "ramp": Color("8a8984"), "ramp_c": Color("6a6964"), "art": Color("8e8d89"), "art_c": Color("74726d"),
 	"res": Color("a09d96"), "alley": Color("b3ada2"), "path": Color("8c7a58"), "svc": Color("a49eb2"), "hill": Color("a89d82"), "trail": Color("9b8357"),
 	"walk": Color("d6d3cb"), "kerb": Color("b3aea3"),
+	"parkway": Color("c6cdab"), "well": Color("8d7b5e"), "ramp_f": Color("e5e2d9"),
 }
 const NIGHT := {
 	"bg": Color("151a26"), "hills": Color("0b0f14"), "mountains": Color("080b0f"), "park": Color("0b130d"),
@@ -35,6 +36,7 @@ const NIGHT := {
 	"fwy": Color("ffc066"), "fwy_c": Color("3b2a14"), "ramp": Color("a7782f"), "ramp_c": Color("2c2414"), "art": Color("f3a443"), "art_c": Color("6b4a1a"),
 	"res": Color("3d4054"), "alley": Color("0a0b10"), "path": Color("15161c"), "svc": Color("2a2d3e"), "hill": Color("262a33"), "trail": Color("1b1a17"),
 	"walk": Color("23262f"), "kerb": Color("191b22"),
+	"parkway": Color("181d1a"), "well": Color("101110"), "ramp_f": Color("2b2f3a"),
 }
 
 const PUBLIC_COLORS := {"sidewalk": Color(0.1, 0.6, 1.0, 0.75), "alley": Color(1.0, 0.55, 0.1, 0.8), "path": Color(0.2, 0.85, 0.4, 0.8), "park": Color(0.3, 0.8, 0.3, 0.45)}
@@ -56,11 +58,23 @@ var show_markers := true:
 const TILES := 12
 const JOINT_TURN_DEG := 15.0   # bends sharper than this get a round joint
 
+## Sub-metre detail (tree wells, kerb ramps) is only drawn when the camera is
+## zoomed in far enough for it to be more than a pixel wide.
+const FINE_ZOOM := 4.0   # pixels per metre
+
 var _nodes: Array[Node2D] = []
+var _fine_nodes: Array[Node2D] = []
+var _fine := true
 
 func _process(_delta: float) -> void:
 	if city != null and _nodes.is_empty():
 		_build()
+	var cam := get_viewport().get_camera_2d() if is_inside_tree() else null
+	var want := cam == null or cam.zoom.x >= FINE_ZOOM
+	if want != _fine:
+		_fine = want
+		for n in _fine_nodes:
+			n.queue_redraw()
 
 func _redraw_all() -> void:
 	for n in _nodes:
@@ -74,16 +88,22 @@ func _build() -> void:
 	var blds := _bucket(city.buildings, tiles, func(b: Dictionary) -> Rect2: return Rect2(_bounds(b["poly"]).get_center(), Vector2.ZERO))
 	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: _draw_sidewalks(ci, roads[r]), tiles)
 	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: _draw_tiers(ci, roads[r], DRAW_ORDER), tiles)
+	var drives := _bucket(city.driveways, tiles, _feature_bounds)
+	var ramps := _bucket(city.kerb_ramps, tiles, _feature_bounds)
+	var wells := _bucket_points(city.tree_wells, tiles)
+	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: _draw_band_features(ci, drives[r], ramps[r], wells[r]), tiles, true)
 	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: _draw_buildings(ci, blds[r]), tiles)
 	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: _draw_tiers(ci, roads[r], OVER_BUILDINGS), tiles)
 	_add_layer(func(ci: CanvasItem, _r: Rect2) -> void: _draw_overlays(ci), [Rect2()])
 
-func _add_layer(painter: Callable, rects: Array) -> void:
+func _add_layer(painter: Callable, rects: Array, fine := false) -> void:
 	for rect in rects:
 		var n := Node2D.new()
 		n.draw.connect(func() -> void: painter.call(n, rect))
 		add_child(n)
 		_nodes.append(n)
+		if fine:
+			_fine_nodes.append(n)
 
 func _tile_rects() -> Array:
 	var size := city.size_m / TILES
@@ -106,6 +126,21 @@ func _bucket(items: Array, tiles: Array, bounds_of: Callable) -> Dictionary:
 				out[tiles[x * TILES + y]].append(it)
 	return out
 
+## rect -> the points inside it (tree wells: one point each, no bounds needed).
+func _bucket_points(points: PackedVector2Array, tiles: Array) -> Dictionary:
+	var size := city.size_m / TILES
+	var out := {}
+	for t in tiles:
+		out[t] = PackedVector2Array()
+	for p in points:
+		var x := clampi(int(p.x / size), 0, TILES - 1)
+		var y := clampi(int(p.y / size), 0, TILES - 1)
+		out[tiles[x * TILES + y]].append(p)
+	return out
+
+static func _feature_bounds(f: Dictionary) -> Rect2:
+	return Rect2(f["c"], Vector2.ZERO).grow(maxf(float(f["w"]), float(f["len"])))
+
 func _pal() -> Dictionary:
 	return NIGHT if night else DAY
 
@@ -124,15 +159,46 @@ func _draw_base(ci: CanvasItem) -> void:
 		for i in range(0, line.size() - 1):
 			ci.draw_dashed_line(line[i], line[i + 1], pal["rail"], 3.0, 14.0)
 
-## Concrete sidewalk + parkway band each side of every street (MP1), then a darker kerb edge.
+## The real LA cross-section each side of a street (MP1 widths, MP2 split), drawn
+## outermost band first: concrete paving over the whole side, the parkway strip
+## over its inner half where there is one, then the kerb face at the roadway edge.
 func _draw_sidewalks(ci: CanvasItem, roads: Array) -> void:
 	var pal := _pal()
-	for pass_kerb in [false, true]:
+	for band in ["walk", "parkway", "kerb"]:
 		for road in roads:
 			var side: float = road.get("side", 0.0)
-			if side > 0.0:
-				var w: float = road.get("w", WIDTH[road["tier"]])
-				_thick_line(ci, road["pts"], pal["kerb"] if pass_kerb else pal["walk"], w + 0.6 if pass_kerb else w + 2.0 * side)
+			if side <= 0.0:
+				continue
+			var w: float = road.get("w", WIDTH[road["tier"]])
+			match band:
+				"walk":
+					_thick_line(ci, road["pts"], pal["walk"], w + 2.0 * side)
+				"parkway":
+					var park: float = road.get("park", 0.0)
+					if park > 0.0:
+						_thick_line(ci, road["pts"], pal["parkway"], w + 2.0 * park)
+				"kerb":
+					_thick_line(ci, road["pts"], pal["kerb"], w + 0.6)   # kerb face + gutter joint
+
+## What sits on that band: driveway cuts (concrete across it, over the kerb),
+## kerb ramps at the crosswalk ends, and the tree wells MP5 will plant into.
+func _draw_band_features(ci: CanvasItem, drives: Array, ramps: Array, wells: PackedVector2Array) -> void:
+	var pal := _pal()
+	for d in drives:
+		_band_strip(ci, d, pal["walk"], 0.5)   # 0.5 m into the gutter: the kerb is cut down here
+	if not _fine:
+		return
+	for r in ramps:
+		_band_strip(ci, r, pal["ramp_f"], 0.0)
+	for p in wells:
+		ci.draw_circle(p, city.well_r, pal["well"])
+
+## A strip w metres wide running from `into` metres inside the roadway out across
+## the band. Drawn as a wide line: a four-point polygon this small and this far
+## from the origin sometimes fails Godot's triangulation.
+static func _band_strip(ci: CanvasItem, f: Dictionary, col: Color, into: float) -> void:
+	var d: Vector2 = f["dir"]
+	ci.draw_line(f["c"] - d * into, f["c"] + d * float(f["len"]), col, float(f["w"]))
 
 ## Per tier: all edges first, then all fills, so one road's edge never paints over its neighbour.
 func _draw_tiers(ci: CanvasItem, roads: Array, tiers: Array[String]) -> void:

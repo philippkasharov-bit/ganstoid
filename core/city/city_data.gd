@@ -10,6 +10,7 @@ const SUPPORTED_VERSION := 1
 const DEFAULT_PATH := "res://data/city/city_v1.json"
 const BUILDINGS_PATH := "res://data/city/buildings_v1.json"
 const PUBLIC_PATH := "res://data/city/public_v1.json"
+const SECTION_PATH := "res://data/city/section_v1.json"
 const TIERS: Array[String] = ["fwy", "ramp", "art", "res", "alley", "path", "svc", "hill", "trail"]
 
 var size_m: float = 0.0
@@ -23,6 +24,12 @@ var spawn := Vector2.ZERO
 var buildings: Array[Dictionary] = []   # {id: StringName, kind: String, levels: int, poly: PackedVector2Array, door: Vector2}
 var public_zones: Array[Dictionary] = []   # civilians may walk here: {kind: sidewalk|alley|path|park, outer, holes: Array[PackedVector2Array]}
 var crosswalks: Array[Dictionary] = []   # {c: Vector2, dir: Vector2, len: float}
+# MP2 street cross-section. Each road also gets "walk" (paving) and "park" (parkway) per side.
+var kerb_m := 0.15                       # kerb lip at the roadway edge, metres
+var well_r := 0.6                        # tree well / tree pit radius
+var tree_wells := PackedVector2Array()   # centres of the pits MP5 plants trees in
+var driveways: Array[Dictionary] = []    # cuts across the band: {c: Vector2 (on the kerb), dir: Vector2 (outward), w, len}
+var kerb_ramps: Array[Dictionary] = []   # ramps at crosswalk ends, same shape (not freeway ramps)
 
 static func load_file(path: String = DEFAULT_PATH) -> CityData:
 	var text := FileAccess.get_file_as_string(path)
@@ -40,6 +47,7 @@ static func load_file(path: String = DEFAULT_PATH) -> CityData:
 		return null
 	city._load_buildings(BUILDINGS_PATH)
 	city._load_public(PUBLIC_PATH)
+	city._load_section(SECTION_PATH)
 	return city
 
 func _load_buildings(path: String) -> void:
@@ -68,6 +76,34 @@ func _load_public(path: String) -> void:
 		public_zones.append({"kind": String(z["kind"]), "outer": _pts(z["outer"]), "holes": holes})
 	for c in raw.get("crosswalks", []):
 		crosswalks.append({"c": Vector2(c["c"][0], c["c"][1]), "dir": Vector2(c["dir"][0], c["dir"][1]), "len": float(c["len"])})
+
+## MP2: splits each road's sidewalk band into parkway + paving and loads the
+## features sitting on it (tree wells, driveway cuts, kerb ramps).
+func _load_section(path: String) -> void:
+	if not FileAccess.file_exists(path):
+		return
+	var raw: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+	if typeof(raw) != TYPE_DICTIONARY or raw.get("format") != "ganstoid.section":
+		push_error("CityData: %s is not a street-section file" % path)
+		return
+	kerb_m = float(raw.get("kerb_m", kerb_m))
+	well_r = float(raw.get("well_r", well_r))
+	var by_id: Dictionary = raw.get("roads", {})
+	for road in roads:
+		var sec: Variant = by_id.get(String(road["id"]))
+		if typeof(sec) == TYPE_DICTIONARY:
+			road["walk"] = float(sec["walk"])
+			road["park"] = float(sec["park"])
+	tree_wells = _pts(raw.get("wells", []))
+	driveways = _band_features(raw.get("aprons", []))
+	kerb_ramps = _band_features(raw.get("ramps", []))
+
+static func _band_features(list: Array) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	for f in list:
+		out.append({"c": Vector2(f["c"][0], f["c"][1]), "dir": Vector2(f["dir"][0], f["dir"][1]),
+			"w": float(f["w"]), "len": float(f["len"])})
+	return out
 
 func roads_of(tier: String) -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
