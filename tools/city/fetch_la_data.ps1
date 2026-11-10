@@ -62,12 +62,12 @@ try {
             ($S + ($N - $S) * $j / $g), ($W + ($E - $W) * $i / $g), ($S + ($N - $S) * ($j + 1) / $g), ($W + ($E - $W) * ($i + 1) / $g))
         $q = "[out:json][timeout:45];(node($b)(if:count_tags()>0);way($b);relation($b)[type=multipolygon];);out tags geom;"
         $file = Join-Path $out "osm_c$k.json"
-        $ok = $false
-        for ($try = 1; $try -le 4 -and -not $ok; $try++) {
+        $ok = (Test-Path $file) -and ((Get-Item $file).Length -gt 20KB)   # already here from an earlier run
+        for ($try = 1; $try -le 12 -and -not $ok; $try++) {
             try {
                 Invoke-WebRequest -UseBasicParsing -TimeoutSec 70 -Method Post -Uri $server -Body @{ data = $q } -OutFile $file
                 if ((Get-Item $file).Length -gt 20KB) { $ok = $true } else { Say "cell $k try $try : answer too small" }
-            } catch { Say "cell $k try $try failed: $($_.Exception.Message)"; Start-Sleep 5 }
+            } catch { Say "cell $k try $try failed, waiting"; Start-Sleep (15 * $try) }   # the mirror throttles: back off
         }
         if (-not $ok) { throw "Overpass did not return cell $k" }
         Say "osm cell $k of $($g * $g): $([math]::Round((Get-Item $file).Length / 1MB, 1)) MB"
