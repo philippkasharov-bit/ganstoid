@@ -10,7 +10,7 @@ extends SceneTree
 ## their destination rather than freezing on its exact pixel, so "arrived"
 ## means "within that radius," not "within a few px." A couple of px of
 ## slack on top covers float rounding at the boundary.
-const ARRIVAL_TOLERANCE := NPCScheduleSystem.IDLE_WANDER_RADIUS + 2.0
+const ARRIVAL_TOLERANCE := NPCStreet.IDLE_WANDER_RADIUS + 2.0
 
 ## Generous per-phase step budget. Deliberately NOT computed from a fixed
 ## tick count the way the pre-stagger version of this test was -- every
@@ -39,7 +39,7 @@ func _initialize() -> void:
 	# (go to work, come home), not how far a real commute is.
 	dealer_npc.work_building_id = _nearest_other_building(world, home)
 	var work: BuildingData = world.entities[dealer_npc.work_building_id].get_component(ComponentNames.BUILDING)
-	print("dealer=%s home=%s work=%s offset=%d" % [dealer_id, home.position, work.position, NPCScheduleSystem.schedule_offset(dealer_id)])
+	print("dealer=%s home=%s work=%s offset=%d" % [dealer_id, home.position, work.position, NPCRoutine.schedule_offset(dealer_id)])
 	assert(dealer_npc.position.distance_to(home.position) < 1.0, "dealer should start at home before the sim ticks")
 
 	var steps_to_work := _step_until_near(world, dealer_npc, work.position, ARRIVAL_TOLERANCE, MAX_STEPS_PER_PHASE)

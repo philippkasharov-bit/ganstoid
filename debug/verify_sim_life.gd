@@ -43,9 +43,9 @@ func _run(world: World, sched: NPCScheduleSystem, from_hour: float, real_minutes
 	for i in SimClock.real_seconds(real_minutes * 60.0):
 		world.step(1.0 / SimClock.TICKS_PER_SECOND)
 		if i % 600 == 0:
-			most["strolling"] = maxi(most["strolling"], sched._pace_now.size())
-			most["in_shops"] = maxi(most["in_shops"], sched._visit_until.size())
-			most["outside"] = maxi(most["outside"], sched._outside.size())
+			most["strolling"] = maxi(most["strolling"], sched.street.pace_now.size())
+			most["in_shops"] = maxi(most["in_shops"], sched.visiting_count())
+			most["outside"] = maxi(most["outside"], sched.street.outside.size())
 	most["outings"] = sched.outings_started - started
 	return most
 
@@ -62,13 +62,13 @@ func _night(world: World, sched: NPCScheduleSystem) -> bool:
 	var owls := 0
 	var others := 0
 	var cut_through := 0
-	for npc in sched._outside:
-		if sched._pace_now.has(npc.id):
+	for npc in sched.street.outside:
+		if sched.street.pace_now.has(npc.id):
 			if NPCOutings.is_night_owl(npc.id):
 				owls += 1
 			else:
 				others += 1
-		cut_through += int(NPCScheduleSystem.layer_at(npc, world.tick) == "full" and not npc.is_dealer)
+		cut_through += int(NPCRoutine.layer_at(npc, world.tick) == "full" and not npc.is_dealer)
 	print("23:12 + %d real min: outings started %d, strolling now: night owls %d, others %d, most strolling at once %d; walkers cutting through private ground %d" % [
 		int(NIGHT_REAL_MIN), seen["outings"], owls, others, seen["strolling"], cut_through])
 	var ok := _check(seen["strolling"] >= 1, "somebody is out walking alone late at night")

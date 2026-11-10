@@ -262,7 +262,7 @@ func _conduct_raid(building: BuildingData) -> void:
 ## home_building_id standing in for a precinct depot (see its _seed_cops
 ## doc comment). Degrades to the cop's own current position if that
 ## building somehow went missing, rather than crashing -- same defensive
-## shape as NPCScheduleSystem._target_position's fallback.
+## shape as the schedule system's fallback for people with no building.
 func _depot_position(npc: NPCData) -> Vector2:
 	if npc.home_building_id != &"" and _world.entities.has(npc.home_building_id):
 		var depot: BuildingData = _world.entities[npc.home_building_id].get_component(ComponentNames.BUILDING)
