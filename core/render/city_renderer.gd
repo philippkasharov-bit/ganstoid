@@ -27,7 +27,7 @@ const DAY := {
 	"river": Color("c4cfd6"), "rail": Color("7d7468"),
 	"fwy": Color("807f7a"), "fwy_c": Color("5b5a56"), "ramp": Color("8a8984"), "ramp_c": Color("6a6964"), "art": Color("8e8d89"), "art_c": Color("74726d"),
 	"res": Color("a09d96"), "alley": Color("b0aca4"), "path": Color("cfcbc1"), "svc": Color("b5b2ab"), "hill": Color("a89d82"), "trail": Color("9b8357"),
-	"aisle": Color("bab8b2"), "drive": Color("d3cfc5"),
+	"aisle": Color("a6a49e"), "drive": Color("d3cfc5"),
 	"walk": Color("d6d3cb"), "kerb": Color("b3aea3"),
 	"parkway": Color("c6cdab"), "well": Color("8d7b5e"), "ramp_f": Color("e5e2d9"),
 }
