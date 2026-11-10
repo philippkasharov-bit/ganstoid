@@ -3,7 +3,8 @@
 ## layer only: reads the data, never changes it.
 ## Performance: the map is split into layers x 12x12 tiles (~500 m), each its own
 ## canvas item, so Godot only submits tiles on screen; round road joints are
-## drawn only where a road actually bends. Day/night switch redraws every tile.
+## drawn only where a road actually bends; fine layers are hidden when zoomed out.
+## Day/night switch redraws every tile. Real-ground painters live in CityGround.
 class_name CityRenderer
 extends Node2D
 
@@ -58,26 +59,28 @@ var show_markers := true:
 const TILES := 12
 const JOINT_TURN_DEG := 15.0   # bends sharper than this get a round joint
 
-## Sub-metre detail (tree wells, kerb ramps) is only drawn when the camera is
-## zoomed in far enough for it to be more than a pixel wide.
-const FINE_ZOOM := 4.0   # pixels per metre
+## Level of detail: a layer is only shown from the zoom at which it is more than a
+## smudge. Hiding a layer costs nothing; drawing 60,000 tree wells from orbit does.
+const FINE_ZOOM := 4.0   # pixels per metre: kerb ramps, tree wells, fences, lot lines, furniture
+const MID_ZOOM := 1.2    # trees, marked crossings
 
 const JOIN_SNAP_M := 0.5   # road ends closer than this are the same point
 
+var real: CityReal          # what is really on the ground (MR2); null = older data only
 var _joins := {}
 var _nodes: Array[Node2D] = []
-var _fine_nodes: Array[Node2D] = []
-var _fine := true
+var _lod: Array = []        # [node, min zoom] for every layer that has one
+var _zoom_seen := -1.0
 
 func _process(_delta: float) -> void:
 	if city != null and _nodes.is_empty():
 		_build()
 	var cam := get_viewport().get_camera_2d() if is_inside_tree() else null
-	var want := cam == null or cam.zoom.x >= FINE_ZOOM
-	if want != _fine:
-		_fine = want
-		for n in _fine_nodes:
-			n.queue_redraw()
+	var zoom := cam.zoom.x if cam != null else 1000.0
+	if zoom != _zoom_seen:
+		_zoom_seen = zoom
+		for entry in _lod:
+			entry[0].visible = zoom >= entry[1]
 
 func _redraw_all() -> void:
 	for n in _nodes:
@@ -86,28 +89,46 @@ func _redraw_all() -> void:
 ## One node per (layer, tile); node order = draw order (later nodes paint over earlier ones).
 func _build() -> void:
 	_find_joins()
+	if real == null:
+		real = CityReal.load_files()
 	_add_layer(func(ci: CanvasItem, _r: Rect2) -> void: _draw_base(ci), [Rect2()])
 	var tiles := _tile_rects()
 	var roads := _bucket(city.roads, tiles, func(r: Dictionary) -> Rect2: return _bounds(r["pts"]).grow(r.get("w", WIDTH[r["tier"]]) * 0.5 + r.get("side", 0.0)))
-	var blds := _bucket(city.buildings, tiles, func(b: Dictionary) -> Rect2: return Rect2(_bounds(b["poly"]).get_center(), Vector2.ZERO))
+	var blds := _bucket(city.buildings, tiles, _centre_of_poly)
+	var lots := _bucket(real.lots, tiles, _centre_of_poly)
+	var surfaces := _bucket(real.surfaces, tiles, _centre_of_poly)
+	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: CityGround.lots(ci, lots[r], night), tiles)
+	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: CityGround.surfaces(ci, surfaces[r], night), tiles)
+	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: CityGround.lot_lines(ci, lots[r], night), tiles, FINE_ZOOM)
 	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: _draw_sidewalks(ci, roads[r]), tiles)
 	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: _draw_tiers(ci, roads[r], DRAW_ORDER), tiles)
 	var drives := _bucket(city.driveways, tiles, _feature_bounds)
 	var ramps := _bucket(city.kerb_ramps, tiles, _feature_bounds)
 	var wells := _bucket_points(city.tree_wells, tiles)
-	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: _draw_band_features(ci, drives[r], ramps[r], wells[r]), tiles, true)
+	var crossings := _bucket(real.crossings, tiles, func(c: Dictionary) -> Rect2: return Rect2(c["pts"][0], Vector2.ZERO))
+	var barriers := _bucket(real.barriers, tiles, func(b: Dictionary) -> Rect2: return Rect2(b["pts"][0], Vector2.ZERO))
+	var points := _bucket(real.points, tiles, func(p: Dictionary) -> Rect2: return Rect2(p["p"], Vector2.ZERO))
+	var trees := _bucket_points(real.trees, tiles)
+	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: _draw_driveways(ci, drives[r]), tiles)
+	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: CityGround.crossings(ci, crossings[r], night), tiles, MID_ZOOM)
+	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: _draw_band_details(ci, ramps[r], wells[r]), tiles, FINE_ZOOM)
+	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: CityGround.details(ci, barriers[r], points[r], night), tiles, FINE_ZOOM)
 	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: _draw_buildings(ci, blds[r]), tiles)
+	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: CityGround.trees(ci, trees[r], night), tiles, MID_ZOOM)
 	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: _draw_tiers(ci, roads[r], OVER_BUILDINGS), tiles)
 	_add_layer(func(ci: CanvasItem, _r: Rect2) -> void: _draw_overlays(ci), [Rect2()])
 
-func _add_layer(painter: Callable, rects: Array, fine := false) -> void:
+func _add_layer(painter: Callable, rects: Array, min_zoom := 0.0) -> void:
 	for rect in rects:
 		var n := Node2D.new()
 		n.draw.connect(func() -> void: painter.call(n, rect))
 		add_child(n)
 		_nodes.append(n)
-		if fine:
-			_fine_nodes.append(n)
+		if min_zoom > 0.0:
+			_lod.append([n, min_zoom])
+
+static func _centre_of_poly(item: Dictionary) -> Rect2:
+	return Rect2(_bounds(item["poly"]).get_center(), Vector2.ZERO)
 
 func _tile_rects() -> Array:
 	var size := city.size_m / TILES
@@ -183,14 +204,15 @@ func _draw_sidewalks(ci: CanvasItem, roads: Array) -> void:
 				"kerb":
 					_thick_line(ci, road, pal["kerb"], 0.6)   # kerb face + gutter joint
 
-## What sits on that band: driveway cuts (concrete across it, over the kerb),
-## kerb ramps at the crosswalk ends, and the tree wells MP5 will plant into.
-func _draw_band_features(ci: CanvasItem, drives: Array, ramps: Array, wells: PackedVector2Array) -> void:
-	var pal := _pal()
+## Driveway cuts: concrete across the band and over the kerb.
+func _draw_driveways(ci: CanvasItem, drives: Array) -> void:
+	var col: Color = _pal()["walk"]
 	for d in drives:
-		_band_strip(ci, d, pal["walk"], 0.5)   # 0.5 m into the gutter: the kerb is cut down here
-	if not _fine:
-		return
+		_band_strip(ci, d, col, 0.5)   # 0.5 m into the gutter: the kerb is cut down here
+
+## Kerb ramps at the crosswalk ends and the tree wells MP5 will plant into.
+func _draw_band_details(ci: CanvasItem, ramps: Array, wells: PackedVector2Array) -> void:
+	var pal := _pal()
 	for r in ramps:
 		_band_strip(ci, r, pal["ramp_f"], 0.0)
 	for p in wells:

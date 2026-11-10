@@ -5,6 +5,7 @@
 #                        signals, bus stops, rail, water (Overpass API, ODbL)
 #   parcels\page_N.json  LA County Assessor parcels: real lot lines, use type, year built, units
 # Progress and the result are written to tools\city\osm\fetch.log (last line DONE or ERROR ...).
+param([switch]$OsmOnly)   # skip the parcels (already downloaded)
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
@@ -15,6 +16,7 @@ function Say($t) { Add-Content -Path $log -Value ("{0} {1}" -f (Get-Date -Format
 New-Item -ItemType Directory -Force (Join-Path $out 'parcels') | Out-Null
 Set-Content -Path $log -Value ''
 try {
+  if (-not $OsmOnly) {
     $parcels = 'https://public.gis.lacounty.gov/public/rest/services/LACounty_Cache/LACounty_Parcel/MapServer/0/query'
     $fields = 'OBJECTID,AIN,UseCode,UseType,UseDescription,YearBuilt1,Units1,SQFTmain1,SitusHouseNo,SitusStreet'
     # Asked for cell by cell: this server answers a small box correctly but loses the
@@ -48,10 +50,11 @@ try {
         if ($page % 10 -eq 0) { Say "parcels: $page cells done, $($cells.Count) to go, $total parcels so far" }
     }
     Say "parcels: $total in $page cells (lots on a cell edge are counted twice; the importer drops the copies)"
-    Say 'parcels complete; asking Overpass for the full OSM extract (can take a few minutes)'
-    $q = "[out:json][timeout:600][maxsize:1073741824];(node($S,$W,$N,$E)[~`".`"~`".`"];way($S,$W,$N,$E);relation($S,$W,$N,$E)[type=multipolygon];);out tags geom;"
+  }
+    Say 'asking Overpass for the full OSM extract (can take a few minutes)'
+    $q = "[out:json][timeout:600][maxsize:1073741824];(node($S,$W,$N,$E)(if:count_tags()>0);way($S,$W,$N,$E);relation($S,$W,$N,$E)[type=multipolygon];);out tags geom;"
     $osm = Join-Path $out 'osm_full.json'
-    foreach ($server in 'https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter') {
+    foreach ($server in 'https://maps.mail.ru/osm/tools/overpass/api/interpreter', 'https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter') {
         try {
             Invoke-WebRequest -UseBasicParsing -TimeoutSec 900 -Method Post -Uri $server -Body @{ data = $q } -OutFile $osm
             if ((Get-Item $osm).Length -gt 5MB) { Say "osm from $server : $([int]((Get-Item $osm).Length / 1MB)) MB"; break }
