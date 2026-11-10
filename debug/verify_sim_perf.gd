@@ -38,6 +38,7 @@ func _initialize() -> void:
 		var c := _count(world)
 		print("%02d:00  %.2f ms/tick avg, worst tick %.1f ms | civilians %d: indoors %d, on the street %d | employed %d, of them at their workplace %d | routes planned %d (navmesh %d)" % [
 			int(hour), avg_ms, worst / 1000.0, c["people"], c["indoors"], c["people"] - c["indoors"], c["employed"], c["at_work"], SimNav.active.plans_made, SimNav.active.plans_routed])
+		print("       slowest route plan %.1f ms (%s)" % [SimNav.active.slowest_plan_usec / 1000.0, SimNav.active.slowest_plan_what])
 		ok = _check(avg_ms <= AVG_BUDGET_MS[hour], "%02d:00 average tick within %.1f ms" % [int(hour), AVG_BUDGET_MS[hour]]) and ok
 		ok = _check(worst / 1000.0 <= WORST_TICK_MS, "%02d:00 no single tick over %.0f ms" % [int(hour), WORST_TICK_MS]) and ok
 		if hour == 3.0:
