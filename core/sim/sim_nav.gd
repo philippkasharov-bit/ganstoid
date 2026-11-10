@@ -11,6 +11,7 @@ extends RefCounted
 
 const LAST_HOP_M := 40.0   # straight walk allowed from the navmesh to the actual goal
 const REPATH_M := 3.0      # re-plan when the goal has moved this far (chases)
+const UNREACHED_M := 2.0   # a route ending further than this from its goal did not get there
 
 static var active: SimNav = null
 
@@ -78,8 +79,11 @@ func _plan(pos: Vector2, goal: Vector2, layer: String) -> Dictionary:
 	var start := nav.closest(pos)
 	var end := nav.closest(goal)
 	var pts := nav.path(start, end)
-	if pts.is_empty():
-		pts = navs["full"].path(pos, goal)   # off this layer's loaded mesh: any walkable way
+	# Godot returns a route to the nearest reachable point when the goal cannot be
+	# reached on this layer; joining that to the goal would be a straight line
+	# through whatever stands between. Treat it as no route and use any walkable way.
+	if pts.is_empty() or pts[pts.size() - 1].distance_to(end) > UNREACHED_M:
+		pts = navs["full"].path(pos, goal)
 	elif layer != "full":
 		# Getting on/off public ground crosses the mover's own yard: route those
 		# hops on the full mesh so they go around houses, not through them.

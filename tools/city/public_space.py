@@ -35,6 +35,8 @@ CROSS_REACH_M = 40.0     # a crosswalk extends across medians/dual carriageways 
 AGENT_RADIUS_M = 0.42    # slightly above the nav agent radius (0.4)
 MIN_ISLAND_M2 = 40.0     # walkable scraps smaller than this (after agent clearance) are dropped
 SIMPLIFY_M = 0.15
+JOINT_M = 1.2            # sidewalk welding: fills sideways steps up to 2.4 m
+MAX_JOINT_M2 = 40.0      # a bigger fill is not a joint; leave it open
 
 
 def polys(geom):
@@ -141,6 +143,22 @@ def sidewalk_ring(lines, reach):
     return reach.difference(roadway)
 
 
+def close_joints(walk):
+    """Weld the sidewalk where two stretches of one street meet out of line.
+
+    A street is several OSM ways (a bridge, the blocks either side) and each got
+    its own width, so their sidewalk bands meet with a sideways step. Where the
+    overlap is thinner than a person the navmesh splits there - that cut the
+    district in two along the freeway. Closing fills steps and notches up to
+    2 x JOINT_M wide; only small fills are kept, so nothing large is invented.
+    """
+    closed = walk.buffer(JOINT_M, join_style=2).buffer(-JOINT_M, join_style=2)
+    added = closed.difference(walk)
+    small = [g for g in getattr(added, "geoms", [added]) if g.geom_type == "Polygon" and g.area <= MAX_JOINT_M2]
+    print("sidewalk joints welded: %d (%.0f m2)" % (len(small), sum(g.area for g in small)))
+    return unary_union([walk] + small)
+
+
 def alleys_and_paths(city):
     alley = [LineString(r["pts"]).buffer(ALLEY_HALF, cap_style=2) for r in city["roads"] if r["tier"] in ("alley", "svc")]
     path = [LineString(r["pts"]).buffer(PATH_HALF, cap_style=2) for r in city["roads"] if r["tier"] in ("path", "trail")]
@@ -170,7 +188,7 @@ def main(city_path, bld_path, dst):
     reach = street_reach(lines)
     cws = crosswalks(lines, juncs, reach)
     cross = unary_union([crosswalk_poly(c) for c in cws])
-    walk = unary_union([sidewalk_ring(lines, reach), cross]).difference(bld)
+    walk = close_joints(unary_union([sidewalk_ring(lines, reach), cross])).difference(bld)
     alley, path = alleys_and_paths(city)
     alley, path = alley.difference(bld), path.difference(bld)
     park = unary_union([Polygon(a["poly"]).buffer(0) for a in city["areas"] if a["kind"] == "park"]).difference(bld)

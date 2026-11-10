@@ -48,6 +48,10 @@ func _initialize() -> void:
 		return
 	if not _check(await _civilians_avoid_alleys(pub, pts, zones), "civilians use alleys less than dark-route NPCs"):
 		return
+	if not _check(_civilians_keep_to_paving(city, pub, pts), "civilians walk the paving, not the parkway grass"):
+		return
+	if not _check(await _district_is_one_piece(city), "civilians can reach the whole spawn district on public ground"):
+		return
 	pub.release()
 	full.release()
 	print("CITY_NAV_PUBLIC_VERIFY: PASS")
@@ -76,6 +80,81 @@ func _civilians_avoid_alleys(pub: CityNav, pts: Array[Vector2], zones: Array[Dic
 		nav.release()
 	print("share of route in alleys: civilian %.1f%%, dark-route %.1f%%" % [share[3.0] * 100, share[1.0] * 100])
 	return share[3.0] < share[1.0]
+
+## MP2b: parkway grass is off the civilian mesh except where the paving beside it
+## is broken, so only a small share of any route may run on grass (it was 26%
+## when grass and paving were one surface).
+func _civilians_keep_to_paving(city: CityData, pub: CityNav, pts: Array[Vector2]) -> bool:
+	var grid := _parkway_grid(city)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 13
+	var on_grass := 0.0
+	var total := 0.0
+	for i in TRIPS:
+		var p := pub.path(pts[rng.randi() % pts.size()], pts[rng.randi() % pts.size()])
+		for k in p.size() - 1:
+			var steps := maxi(1, int(p[k].distance_to(p[k + 1]) / 2.0))
+			for j in steps:
+				total += 1.0
+				if _on_parkway(p[k].lerp(p[k + 1], (j + 0.5) / steps), grid):
+					on_grass += 1.0
+	var share := on_grass / maxf(total, 1.0)
+	print("share of civilian route on parkway grass: %.1f%%" % (share * 100))
+	return total > 0.0 and share < MAX_GRASS_SHARE
+
+## The player's district must be one piece for civilians: from one sidewalk point
+## nearly every other sidewalk point within 900 m is reachable on public ground.
+## (Before MP2b the freeway cut it in two: 514 of 676 points.)
+func _district_is_one_piece(city: CityData) -> bool:
+	var nav := CityNav.new(city.spawn, 1100.0, "public", 3.0)
+	await TestWorlds.wait_nav(self, [nav])
+	var pts: Array[Vector2] = []
+	for road in city.roads:
+		if road.get("side", 0.0) > 0.0:
+			for q in road["pts"]:
+				if q.distance_to(city.spawn) < 900.0:
+					pts.append(nav.closest(q + Vector2(road["w"] * 0.5 + road["side"] - 0.8, 0)))
+	var best := 0
+	for seed_i in [0, pts.size() / 3, pts.size() * 2 / 3]:   # three starts, in case one sits on an island
+		var reached := 0
+		for q in pts:
+			var p := nav.path(pts[seed_i], q)
+			if pts[seed_i].distance_to(q) < 0.5 or (p.size() >= 2 and p[p.size() - 1].distance_to(q) < 1.0):
+				reached += 1
+		best = maxi(best, reached)
+	nav.release()
+	print("spawn district: %d of %d sidewalk points reachable on public ground" % [best, pts.size()])
+	return best >= int(pts.size() * ONE_PIECE_SHARE)
+
+const MAX_GRASS_SHARE := 0.12
+const ONE_PIECE_SHARE := 0.97
+const GRID_CELL := 50.0
+
+## cell -> street segments [a, b, half roadway, parkway width] of streets that have a parkway.
+func _parkway_grid(city: CityData) -> Dictionary:
+	var grid := {}
+	for road in city.roads:
+		var park: float = road.get("park", 0.0)
+		if park <= 0.0 or road["pts"][0].distance_to(CENTRE) > 1500.0:
+			continue
+		var pts: PackedVector2Array = road["pts"]
+		for i in pts.size() - 1:
+			var r := Rect2(pts[i], Vector2.ZERO).expand(pts[i + 1]).grow(float(road["w"]) * 0.5 + park + 1.0)
+			for x in range(int(r.position.x / GRID_CELL), int(r.end.x / GRID_CELL) + 1):
+				for y in range(int(r.position.y / GRID_CELL), int(r.end.y / GRID_CELL) + 1):
+					var key := Vector2i(x, y)
+					if not grid.has(key):
+						grid[key] = []
+					grid[key].append([pts[i], pts[i + 1], float(road["w"]) * 0.5, park])
+	return grid
+
+## Between the kerb and the paving of some street (0.2 m inside the strip, to be sure).
+func _on_parkway(p: Vector2, grid: Dictionary) -> bool:
+	for seg in grid.get(Vector2i(int(p.x / GRID_CELL), int(p.y / GRID_CELL)), []):
+		var d := Geometry2D.get_closest_point_to_segment(p, seg[0], seg[1]).distance_to(p)
+		if d > seg[2] + 0.2 and d < seg[2] + seg[3] - 0.2:
+			return true
+	return false
 
 ## Fails loudly and exits (an assert would freeze a headless run in the debugger).
 func _check(ok: bool, what: String) -> bool:

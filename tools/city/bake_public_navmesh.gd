@@ -1,12 +1,15 @@
 ## City batch C3d: bake the PUBLIC navmesh civilians use: sidewalks, crosswalks,
 ## footpaths and parks ("walk_*" tiles) and alleys ("alley_*" tiles, own region so
-## their travel cost can change). Private ground (yards, lots, gaps) is absent.
+## their travel cost can change). Private ground (yards, lots, gaps) is absent, and
+## so is parkway grass (MP2b, cut out by nav_public.py).
 ## Input: tools/city/nav_public.json (tools/city/nav_public.py).
 ## Run: godot --headless --path . -s tools/city/bake_public_navmesh.gd
 extends SceneTree
 
 const TILES := 8
 const AGENT_RADIUS := 0.4
+const BORDER_M := 1.0   # under the 3 m margin nav_public.py leaves around each tile
+const RADIUS_NUDGES: Array[float] = [0.03, 0.06, -0.03, 0.1]
 const CELL_SIZE := 0.05   # must match CityNav and the full-city bake
 const OUT_DIR := "res://data/city/nav_public/"
 const SOURCE := "res://tools/city/nav_public.json"
@@ -32,7 +35,14 @@ func _initialize() -> void:
 
 ## Bake one rect; if the partition fails (dense blocks), split it in four.
 func _bake_rect(layer: String, rect: Rect2, shapes: Array) -> void:
-	var nav := _bake(rect, shapes)
+	var radius := AGENT_RADIUS
+	var nav := _bake(rect, shapes, radius)
+	# The convex partition sometimes fails on one degenerate corner; a slightly
+	# different clearance moves that corner and the same ground bakes fine.
+	for nudge in RADIUS_NUDGES:
+		if nav.get_polygon_count() > 0 or not _has_area_inside(rect, shapes):
+			break
+		nav = _bake(rect, shapes, radius + nudge)
 	if nav.get_polygon_count() == 0 and rect.size.x > 40.0 and _has_area_inside(rect, shapes):
 		var h := rect.size / 2
 		for q in [Rect2(rect.position, h), Rect2(rect.position + Vector2(h.x, 0), h), Rect2(rect.position + Vector2(0, h.y), h), Rect2(rect.position + h, h)]:
@@ -48,11 +58,16 @@ func _bake_rect(layer: String, rect: Rect2, shapes: Array) -> void:
 	_polys += nav.get_polygon_count()
 	ResourceSaver.save(nav, OUT_DIR + "%s_%d_%d_%d.res" % [layer, int(rect.position.x), int(rect.position.y), int(rect.size.x)])
 
-func _bake(rect: Rect2, shapes: Array) -> NavigationPolygon:
+func _bake(rect: Rect2, shapes: Array, agent_radius: float) -> NavigationPolygon:
 	var nav := NavigationPolygon.new()
-	nav.agent_radius = AGENT_RADIUS
+	nav.agent_radius = agent_radius
 	nav.cell_size = CELL_SIZE
-	nav.baking_rect = rect   # clip exactly to the tile: neighbours never overlap
+	# Bake a little past the tile and throw that border away: the tile then ends
+	# exactly on its edge with no agent-radius setback, so neighbouring tiles share
+	# edges instead of facing each other across a 0.8 m gap (those gap links were
+	# unreliable and split the district in two for civilians).
+	nav.baking_rect = rect.grow(BORDER_M)
+	nav.border_size = BORDER_M
 	var src := NavigationMeshSourceGeometryData2D.new()
 	for s in shapes:
 		src.add_traversable_outline(_pts(s["outer"]))
@@ -61,11 +76,28 @@ func _bake(rect: Rect2, shapes: Array) -> NavigationPolygon:
 	NavigationServer2D.bake_from_source_geometry_data(nav, src)
 	return nav
 
+## True if some shape really has ground inside rect (not just a bounding box that
+## crosses it): more than 1 m2 of its outline, holes not counted.
 func _has_area_inside(rect: Rect2, shapes: Array) -> bool:
+	var box := PackedVector2Array([rect.position, Vector2(rect.end.x, rect.position.y), rect.end, Vector2(rect.position.x, rect.end.y)])
 	for s in shapes:
-		if rect.intersects(_bounds(s["outer"])):
+		if not rect.intersects(_bounds(s["outer"])):
+			continue
+		var area := 0.0
+		for part in Geometry2D.intersect_polygons(_pts(s["outer"]), box):
+			area += absf(_signed_area(part))
+		for hole in s["holes"]:
+			for part in Geometry2D.intersect_polygons(_pts(hole), box):
+				area -= absf(_signed_area(part))
+		if area > 1.0:
 			return true
 	return false
+
+func _signed_area(p: PackedVector2Array) -> float:
+	var a := 0.0
+	for i in p.size():
+		a += p[i].cross(p[(i + 1) % p.size()])
+	return a * 0.5
 
 func _pts(list: Array) -> PackedVector2Array:
 	var out := PackedVector2Array()
