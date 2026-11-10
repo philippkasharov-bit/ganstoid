@@ -16,6 +16,9 @@ $versionFile = Join-Path $root 'version.txt'
 # Folders that must match GitHub exactly: files deleted there are deleted here too.
 # (Stale navmesh tiles left behind by the old copy-only updater made people walk wrong.)
 $mirrored = @('core', 'data', 'debug', 'scenes', 'tools')
+# Local-only folders inside those that the mirror must never delete: downloaded source
+# data (LA parcels, OpenStreetMap cells) lives here and is not in the repo.
+$keep = @((Join-Path $root 'tools\city\osm'))
 
 function Say([string]$text) {
     Write-Host $text
@@ -62,7 +65,7 @@ try {
             $from = Join-Path $inner $dir
             if (Test-Path $from) {
                 # /MIR = exact mirror. /XF keeps Godot's own sidecar files, which are not in the repo.
-                robocopy $from (Join-Path $root $dir) /MIR /XF *.import /NFL /NDL /NJH /NJS /NP /R:2 /W:1 | Out-Null
+                robocopy $from (Join-Path $root $dir) /MIR /XF *.import /XD $keep /NFL /NDL /NJH /NJS /NP /R:2 /W:1 | Out-Null
                 if ($LASTEXITCODE -ge 8) { throw "Could not copy the $dir folder (robocopy code $LASTEXITCODE). Is the game still running?" }
             }
         }
