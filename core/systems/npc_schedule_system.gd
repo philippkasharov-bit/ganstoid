@@ -93,6 +93,7 @@ var _pace_now: Dictionary = {}      # npc id -> m/s for this trip (a stroll is s
 var _pause_until: Dictionary = {}   # npc id -> standing still until this tick
 var _routine_wake: Dictionary = {}  # npc id -> tick their queued routine wake-up is at
 var _outings := NPCOutings.new()
+var crowd := Crowd.new()   # S3a: bodies do not overlap near the player
 var _from: Dictionary = {}      # npc id -> door of the building they are coming from
 var _lead: Dictionary = {}      # npc id -> ticks their walk to work takes (0 = no job)
 var _due: Dictionary = {}       # tick -> Array[NPCData] whose plan changes then
@@ -132,17 +133,30 @@ func process_entities(entities: Dictionary, delta: float, tick: int) -> void:
 			if not (npc.is_crew or npc.is_cop):
 				_plan_day(npc, tick)
 	var player_pos := _player_position()
+	var near: Array[NPCData] = []
 	var i := _outside.size() - 1
 	while i >= 0:
 		var npc: NPCData = _outside[i]
 		var leaves := npc.is_crew or npc.is_cop   # recruited: CrewSystem moves them from here on
 		if not leaves and not npc.is_busy:
 			leaves = _move(npc, delta, tick, player_pos)
+			if not leaves and npc.position.distance_squared_to(player_pos) < Crowd.RANGE_M * Crowd.RANGE_M:
+				near.append(npc)
 		if leaves:
 			_outside[i] = _outside[_outside.size() - 1]
 			_outside.pop_back()
 			_is_out.erase(npc.id)
 		i -= 1
+	_keep_apart(near, player_pos)
+
+## People on screen step around each other and around the player (Crowd).
+func _keep_apart(near: Array[NPCData], player_pos: Vector2) -> void:
+	if near.is_empty():
+		return
+	var fixed := PackedVector2Array() if player_pos == Vector2.INF else PackedVector2Array([player_pos])
+	crowd.separate(near, fixed, SimNav.active.collision if SimNav.active != null else null)
+	for npc in near:
+		_world.reindex_position(npc.id)
 
 ## Moves one person on the street. Returns true when they have gone indoors.
 func _move(npc: NPCData, delta: float, tick: int, player_pos: Vector2) -> bool:

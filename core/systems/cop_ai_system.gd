@@ -153,6 +153,7 @@ var _alert_set_tick: Dictionary = {}  # StringName -> int
 
 var _all_buildings: Array[BuildingData] = []
 var _cops: Array[NPCData] = []
+var beat := CopBeat.new()   # S3b: foot patrol along the streets round the station
 var _cops_for := -1
 
 func _init(world: World) -> void:
@@ -194,11 +195,15 @@ func _advance_patrol(npc: NPCData, delta: float, tick: int) -> void:
 			dwell_min = RAID_DWELL_MIN_TICKS
 			dwell_max = RAID_DWELL_MAX_TICKS
 	var before := npc.position
-	npc.position = WanderBehavior.advance(
-		npc.id, npc.position, anchor, radius, PATROL_SPEED,
-		dwell_min, dwell_max, delta, tick,
-		_patrol_targets, _patrol_dwell_until, ARRIVE_EPSILON
-	)
+	if hot_building == null:
+		npc.position = beat.advance(npc, anchor, PATROL_SPEED, delta, tick)   # S3b: walk the beat
+	else:
+		beat.forget(npc.id)   # guarding a hot spot; the beat picks up again from the nearest corner
+		npc.position = WanderBehavior.advance(
+			npc.id, npc.position, anchor, radius, PATROL_SPEED,
+			dwell_min, dwell_max, delta, tick,
+			_patrol_targets, _patrol_dwell_until, ARRIVE_EPSILON
+		)
 	if npc.position != before:
 		_world.reindex_position(npc.id)
 
