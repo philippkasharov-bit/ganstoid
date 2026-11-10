@@ -35,6 +35,7 @@ KERB_M = 0.3
 PASSAGE_M = 4.0
 MIN_CROSS_M2 = 1.0        # ignore a road merely brushing a wall
 MIN_PART_M2 = 12.0
+MIN_INSIDE_M = 2.0        # a lane must run this far inside a building to be trimmed
 MIN_LANE_M = 6.0          # a trimmed lane shorter than this is dropped
 OVERLAP_M2 = 2.0
 INSIDE_SHARE = 0.6
@@ -86,7 +87,9 @@ def carve(city, blds, tags):
             if tier in STREET_TIERS or passage:
                 cuts.setdefault(int(bi), []).append(corridor)
                 n["street" if tier in STREET_TIERS else "passage"] += 1
-            else:
+            elif line.intersection(shapes[bi]).length >= MIN_INSIDE_M:
+                # only when the lane itself runs inside: one that merely passes close to a
+                # wall is left alone (and a second run of this tool then changes nothing)
                 trim.setdefault(ri, []).append(shapes[bi])
     out = []
     for bi, b in enumerate(blds):

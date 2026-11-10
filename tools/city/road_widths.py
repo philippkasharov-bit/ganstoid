@@ -17,7 +17,9 @@ Where real buildings stand closer than the standard allows (old narrow streets
 and alleys, or OSM centre lines a little off), the roadway is narrowed to the
 clearance most of the street actually has (20th percentile of building
 distance sampled every 5 m), never below the tier's minimum.
-Usage: python3 -I road_widths.py <raw osm roads.json> <city_v1.json> <buildings_v1.json>   (city edited in place)
+MR3: with the Assessor parcels given, a street is then also fitted between the real
+property lines on either side of it (fit_to_lots), which is the true right of way.
+Usage: python3 -I road_widths.py <raw osm roads.json> <city_v1.json> <buildings_v1.json> [parcels_v1.json]   (city edited in place)
 """
 import json
 import sys
@@ -80,11 +82,52 @@ def clearance_cap(line, tree, blds):
     return 2.0 * dists[len(dists) // 5] - 0.4
 
 
-def main(raw_path, city_path, bld_path):
+LOT_REACH_M = 45.0
+LOT_PERCENTILE = 0.3
+MIN_SIDE_M = 1.2
+LOT_TIERS = ("art", "res", "hill", "alley")
+
+
+def lot_half_width(line, lot_tree, lots):
+    """How far the street really reaches from its centre line: the distance to the
+    nearest property line, taken as the 30th percentile along the street (junctions
+    and open ground have no lot nearby and would otherwise stretch it)."""
+    dists = []
+    for k in range(int(line.length // SAMPLE_M) + 1):
+        p = line.interpolate(k * SAMPLE_M)
+        d = min((lots[j].distance(p) for j in lot_tree.query(p.buffer(LOT_REACH_M))), default=None)
+        if d is not None and d > 0.5:   # 0 = the line runs across a lot (a private road): no evidence
+            dists.append(d)
+    if len(dists) < 3:
+        return None
+    dists.sort()
+    return dists[int(len(dists) * LOT_PERCENTILE)]
+
+
+def fit_to_lots(road, half):
+    """MR3: the roadway plus its sidewalk may not reach past the real property line.
+    The roadway gives way first, down to the tier's minimum; then the sidewalk does."""
+    w, side = road["w"], road["side"]
+    if half is None or w / 2 + side <= half + 0.3:
+        return False
+    w = 2 * (half - side)
+    if w < MIN_W[road["tier"]]:
+        w = MIN_W[road["tier"]]
+        side = max(MIN_SIDE_M, half - w / 2) if side > 0 else 0.0
+        if road["tier"] == "alley":
+            w = max(3.0, min(w, 2 * half))
+    road["w"], road["side"] = round(w, 1), round(side, 1)
+    return True
+
+
+def main(raw_path, city_path, bld_path, parcels_path=None):
     from shapely.geometry import LineString, Polygon
     from shapely.strtree import STRtree
     blds = [Polygon(b["poly"]).buffer(0) for b in json.load(open(bld_path))["buildings"]]
     tree = STRtree(blds)
+    lots = [Polygon(l["poly"]).buffer(0) for l in json.load(open(parcels_path))["parcels"]] if parcels_path else []
+    lot_tree = STRtree(lots) if lots else None
+    fitted = 0
     tags_by_way = {e["id"]: e.get("tags", {}) for e in json.load(open(raw_path))["elements"] if e["type"] == "way"}
     city = json.load(open(city_path))
     found = 0
@@ -99,6 +142,8 @@ def main(raw_path, city_path, bld_path):
             cap = clearance_cap(LineString(r["pts"]), tree, blds)
             if cap is not None and cap < r["w"]:
                 r["w"] = round(max(MIN_W[r["tier"]], cap), 1)
+        if lot_tree is not None and r["tier"] in LOT_TIERS:
+            fitted += int(fit_to_lots(r, lot_half_width(LineString(r["pts"]), lot_tree, lots)))
         if tags.get("highway"):
             r["cls"] = tags["highway"]
         if "lanes" in tags:
@@ -108,10 +153,12 @@ def main(raw_path, city_path, bld_path):
     for r in city["roads"]:
         by_tier.setdefault(r["tier"], []).append(r["w"])
     print("roads %d, matched to OSM tags %d" % (len(city["roads"]), found))
+    if lot_tree is not None:
+        print("streets narrowed to fit between the real property lines: %d" % fitted)
     for t, ws in sorted(by_tier.items()):
         ws.sort()
         print("  %-6s n=%5d  roadway m: min %.1f  median %.1f  max %.1f" % (t, len(ws), ws[0], ws[len(ws) // 2], ws[-1]))
 
 
 if __name__ == "__main__":
-    main(*sys.argv[1:4])
+    main(*sys.argv[1:5])

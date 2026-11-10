@@ -17,8 +17,9 @@ surveyed, so a block looks like the block that is there:
 
 Output data/city/real_v1.json. Nothing here is generated: a thing is in the
 file only if it is in OpenStreetMap. Data (c) OpenStreetMap contributors, ODbL.
-Usage: python3 -I real_features.py <osm_full.json> <out real_v1.json>
+Usage: python3 -I real_features.py <osm extract .json, or the folder of osm_c*.json cells> <out real_v1.json>
 """
+import glob
 import json
 import os
 import sys
@@ -149,8 +150,21 @@ def nodes(elements):
     return trees, points, count
 
 
+def load(src):
+    """One extract file, or a folder of osm_c*.json cells (things on a seam are in two cells: kept once)."""
+    paths = sorted(glob.glob(os.path.join(src, "osm_c*.json"))) if os.path.isdir(src) else [src]
+    seen, out = set(), []
+    for path in paths:
+        for e in json.load(open(path, encoding="utf-8"))["elements"]:
+            key = (e["type"], e["id"])
+            if key not in seen:
+                seen.add(key)
+                out.append(e)
+    return out
+
+
 def main(src, dst):
-    elements = json.load(open(src, encoding="utf-8"))["elements"]
+    elements = load(src)
     surf, surf_n = surfaces(elements)
     barriers, crossings, sidewalks, lanes = lines(elements)
     trees, points, point_n = nodes(elements)
