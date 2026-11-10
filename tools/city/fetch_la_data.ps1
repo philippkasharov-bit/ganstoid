@@ -23,7 +23,8 @@ try {
     $cells = New-Object System.Collections.Queue
     $nx, $ny = 12, 10
     for ($i = 0; $i -lt $nx; $i++) { for ($j = 0; $j -lt $ny; $j++) {
-        $cells.Enqueue(@($W + ($E - $W) * $i / $nx, $S + ($N - $S) * $j / $ny, $W + ($E - $W) * ($i + 1) / $nx, $S + ($N - $S) * ($j + 1) / $ny))
+        # each value in its own brackets: in PowerShell the comma binds tighter than arithmetic
+        $cells.Enqueue(@(($W + ($E - $W) * $i / $nx), ($S + ($N - $S) * $j / $ny), ($W + ($E - $W) * ($i + 1) / $nx), ($S + ($N - $S) * ($j + 1) / $ny)))
     } }
     $page = 0
     $total = 0
