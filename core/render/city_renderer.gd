@@ -8,14 +8,14 @@
 class_name CityRenderer
 extends Node2D
 
-const DRAW_ORDER: Array[String] = ["trail", "path", "alley", "svc", "hill", "res", "art"]   # under buildings
+const DRAW_ORDER: Array[String] = ["trail", "aisle", "drive", "path", "alley", "svc", "hill", "res", "art"]   # under buildings
 const OVER_BUILDINGS: Array[String] = ["ramp", "fwy"]   # elevated: drawn over everything
 
 ## Every road tier the map draws (checked against the palettes by verify_render_palette).
 static func TIERS_DRAWN() -> Array:
 	return DRAW_ORDER + OVER_BUILDINGS
 ## Fallback widths; MP1 roads carry their real roadway width ("w") and sidewalk+parkway ("side").
-const WIDTH := {"fwy": 26.0, "ramp": 6.0, "art": 14.0, "res": 6.0, "alley": 3.0, "path": 2.5, "svc": 7.0, "hill": 5.0, "trail": 2.5}
+const WIDTH := {"fwy": 26.0, "ramp": 6.0, "art": 14.0, "res": 6.0, "alley": 3.0, "path": 2.5, "svc": 7.0, "hill": 5.0, "trail": 2.5, "aisle": 7.3, "drive": 3.7}
 const CASING := {"fwy": 3.0, "ramp": 2.0}   # elevated roads get a shadowed edge; streets use the kerb instead
 const BUILDING_DAY := {"house": Color("d9c7a8"), "apartments": Color("cdb48f"), "commercial": Color("c9b9a4"), "industrial": Color("b4b8bc"),
 	"garage": Color("d8d2c4"), "civic": Color("c7a98f"), "building": Color("cfc3ad")}
@@ -27,6 +27,7 @@ const DAY := {
 	"river": Color("c4cfd6"), "rail": Color("7d7468"),
 	"fwy": Color("807f7a"), "fwy_c": Color("5b5a56"), "ramp": Color("8a8984"), "ramp_c": Color("6a6964"), "art": Color("8e8d89"), "art_c": Color("74726d"),
 	"res": Color("a09d96"), "alley": Color("b0aca4"), "path": Color("cfcbc1"), "svc": Color("b5b2ab"), "hill": Color("a89d82"), "trail": Color("9b8357"),
+	"aisle": Color("a6a49e"), "drive": Color("d3cfc5"),
 	"walk": Color("d6d3cb"), "kerb": Color("b3aea3"),
 	"parkway": Color("c6cdab"), "well": Color("8d7b5e"), "ramp_f": Color("e5e2d9"),
 }
@@ -36,6 +37,7 @@ const NIGHT := {
 	"river": Color("090c12"), "rail": Color("1d1c22"),
 	"fwy": Color("ffc066"), "fwy_c": Color("3b2a14"), "ramp": Color("a7782f"), "ramp_c": Color("2c2414"), "art": Color("f3a443"), "art_c": Color("6b4a1a"),
 	"res": Color("3d4054"), "alley": Color("0a0b10"), "path": Color("1f222a"), "svc": Color("2c2f3c"), "hill": Color("262a33"), "trail": Color("1b1a17"),
+	"aisle": Color("20232c"), "drive": Color("22252d"),
 	"walk": Color("23262f"), "kerb": Color("191b22"),
 	"parkway": Color("181d1a"), "well": Color("101110"), "ramp_f": Color("2b2f3a"),
 }
