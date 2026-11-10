@@ -2,8 +2,8 @@
 # Rebuilds every derived city file from city_v1.json + buildings_unjoined.json, in
 # the one order that works. Run after any change to roads or raw buildings.
 #   tools/city/rebuild.sh [raw osm roads.json] [godot binary]
-# (osm_import / fix_roads / road_widths are the steps before this; they need the
-#  raw OSM extract and are run by hand when the road network itself changes.)
+# (osm_import / fix_roads / real_lanes / road_widths are the steps before this; they
+#  need the raw OSM extract and are run by hand when the road network itself changes.)
 set -euo pipefail
 RAW="${1:-/home/claude/osm_raw/dtla_6km.json}"
 GODOT="${2:-/tmp/godot_bin/Godot_v4.7.2-stable_linux.x86_64}"

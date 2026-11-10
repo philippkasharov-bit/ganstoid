@@ -11,7 +11,7 @@ const DEFAULT_PATH := "res://data/city/city_v1.json"
 const BUILDINGS_PATH := "res://data/city/buildings_v1.json"
 const PUBLIC_PATH := "res://data/city/public_v1.json"
 const SECTION_PATH := "res://data/city/section_v1.json"
-const TIERS: Array[String] = ["fwy", "ramp", "art", "res", "alley", "path", "svc", "hill", "trail"]
+const TIERS: Array[String] = ["fwy", "ramp", "art", "res", "alley", "path", "svc", "hill", "trail", "aisle", "drive"]   # MR5: aisle = parking aisle, drive = driveway (private)
 
 var size_m: float = 0.0
 var roads: Array[Dictionary] = []   # {id: StringName, tier: String, name?: String, pts: PackedVector2Array}

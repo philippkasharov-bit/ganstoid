@@ -82,6 +82,7 @@ def clearance_cap(line, tree, blds):
     return 2.0 * dists[len(dists) // 5] - 0.4
 
 
+OWN_WIDTH = ("aisle", "drive")
 LOT_REACH_M = 45.0
 LOT_PERCENTILE = 0.3
 MIN_SIDE_M = 1.2
@@ -132,6 +133,8 @@ def main(raw_path, city_path, bld_path, parcels_path=None):
     city = json.load(open(city_path))
     found = 0
     for r in city["roads"]:
+        if r["tier"] in OWN_WIDTH:
+            continue   # real_lanes.py sized these from LA lot standards
         way = None
         if r["id"].startswith("base:osm_w"):
             way = int(r["id"][len("base:osm_w"):].split("_")[0])

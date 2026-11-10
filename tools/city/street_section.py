@@ -54,6 +54,7 @@ APRON_W_DEFAULT = 3.5
 APRON_ALLEY_W = 3.0
 APRON_REACH_M = 12.0      # how far a door may be from its road and still get a driveway
 APRON_MIN_GAP_M = 4.0     # two driveways closer than this are one driveway
+REAL_REACH_M = 30.0       # how far from a street centre line a mapped lane may end and still meet it
 APRON_MIN_LEN = 2.0       # shorter than this is not a driveway, just a kerb cut
 APRON_TIERS = ("art", "res", "alley", "svc", "hill")
 
@@ -136,11 +137,41 @@ def clear_run(c, d, w, full, bld_tree, bld_polys):
     return None
 
 
+def real_aprons(city, lines, tree, section, grid):
+    """A kerb cut where each mapped driveway, parking aisle or drive-through meets a street."""
+    out = []
+    for r in city["roads"]:
+        if r["tier"] not in ("drive", "aisle"):
+            continue
+        for end in (Point(r["pts"][0]), Point(r["pts"][-1])):
+            near = [k for k in tree.query(end.buffer(REAL_REACH_M)) if lines[k][0]["tier"] in ("art", "res", "hill")]
+            if not near:
+                continue
+            k = min(near, key=lambda j: lines[j][1].distance(end))
+            road, ln = lines[k]
+            half = float(road["w"]) / 2
+            sec = section[road["id"]]
+            if ln.distance(end) > half + sec["walk"] + sec["park"] + 3.0:
+                continue
+            on = ln.interpolate(ln.project(end))
+            if on.distance(end) < 0.01:
+                continue
+            nx, ny = unit((on.x, on.y), (end.x, end.y))   # outward = towards the lane
+            cx, cy = on.x + nx * half, on.y + ny * half
+            if not grid.free(cx, cy, APRON_MIN_GAP_M):
+                continue
+            grid.add(cx, cy)
+            out.append({"c": [round(cx, 1), round(cy, 1)], "dir": [round(nx, 3), round(ny, 3)],
+                        "w": round(min(float(r["w"]) + 1.0, 12.0), 1), "len": round(sec["walk"] + sec["park"] + 0.5, 1)})
+    print("  driveway cuts where a mapped driveway or lot lane meets the street: %d" % len(out))
+    return out
+
+
 def aprons(city, blds, bld_tree, bld_polys, lines, section):
     """One driveway cut per building front, on the road its door faces."""
     tree = STRtree([ln for _, ln in lines])
     grid = Grid(APRON_MIN_GAP_M * 2)
-    out = []
+    out = real_aprons(city, lines, tree, section, grid)   # MR5: surveyed driveways first; guesses only where there are none
     for b in blds:
         if "door" not in b:
             continue

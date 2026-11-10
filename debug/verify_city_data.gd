@@ -67,7 +67,7 @@ func _dangling_ends(city: CityData) -> Array:
 	var out := []
 	for i in city.roads.size():
 		var road: Dictionary = city.roads[i]
-		if road["tier"] in ["trail", "ramp", "fwy", "svc", "path"]:
+		if road["tier"] in ["trail", "ramp", "fwy", "svc", "path", "aisle", "drive"]:   # lanes in lots end where they end
 			continue
 		var pts: PackedVector2Array = road["pts"]
 		if pts[0] == pts[pts.size() - 1]:
