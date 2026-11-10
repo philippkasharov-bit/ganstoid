@@ -16,6 +16,7 @@ const LINE_RADIUS_M := 0.15  # doors sit right against their wall: a full body r
 ## A route query costs about 2 ms. Civilians share this many per tick; cops, crew
 ## and dealers (layer "full") are never made to wait.
 const PUBLIC_PLANS_PER_TICK := 1
+const PUBLIC_PLAN_EVERY_TICKS := 2   # a 5-10 ms query every tick is half a frame; every other tick leaves room
 const MAX_LANE_M := 0.35   # under the 0.4 m the navmesh keeps from every wall
 const UNREACHED_M := 2.0   # a route ending further than this from its goal did not get there
 
@@ -86,7 +87,9 @@ func finished(mover_id: StringName, goal: Vector2) -> bool:
 
 ## Called once per sim tick: refills the civilians' route-planning ration.
 func new_tick() -> void:
-	_public_plans_left = PUBLIC_PLANS_PER_TICK
+	_ticks += 1
+	if _ticks % PUBLIC_PLAN_EVERY_TICKS == 0:
+		_public_plans_left = PUBLIC_PLANS_PER_TICK
 
 func _is_short(pos: Vector2, goal: Vector2) -> bool:
 	return pos.distance_to(goal) <= SHORT_M and collision.line_clear(pos, goal, LINE_RADIUS_M)
@@ -96,6 +99,7 @@ func slide(from: Vector2, delta: Vector2) -> Vector2:
 	return collision.slide(from, delta)
 
 var _public_plans_left := PUBLIC_PLANS_PER_TICK
+var _ticks := 0
 var slowest_plan_usec := 0
 var slowest_plan_what := ""
 var plans_made := 0    # perf counters (verify_sim_perf): routes planned, and how many needed the navmesh

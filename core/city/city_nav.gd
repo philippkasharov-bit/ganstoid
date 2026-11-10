@@ -21,6 +21,7 @@ var alley_cost := 1.0:
 			if f.begins_with("alley_"):
 				NavigationServer2D.region_set_travel_cost(_loaded[f], v)
 		# (loaded regions pick the new cost up at the map's next background sync)
+var _ready_latched := false   # true from the first successful is_ready() until the tiles change
 var _tiles := {}    # file -> Rect2
 var _loaded := {}   # file -> region RID
 var _changed_at := -1   # AR0 (Godot 4.7): map iteration id when tiles last changed; the map syncs in the background
@@ -60,6 +61,8 @@ func focus(p: Vector2) -> bool:
 			_loaded.erase(f)
 			changed = true
 	if changed:
+		_ready_latched = false
+		NavigationServer2D.map_set_active(map, true)
 		_changed_at = NavigationServer2D.map_get_iteration_id(map)
 	return changed
 
@@ -68,6 +71,8 @@ func focus(p: Vector2) -> bool:
 ## answers a closest-point probe from inside itself. Until then paths and
 ## closest points can come back empty.
 func is_ready() -> bool:
+	if _ready_latched:
+		return true   # asked every frame and every sim tick: the probes below cost ~1 ms per tile
 	for f in _loaded:
 		if NavigationServer2D.region_get_iteration_id(_loaded[f]) == 0:
 			return false
@@ -77,6 +82,11 @@ func is_ready() -> bool:
 		var t: Rect2 = _tiles[f]
 		if NavigationServer2D.map_get_closest_point(map, t.get_center()).distance_to(t.get_center()) > t.size.x * 0.75:
 			return false
+	_ready_latched = true
+	# Synced: put the map to sleep. An active map costs ~1 ms of every physics
+	# frame even when nothing changes; a sleeping one still answers path and
+	# closest-point queries. focus() wakes it when tiles change.
+	NavigationServer2D.map_set_active(map, false)
 	return true
 
 func loaded_count() -> int:

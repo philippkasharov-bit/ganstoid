@@ -5,3 +5,7 @@ export_presets.cfg
 github_token.txt
 _update*
 __pycache__/
+last_run.log
+version.txt
+_launcher_status.txt
+_godot.zip
