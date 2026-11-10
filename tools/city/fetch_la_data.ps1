@@ -1,6 +1,6 @@
 # MR1: downloads the real-LA source data for the map area. Run on a PC with internet
 # (the build sandbox cannot reach these servers). Output goes to tools\city\osm\.
-#   osm_c0..24.json      everything OpenStreetMap has in the area: roads, sidewalks, crossings,
+#   osm_c*.json          everything OpenStreetMap has in the area: roads, sidewalks, crossings,
 #                        buildings with their tags, land use, parking lots, barriers, trees,
 #                        signals, bus stops, rail, water (Overpass API, ODbL)
 #   parcels\page_N.json  LA County Assessor parcels: real lot lines, use type, year built, units
@@ -51,26 +51,37 @@ try {
     }
     Say "parcels: $total in $page cells (lots on a cell edge are counted twice; the importer drops the copies)"
   }
-    # The area is asked for in 25 cells: the one mirror that answers from here cuts any
-    # request off at 50 seconds. Files osm_c0.json .. osm_c24.json; things on a seam
-    # come twice and real_features.py drops the copies by id.
+    # The area is asked for in small cells: the one mirror that answers from here cuts
+    # any request off at 50 seconds. A cell that keeps failing is split into four.
+    # Files osm_c<S>_<W>.json; things on a seam come twice and real_features.py drops
+    # the copies by id. Cells already on disk are skipped, so a run can be resumed.
     $server = 'https://maps.mail.ru/osm/tools/overpass/api/interpreter'
+    $inv = [Globalization.CultureInfo]::InvariantCulture
+    $todo = New-Object System.Collections.Queue
     $g = 5
-    for ($k = 0; $k -lt $g * $g; $k++) {
-        $i = $k % $g; $j = [math]::Floor($k / $g)
-        $b = [string]::Format([Globalization.CultureInfo]::InvariantCulture, '{0:F5},{1:F5},{2:F5},{3:F5}',
-            ($S + ($N - $S) * $j / $g), ($W + ($E - $W) * $i / $g), ($S + ($N - $S) * ($j + 1) / $g), ($W + ($E - $W) * ($i + 1) / $g))
+    for ($i = 0; $i -lt $g; $i++) { for ($j = 0; $j -lt $g; $j++) {
+        $todo.Enqueue(@(($S + ($N - $S) * $j / $g), ($W + ($E - $W) * $i / $g), ($S + ($N - $S) * ($j + 1) / $g), ($W + ($E - $W) * ($i + 1) / $g), 0))
+    } }
+    $done = 0
+    while ($todo.Count -gt 0) {
+        $c = $todo.Dequeue()
+        $b = [string]::Format($inv, '{0:F5},{1:F5},{2:F5},{3:F5}', $c[0], $c[1], $c[2], $c[3])
+        $file = Join-Path $out ([string]::Format($inv, 'osm_c{0:F5}_{1:F5}_{2}.json', $c[0], $c[1], $c[4]))
         $q = "[out:json][timeout:45];(node($b)(if:count_tags()>0);way($b);relation($b)[type=multipolygon];);out tags geom;"
-        $file = Join-Path $out "osm_c$k.json"
-        $ok = (Test-Path $file) -and ((Get-Item $file).Length -gt 20KB)   # already here from an earlier run
-        for ($try = 1; $try -le 12 -and -not $ok; $try++) {
+        $ok = (Test-Path $file) -and ((Get-Item $file).Length -gt 2KB)
+        for ($try = 1; $try -le 3 -and -not $ok; $try++) {
             try {
                 Invoke-WebRequest -UseBasicParsing -TimeoutSec 70 -Method Post -Uri $server -Body @{ data = $q } -OutFile $file
-                if ((Get-Item $file).Length -gt 20KB) { $ok = $true } else { Say "cell $k try $try : answer too small" }
-            } catch { Say "cell $k try $try failed, waiting"; Start-Sleep (15 * $try) }   # the mirror throttles: back off
+                $ok = (Get-Item $file).Length -gt 2KB
+            } catch { Start-Sleep (10 * $try) }
         }
-        if (-not $ok) { throw "Overpass did not return cell $k" }
-        Say "osm cell $k of $($g * $g): $([math]::Round((Get-Item $file).Length / 1MB, 1)) MB"
+        if ($ok) { $done++; Say "osm cell done ($done, $($todo.Count) to go): $([math]::Round((Get-Item $file).Length / 1MB, 1)) MB"; continue }
+        if ($c[4] -ge 3) { throw "Overpass did not return the cell at $b even split three times" }
+        if (Test-Path $file) { Remove-Item $file }
+        Say "cell at $b too heavy: splitting in four"
+        $ms = ($c[0] + $c[2]) / 2; $mw = ($c[1] + $c[3]) / 2; $d = $c[4] + 1
+        $todo.Enqueue(@($c[0], $c[1], $ms, $mw, $d)); $todo.Enqueue(@($c[0], $mw, $ms, $c[3], $d))
+        $todo.Enqueue(@($ms, $c[1], $c[2], $mw, $d)); $todo.Enqueue(@($ms, $mw, $c[2], $c[3], $d))
     }
     Say 'DONE'
 } catch { Say "ERROR $($_.Exception.Message)" }
