@@ -46,6 +46,7 @@ const DEALER_SHIFT := [15.0, 17.0, 10.0]
 const LOITER_FROM_HOUR := 7.0
 const LOITER_TO_HOUR := 22.0
 const LOITERER_SHARE := 0.08       # civilians who stay outside their door instead of going in
+const NEVER := -1000000
 const DETOUR := 1.35               # streets are longer than the straight line
 const MAX_LEAD_HOURS := 3.0        # nobody sets off more than this before their shift
 const PACE_MIN := 1.25             # m/s; SimUnits.WALK (1.5) is the middle of the range
@@ -81,7 +82,7 @@ var _is_out: Dictionary = {}    # npc id -> true while in _outside
 var _on_full: Dictionary = {}   # npc id -> true: public ground did not get them there, any walkable way now
 var _enrolled: Dictionary = {}  # npc id -> NPCData
 var _seen_entities := -1
-var _last_tick := -1000000
+var _last_tick := NEVER
 var _idle_targets: Dictionary = {}
 var _idle_dwell_until: Dictionary = {}
 var stranded := 0               # perf/realism counter: people whose door no route reaches
@@ -92,8 +93,8 @@ func _init(world: World) -> void:
 	required_component = ComponentNames.NPC
 
 func process_entities(entities: Dictionary, delta: float, tick: int) -> void:
-	if tick != _last_tick + 1:
-		_resync(entities, tick)        # time jumped (new game, sleep): everyone is where their routine says
+	if _last_tick > NEVER and tick != _last_tick + 1:
+		_resync(entities, tick)        # time jumped (sleep): everyone is where their routine says
 	elif _seen_entities != entities.size():
 		_enrol(entities, tick, false)  # somebody new arrived
 	_last_tick = tick
@@ -141,7 +142,7 @@ func _move(npc: NPCData, delta: float, tick: int, player_pos: Vector2) -> bool:
 		if dist <= SimNav.LAST_HOP_M or _on_full.has(npc.id):
 			if dist > SimNav.LAST_HOP_M:
 				stranded += 1
-			_go_indoors(npc, target)
+			_go_indoors(npc, npc.position)   # in by whatever entrance they reached: no snap across the lot
 			return true
 		_on_full[npc.id] = true   # public ground does not reach it: take any walkable way
 		nav.forget(npc.id)
@@ -202,6 +203,13 @@ func _enrol(entities: Dictionary, tick: int, settle: bool) -> void:
 		_plan_day(npc, tick)
 		if settle:
 			_settle(npc, tick)
+
+## New game: put everyone where their routine says they are at `tick` (at work,
+## at home, on their corner) instead of all starting at home. Call once after
+## the world is generated; a later jump in time does this by itself.
+func settle_all(tick: int) -> void:
+	_resync(_world.get_entities_with_component(ComponentNames.NPC), tick)
+	_last_tick = tick
 
 func _resync(entities: Dictionary, tick: int) -> void:
 	_due.clear()

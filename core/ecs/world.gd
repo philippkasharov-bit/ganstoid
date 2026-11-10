@@ -132,6 +132,14 @@ func register_system(system: SystemBase, cold_name: StringName = &"") -> void:
 
 ## Advances the sim by one tick. Hot systems always run; warm systems run
 ## only on the interval boundary, so their cost is amortized across frames.
+## The registered HOT or WARM system of this class, or null (for the few callers
+## that must poke one system directly: new-game set-up, checks).
+func find_system(script: Script) -> SystemBase:
+	for system in _hot_systems + _warm_systems:
+		if system.get_script() == script:
+			return system
+	return null
+
 func step(delta: float) -> void:
 	tick += 1
 	for system in _hot_systems:

@@ -8,7 +8,7 @@
 ## never eat a whole frame in one tick.
 extends SceneTree
 
-const POPULATION := 600          # WorldDriver.GAME_POPULATION
+const POPULATION := 600          # = WorldDriver.GAME_POPULATION
 const TICKS := 3600              # one real minute
 const AVG_BUDGET_MS := {3.0: 1.0, 8.0: 2.5, 11.0: 1.5}   # measured 0.3 / 0.8 / 0.5 in the sandbox
 const WORST_TICK_MS := 16.0
@@ -24,7 +24,8 @@ func _initialize() -> void:
 		WorldGenerator.generate_real_city_game(world, 1, city, city.spawn, TestWorlds.DISTRICT_RADIUS, POPULATION)
 		SimNav.install(city, city.spawn, TestWorlds.DISTRICT_RADIUS)
 		await TestWorlds.wait_nav(self, [SimNav.active])
-		world.tick = SimClock.hours(hour)   # a jump in time: everyone is put where their routine says
+		world.tick = SimClock.hours(hour)
+		(world.find_system(NPCScheduleSystem) as NPCScheduleSystem).settle_all(world.tick)
 		for i in SimClock.real_seconds(20):
 			world.step(1.0 / SimClock.TICKS_PER_SECOND)
 		var worst := 0
