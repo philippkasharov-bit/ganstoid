@@ -1,6 +1,6 @@
 # MR1: downloads the real-LA source data for the map area. Run on a PC with internet
 # (the build sandbox cannot reach these servers). Output goes to tools\city\osm\.
-#   osm_full.json        everything OpenStreetMap has in the area: roads, sidewalks, crossings,
+#   osm_q0..3.json       everything OpenStreetMap has in the area: roads, sidewalks, crossings,
 #                        buildings with their tags, land use, parking lots, barriers, trees,
 #                        signals, bus stops, rail, water (Overpass API, ODbL)
 #   parcels\page_N.json  LA County Assessor parcels: real lot lines, use type, year built, units
@@ -51,16 +51,26 @@ try {
     }
     Say "parcels: $total in $page cells (lots on a cell edge are counted twice; the importer drops the copies)"
   }
-    Say 'asking Overpass for the full OSM extract (can take a few minutes)'
-    $q = "[out:json][timeout:600][maxsize:1073741824];(node($S,$W,$N,$E)(if:count_tags()>0);way($S,$W,$N,$E);relation($S,$W,$N,$E)[type=multipolygon];);out tags geom;"
-    $osm = Join-Path $out 'osm_full.json'
-    foreach ($server in 'https://maps.mail.ru/osm/tools/overpass/api/interpreter', 'https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter') {
-        try {
-            Invoke-WebRequest -UseBasicParsing -TimeoutSec 900 -Method Post -Uri $server -Body @{ data = $q } -OutFile $osm
-            if ((Get-Item $osm).Length -gt 5MB) { Say "osm from $server : $([int]((Get-Item $osm).Length / 1MB)) MB"; break }
-            Say "osm from $server : answer too small, trying the next server"
-        } catch { Say "osm from $server failed: $($_.Exception.Message)" }
+    # The area is asked for in four quarters: the mirrors that answer from here time
+    # out on the whole box at once. Files osm_q0.json .. osm_q3.json; things on a
+    # seam come twice and real_features.py drops the copies by id.
+    $servers = 'https://maps.mail.ru/osm/tools/overpass/api/interpreter', 'https://overpass.kumi.systems/api/interpreter', 'https://overpass-api.de/api/interpreter'
+    $mx = ($W + $E) / 2; $my = ($S + $N) / 2
+    $quarters = @(@($S, $W, $my, $mx), @($S, $mx, $my, $E), @($my, $W, $N, $mx), @($my, $mx, $N, $E))
+    for ($k = 0; $k -lt 4; $k++) {
+        $b = [string]::Format([Globalization.CultureInfo]::InvariantCulture, '{0:F5},{1:F5},{2:F5},{3:F5}', $quarters[$k][0], $quarters[$k][1], $quarters[$k][2], $quarters[$k][3])
+        $q = "[out:json][timeout:900][maxsize:1073741824];(node($b)(if:count_tags()>0);way($b);relation($b)[type=multipolygon];);out tags geom;"
+        $file = Join-Path $out "osm_q$k.json"
+        $ok = $false
+        foreach ($server in $servers) {
+            try {
+                Say "quarter $k from $server ..."
+                Invoke-WebRequest -UseBasicParsing -TimeoutSec 1200 -Method Post -Uri $server -Body @{ data = $q } -OutFile $file
+                if ((Get-Item $file).Length -gt 1MB) { Say "quarter $k : $([int]((Get-Item $file).Length / 1MB)) MB"; $ok = $true; break }
+                Say "quarter $k : answer too small"
+            } catch { Say "quarter $k failed: $($_.Exception.Message)" }
+        }
+        if (-not $ok) { throw "no Overpass server returned quarter $k" }
     }
-    if (-not (Test-Path $osm) -or (Get-Item $osm).Length -le 5MB) { throw 'no Overpass server returned the extract' }
     Say 'DONE'
 } catch { Say "ERROR $($_.Exception.Message)" }
