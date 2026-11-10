@@ -1,6 +1,6 @@
 # MR1: downloads the real-LA source data for the map area. Run on a PC with internet
 # (the build sandbox cannot reach these servers). Output goes to tools\city\osm\.
-#   osm_q0..3.json       everything OpenStreetMap has in the area: roads, sidewalks, crossings,
+#   osm_c0..24.json      everything OpenStreetMap has in the area: roads, sidewalks, crossings,
 #                        buildings with their tags, land use, parking lots, barriers, trees,
 #                        signals, bus stops, rail, water (Overpass API, ODbL)
 #   parcels\page_N.json  LA County Assessor parcels: real lot lines, use type, year built, units
@@ -51,26 +51,26 @@ try {
     }
     Say "parcels: $total in $page cells (lots on a cell edge are counted twice; the importer drops the copies)"
   }
-    # The area is asked for in four quarters: the mirrors that answer from here time
-    # out on the whole box at once. Files osm_q0.json .. osm_q3.json; things on a
-    # seam come twice and real_features.py drops the copies by id.
-    $servers = 'https://maps.mail.ru/osm/tools/overpass/api/interpreter', 'https://overpass.kumi.systems/api/interpreter', 'https://overpass-api.de/api/interpreter'
-    $mx = ($W + $E) / 2; $my = ($S + $N) / 2
-    $quarters = @(@($S, $W, $my, $mx), @($S, $mx, $my, $E), @($my, $W, $N, $mx), @($my, $mx, $N, $E))
-    for ($k = 0; $k -lt 4; $k++) {
-        $b = [string]::Format([Globalization.CultureInfo]::InvariantCulture, '{0:F5},{1:F5},{2:F5},{3:F5}', $quarters[$k][0], $quarters[$k][1], $quarters[$k][2], $quarters[$k][3])
-        $q = "[out:json][timeout:900][maxsize:1073741824];(node($b)(if:count_tags()>0);way($b);relation($b)[type=multipolygon];);out tags geom;"
-        $file = Join-Path $out "osm_q$k.json"
+    # The area is asked for in 25 cells: the one mirror that answers from here cuts any
+    # request off at 50 seconds. Files osm_c0.json .. osm_c24.json; things on a seam
+    # come twice and real_features.py drops the copies by id.
+    $server = 'https://maps.mail.ru/osm/tools/overpass/api/interpreter'
+    $g = 5
+    for ($k = 0; $k -lt $g * $g; $k++) {
+        $i = $k % $g; $j = [math]::Floor($k / $g)
+        $b = [string]::Format([Globalization.CultureInfo]::InvariantCulture, '{0:F5},{1:F5},{2:F5},{3:F5}',
+            ($S + ($N - $S) * $j / $g), ($W + ($E - $W) * $i / $g), ($S + ($N - $S) * ($j + 1) / $g), ($W + ($E - $W) * ($i + 1) / $g))
+        $q = "[out:json][timeout:45];(node($b)(if:count_tags()>0);way($b);relation($b)[type=multipolygon];);out tags geom;"
+        $file = Join-Path $out "osm_c$k.json"
         $ok = $false
-        foreach ($server in $servers) {
+        for ($try = 1; $try -le 4 -and -not $ok; $try++) {
             try {
-                Say "quarter $k from $server ..."
-                Invoke-WebRequest -UseBasicParsing -TimeoutSec 1200 -Method Post -Uri $server -Body @{ data = $q } -OutFile $file
-                if ((Get-Item $file).Length -gt 1MB) { Say "quarter $k : $([int]((Get-Item $file).Length / 1MB)) MB"; $ok = $true; break }
-                Say "quarter $k : answer too small"
-            } catch { Say "quarter $k failed: $($_.Exception.Message)" }
+                Invoke-WebRequest -UseBasicParsing -TimeoutSec 70 -Method Post -Uri $server -Body @{ data = $q } -OutFile $file
+                if ((Get-Item $file).Length -gt 20KB) { $ok = $true } else { Say "cell $k try $try : answer too small" }
+            } catch { Say "cell $k try $try failed: $($_.Exception.Message)"; Start-Sleep 5 }
         }
-        if (-not $ok) { throw "no Overpass server returned quarter $k" }
+        if (-not $ok) { throw "Overpass did not return cell $k" }
+        Say "osm cell $k of $($g * $g): $([math]::Round((Get-Item $file).Length / 1MB, 1)) MB"
     }
     Say 'DONE'
 } catch { Say "ERROR $($_.Exception.Message)" }
