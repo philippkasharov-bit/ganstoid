@@ -58,6 +58,7 @@ const RELATIONSHIP_DECAY := 0.02
 ## reputation with cops is the same kind of slow-fading relationship, just
 ## negative instead of positive.
 const CRIME_HEAT_DECAY := 0.015
+const HEAT_FORGOTTEN := 0.0005
 
 ## Locked pricing formula (roadmap Phase 2 spec):
 ## current_price = base_price * clamp(1.0 + (demand - supply) * elasticity, min_mult, max_mult)
@@ -65,6 +66,7 @@ const PRICE_ELASTICITY := 0.8
 const PRICE_MIN_MULT := 0.4
 const PRICE_MAX_MULT := 2.5
 
+var _buildings: Array[BuildingData] = []   # rebuilt when the number of buildings changes
 var _world_ref: WeakRef
 var _world: World:
 	get:
@@ -76,21 +78,22 @@ func _init(world: World) -> void:
 	required_component = ComponentNames.BUILDING
 
 func process_entities(entities: Dictionary, _delta: float, _tick: int) -> void:
-	for entity in entities.values():
-		var building: BuildingData = entity.get_component(ComponentNames.BUILDING)
-		_regen_cash(building)
-		_decay_crime_heat(building)
+	# S1: nearly every building is idle on any given tick (no heat, till full).
+	# Walk a cached plain list and test that inline, instead of fetching the
+	# component and making two calls for each of ~2,600 buildings six times a second.
+	if _buildings.size() != entities.size():
+		_buildings.clear()
+		for entity in entities.values():
+			_buildings.append(entity.get_component(ComponentNames.BUILDING))
+	for building in _buildings:
+		if building.cash_on_hand < building.daily_revenue:
+			_regen_cash(building)
+		if building.crime_heat != 0.0:
+			_decay_crime_heat(building)
 	for item in _world.economy_items.values():
 		_drift_price(item)
 	_decay_relationships()
 
-## Batch 8 (locked): there is exactly one PlayerStateData in the world, by
-## construction (PlayerFactory), so this is a single lookup per warm tick,
-## not a per-entity loop -- same "find the one player entity" pattern used
-## everywhere else (CopAISystem._get_player_entity, CrimeSystem.
-## _get_player_entity). Skips entirely before new-game spawn (no player
-## entity yet), the same defensive shape as everything else that looks the
-## player up rather than assuming they exist.
 func _decay_relationships() -> void:
 	var matches := _world.get_entities_with_component(ComponentNames.PLAYER_STATE)
 	for entity in matches.values():
@@ -107,6 +110,8 @@ func _decay_relationships() -> void:
 ## on all of them, not just revenue-earning ones.
 func _decay_crime_heat(building: BuildingData) -> void:
 	building.crime_heat += (0.0 - building.crime_heat) * CRIME_HEAT_DECAY
+	if building.crime_heat < HEAT_FORGOTTEN:
+		building.crime_heat = 0.0   # an exponential decay never reaches zero by itself
 
 func _regen_cash(building: BuildingData) -> void:
 	if building.daily_revenue <= 0:

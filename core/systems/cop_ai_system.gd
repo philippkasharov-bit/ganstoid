@@ -151,6 +151,10 @@ var _hot_buildings: Array[BuildingData] = []
 var _hot_scanned_tick := -1000000
 var _alert_set_tick: Dictionary = {}  # StringName -> int
 
+var _all_buildings: Array[BuildingData] = []
+var _cops: Array[NPCData] = []
+var _cops_for := -1
+
 func _init(world: World) -> void:
 	_world_ref = weakref(world)
 	tick_rate = GanstoidEnums.TickRate.HOT
@@ -160,10 +164,14 @@ func process_entities(entities: Dictionary, delta: float, tick: int) -> void:
 	if tick - _hot_scanned_tick >= HOT_SCAN_TICKS:
 		_collect_hot_buildings()
 		_hot_scanned_tick = tick
-	for entity in entities.values():
-		var npc: NPCData = entity.get_component(ComponentNames.NPC)
-		if not npc.is_cop:
-			continue
+	if _cops_for != entities.size():   # S1: six cops, not a walk over every person in the city each tick
+		_cops_for = entities.size()
+		_cops.clear()
+		for entity in entities.values():
+			var person: NPCData = entity.get_component(ComponentNames.NPC)
+			if person.is_cop:
+				_cops.append(person)
+	for npc in _cops:
 		if _alerted.get(npc.id, false):
 			_advance_alert(npc, delta, tick)
 		else:
@@ -185,12 +193,14 @@ func _advance_patrol(npc: NPCData, delta: float, tick: int) -> void:
 			radius = RAID_WANDER_RADIUS
 			dwell_min = RAID_DWELL_MIN_TICKS
 			dwell_max = RAID_DWELL_MAX_TICKS
+	var before := npc.position
 	npc.position = WanderBehavior.advance(
 		npc.id, npc.position, anchor, radius, PATROL_SPEED,
 		dwell_min, dwell_max, delta, tick,
 		_patrol_targets, _patrol_dwell_until, ARRIVE_EPSILON
 	)
-	_world.reindex_position(npc.id)
+	if npc.position != before:
+		_world.reindex_position(npc.id)
 
 ## Batch 10 (locked): linear scan over all buildings -- same "fine at this
 ## phase's city scale" reasoning as the has_been_hit scan this replaces.
@@ -200,8 +210,11 @@ func _advance_patrol(npc: NPCData, delta: float, tick: int) -> void:
 func _collect_hot_buildings() -> void:
 	_hot_buildings.clear()
 	var all := _world.get_entities_with_component(ComponentNames.BUILDING)
-	for id in all:
-		var building: BuildingData = all[id].get_component(ComponentNames.BUILDING)
+	if _all_buildings.size() != all.size():   # S1: plain cached list; the scan runs 4x a second
+		_all_buildings.clear()
+		for entity in all.values():
+			_all_buildings.append(entity.get_component(ComponentNames.BUILDING))
+	for building in _all_buildings:
 		if building.crime_heat >= PATROL_BIAS_HEAT_THRESHOLD:
 			_hot_buildings.append(building)
 

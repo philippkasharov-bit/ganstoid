@@ -5,6 +5,7 @@ class_name CityCollision
 extends RefCounted
 
 const CELL := 48.0
+const LINE_STEP_M := 0.5
 
 var _grid := {}   # Vector2i -> Array[PackedVector2Array]
 
@@ -32,6 +33,15 @@ func blocked(p: Vector2, radius: float = 0.4) -> bool:
 			if Geometry2D.get_closest_point_to_segment(p, poly[i], poly[i + 1]).distance_to(p) < radius:
 				return true
 	return false
+
+## True if a body of `radius` can walk the straight line a -> b without touching
+## a building (sampled every LINE_STEP_M: walls are far thicker than that).
+func line_clear(a: Vector2, b: Vector2, radius: float = 0.4) -> bool:
+	var n := maxi(1, int(ceil(a.distance_to(b) / LINE_STEP_M)))
+	for i in range(1, n + 1):
+		if blocked(a.lerp(b, float(i) / n), radius):
+			return false
+	return true
 
 ## Move from `from` by `delta`, sliding along walls instead of stopping dead.
 func slide(from: Vector2, delta: Vector2, radius: float = 0.4) -> Vector2:
