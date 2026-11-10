@@ -47,6 +47,15 @@ const LOITER_FROM_HOUR := 7.0
 const LOITER_TO_HOUR := 22.0
 const LOITERER_SHARE := 0.08       # civilians who stay outside their door instead of going in
 const NEVER := -1000000
+const WAKES_PER_TICK := 6           # people re-planning their day in one tick
+const FINAL := -1                  # _stay value: the end of the trip
+const PASS_M := 4.0                # close enough to a point one only walks past
+const PAUSE_EVERY_S := 40.0        # near the player, a walker stops about this often ...
+const PAUSE_TICKS := [90, 360]     # ... for 1.5 to 6 s (phone, shoelace, looking around)
+const OUTING_SLACK := 1.3          # only go out with this much more free time than the outing needs
+const DARK_SHARE := 0.12           # addicts, thugs, the reckless: cut through anywhere at night
+const NIGHT_FROM := 21.0
+const NIGHT_TO := 5.0
 const DETOUR := 1.35               # streets are longer than the straight line
 const MAX_LEAD_HOURS := 3.0        # nobody sets off more than this before their shift
 const PACE_MIN := 1.25             # m/s; SimUnits.WALK (1.5) is the middle of the range
@@ -73,7 +82,17 @@ var _world: World:
 ## tick -- see WanderBehavior's doc comment for why it doesn't hold this
 ## state itself. Only ever populated for NPCs currently idling at a
 ## destination, not every NPC every tick.
-var _goal: Dictionary = {}      # npc id -> door of the building they should be at now
+var _goal: Dictionary = {}      # npc id -> the point they are walking to right now
+var _stay: Dictionary = {}      # npc id -> at _goal: 0 walk on past, >0 ticks indoors, FINAL stay until the routine says
+var _legs: Dictionary = {}      # npc id -> Array of the stops after _goal: {p, stay}
+var _final: Dictionary = {}     # npc id -> the door this whole trip ends at (home or work)
+var _homebound: Dictionary = {} # npc id -> true while that door is their home in free time
+var _visit_until: Dictionary = {}   # npc id -> tick their stay inside a business ends
+var _outing_at: Dictionary = {}     # npc id -> tick they next think about going out
+var _pace_now: Dictionary = {}      # npc id -> m/s for this trip (a stroll is slower)
+var _pause_until: Dictionary = {}   # npc id -> standing still until this tick
+var _routine_wake: Dictionary = {}  # npc id -> tick their queued routine wake-up is at
+var _outings := NPCOutings.new()
 var _from: Dictionary = {}      # npc id -> door of the building they are coming from
 var _lead: Dictionary = {}      # npc id -> ticks their walk to work takes (0 = no job)
 var _due: Dictionary = {}       # tick -> Array[NPCData] whose plan changes then
@@ -85,6 +104,7 @@ var _seen_entities := -1
 var _last_tick := NEVER
 var _idle_targets: Dictionary = {}
 var _idle_dwell_until: Dictionary = {}
+var outings_started := 0        # realism counter (verify_sim_life)
 var stranded := 0               # perf/realism counter: people whose door no route reaches
 
 func _init(world: World) -> void:
@@ -103,6 +123,11 @@ func process_entities(entities: Dictionary, delta: float, tick: int) -> void:
 	var due: Variant = _due.get(tick)
 	if due != null:
 		_due.erase(tick)
+		if due.size() > WAKES_PER_TICK:   # a crowd on one tick (a shift ending) is spread over the next few
+			if not _due.has(tick + 1):
+				_due[tick + 1] = []
+			_due[tick + 1].append_array(due.slice(WAKES_PER_TICK))
+			due = due.slice(0, WAKES_PER_TICK)
 		for npc in due:
 			if not (npc.is_crew or npc.is_cop):
 				_plan_day(npc, tick)
@@ -129,29 +154,111 @@ func _move(npc: NPCData, delta: float, tick: int, player_pos: Vector2) -> bool:
 		if (tick + _phase(npc.id)) % FAR_EVERY != 0:
 			return false
 		step_delta = delta * FAR_EVERY
+	elif _pausing(npc, tick):
+		return false
 	var before := npc.position
 	var dist := npc.position.distance_to(target)
+	var stay: int = _stay.get(npc.id, FINAL)
 	var nav := SimNav.active
-	if dist <= IDLE_WANDER_RADIUS and stays_outside(npc, tick):
+	if stay == FINAL and dist <= IDLE_WANDER_RADIUS and stays_outside(npc, tick):
 		_loiter(npc, target, step_delta, tick)
-	elif dist <= ARRIVE_EPSILON:
-		_go_indoors(npc, target)
-		return true
+	elif dist <= ARRIVE_EPSILON or (stay == 0 and dist <= PASS_M):
+		return _arrive(npc, target, tick)
 	elif nav != null and nav.finished(npc.id, target):
-		# The route ran out short of the door.
-		if dist <= SimNav.LAST_HOP_M or _on_full.has(npc.id):
-			if dist > SimNav.LAST_HOP_M:
+		# The route ran out short of the point.
+		if stay == 0 or dist <= SimNav.LAST_HOP_M or _on_full.has(npc.id):
+			if stay != 0 and dist > SimNav.LAST_HOP_M:
 				stranded += 1
-			_go_indoors(npc, npc.position)   # in by whatever entrance they reached: no snap across the lot
-			return true
+			return _arrive(npc, npc.position, tick)   # in by whatever entrance they reached: no snap across the lot
 		_on_full[npc.id] = true   # public ground does not reach it: take any walkable way
 		nav.forget(npc.id)
 	else:
-		var layer := "full" if _on_full.has(npc.id) else _layer(npc)
-		npc.position = WanderBehavior.step_toward(npc.position, target, pace(npc.id), step_delta, ARRIVE_EPSILON, npc.id, layer)
+		var layer := "full" if _on_full.has(npc.id) else layer_at(npc, tick)
+		npc.position = WanderBehavior.step_toward(npc.position, target, _pace_now.get(npc.id, pace(npc.id)), step_delta, ARRIVE_EPSILON, npc.id, layer)
 	if npc.position != before:
 		_world.reindex_position(npc.id)
 	return false
+
+## Reached the current point: walk on, go in for a while, or the trip is over.
+func _arrive(npc: NPCData, at: Vector2, tick: int) -> bool:
+	var stay: int = _stay.get(npc.id, FINAL)
+	if stay == 0 and not _legs.get(npc.id, []).is_empty():
+		_next_leg(npc)
+		return false
+	_go_indoors(npc, at)
+	if stay > 0:
+		_visit_until[npc.id] = tick + stay
+		_wake(npc, tick + stay)
+	else:
+		_pace_now.erase(npc.id)
+		if _homebound.has(npc.id):
+			_think_about_going_out(npc, tick)
+	return true
+
+## People near the player do not march: now and then one stops for a moment.
+func _pausing(npc: NPCData, tick: int) -> bool:
+	if tick < _pause_until.get(npc.id, 0):
+		return true
+	if randf() * PAUSE_EVERY_S * SimClock.TICKS_PER_SECOND < 1.0:
+		_pause_until[npc.id] = tick + randi_range(PAUSE_TICKS[0], PAUSE_TICKS[1])
+		return true
+	return false
+
+func _next_leg(npc: NPCData) -> void:
+	var leg: Dictionary = _legs[npc.id].pop_front()
+	_goal[npc.id] = leg["p"]
+	_stay[npc.id] = leg["stay"]
+	_on_full.erase(npc.id)
+	if SimNav.active != null:
+		SimNav.active.forget(npc.id)
+
+## Sets someone off: through `stops` ({p, stay}) and on to the door `final`.
+func _start_trip(npc: NPCData, stops: Array, final: Vector2, trip_pace: float) -> void:
+	var legs := stops.duplicate()
+	legs.append({"p": final, "stay": FINAL})
+	_legs[npc.id] = legs
+	_final[npc.id] = final
+	if trip_pace > 0.0:
+		_pace_now[npc.id] = trip_pace
+	else:
+		_pace_now.erase(npc.id)
+	WanderBehavior.clear(npc.id, _idle_targets, _idle_dwell_until)
+	_next_leg(npc)
+	_step_out(npc)
+
+func _wake(npc: NPCData, at: int) -> void:
+	if not _due.has(at):
+		_due[at] = []
+	_due[at].append(npc)
+
+func _think_about_going_out(npc: NPCData, tick: int) -> void:
+	if npc.is_dealer:
+		return
+	_outing_at[npc.id] = tick + NPCOutings.next_gap(npc.id, _world.runtime_rng)
+	_wake(npc, _outing_at[npc.id])
+
+## Free and at home, and the moment has come: an errand, an evening out or a
+## stroll, if there is time for it before work. Otherwise think again later.
+func _maybe_go_out(npc: NPCData, home: Vector2, tick: int, free_ticks: int) -> void:
+	_outing_at.erase(npc.id)
+	var outing := _outings.plan(_world, npc, home, SimClock.day_fraction(tick) * 24.0, _world.runtime_rng)
+	if outing.is_empty() or _outing_ticks(npc, outing, home) * OUTING_SLACK > free_ticks:
+		_think_about_going_out(npc, tick)
+		return
+	_start_trip(npc, outing["legs"], home, outing["pace"])
+	outings_started += 1
+
+func _outing_ticks(npc: NPCData, outing: Dictionary, home: Vector2) -> int:
+	var metres := 0.0
+	var inside := 0
+	var at := home
+	for leg in outing["legs"]:
+		metres += at.distance_to(leg["p"])
+		inside += leg["stay"]
+		at = leg["p"]
+	metres += at.distance_to(home)
+	var speed: float = outing["pace"] if outing["pace"] > 0.0 else pace(npc.id)
+	return inside + int(metres * DETOUR / speed * SimClock.TICKS_PER_SECOND)
 
 func _go_indoors(npc: NPCData, door: Vector2) -> void:
 	npc.indoors = true
@@ -215,17 +322,19 @@ func _resync(entities: Dictionary, tick: int) -> void:
 	_due.clear()
 	_outside.clear()
 	_is_out.clear()
-	_goal.clear()
-	_from.clear()
-	_on_full.clear()
+	for book in [_goal, _from, _on_full, _stay, _legs, _final, _homebound, _visit_until, _outing_at, _pace_now, _pause_until, _routine_wake]:
+		book.clear()
 	_enrol(entities, tick, true)
 
 ## Puts one person where they would be by now: inside (or outside the door, for
 ## those who hang around), unless they should only just have set off.
 func _settle(npc: NPCData, tick: int) -> void:
-	var target: Variant = _goal.get(npc.id)
+	var target: Variant = _final.get(npc.id)
 	if target == null:
 		return
+	_legs[npc.id] = []
+	_goal[npc.id] = target
+	_stay[npc.id] = FINAL
 	if _just_left(npc, tick):
 		npc.position = _from.get(npc.id, target)
 		_step_out(npc)
@@ -236,32 +345,54 @@ func _settle(npc: NPCData, tick: int) -> void:
 		_go_indoors(npc, target)
 		_is_out.erase(npc.id)
 		_outside.erase(npc)
+		if _homebound.has(npc.id):
+			_think_about_going_out(npc, tick)
 
-## Works out where this person should be now and when that next changes; called
-## when it changes, not per tick. Leaving for somewhere new puts them on the street.
+## Decides what this person should be doing now; called when something changes
+## for them (shift start or end, a visit over, time to think about going out),
+## never per tick. Safe to call at any time: it only acts on what has changed.
 func _plan_day(npc: NPCData, tick: int) -> void:
 	var window := _work_window(npc, tick)   # x: ticks into it (or past it), y: its length, both from departure
-	var heading_to_work := _has_building(npc.work_building_id) and window.x < window.y
+	var in_window := window.x < window.y
+	var day_off := not npc.is_dealer and NPCOutings.takes_day_off(npc.id, _shift_day(npc, tick))
+	var heading_to_work := _has_building(npc.work_building_id) and in_window and not day_off
 	var target_id: StringName = npc.work_building_id if heading_to_work else npc.home_building_id
 	var from_id: StringName = npc.home_building_id if heading_to_work else npc.work_building_id
-	var change := maxi(1, (window.y if heading_to_work else SimClock.day_ticks) - window.x)
-	var wake := tick + mini(change, _ticks_to_loiter_edge(npc, tick))
-	if not _due.has(wake):
-		_due[wake] = []
-	_due[wake].append(npc)
+	var until_change := maxi(1, (window.y if in_window else SimClock.day_ticks) - window.x)
+	var routine := tick + mini(until_change, _ticks_to_loiter_edge(npc, tick))
+	if _routine_wake.get(npc.id, NEVER) != routine:
+		_routine_wake[npc.id] = routine
+		_wake(npc, routine)
 	if not _has_building(target_id):
 		_goal.erase(npc.id)
 		return
 	var door: Vector2 = _world.entities[target_id].get_component(ComponentNames.BUILDING).position
 	if _has_building(from_id):
 		_from[npc.id] = _world.entities[from_id].get_component(ComponentNames.BUILDING).position
-	var had: Variant = _goal.get(npc.id)
-	_goal[npc.id] = door
-	if had == null or had != door:
-		WanderBehavior.clear(npc.id, _idle_targets, _idle_dwell_until)
-		_step_out(npc)
+	if heading_to_work:
+		_homebound.erase(npc.id)
+		_visit_until.erase(npc.id)   # work calls: whatever they were doing is over
+		_outing_at.erase(npc.id)
+	else:
+		_homebound[npc.id] = true
+	if _final.get(npc.id) != door:
+		_start_trip(npc, NPCOutings.via(npc.id, _shift_day(npc, tick), npc.position, door), door, 0.0)
+	elif _visit_until.has(npc.id):
+		if tick >= _visit_until[npc.id]:   # done in the shop: on to the next stop (home, in the end)
+			_visit_until.erase(npc.id)
+			_next_leg(npc)
+			_step_out(npc)
+	elif npc.indoors and not heading_to_work and tick >= _outing_at.get(npc.id, tick + 1):
+		var free := SimClock.day_ticks - window.x if _has_building(npc.work_building_id) and not in_window else SimClock.day_ticks
+		_maybe_go_out(npc, door, tick, free)
 	elif npc.indoors and stays_outside(npc, tick):
 		_step_out(npc)   # morning: the ones who hang around come back out
+
+## Which working day `tick` belongs to for this person (changes when they would
+## set off for work, so one day's choices hold from leaving home to the next leaving).
+func _shift_day(npc: NPCData, tick: int) -> int:
+	var opened := int(shift_of(npc).x * SimClock.day_ticks) - int(_lead.get(npc.id, 0))
+	return floori(float(tick - opened) / SimClock.day_ticks)
 
 func _has_building(id: StringName) -> bool:
 	return id != &"" and _world.entities.has(id)
@@ -365,3 +496,16 @@ static func _unit(npc_id: StringName, salt: int) -> float:
 ## Civilians keep to public ground; dealers know the shortcuts.
 static func _layer(npc: NPCData) -> String:
 	return "full" if npc.is_dealer else "public"
+
+## At night the reckless few stop keeping to the sidewalk: yards, lots and
+## alleys are all fair game. They are who the player meets in the dark places.
+static func layer_at(npc: NPCData, tick: int) -> String:
+	if npc.is_dealer:
+		return "full"
+	var hour := SimClock.day_fraction(tick) * 24.0
+	if is_dark_route(npc.id) and (hour >= NIGHT_FROM or hour < NIGHT_TO):
+		return "full"
+	return "public"
+
+static func is_dark_route(npc_id: StringName) -> bool:
+	return _unit(npc_id, 11) < DARK_SHARE

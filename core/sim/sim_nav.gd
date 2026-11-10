@@ -16,6 +16,7 @@ const LINE_RADIUS_M := 0.15  # doors sit right against their wall: a full body r
 ## A route query costs about 2 ms. Civilians share this many per tick; cops, crew
 ## and dealers (layer "full") are never made to wait.
 const PUBLIC_PLANS_PER_TICK := 1
+const MAX_LANE_M := 0.35   # under the 0.4 m the navmesh keeps from every wall
 const UNREACHED_M := 2.0   # a route ending further than this from its goal did not get there
 
 static var active: SimNav = null
@@ -58,7 +59,7 @@ func step(mover_id: StringName, pos: Vector2, goal: Vector2, speed: float, delta
 	if plan.is_empty() or plan["layer"] != layer or plan["goal"].distance_to(goal) > REPATH_M:
 		if layer == "public" and _public_plans_left <= 0 and not _is_short(pos, goal):
 			return pos   # civilians queue for a route; a few ticks' pause at the door
-		plan = _plan(pos, goal, layer)
+		plan = _plan(pos, goal, layer, lane_of(mover_id))
 		_plans[mover_id] = plan
 	var budget := speed * delta
 	var pts: PackedVector2Array = plan["pts"]
@@ -95,13 +96,24 @@ func slide(from: Vector2, delta: Vector2) -> Vector2:
 	return collision.slide(from, delta)
 
 var _public_plans_left := PUBLIC_PLANS_PER_TICK
+var slowest_plan_usec := 0
+var slowest_plan_what := ""
 var plans_made := 0    # perf counters (verify_sim_perf): routes planned, and how many needed the navmesh
 var plans_routed := 0
 
 ## A route for one mover. Short hops with nothing in the way are a straight
 ## line and never touch the navmesh: someone drifting around a doorway, or
 ## stepping from their door to the sidewalk, does not need a 2 ms path query.
-func _plan(pos: Vector2, goal: Vector2, layer: String) -> Dictionary:
+func _plan(pos: Vector2, goal: Vector2, layer: String, lane: float = 0.0) -> Dictionary:
+	var t0 := Time.get_ticks_usec()
+	var plan := _plan_route(pos, goal, layer, lane)
+	var took := Time.get_ticks_usec() - t0
+	if took > slowest_plan_usec:
+		slowest_plan_usec = took
+		slowest_plan_what = "%s %d m, %d points, fallback %s" % [layer, int(pos.distance_to(goal)), plan["pts"].size(), plan.get("fallback", false)]
+	return plan
+
+func _plan_route(pos: Vector2, goal: Vector2, layer: String, lane: float) -> Dictionary:
 	plans_made += 1
 	if pos.distance_to(goal) <= SHORT_M and collision.line_clear(pos, goal, LINE_RADIUS_M):
 		return {"goal": goal, "layer": layer, "pts": PackedVector2Array([goal]), "i": 0}
@@ -111,7 +123,7 @@ func _plan(pos: Vector2, goal: Vector2, layer: String) -> Dictionary:
 	var nav: CityNav = navs[layer]
 	var start := nav.closest(pos)
 	var end := nav.closest(goal)
-	var pts := nav.path(start, end)
+	var pts := _keep_right(nav.path(start, end), lane)
 	# Godot returns a route to the nearest reachable point when the goal cannot be
 	# reached on this layer; joining that to the goal would be a straight line
 	# through whatever stands between. Treat it as no route and use any walkable way.
@@ -128,6 +140,23 @@ func _plan(pos: Vector2, goal: Vector2, layer: String) -> Dictionary:
 	if pts.is_empty():
 		pts = PackedVector2Array([goal])     # nowhere on any mesh: straight line
 	return {"goal": goal, "layer": layer, "pts": pts, "i": 0}
+
+## Everyone's shortest route is the same line hugging the same corners. Each
+## walker keeps their own distance to the right of it, so a street of people is
+## not a single file. The shift stays inside the clearance the navmesh already
+## keeps from walls (MAX_LANE_M < agent radius), so nobody is pushed into one.
+func _keep_right(pts: PackedVector2Array, lane: float) -> PackedVector2Array:
+	if lane < 0.03 or pts.size() < 3:
+		return pts
+	var out := pts.duplicate()
+	for i in range(1, pts.size() - 1):
+		var along := (pts[i + 1] - pts[i - 1]).normalized()
+		out[i] = pts[i] + Vector2(-along.y, along.x) * lane   # no snap back to the mesh: that lookup costs ~1 ms a point
+	return out
+
+## This walker's own distance right of the shortest line, 0 .. MAX_LANE_M.
+static func lane_of(mover_id: StringName) -> float:
+	return float(absi(hash([mover_id, 31])) % 1000) / 1000.0 * MAX_LANE_M
 
 func _hop(from: Vector2, to: Vector2) -> PackedVector2Array:
 	if collision.line_clear(from, to, LINE_RADIUS_M):
