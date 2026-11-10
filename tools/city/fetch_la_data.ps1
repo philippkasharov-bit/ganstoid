@@ -16,15 +16,21 @@ New-Item -ItemType Directory -Force (Join-Path $out 'parcels') | Out-Null
 Set-Content -Path $log -Value ''
 try {
     $parcels = 'https://public.gis.lacounty.gov/public/rest/services/LACounty_Cache/LACounty_Parcel/MapServer/0/query'
-    $fields = 'AIN,UseCode,UseType,UseDescription,YearBuilt1,Units1,SQFTmain1,SitusHouseNo,SitusStreet'
+    $fields = 'OBJECTID,AIN,UseCode,UseType,UseDescription,YearBuilt1,Units1,SQFTmain1,SitusHouseNo,SitusStreet'
+    # Paged by "OBJECTID greater than the last one seen": this server drops the area
+    # filter when asked for a result offset, and then returns the whole county.
     $page = 0
-    while ($true) {
+    $last = 0
+    while ($page -lt 120) {
         $file = Join-Path $out ("parcels\page_{0}.json" -f $page)
-        $url = "$parcels`?where=1%3D1&geometry=$W,$S,$E,$N&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects" +
-            "&outFields=$fields&outSR=4326&geometryPrecision=6&orderByFields=OBJECTID&resultOffset=$($page * 1000)&resultRecordCount=1000&f=geojson"
+        $url = "$parcels`?where=OBJECTID%3E$last&geometry=$W,$S,$E,$N&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects" +
+            "&outFields=$fields&outSR=4326&geometryPrecision=6&orderByFields=OBJECTID&resultRecordCount=1000&f=geojson"
         Invoke-WebRequest -UseBasicParsing -TimeoutSec 120 -Uri $url -OutFile $file
-        $n = ((Get-Content $file -Raw | ConvertFrom-Json).features).Count
-        Say "parcels page $page : $n"
+        $got = (Get-Content $file -Raw | ConvertFrom-Json).features
+        $n = @($got).Count
+        if ($n -eq 0) { Remove-Item $file; break }
+        $last = ($got | ForEach-Object { $_.properties.OBJECTID } | Measure-Object -Maximum).Maximum
+        Say "parcels page $page : $n (up to id $last)"
         if ($n -lt 1000) { break }
         $page++
     }
