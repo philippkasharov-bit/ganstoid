@@ -17,23 +17,36 @@ Set-Content -Path $log -Value ''
 try {
     $parcels = 'https://public.gis.lacounty.gov/public/rest/services/LACounty_Cache/LACounty_Parcel/MapServer/0/query'
     $fields = 'OBJECTID,AIN,UseCode,UseType,UseDescription,YearBuilt1,Units1,SQFTmain1,SitusHouseNo,SitusStreet'
-    # Paged by "OBJECTID greater than the last one seen": this server drops the area
-    # filter when asked for a result offset, and then returns the whole county.
+    # Asked for cell by cell: this server answers a small box correctly but loses the
+    # area filter as soon as results are paged (by offset or by id), so no answer may
+    # reach its 1000-record limit. A cell that does is split into four.
+    $cells = New-Object System.Collections.Queue
+    $nx, $ny = 12, 10
+    for ($i = 0; $i -lt $nx; $i++) { for ($j = 0; $j -lt $ny; $j++) {
+        $cells.Enqueue(@($W + ($E - $W) * $i / $nx, $S + ($N - $S) * $j / $ny, $W + ($E - $W) * ($i + 1) / $nx, $S + ($N - $S) * ($j + 1) / $ny))
+    } }
     $page = 0
-    $last = 0
-    while ($page -lt 120) {
+    $total = 0
+    while ($cells.Count -gt 0) {
+        $c = $cells.Dequeue()
+        $box = [string]::Format([Globalization.CultureInfo]::InvariantCulture, '{0:F6},{1:F6},{2:F6},{3:F6}', $c[0], $c[1], $c[2], $c[3])   # points, not decimal commas
         $file = Join-Path $out ("parcels\page_{0}.json" -f $page)
-        $url = "$parcels`?where=OBJECTID%3E$last&geometry=$W,$S,$E,$N&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects" +
-            "&outFields=$fields&outSR=4326&geometryPrecision=6&orderByFields=OBJECTID&resultRecordCount=1000&f=geojson"
+        $url = "$parcels`?where=1%3D1&geometry=$box&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects" +
+            "&outFields=$fields&outSR=4326&geometryPrecision=6&f=geojson"
         Invoke-WebRequest -UseBasicParsing -TimeoutSec 120 -Uri $url -OutFile $file
-        $got = (Get-Content $file -Raw | ConvertFrom-Json).features
-        $n = @($got).Count
-        if ($n -eq 0) { Remove-Item $file; break }
-        $last = ($got | ForEach-Object { $_.properties.OBJECTID } | Measure-Object -Maximum).Maximum
-        Say "parcels page $page : $n (up to id $last)"
-        if ($n -lt 1000) { break }
+        $n = @((Get-Content $file -Raw | ConvertFrom-Json).features).Count
+        if ($n -ge 1000) {
+            Remove-Item $file
+            $mx = ($c[0] + $c[2]) / 2; $my = ($c[1] + $c[3]) / 2
+            $cells.Enqueue(@($c[0], $c[1], $mx, $my)); $cells.Enqueue(@($mx, $c[1], $c[2], $my))
+            $cells.Enqueue(@($c[0], $my, $mx, $c[3])); $cells.Enqueue(@($mx, $my, $c[2], $c[3]))
+            continue
+        }
+        $total += $n
         $page++
+        if ($page % 10 -eq 0) { Say "parcels: $page cells done, $($cells.Count) to go, $total parcels so far" }
     }
+    Say "parcels: $total in $page cells (lots on a cell edge are counted twice; the importer drops the copies)"
     Say 'parcels complete; asking Overpass for the full OSM extract (can take a few minutes)'
     $q = "[out:json][timeout:600][maxsize:1073741824];(node($S,$W,$N,$E)[~`".`"~`".`"];way($S,$W,$N,$E);relation($S,$W,$N,$E)[type=multipolygon];);out tags geom;"
     $osm = Join-Path $out 'osm_full.json'
