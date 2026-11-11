@@ -51,7 +51,10 @@ extends Resource
 ## catch them out on the street, or track them down at home). Same
 ## "bool flag, not a component" reasoning as is_cop.
 @export var is_dealer: bool = false
-@export var is_fixer: bool = false   # JB1: hands out jobs (looks like anyone else)
+@export var is_fixer: bool = false
+## D1: how this person feels about the player (0..1).
+@export var trust: float = 0.0
+@export var fear: float = 0.0   # JB1: hands out jobs (looks like anyone else)
 
 ## Phase 2 batch 8 (locked): which gang (GangData.id) this dealer answers
 ## to, empty if they're a "solo" -- dealing on their own, no faction behind

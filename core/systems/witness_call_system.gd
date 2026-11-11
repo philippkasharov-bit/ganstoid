@@ -42,6 +42,15 @@ func process_entities(_entities: Dictionary, _delta: float, tick: int) -> void:
 			_place(call[1], call[2])
 		i -= 1
 
+## D1: a witness who was scared or paid off puts the phone down.
+func cancel(witness_id: StringName) -> void:
+	var i := _calls.size() - 1
+	while i >= 0:
+		if _calls[i][1].id == witness_id:
+			_calls.remove_at(i)
+			silenced += 1
+		i -= 1
+
 ## Every pending call goes through now (checks that do not want to wait).
 func flush() -> void:
 	for call in _calls:

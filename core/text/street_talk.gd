@@ -57,6 +57,13 @@ const LINES := {
 	"released": ["Out. Clean slate, empty pockets.", "Gate opens. You did your time."],
 	"lawyer": ["Lawyer's on it. ${n}. The case got thinner.", "Paid the suit ${n}. Witnesses are 'unreliable' now."],
 	"no_case": ["They've got nothing on you."],
+	"talk_cold": ["They keep it short. They don't know you.", "Polite nod. Nothing more."],
+	"talk_warm": ["Nice chat. They seem to like you.", "They laugh. You're alright, apparently."],
+	"talk_tip": ["\"{tip}.\"", "\"Word is: {tip}.\""],
+	"threatened": ["They go pale. They didn't see a thing.", "Message received. That face is forgotten."],
+	"paid_off": ["${n} and a handshake. Never saw you.", "${n}. Memory wiped."],
+	"bribed": ["${n} in the pocket. Paperwork gets lost.", "Officer takes ${n}. Your file got thinner."],
+	"bribe_refused": ["\"You just made it worse.\" He's writing it down.", "Wrong cop. That's going in the report."],
 	"bought": ["Paid ${n}.", "${n}, bagged.", "Done. ${n} lighter."],
 	"closed": ["Shutters down. Opens at seven.", "Closed for the night."],
 	"not_sold_here": ["They don't carry that here."],
@@ -114,6 +121,8 @@ static func say(world: World, player_state: PlayerStateData, result: Dictionary)
 	var key := _key_for(result)
 	if key != "":
 		say_key(world, player_state, key, _amount_for(result))
+		if result.has("tip"):
+			player_state.last_message = player_state.last_message.replace("{tip}", result["tip"])
 
 static func say_key(world: World, player_state: PlayerStateData, key: String, amount: int = 0) -> void:
 	var options: Array = LINES[key]

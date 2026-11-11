@@ -319,6 +319,12 @@ func _options(npc: NPCData, state: PlayerStateData) -> Array:
 			out.append(["Sell %s" % String(good), func() -> Dictionary: return DealSystem.start_handoff(_world, person, good, "sell")])
 	if p != null and not p.is_dealer and p.gang_id != &"" and ShopSystem.owned_weapons(state).has(&"pistol"):
 		out.append(["Sell them a gun", func() -> Dictionary: return GunTrade.sell(_world, npc, state, p)])
+	if p != null and p.is_cop:
+		out.append(["Bribe the officer ($%d)" % TalkSystem.bribe_price(state), func() -> Dictionary: return TalkSystem.bribe_cop(_world, npc, state, p)])
+	if p != null and not p.is_cop and not p.is_crew:
+		out.append(["Talk", func() -> Dictionary: return TalkSystem.small_talk(_world, npc, p)])
+		out.append(["Threaten them into silence", func() -> Dictionary: return TalkSystem.threaten(_world, npc, p)])
+		out.append(["Pay them to forget you ($%d)" % TalkSystem.PAYOFF, func() -> Dictionary: return TalkSystem.pay_off(_world, npc, p)])
 	if p != null and not p.is_dealer and not p.is_cop and not p.is_crew:
 		if state.weapon != &"fists":
 			out.append(["Mug them (%s out)" % String(state.weapon), func() -> Dictionary:
