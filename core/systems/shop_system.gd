@@ -4,8 +4,9 @@
 class_name ShopSystem
 extends RefCounted
 
-const OPEN_HOUR := 7.0
-const CLOSE_HOUR := 22.0
+const ALL_NIGHT_SHARE := 0.25    # corner stores, gas-station marts, liquor stores: open 24 h
+## Every counter keeps its own hours, fixed per building (rolled from its id,
+## so the same store keeps the same hours every run and after a load).
 
 ## What kind of counter `source_id` is: "shop", "workshop", "dealer" or "" (none).
 static func counter_kind(world: World, source_id: StringName) -> String:
@@ -23,8 +24,21 @@ static func counter_kind(world: World, source_id: StringName) -> String:
 static func is_open(world: World, source_id: StringName) -> bool:
 	if counter_kind(world, source_id) == "dealer":
 		return true
+	var h := hours_of(source_id, counter_kind(world, source_id))
+	if h.y - h.x >= 24.0:
+		return true
 	var hour := SimClock.day_fraction(world.tick) * 24.0
-	return hour >= OPEN_HOUR and hour < CLOSE_HOUR
+	return hour >= h.x and hour < h.y
+
+## (opening hour, closing hour) of a counter; closing 24+ = open round the clock.
+static func hours_of(source_id: StringName, kind: String) -> Vector2:
+	var roll := float(absi(hash([source_id, 71])) % 1000) / 1000.0
+	var roll2 := float(absi(hash([source_id, 72])) % 1000) / 1000.0
+	if kind == "workshop":   # hardware: daytime trade
+		return Vector2(7.0 + floorf(roll * 2.0), 17.0 + floorf(roll2 * 3.0))
+	if roll < ALL_NIGHT_SHARE:
+		return Vector2(0.0, 24.0)
+	return Vector2(6.0 + floorf(roll2 * 4.0), 20.0 + floorf(roll * 4.0))   # opens 6-9, closes 20-23
 
 ## Buys one of `item_id` at `source_id`. Returns {ok, effect|reason, amount}.
 static func buy(world: World, me: NPCData, state: PlayerStateData, source_id: StringName, item_id: StringName) -> Dictionary:

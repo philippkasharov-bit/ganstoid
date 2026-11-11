@@ -22,9 +22,11 @@ func _process(_delta: float) -> void:
 static func format(world: World, state: PlayerStateData) -> String:
 	var kind := ShopSystem.counter_kind(world, state.store_id)
 	var title: String = {"shop": "SHOP", "workshop": "HARDWARE", "dealer": "DEALER (no questions)"}.get(kind, "COUNTER")
-	var lines: PackedStringArray = ["-- %s --" % title]
+	var hrs := ShopSystem.hours_of(state.store_id, kind)
+	var lines: PackedStringArray = ["-- %s (%s) --" % [title, "any hour" if kind == "dealer" or hrs.y - hrs.x >= 24.0 else "%02d:00-%02d:00" % [int(hrs.x), int(hrs.y)]]]
 	if not ShopSystem.is_open(world, state.store_id):
-		lines.append("Closed. Opens at 07:00.")
+		var h := ShopSystem.hours_of(state.store_id, kind)
+		lines.append("Closed. Opens at %02d:00." % int(h.x))
 	var stock := ItemCatalog.stock(kind)
 	for i in stock.size():
 		var it := ItemCatalog.item(stock[i])
