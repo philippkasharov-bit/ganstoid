@@ -11,6 +11,7 @@ func _initialize() -> void:
 	me.id = PlayerFactory.PLAYER_ENTITY_ID
 	me.cash = 560
 	var state := PlayerStateData.new()
+	state.rank = RankSystem.GUN_RANK   # RK1: dealers sell guns to Hustlers and up
 	var p := Entity.new(me.id)
 	p.add_component(me)
 	p.add_component(state)

@@ -53,6 +53,7 @@ static func advance_hotwire(world: World, me: NPCData, state: PlayerStateData) -
 static func _get_in(world: World, me: NPCData, state: PlayerStateData, car: VehicleData) -> Dictionary:
 	state.vehicle_id = car.id
 	car.driver_id = me.id
+	car.touched = true
 	me.position = car.position
 	world.reindex_position(me.id)
 	return {"ok": true, "effect": "car_in"}

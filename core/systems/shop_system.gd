@@ -34,6 +34,8 @@ static func buy(world: World, me: NPCData, state: PlayerStateData, source_id: St
 		return {"ok": false, "reason": "not_sold_here"}
 	if not is_open(world, source_id):
 		return {"ok": false, "reason": "closed"}
+	if it["kind"] == "weapon" and kind == "dealer" and state.rank < RankSystem.GUN_RANK:
+		return {"ok": false, "reason": "nobody_gun"}   # RK1: they don't sell iron to a nobody
 	var price: int = it["price"]
 	if me.cash < price:
 		return {"ok": false, "reason": "cant_afford"}

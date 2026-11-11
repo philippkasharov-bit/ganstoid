@@ -88,6 +88,7 @@ extends Resource
 @export var sleeping_home: bool = false
 @export var health_at_sleep: float = 1.0
 ## V1: the car you are in (driving), and a hotwire in progress.
+@export var rank: int = 0                         # RK1: highest rank earned (RankSystem.NAMES)
 @export var skills: Dictionary = {}                 # S1: skill -> XP
 @export var vehicle_id: StringName = &""
 @export var hotwire_id: StringName = &""
