@@ -82,7 +82,7 @@ func _process(_delta: float) -> void:
 	if zoom != _zoom_seen:
 		_zoom_seen = zoom
 		for entry in _lod:
-			entry[0].visible = zoom >= entry[1]
+			entry[0].visible = zoom >= entry[1] and (entry[2] <= 0.0 or zoom < entry[2])
 
 func _redraw_all() -> void:
 	for n in _nodes:
@@ -117,17 +117,18 @@ func _build() -> void:
 	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: CityGround.details(ci, barriers[r], points[r], night), tiles, FINE_ZOOM)
 	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: _draw_buildings(ci, blds[r]), tiles)
 	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: CityGround.trees(ci, trees[r], night), tiles, MID_ZOOM)
-	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: _draw_tiers(ci, roads[r], OVER_BUILDINGS), tiles)
+	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: FreewayPainter.paint(ci, roads[r].filter(func(x: Dictionary) -> bool: return OVER_BUILDINGS.has(x["tier"])), WIDTH, night, false), tiles, 0.0, MID_ZOOM)
+	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: FreewayPainter.paint(ci, roads[r].filter(func(x: Dictionary) -> bool: return OVER_BUILDINGS.has(x["tier"])), WIDTH, night, true), tiles, MID_ZOOM)   # MF1: with lane striping up close
 	_add_layer(func(ci: CanvasItem, _r: Rect2) -> void: _draw_overlays(ci), [Rect2()])
 
-func _add_layer(painter: Callable, rects: Array, min_zoom := 0.0) -> void:
+func _add_layer(painter: Callable, rects: Array, min_zoom := 0.0, max_zoom := 0.0) -> void:
 	for rect in rects:
 		var n := Node2D.new()
 		n.draw.connect(func() -> void: painter.call(n, rect))
 		add_child(n)
 		_nodes.append(n)
-		if min_zoom > 0.0:
-			_lod.append([n, min_zoom])
+		if min_zoom > 0.0 or max_zoom > 0.0:
+			_lod.append([n, min_zoom, max_zoom])
 
 static func _centre_of_poly(item: Dictionary) -> Rect2:
 	return Rect2(_bounds(item["poly"]).get_center(), Vector2.ZERO)
