@@ -96,9 +96,11 @@ static func _do_pickpocket(world: World, player_npc: NPCData, victim_id: StringN
 		return {"ok": false, "reason": "victim_not_npc"}
 	if victim_npc.position.distance_to(player_npc.position) > INTERACT_RADIUS:
 		return {"ok": false, "reason": "too_far"}
-	var stolen: int = mini(victim_npc.cash, world.runtime_rng.randi_range(PICKPOCKET_MIN, PICKPOCKET_MAX))
+	var state: PlayerStateData = _get_player_entity(world).get_component(ComponentNames.PLAYER_STATE)
+	var stolen: int = mini(victim_npc.cash, int(world.runtime_rng.randi_range(PICKPOCKET_MIN, PICKPOCKET_MAX) * Skills.more(state, &"theft")))
 	victim_npc.cash -= stolen
 	Wallet.earn_dirty(world, stolen)  # batch 24: crime money is dirty
+	Skills.train(world, state, &"theft", 5.0)   # S1
 	return {"ok": true, "effect": "pickpocket", "stolen": stolen}
 
 ## Batch 6 (locked): the building-robbery action -- the other half of the

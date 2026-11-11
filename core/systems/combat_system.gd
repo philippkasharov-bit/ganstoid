@@ -42,7 +42,11 @@ static func attack(world: World, me: NPCData, state: PlayerStateData, tick: int,
 	var dir := (state.aim_point - me.position).normalized()
 	if dir == Vector2.ZERO:
 		dir = Vector2.RIGHT
+	if w["melee"]:
+		w = w.duplicate()
+		w["damage"] *= Skills.more(state, &"melee")
 	var result := _swing(world, me, dir, w) if w["melee"] else _shoot(world, me, state, dir, w, rng)
+	_train(world, state, w, result)
 	result["ok"] = true
 	result["weapon"] = state.weapon
 	if not w["melee"]:
@@ -51,6 +55,14 @@ static func attack(world: World, me: NPCData, state: PlayerStateData, tick: int,
 	if result.has("hit_id"):
 		world.event_bus.emit(GanstoidEvents.ASSAULTED, {"victim_id": result["hit_id"], "position": me.position, "tick": tick})
 	return result
+
+## S1: practice: every shot teaches a little, a hit more; a blow that lands teaches melee.
+static func _train(world: World, state: PlayerStateData, w: Dictionary, result: Dictionary) -> void:
+	var hit := result.has("hit_id")
+	if not w["melee"]:
+		Skills.train(world, state, &"shooting", 1.0 + (3.0 if hit else 0.0))
+	elif hit:
+		Skills.train(world, state, &"melee", 3.0)
 
 ## C6: an NPC (cop, gang member) fires one pistol round at `target` from the hip.
 ## Hits whoever stands first on the line: the player, a bystander or nobody.
@@ -85,7 +97,7 @@ static func _swing(world: World, me: NPCData, dir: Vector2, w: Dictionary) -> Di
 static func _shoot(world: World, me: NPCData, state: PlayerStateData, dir: Vector2, w: Dictionary, rng: RandomNumberGenerator) -> Dictionary:
 	state.ammo -= 1
 	state.shots_fired += 1
-	var spread := deg_to_rad(w["spread_aim_deg"] if state.aiming else w["spread_hip_deg"]) * NeedsSystem.spread_factor(me)
+	var spread := deg_to_rad(w["spread_aim_deg"] if state.aiming else w["spread_hip_deg"]) * NeedsSystem.spread_factor(me) * Skills.less(state, &"shooting")
 	return _fire(world, me, dir.rotated(rng.randf_range(-spread, spread)), w)
 
 ## One round from `shooter` along `dir`: stops in the first standing body or wall.

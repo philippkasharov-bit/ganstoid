@@ -224,7 +224,9 @@ func _store_input(npc: NPCData, state: PlayerStateData) -> bool:
 func _drive(npc: NPCData, state: PlayerStateData, delta: float) -> void:
 	var car: VehicleData = _world.entities[state.vehicle_id].get_component(ComponentNames.VEHICLE)
 	var input := _move_input()
-	var out := VehicleSystem.drive(_world, car, -input.y, input.x, delta)
+	var before := car.position
+	var out := VehicleSystem.drive(_world, car, -input.y, input.x, delta, Skills.more(state, &"driving"))
+	Skills.train(_world, state, &"driving", before.distance_to(car.position) * 0.01)   # 1 XP per 100 m
 	npc.position = car.position
 	_world.reindex_position(npc.id)
 	if out.has("hit"):

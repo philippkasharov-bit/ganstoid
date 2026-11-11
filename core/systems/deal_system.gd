@@ -87,6 +87,8 @@ const HANDOFF_TICKS := 180
 const RIPOFF_MAX_CHANCE := 0.3
 const RIPOFF_SELL_PAYOUT_FRACTION := 0.5
 
+const HUSTLE_EDGE := 0.02   # S1: 2% better prices per hustle level
+
 static func ripoff_chance(standing: float) -> float:
 	return RIPOFF_MAX_CHANCE * clampf(1.0 - standing, 0.0, 1.0)
 const EXPOSURE_CHECK_AT_TICKS_LEFT := 90
@@ -141,7 +143,7 @@ static func buy(world: World, dealer_id: StringName, good_id: StringName) -> Dic
 
 	var player_state: PlayerStateData = ctx["player_state"]
 	var dealer_npc: NPCData = ctx["dealer_npc"]
-	var mult := _buy_price_multiplier(item.player_market_reputation) * _relationship_buy_multiplier(_relationship(dealer_npc, player_state))
+	var mult := _buy_price_multiplier(item.player_market_reputation) * _relationship_buy_multiplier(_relationship(dealer_npc, player_state)) * (1.0 - HUSTLE_EDGE * Skills.level(player_state, &"hustle"))
 	var cost: int = maxi(1, int(round(item.current_price * TRADE_QUANTITY * mult)))
 	if player_npc.cash < cost:
 		return {"ok": false, "reason": "cant_afford"}
@@ -153,6 +155,7 @@ static func buy(world: World, dealer_id: StringName, good_id: StringName) -> Dic
 	EconomySystem.record_trade(item, BUY_PRESSURE, 0.0)
 	item.player_market_reputation += (1.0 - item.player_market_reputation) * REPUTATION_GAIN_PER_TRADE
 	_bump_relationship(dealer_npc, player_state)
+	Skills.train(world, player_state, &"hustle", 3.0)
 	CrimeSystem.broadcast_witnesses(world, player_npc.position, CrimeSystem.SEVERITY_BY_TYPE[GanstoidEnums.CrimeType.DRUG_DEAL_OBSERVED])
 	return {"ok": true, "effect": "buy", "good_id": good_id, "quantity": 0 if ripped_off else TRADE_QUANTITY, "cost": cost, "ripped_off": ripped_off}
 
@@ -168,7 +171,7 @@ static func sell(world: World, dealer_id: StringName, good_id: StringName) -> Di
 	var player_npc: NPCData = ctx["player_npc"]
 	var item: EconomyItemData = ctx["item"]
 	var dealer_npc: NPCData = ctx["dealer_npc"]
-	var mult := _sell_price_multiplier(item.player_market_reputation) * _relationship_sell_multiplier(_relationship(dealer_npc, player_state))
+	var mult := _sell_price_multiplier(item.player_market_reputation) * _relationship_sell_multiplier(_relationship(dealer_npc, player_state)) * (1.0 + HUSTLE_EDGE * Skills.level(player_state, &"hustle"))
 	var proceeds: int = maxi(1, int(round(item.current_price * TRADE_QUANTITY * mult)))
 	var ripped_off := world.runtime_rng.randf() < ripoff_chance(_relationship(dealer_npc, player_state))
 	if ripped_off:

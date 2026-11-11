@@ -30,7 +30,7 @@ static func use_door(world: World, me: NPCData, state: PlayerStateData) -> Dicti
 		return {"ok": false, "reason": "car_wrecked"}
 	if car.locked and car.owner_id != PlayerFactory.PLAYER_ENTITY_ID:
 		state.hotwire_id = car.id
-		state.hotwire_done_tick = world.tick + int(HOTWIRE_S * SimClock.TICKS_PER_SECOND)
+		state.hotwire_done_tick = world.tick + int(HOTWIRE_S * Skills.less(state, &"theft") * SimClock.TICKS_PER_SECOND)
 		CrimeSystem.broadcast_witnesses(world, me.position, CrimeSystem.SEVERITY_BY_TYPE[GanstoidEnums.CrimeType.CAR_BREAK_IN])
 		return {"ok": true, "effect": "hotwiring"}
 	return _get_in(world, me, state, car)
@@ -47,6 +47,7 @@ static func advance_hotwire(world: World, me: NPCData, state: PlayerStateData) -
 		return {}
 	state.hotwire_id = &""
 	car.locked = false
+	Skills.train(world, state, &"theft", 10.0)
 	return _get_in(world, me, state, car)
 
 static func _get_in(world: World, me: NPCData, state: PlayerStateData, car: VehicleData) -> Dictionary:
@@ -75,13 +76,13 @@ static func _get_out(world: World, me: NPCData, state: PlayerStateData) -> Dicti
 	return {"ok": true, "effect": "car_out"}
 
 ## One tick of driving. throttle -1..1 (S brakes, then reverses), steer -1..1.
-static func drive(world: World, car: VehicleData, throttle: float, steer: float, delta: float) -> Dictionary:
+static func drive(world: World, car: VehicleData, throttle: float, steer: float, delta: float, skill: float = 1.0) -> Dictionary:
 	var out := {}
 	if car.damage >= WRECKED:
 		car.speed = 0.0
 		return out
 	if throttle > 0.0:
-		car.speed = minf(MAX_SPEED * (1.0 - car.damage * 0.5), car.speed + ACCEL * throttle * delta) if car.speed >= 0.0 else car.speed + BRAKE * delta
+		car.speed = minf(MAX_SPEED * (1.0 - car.damage * 0.5), car.speed + ACCEL * skill * throttle * delta) if car.speed >= 0.0 else car.speed + BRAKE * delta
 	elif throttle < 0.0:
 		car.speed = car.speed - BRAKE * delta if car.speed > 0.0 else maxf(-MAX_REVERSE, car.speed - ACCEL * 0.6 * delta)
 	else:

@@ -30,5 +30,6 @@ static func format(state: PlayerStateData) -> String:
 	if state.ammo > 0:
 		lines.append("   9 mm rounds: %d" % state.ammo)
 	lines.append("")
+	lines.append("Skills: " + Skills.summary(state))
 	lines.append("1-9: use   I or Esc: close")
 	return "\n".join(lines)
