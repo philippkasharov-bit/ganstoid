@@ -244,6 +244,8 @@ static func broadcast_witnesses(world: World, position: Vector2, severity: float
 		if npc.is_down or not can_see(world, npc.position, position):
 			continue   # W1: out cold, dead, too far for the light, or a wall in the way: saw nothing
 		RecognitionSystem.register_witness(npc, severity)
+		if npc.is_dealer or npc.gang_id != &"":
+			continue   # W2: the street does not call the police; they remember, though
 		if RecognitionSystem.roll_recognized(npc, world.runtime_rng):
 			if covered and world.runtime_rng.randf() < CrewSystem.LOOKOUT_SUPPRESS_CHANCE:
 				_lookout_saved_you(world)
@@ -251,13 +253,17 @@ static func broadcast_witnesses(world: World, position: Vector2, severity: float
 			_bump_crime_heat(world, position)
 			if not reports_player:
 				return
-			world.event_bus.emit(GanstoidEvents.CRIME_WITNESSED, {
-				"position": position,
-				"severity": severity,
-				"tick": world.tick,
-				"witness_id": id,
-			})
+			_report(world, npc, {"position": position, "severity": severity, "tick": world.tick, "witness_id": id})
 			return
+
+## W2: a cop radios it in at once. A civilian runs and phones it in a few
+## seconds later (WitnessCallSystem) -- silence them first and nobody calls.
+static func _report(world: World, witness: NPCData, payload: Dictionary) -> void:
+	var calls := world.find_system(WitnessCallSystem) as WitnessCallSystem
+	if witness.is_cop or calls == null:
+		world.event_bus.emit(GanstoidEvents.CRIME_WITNESSED, payload)
+		return
+	calls.queue(witness, payload)
 
 ## Batch 10 (locked): the only place BuildingData.crime_heat ever gets
 ## written -- inside the same witnessed-and-recognized branch that fires

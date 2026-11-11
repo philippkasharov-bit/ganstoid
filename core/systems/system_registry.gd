@@ -23,6 +23,7 @@ static func register_all(world: World) -> void:
 	world.event_bus.subscribe(schedule.on_gunshot)
 	world.register_system(PlayerInputSystem.new(world))
 	world.register_system(NeedsSystem.new())
+	world.register_system(WitnessCallSystem.new(world))
 	var wounds := WoundSystem.new(world)
 	world.register_system(wounds)
 	world.event_bus.subscribe(wounds.on_wounded)

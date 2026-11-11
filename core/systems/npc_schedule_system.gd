@@ -88,15 +88,17 @@ func on_gunshot(event_name: StringName, payload: Dictionary) -> void:
 	var at: Vector2 = payload["position"]
 	var reach_sq: float = payload["heard_m"] * payload["heard_m"]
 	for npc in street.outside.duplicate():
-		if npc.is_dealer or npc.is_down or npc.is_crew or npc.is_cop or npc.position.distance_squared_to(at) > reach_sq:
-			continue
-		if not _has_building(npc.home_building_id):
-			continue
-		var home := _door(npc.home_building_id)
-		_homebound[npc.id] = true
-		_visit_until.erase(npc.id)
-		street.start_trip(npc, [], home, SimUnits.JOG)
-		fled += 1
+		if not npc.is_dealer and npc.position.distance_squared_to(at) <= reach_sq:
+			flee(npc)
+
+## Runs home at a jog (gunfire, or W2: they saw something and want a phone).
+func flee(npc: NPCData) -> void:
+	if npc.is_down or npc.is_crew or npc.is_cop or npc.indoors or not _has_building(npc.home_building_id):
+		return
+	_homebound[npc.id] = true
+	_visit_until.erase(npc.id)
+	street.start_trip(npc, [], _door(npc.home_building_id), SimUnits.JOG)
+	fled += 1
 
 ## G3: someone back on their feet (a knockout ended): pick their day up again.
 func replan(npc: NPCData, tick: int) -> void:

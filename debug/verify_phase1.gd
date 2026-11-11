@@ -44,6 +44,7 @@ func _initialize() -> void:
 
 	print("before: player_cash=%d victim_cash=%d law_tier=%s" % [player_npc.cash, victim_npc.cash, player_state.law_tier])
 	var result := CrimeSystem.commit_crime(world, GanstoidEnums.CrimeType.PICKPOCKET, victim_id)
+	(world.find_system(WitnessCallSystem) as WitnessCallSystem).flush()   # W2: the call goes through
 	print("crime result: ", result)
 	print("after crime: player_cash=%d victim_cash=%d law_tier=%s" % [player_npc.cash, victim_npc.cash, player_state.law_tier])
 

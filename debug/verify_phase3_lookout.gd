@@ -63,6 +63,9 @@ func _count_reports(world: World, witness: NPCData, at: Vector2, n: int) -> int:
 	for i in n:
 		witness.recognition_chance = 1.0
 		CrimeSystem.broadcast_witnesses(world, at, 0.1)
+		(world.find_system(WitnessCallSystem) as WitnessCallSystem).flush()   # W2: the call goes through
+		witness.position = at   # W2: they ran for a phone; put them back for the next count
+		world.reindex_position(witness.id)
 	return _witnessed
 
 func _on_event(event_name: StringName, _payload: Dictionary) -> void:

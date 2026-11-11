@@ -16,6 +16,7 @@ const LINES := {
 	"sleep_home": ["Your own bed. Lights out.", "Home. Sleep."],
 	"sleep_rough": ["Sleeping rough. Keep one eye open.", "Lying down where you are. Risky."],
 	"woke": ["Up. Back to it.", "Awake."],
+	"witness_running": ["Somebody saw that. They're running for a phone.", "A witness is booking it. Phone in hand soon.", "Eyes on you. They're calling it in."],
 	"bought": ["Paid ${n}.", "${n}, bagged.", "Done. ${n} lighter."],
 	"closed": ["Shutters down. Opens at seven.", "Closed for the night."],
 	"not_sold_here": ["They don't carry that here."],
