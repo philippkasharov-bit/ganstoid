@@ -62,7 +62,9 @@ $status = New-Label 'Ready.' 32 282 496 22 10 $ink $false
 $lastRun = New-Label '' 32 306 496 22 9.5 $dim $false
 $openLog = New-Button 'Open last log' 32 332 150 28 $panel
 $openFolder = New-Button 'Open game folder' 192 332 150 28 $panel
-foreach ($b in @($openLog, $openFolder)) { $b.Font = New-Object Drawing.Font('Segoe UI', 9) }
+$newGame = New-Button 'New game' 352 332 176 28 $panel
+$saveFile = Join-Path $env:APPDATA 'Godot\app_userdata\Ganstoid\ganstoid_save.txt'   # SaveGame.PATH (user://)
+foreach ($b in @($openLog, $openFolder, $newGame)) { $b.Font = New-Object Drawing.Font('Segoe UI', 9) }
 
 function Show-Installed {
     if (Test-Path $versionFile) {
@@ -135,9 +137,15 @@ $play.Add_Click({ Start-Update $true })
 $playOffline.Add_Click({ Set-Busy $true; Start-Game })
 $openLog.Add_Click({ if (Test-Path $logFile) { Start-Process notepad $logFile } else { Set-Status 'No log yet: the game has not been run from here.' $dim } })
 $openFolder.Add_Click({ Start-Process explorer $root })
+$newGame.Add_Click({
+    if (-not (Test-Path $saveFile)) { Set-Status 'No saved game: Play starts a new one.' $dim; return }
+    $answer = [Windows.Forms.MessageBox]::Show('Delete your saved game and start a new life next time you press Play?', 'New game', 'YesNo', 'Warning')
+    if ($answer -eq 'Yes') { Remove-Item $saveFile -Force; Set-Status 'Saved game deleted. Play starts a new one.' $ink }
+})
 
 Show-Installed
 Read-LastRun
+if (Test-Path $saveFile) { $lastRun.Text = (($lastRun.Text + '   ') + 'Saved game: Play continues it.').Trim() }
 if ($SelfTest) {
     $form.Show(); [Windows.Forms.Application]::DoEvents()
     $bmp = New-Object Drawing.Bitmap($form.Width, $form.Height)
