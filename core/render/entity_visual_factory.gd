@@ -45,6 +45,8 @@ static func create_visual(entity: Entity) -> Node2D:
 	if npc != null:
 		if npc.is_cop:
 			return _make_person(COP_COLOR, 1.0, Color(0.08, 0.08, 0.1), &"cop")
+		if npc.is_fixer:   # JB1: a fixer stands out a little to those who know
+			return _make_person(Color(0.75, 0.5, 0.95), 1.0, Color(0.08, 0.08, 0.1), &"fixer")
 		if npc.is_dealer:
 			return _make_person(DEALER_COLOR, 1.0, Color(0.08, 0.08, 0.1), &"dealer")
 		return _make_person(NPC_COLOR, 1.0, Color(0.08, 0.08, 0.1), &"civilian")

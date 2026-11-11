@@ -15,6 +15,9 @@ static func generate_real_city_game(world: World, seed: int, city: CityData, cen
 	GoodsCatalog.seed_goods(world)
 	VehicleSeeder.seed(world, seed + 2, city, centre, radius)
 	TerritorySystem.seed(world)
+	var job_rng := RandomNumberGenerator.new()
+	job_rng.seed = seed + 3
+	JobSystem.seed(world, job_rng)
 	_spawn_player_near(world, building_ids, centre)
 
 ## Player starts at the home nearest the district centre.

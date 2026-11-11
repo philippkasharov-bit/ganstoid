@@ -44,6 +44,13 @@ func _draw() -> void:
 	if dir == Vector2.ZERO:
 		return
 	var px := 1.0 / get_viewport_transform().get_scale().x   # one screen pixel, in metres
+	var goal: Variant = JobSystem.target_point(_world, state)
+	if goal != null:   # JB1: where the job wants you
+		var pulse := 1.0 + 0.25 * sin(Time.get_ticks_msec() / 250.0)
+		draw_arc(goal, 2.5 * pulse, 0.0, TAU, 32, Color(0.95, 0.72, 0.2, 0.9), 3.0 * px)
+		var to: Vector2 = goal - me
+		if to.length() > 20.0:
+			draw_line(me + to.normalized() * 6.0, me + to.normalized() * 10.0, Color(0.95, 0.72, 0.2, 0.9), 4.0 * px)
 	draw_line(me, me + dir * FACING_M, FACING_COLOR, 1.5 * px)
 	if state.aiming:
 		_draw_reach(me, dir, CombatSystem.WEAPONS[state.weapon], px)

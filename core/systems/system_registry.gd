@@ -25,6 +25,7 @@ static func register_all(world: World) -> void:
 	world.register_system(NeedsSystem.new())
 	world.register_system(WitnessCallSystem.new(world))
 	world.register_system(RankSystem.new(world))
+	world.register_system(JobSystem.new(world))
 	var turf := TerritorySystem.new(world)
 	world.register_system(turf)
 	world.event_bus.subscribe(turf.on_assaulted)

@@ -78,6 +78,8 @@ func _process(delta: float) -> void:
 		_bars[key].value = npc.get(key)
 	var hours := SimClock.day_fraction(_world.tick) * 24.0
 	var clean := npc.cash - state.dirty_cash
+	if not state.job.is_empty():
+		_mid.text += "   ·   JOB: %s" % state.job["text"]
 	_bottom.text = "%02d:%02d%s   ·   clean $%d / dirty $%d   ·   %s" % [int(hours), int(fmod(hours, 1.0) * 60.0), "  (asleep)" if state.sleeping else "", clean, state.dirty_cash, _turf(npc)]
 
 func _turf(npc: NPCData) -> String:

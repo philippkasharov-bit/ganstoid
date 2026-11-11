@@ -274,6 +274,13 @@ func _action_menu_input(npc: NPCData, state: PlayerStateData) -> bool:
 			var result: Variant = _menu_runs[i].call()
 			if result is Dictionary and not result.is_empty():
 				_report(state, result)
+			if not state.job_offers.is_empty():   # JB1: the fixer's offers become the next menu
+				_menu_runs.clear()
+				var labels: PackedStringArray = []
+				for option in _options(npc, state):
+					labels.append(option[0])
+					_menu_runs.append(option[1])
+				state.menu_options = labels
 			return true
 	return true
 
@@ -281,6 +288,12 @@ func _action_menu_input(npc: NPCData, state: PlayerStateData) -> bool:
 func _options(npc: NPCData, state: PlayerStateData) -> Array:
 	var out: Array = []
 	var pos := npc.position
+	if not state.job_offers.is_empty():   # JB1: choosing a contract
+		for job in state.job_offers:
+			out.append(["%s  ($%d)" % [job["text"], job["pay"]], func() -> Dictionary:
+				state.job_offers = []
+				return JobSystem.take(_world, state, job)])
+		return out
 	var counter := _find_counter(pos)
 	var person := _find_nearest_npc(pos)
 	var p: NPCData = _world.entities[person].get_component(ComponentNames.NPC) if person != &"" else null
@@ -288,6 +301,13 @@ func _options(npc: NPCData, state: PlayerStateData) -> Array:
 		out.append(["Shop here", func() -> Dictionary:
 			state.store_id = counter
 			return {}])
+	if p != null and p.is_fixer and state.job.is_empty():
+		out.append(["Ask for work", func() -> Dictionary:
+			state.job_offers = JobSystem.offers(_world, state, npc)
+			state.menu_options = []
+			return {"ok": true, "effect": "job_offers"}])
+	if not state.job.is_empty() and state.job["kind"] == "debt" and p != null and p.id == state.job["target"]:
+		out.append(["Collect the debt", func() -> Dictionary: return JobSystem.collect_debt(_world, npc, state)])
 	if p != null and p.is_dealer:
 		out.append(["Buy a bag of weed", func() -> Dictionary: return _start_buy(person)])
 		var good := _best_to_sell(state)
