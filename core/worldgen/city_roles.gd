@@ -34,7 +34,7 @@ const ROLE_WEIGHTS := {
 }
 ## Revenue bands per role (daily_revenue range; cash_on_hand starts at one day's take).
 ## Fronts and safehouses carry no legitimate revenue line.
-const REVENUE_BY_TYPE := {RES: Vector2i(0, 0), BIZ: Vector2i(50, 200), FRONT: Vector2i(0, 0), SAFE: Vector2i(0, 0)}
+const REVENUE_BY_TYPE := {RES: Vector2i(0, 0), BIZ: Vector2i(200, 800), FRONT: Vector2i(0, 0), SAFE: Vector2i(0, 0)}
 ## What kind of legit business each building kind can host ("no shops in industrial").
 const BUSINESS_KIND := {"commercial": &"shop", "industrial": &"workshop", "garage": &"workshop", "building": &"shop"}
 

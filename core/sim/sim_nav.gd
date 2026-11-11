@@ -39,6 +39,7 @@ static func install(city: CityData, centre: Vector2, radius: float) -> SimNav:
 
 static func uninstall() -> void:
 	if active != null:
+		active.finish_async()
 		for n in active.navs.values():
 			n.release()
 	active = null
@@ -58,9 +59,12 @@ func snap(p: Vector2, layer: String) -> Vector2:
 func step(mover_id: StringName, pos: Vector2, goal: Vector2, speed: float, delta: float, layer: String) -> Vector2:
 	var plan: Dictionary = _plans.get(mover_id, {})
 	if plan.is_empty() or plan["layer"] != layer or plan["goal"].distance_to(goal) > REPATH_M:
-		if layer == "public" and _public_plans_left <= 0 and not _is_short(pos, goal):
-			return pos   # civilians queue for a route; a few ticks' pause at the door
-		plan = _plan(pos, goal, layer, lane_of(mover_id))
+		if layer == "public" and not _is_short(pos, goal):
+			plan = _take_async(mover_id, pos, goal)   # TUNE1: civilians' routes are planned off the main thread
+			if plan.is_empty():
+				return pos   # a moment's pause at the door while the route is worked out
+		else:
+			plan = _plan(pos, goal, layer, lane_of(mover_id))
 		_plans[mover_id] = plan
 	var budget := speed * delta
 	var pts: PackedVector2Array = plan["pts"]
@@ -76,8 +80,48 @@ func step(mover_id: StringName, pos: Vector2, goal: Vector2, speed: float, delta
 			budget = 0.0
 	return pos
 
+## TUNE1 (smooth frames): a long civilian route costs 5-10 ms of navmesh work.
+## It now runs on a worker thread; the walker waits a tick or two at the door.
+## At most ASYNC_MAX routes are being worked out at once.
+const ASYNC_MAX := 4
+var _async_jobs := {}      # mover_id -> [task id, goal]
+var _async_done := {}      # mover_id -> plan (written by workers, under _async_lock)
+var _async_lock := Mutex.new()
+
+func _take_async(mover_id: StringName, pos: Vector2, goal: Vector2) -> Dictionary:
+	for id in _async_jobs.keys():   # free finished worker tasks (Godot needs each one waited on)
+		if WorkerThreadPool.is_task_completed(_async_jobs[id][0]):
+			WorkerThreadPool.wait_for_task_completion(_async_jobs[id][0])
+			_async_jobs.erase(id)
+	_async_lock.lock()
+	var done: Dictionary = _async_done.get(mover_id, {})
+	_async_done.erase(mover_id)
+	_async_lock.unlock()
+	if not done.is_empty():
+		if done["goal"].distance_to(goal) <= REPATH_M:
+			return done
+	if _async_jobs.has(mover_id) or _async_jobs.size() >= ASYNC_MAX:
+		return {}
+	var lane := lane_of(mover_id)
+	var task := WorkerThreadPool.add_task(func() -> void:
+		var plan := _plan(pos, goal, "public", lane)
+		_async_lock.lock()
+		_async_done[mover_id] = plan
+		_async_lock.unlock())
+	_async_jobs[mover_id] = [task, goal]
+	return {}
+
+## Waits for routes still being worked out (before the navmesh goes away).
+func finish_async() -> void:
+	for job in _async_jobs.values():
+		WorkerThreadPool.wait_for_task_completion(job[0])
+	_async_jobs.clear()
+
 func forget(mover_id: StringName) -> void:
 	_plans.erase(mover_id)
+	_async_lock.lock()
+	_async_done.erase(mover_id)
+	_async_lock.unlock()
 
 ## True once a mover has walked their whole route to `goal` (it may stop short
 ## of the goal itself when the goal is off the mesh).
@@ -132,8 +176,6 @@ func _plan_route(pos: Vector2, goal: Vector2, layer: String, lane: float) -> Dic
 	if pos.distance_to(goal) <= SHORT_M and collision.line_clear(pos, goal, LINE_RADIUS_M):
 		return {"goal": goal, "layer": layer, "pts": PackedVector2Array([goal]), "i": 0}
 	plans_routed += 1
-	if layer == "public":
-		_public_plans_left -= 1
 	var nav: CityNav = navs[layer]
 	var start := nav.closest(pos)
 	var end := nav.closest(goal)

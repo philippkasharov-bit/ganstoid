@@ -30,7 +30,12 @@ func _ready() -> void:
 	var driver: Node = get_node(world_driver_path)
 	_world = driver.world
 
-func _process(_delta: float) -> void:
+const SMOOTH := 18.0      # TUNE1: visuals ease toward the sim (far walkers step at 10 Hz)
+const SNAP_M := 4.0
+var _frame_delta := 0.016       # further than this is a jump (indoors, teleport): no easing
+
+func _process(delta: float) -> void:
+	_frame_delta = delta
 	if _world == null:
 		return
 	_sync_visuals()
@@ -66,7 +71,11 @@ func _sync_visuals() -> void:
 					visual.rotation = (st.aim_point - npc.position).angle()   # the player faces the mouse
 			elif moved.length_squared() > 0.0004 and moved.length_squared() < 25.0:
 				visual.rotation = lerp_angle(visual.rotation, moved.angle(), 0.3)   # NPCs face where they walk
-			visual.position = npc.position
+			var gap: Vector2 = npc.position - visual.position
+			if people[id].has_component(ComponentNames.PLAYER_STATE) or gap.length() > SNAP_M:
+				visual.position = npc.position
+			else:
+				visual.position += gap * minf(1.0, _frame_delta * SMOOTH)
 			var tint := Color.WHITE if not npc.is_down else (KO_TINT if npc.ko_until_tick >= 0 else DOWN_TINT)
 			if visual.modulate != tint:
 				visual.modulate = tint   # combat: a body on the ground, or someone out cold
@@ -74,9 +83,11 @@ func _sync_visuals() -> void:
 				visual.scale = Vector2(base * 1.3, base * 0.8) if npc.is_down else Vector2.ONE * base   # lying flat
 
 	for id in _world.get_entities_with_component(ComponentNames.VEHICLE):
+		var car: VehicleData = _world.entities[id].get_component(ComponentNames.VEHICLE)
+		if not car.touched:
+			continue   # TUNE1: a parked car never moves; placed once at creation
 		var car_visual: Node2D = _visuals.get(id)
 		if car_visual != null:
-			var car: VehicleData = _world.entities[id].get_component(ComponentNames.VEHICLE)
 			car_visual.position = car.position
 			car_visual.rotation = car.heading
 

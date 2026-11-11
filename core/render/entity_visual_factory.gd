@@ -72,6 +72,8 @@ static func _make_rect(size: Vector2, color: Color) -> Node2D:
 ## V1: a car seen from above: body, darker roof, windscreen toward the front (+x).
 static func _make_car(car: VehicleData) -> Node2D:
 	var node := Node2D.new()
+	node.position = car.position
+	node.rotation = car.heading   # parked cars are placed once here (RenderSync only moves touched ones)
 	var half := Vector2(car.length_m, car.width_m) * 0.5
 	var body := Rect2(-half, half * 2.0)
 	var roof := Rect2(Vector2(-half.x * 0.55, -half.y * 0.8), Vector2(half.x * 1.0, half.y * 1.6))

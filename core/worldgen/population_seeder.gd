@@ -12,7 +12,8 @@ extends RefCounted
 const JOB_OPENINGS_SEEN := 8   # openings a job-seeker compares; they take the nearest
 const EMPLOYMENT_RATE := 0.7  # fraction of NPCs assigned a work_building_id
 const UNEMPLOYED_STARTING_CASH := Vector2i(0, 50)
-const EMPLOYED_CASH_MULTIPLIER := 3  # starting cash scales with employer's daily_revenue
+const EMPLOYED_CASH_MULTIPLIER := 3  # (unused since TUNE1; kept for old saves' readers)
+const EMPLOYED_POCKET := Vector2i(20, 140)   # TUNE1: what a worker carries
 
 ## Fixed count, added ON TOP of population_count (not a fraction of it) --
 ## cops are a distinct population, not a civilian subtype, so tying their
@@ -131,7 +132,7 @@ static func _build_npc(
 	if is_employed:
 		npc.work_building_id = _job_near(rng, npc.position, workplaces, world)
 		var workplace: BuildingData = world.entities[npc.work_building_id].get_component(ComponentNames.BUILDING)
-		npc.cash = workplace.daily_revenue * EMPLOYED_CASH_MULTIPLIER
+		npc.cash = rng.randi_range(EMPLOYED_POCKET.x, EMPLOYED_POCKET.y)   # TUNE: a wallet, not three days of the shop's takings
 	else:
 		npc.cash = rng.randi_range(UNEMPLOYED_STARTING_CASH.x, UNEMPLOYED_STARTING_CASH.y)
 

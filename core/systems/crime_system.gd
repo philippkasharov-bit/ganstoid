@@ -251,6 +251,8 @@ static func broadcast_witnesses(world: World, position: Vector2, severity: float
 		if npc.is_down or not can_see(world, npc.position, position):
 			continue   # W1: out cold, dead, too far for the light, or a wall in the way: saw nothing
 		RecognitionSystem.register_witness(npc, severity * _face_factor(pstate))
+		if not anyone and pstate != null:
+			pstate.fame = minf(100.0, pstate.fame + severity * Traits.FAME_PER_SEVERITY)   # F1: people talk
 		anyone = true
 		if npc.is_dealer or npc.gang_id != &"":
 			continue   # W2: the street does not call the police; they remember, though
@@ -263,11 +265,8 @@ static func broadcast_witnesses(world: World, position: Vector2, severity: float
 				return
 			_report(world, npc, {"position": position, "severity": severity, "tick": world.tick, "witness_id": id})
 			return
-	if pstate != null:
-		if anyone:
-			pstate.fame = minf(100.0, pstate.fame + severity * Traits.FAME_PER_SEVERITY)   # F1: people talk
-		else:
-			Traits.deed(world, pstate, &"unseen")   # T1: nobody there to see it
+	if pstate != null and not anyone:
+		Traits.deed(world, pstate, &"unseen")   # T1: nobody there to see it
 
 ## F1/T1: how readily a witness places your face: fame makes it easier, Ghost harder.
 static func _face_factor(state: PlayerStateData) -> float:

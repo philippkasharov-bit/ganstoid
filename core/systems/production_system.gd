@@ -23,7 +23,7 @@ const GOOD_ID := &"weed"
 const RECIPES := {
 	&"weed":   {"cost": 40, "yield": 6, "severity": 0.1, "mishap": 0.0},
 	&"pills":  {"cost": 120, "yield": 5, "severity": 0.15, "mishap": 0.0},
-	&"meth":   {"cost": 150, "yield": 6, "severity": 0.35, "mishap": 0.05},
+	&"meth":   {"cost": 150, "yield": 6, "severity": 0.35, "mishap": 0.08},
 	&"coke":   {"cost": 300, "yield": 5, "severity": 0.2, "mishap": 0.0},
 	&"heroin": {"cost": 260, "yield": 4, "severity": 0.25, "mishap": 0.0},
 }
