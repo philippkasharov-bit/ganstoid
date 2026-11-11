@@ -59,11 +59,19 @@ func _sync_visuals() -> void:
 		var npc: NPCData = people[id].get_component(ComponentNames.NPC)
 		visual.visible = not npc.indoors and not (people[id].has_component(ComponentNames.PLAYER_STATE) and _in_car(people[id]))
 		if visual.visible:
+			var moved: Vector2 = npc.position - visual.position
+			if people[id].has_component(ComponentNames.PLAYER_STATE):
+				var st: PlayerStateData = people[id].get_component(ComponentNames.PLAYER_STATE)
+				if st.aim_point != npc.position:
+					visual.rotation = (st.aim_point - npc.position).angle()   # the player faces the mouse
+			elif moved.length_squared() > 0.0004 and moved.length_squared() < 25.0:
+				visual.rotation = lerp_angle(visual.rotation, moved.angle(), 0.3)   # NPCs face where they walk
 			visual.position = npc.position
 			var tint := Color.WHITE if not npc.is_down else (KO_TINT if npc.ko_until_tick >= 0 else DOWN_TINT)
 			if visual.modulate != tint:
 				visual.modulate = tint   # combat: a body on the ground, or someone out cold
-				visual.scale = Vector2(1.0, 0.55) if npc.is_down else Vector2.ONE
+				var base: float = 1.6 * (1.15 if people[id].has_component(ComponentNames.PLAYER_STATE) else 1.0)
+				visual.scale = Vector2(base * 1.3, base * 0.8) if npc.is_down else Vector2.ONE * base   # lying flat
 
 	for id in _world.get_entities_with_component(ComponentNames.VEHICLE):
 		var car_visual: Node2D = _visuals.get(id)

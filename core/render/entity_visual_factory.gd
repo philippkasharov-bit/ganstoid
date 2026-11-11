@@ -39,15 +39,15 @@ static func create_visual(entity: Entity) -> Node2D:
 	# the player would render identically to every civilian.
 	var player_state: PlayerStateData = entity.get_component(ComponentNames.PLAYER_STATE)
 	if player_state != null:
-		return _make_person(PLAYER_COLOR, 1.4, Color.WHITE)
+		return _make_person(PLAYER_COLOR, 1.15, Color.WHITE, &"player")
 
 	var npc: NPCData = entity.get_component(ComponentNames.NPC)
 	if npc != null:
 		if npc.is_cop:
-			return _make_person(COP_COLOR)
+			return _make_person(COP_COLOR, 1.0, Color(0.08, 0.08, 0.1), &"cop")
 		if npc.is_dealer:
-			return _make_person(DEALER_COLOR)
-		return _make_person(NPC_COLOR)
+			return _make_person(DEALER_COLOR, 1.0, Color(0.08, 0.08, 0.1), &"dealer")
+		return _make_person(NPC_COLOR, 1.0, Color(0.08, 0.08, 0.1), &"civilian")
 
 	return null
 
@@ -82,10 +82,24 @@ static func _make_car(car: VehicleData) -> Node2D:
 	return node
 
 ## A person: filled dot with a dark rim so it reads on both day and night maps.
-static func _make_person(color: Color, scale: float = 1.0, rim: Color = Color(0.08, 0.08, 0.1)) -> Node2D:
-	var dot := Node2D.new()
-	var r := PERSON_RADIUS_M * scale
-	dot.draw.connect(func() -> void:
-		dot.draw_circle(Vector2.ZERO, r + 0.35, rim)
-		dot.draw_circle(Vector2.ZERO, r, color))
-	return dot
+## Placeholder body (box model): shoulders box + head box, nose toward +x so
+## the node's rotation is the way they face. ART SWAP POINT: drop a scene at
+## res://art/characters/<kind>.tscn (kind = player, civilian, cop, dealer) and
+## it is used instead, rotated the same way; nothing else needs to change.
+const ART_DIR := "res://art/characters/"
+
+static func _make_person(color: Color, scale: float = 1.0, rim: Color = Color(0.08, 0.08, 0.1), kind: StringName = &"civilian") -> Node2D:
+	var art := ART_DIR + String(kind) + ".tscn"
+	if ResourceLoader.exists(art):
+		return (load(art) as PackedScene).instantiate() as Node2D
+	var body := Node2D.new()
+	var shoulders := Rect2(Vector2(-0.22, -0.3), Vector2(0.44, 0.6)).grow(0.0)
+	var head := Rect2(Vector2(-0.12, -0.13), Vector2(0.26, 0.26))
+	body.scale = Vector2.ONE * scale * 1.6   # drawn a bit larger than life so people read at street zoom
+	body.draw.connect(func() -> void:
+		body.draw_rect(shoulders.grow(0.06), rim)
+		body.draw_rect(shoulders, color)
+		body.draw_rect(head.grow(0.04), rim)
+		body.draw_rect(head, color.lightened(0.35))
+		body.draw_rect(Rect2(Vector2(0.14, -0.05), Vector2(0.1, 0.1)), rim))   # nose: which way they face
+	return body
