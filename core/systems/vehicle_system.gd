@@ -30,8 +30,8 @@ static func use_door(world: World, me: NPCData, state: PlayerStateData) -> Dicti
 		return {"ok": false, "reason": "car_wrecked"}
 	if car.locked and car.owner_id != PlayerFactory.PLAYER_ENTITY_ID:
 		state.hotwire_id = car.id
-		state.hotwire_done_tick = world.tick + int(HOTWIRE_S * Skills.less(state, &"theft") * SimClock.TICKS_PER_SECOND)
-		CrimeSystem.broadcast_witnesses(world, me.position, CrimeSystem.SEVERITY_BY_TYPE[GanstoidEnums.CrimeType.CAR_BREAK_IN])
+		state.hotwire_done_tick = world.tick + int(HOTWIRE_S * Skills.less(state, &"theft") / Traits.edge(state, &"wheelman", 1.4) * SimClock.TICKS_PER_SECOND)
+		CrimeSystem.broadcast_witnesses(world, me.position, CrimeSystem.SEVERITY_BY_TYPE[GanstoidEnums.CrimeType.CAR_BREAK_IN] * (1.3 if Traits.has(state, &"wheelman") else 1.0))
 		return {"ok": true, "effect": "hotwiring"}
 	return _get_in(world, me, state, car)
 
@@ -48,6 +48,7 @@ static func advance_hotwire(world: World, me: NPCData, state: PlayerStateData) -
 	state.hotwire_id = &""
 	car.locked = false
 	Skills.train(world, state, &"theft", 10.0)
+	Traits.deed(world, state, &"cars")
 	return _get_in(world, me, state, car)
 
 static func _get_in(world: World, me: NPCData, state: PlayerStateData, car: VehicleData) -> Dictionary:

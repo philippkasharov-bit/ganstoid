@@ -18,6 +18,7 @@ const REFUSED_ADDS := 20.0
 
 static func small_talk(world: World, me: NPCData, who: NPCData) -> Dictionary:
 	who.trust = minf(1.0, who.trust + 0.1)
+	Traits.deed(world, _state(world), &"talks")
 	if who.trust < 0.3:
 		return {"ok": true, "effect": "talk_cold"}
 	var tip := _tip(world, who)
@@ -39,16 +40,18 @@ static func _compass(v: Vector2) -> String:
 	return dirs[posmod(roundi(v.angle() / (PI / 4.0)), 8)]
 
 static func threaten(world: World, me: NPCData, who: NPCData) -> Dictionary:
-	who.fear = minf(1.0, who.fear + 0.35)
+	var st := _state(world)
+	who.fear = minf(1.0, who.fear + 0.35 * (0.5 if Traits.has(st, &"talker") else 1.0) * (2.0 if Traits.has(st, &"killer") else 1.0))
 	who.trust = maxf(0.0, who.trust - 0.2)
 	CrimeSystem.broadcast_witnesses(world, me.position, 0.15)
 	_silence(world, who)
 	return {"ok": true, "effect": "threatened"}
 
 static func pay_off(world: World, me: NPCData, who: NPCData) -> Dictionary:
-	if me.cash < PAYOFF:
+	var price := int(PAYOFF / Traits.edge(_state(world), &"talker", 1.3))
+	if me.cash < price:
 		return {"ok": false, "reason": "cant_afford"}
-	Wallet.spend(world, PAYOFF)
+	Wallet.spend(world, price)
 	who.trust = minf(1.0, who.trust + 0.15)
 	_silence(world, who)
 	return {"ok": true, "effect": "paid_off", "amount": PAYOFF}
@@ -60,8 +63,12 @@ static func _silence(world: World, who: NPCData) -> void:
 	if calls != null:
 		calls.cancel(who.id)
 
+static func _state(world: World) -> PlayerStateData:
+	return world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
+
 static func bribe_price(state: PlayerStateData) -> int:
-	return BRIBE_BASE + int(state.case_evidence * BRIBE_PER_EVIDENCE)
+	var p := (BRIBE_BASE + state.case_evidence * BRIBE_PER_EVIDENCE) / Traits.edge(state, &"talker", 1.3)
+	return int(p * (1.5 if Traits.has(state, &"killer") else 1.0))
 
 static func bribe_cop(world: World, me: NPCData, state: PlayerStateData, cop: NPCData) -> Dictionary:
 	var price := bribe_price(state)

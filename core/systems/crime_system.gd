@@ -236,6 +236,9 @@ static func can_see(world: World, eye: Vector2, at: Vector2) -> bool:
 ## CRIME_WITNESSED, so it can't raise the player's law tier.
 static func broadcast_witnesses(world: World, position: Vector2, severity: float, reports_player: bool = true) -> void:
 	var covered := CrewSystem.lookout_covers(world, position)  # batch 17
+	var player: Entity = world.entities.get(PlayerFactory.PLAYER_ENTITY_ID)
+	var pstate: PlayerStateData = player.get_component(ComponentNames.PLAYER_STATE) if player != null and reports_player else null
+	var anyone := false
 	for id in world.spatial_index.query_nearby(position):
 		var entity: Entity = world.entities.get(id)
 		if entity == null or entity.has_component(ComponentNames.PLAYER_STATE):
@@ -247,7 +250,8 @@ static func broadcast_witnesses(world: World, position: Vector2, severity: float
 			continue  # batch 15: your own crew don't report you (snitching is its own, rarer path)
 		if npc.is_down or not can_see(world, npc.position, position):
 			continue   # W1: out cold, dead, too far for the light, or a wall in the way: saw nothing
-		RecognitionSystem.register_witness(npc, severity)
+		RecognitionSystem.register_witness(npc, severity * _face_factor(pstate))
+		anyone = true
 		if npc.is_dealer or npc.gang_id != &"":
 			continue   # W2: the street does not call the police; they remember, though
 		if RecognitionSystem.roll_recognized(npc, world.runtime_rng):
@@ -259,6 +263,17 @@ static func broadcast_witnesses(world: World, position: Vector2, severity: float
 				return
 			_report(world, npc, {"position": position, "severity": severity, "tick": world.tick, "witness_id": id})
 			return
+	if pstate != null:
+		if anyone:
+			pstate.fame = minf(100.0, pstate.fame + severity * Traits.FAME_PER_SEVERITY)   # F1: people talk
+		else:
+			Traits.deed(world, pstate, &"unseen")   # T1: nobody there to see it
+
+## F1/T1: how readily a witness places your face: fame makes it easier, Ghost harder.
+static func _face_factor(state: PlayerStateData) -> float:
+	if state == null:
+		return 1.0
+	return (1.0 + state.fame / 100.0) / Traits.edge(state, &"ghost", 2.0)
 
 ## W2: a cop radios it in at once. A civilian runs and phones it in a few
 ## seconds later (WitnessCallSystem) -- silence them first and nobody calls.

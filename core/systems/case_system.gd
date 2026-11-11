@@ -38,7 +38,10 @@ func on_crime_witnessed(event_name: StringName, payload: Dictionary) -> void:
 		return
 	for p in _world.get_entities_with_component(ComponentNames.PLAYER_STATE).values():
 		var state: PlayerStateData = p.get_component(ComponentNames.PLAYER_STATE)
-		state.case_evidence += float(payload.get("severity", 0.0)) * EVIDENCE_PER
+		var sev := float(payload.get("severity", 0.0))
+		if Traits.has(state, &"dealer") and is_equal_approx(sev, CrimeSystem.SEVERITY_BY_TYPE[GanstoidEnums.CrimeType.DRUG_DEAL_OBSERVED]):
+			sev *= 1.5   # T1 Plug: they know what you do
+		state.case_evidence += sev * EVIDENCE_PER
 
 func process_entities(entities: Dictionary, _delta: float, tick: int) -> void:
 	for p in entities.values():
@@ -53,6 +56,7 @@ func process_entities(entities: Dictionary, _delta: float, tick: int) -> void:
 			_last_hour = hour
 			var home: bool = state.sleeping and state.sleeping_home or _at_home(me)
 			state.case_evidence = maxf(0.0, state.case_evidence - (COLD_AT_HOME_PER_HOUR if home else COLD_PER_HOUR))
+			state.fame = maxf(0.0, state.fame - Traits.FAME_FADE_PER_HOUR)   # F1
 		if state.case_evidence >= WARRANT_AT and tick % SIGHT_CHECK_TICKS == 0:
 			_cops_on_the_lookout(me)
 

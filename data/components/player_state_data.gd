@@ -90,6 +90,9 @@ extends Resource
 ## V1: the car you are in (driving), and a hotwire in progress.
 @export var case_evidence: float = 0.0          # I1: what the police have on you (witness reports)
 @export var prison_until_tick: int = 0           # CP1: serving time until this tick (0 = free)
+@export var deeds: Dictionary = {}              # T1: deed -> count
+@export var traits: Dictionary = {}             # T1: trait id -> tier (1 normal, 2 gold)
+@export var fame: float = 0.0                    # F1: 0-100
 @export var job: Dictionary = {}                  # JB1: the contract you are on
 @export var fixer_rep: float = 0.0
 @export var jobs_done: int = 0

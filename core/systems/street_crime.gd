@@ -22,7 +22,7 @@ static func mug(world: World, me: NPCData, state: PlayerStateData, victim: NPCDa
 	if victim.position.distance_to(me.position) > MUG_REACH_M:
 		return {"ok": false, "reason": "too_far"}
 	CrimeSystem.broadcast_witnesses(world, me.position, CrimeSystem.SEVERITY_BY_TYPE[GanstoidEnums.CrimeType.ARMED_ROBBERY])
-	var brave: bool = state.weapon != &"pistol" and world.runtime_rng.randf() < BRAVE_SHARE
+	var brave: bool = state.weapon != &"pistol" and not Traits.has(state, &"killer") and world.runtime_rng.randf() < BRAVE_SHARE
 	var schedule := world.find_system(NPCScheduleSystem) as NPCScheduleSystem
 	if schedule != null:
 		schedule.flee(victim)

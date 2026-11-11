@@ -44,9 +44,13 @@ static func attack(world: World, me: NPCData, state: PlayerStateData, tick: int,
 		dir = Vector2.RIGHT
 	if w["melee"]:
 		w = w.duplicate()
-		w["damage"] *= Skills.more(state, &"melee")
+		w["damage"] *= Skills.more(state, &"melee") * Traits.edge(state, &"brawler", 1.2)
 	var result := _swing(world, me, dir, w) if w["melee"] else _shoot(world, me, state, dir, w, rng)
 	_train(world, state, w, result)
+	if result.get("downed", false):
+		Traits.deed(world, state, &"kills")
+	elif result.get("knocked_out", false):
+		Traits.deed(world, state, &"knockouts")
 	result["ok"] = true
 	result["weapon"] = state.weapon
 	if not w["melee"]:
@@ -97,7 +101,7 @@ static func _swing(world: World, me: NPCData, dir: Vector2, w: Dictionary) -> Di
 static func _shoot(world: World, me: NPCData, state: PlayerStateData, dir: Vector2, w: Dictionary, rng: RandomNumberGenerator) -> Dictionary:
 	state.ammo -= 1
 	state.shots_fired += 1
-	var spread := deg_to_rad(w["spread_aim_deg"] if state.aiming else w["spread_hip_deg"]) * NeedsSystem.spread_factor(me) * Skills.less(state, &"shooting")
+	var spread := deg_to_rad(w["spread_aim_deg"] if state.aiming else w["spread_hip_deg"]) * NeedsSystem.spread_factor(me) * Skills.less(state, &"shooting") * (1.15 if Traits.has(state, &"brawler") else 1.0)
 	return _fire(world, me, dir.rotated(rng.randf_range(-spread, spread)), w)
 
 ## One round from `shooter` along `dir`: stops in the first standing body or wall.

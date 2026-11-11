@@ -32,6 +32,7 @@ func process_entities(entities: Dictionary, _delta: float, tick: int) -> void:
 		var now := rank_for(score(_world, player.get_component(ComponentNames.NPC), state))
 		if now > state.rank:
 			state.rank = now
+			state.fame = minf(100.0, state.fame + 10.0)   # F1: a new rank gets talked about
 			state.last_message = "You're a %s now. People talk about you." % NAMES[now]
 			state.message_serial += 1
 
