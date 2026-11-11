@@ -77,6 +77,6 @@ func _civilians(world: World) -> Array:
 	for id in world.entities:
 		var e: Entity = world.entities[id]
 		var n: NPCData = e.get_component(ComponentNames.NPC)
-		if n != null and not n.is_cop and not n.is_dealer and not e.has_component(ComponentNames.PLAYER_STATE):
+		if n != null and not n.is_cop and not n.is_dealer and n.gang_id == &"" and not e.has_component(ComponentNames.PLAYER_STATE):   # TR: gang members are not plain civilians
 			out.append(n)
 	return out

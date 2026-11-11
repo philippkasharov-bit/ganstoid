@@ -59,6 +59,26 @@ func on_assaulted(event_name: StringName, payload: Dictionary) -> void:
 				npc.indoors = false
 				_world.reindex_position(id)
 
+## RG1: a gang sends `n` of its people (standing, not already fighting) after
+## the player. Returns how many went.
+func send_squad(gang_id: StringName, n: int, tick: int) -> int:
+	var gang_e: Entity = _world.entities.get(gang_id)
+	if gang_e == null:
+		return 0
+	var until := tick + int(HOSTILE_S * SimClock.TICKS_PER_SECOND)
+	var sent := 0
+	for m in gang_e.get_component(ComponentNames.GANG).member_npc_ids:
+		var npc := _npc(m)
+		if sent >= n or npc == null or npc.is_down or hostile.has(m):
+			continue
+		hostile[m] = until
+		npc.is_busy = true
+		if npc.indoors:
+			npc.indoors = false
+		_world.reindex_position(m)
+		sent += 1
+	return sent
+
 ## Close in, then shoot when in range and in sight; one round per FIRE_EVERY_S.
 func _fight(npc: NPCData, target: NPCData, delta: float, tick: int) -> void:
 	var d := npc.position.distance_to(target.position)

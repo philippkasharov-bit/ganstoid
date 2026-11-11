@@ -72,7 +72,7 @@ func _find_nearest_civilian(world: World, from: Vector2) -> StringName:
 			continue
 		var entity: Entity = world.entities[id]
 		var npc: NPCData = entity.get_component(ComponentNames.NPC)
-		if npc == null or npc.is_cop:
+		if npc == null or npc.is_cop or npc.gang_id != &"":   # TR: gang members never call the police
 			continue
 		var d := npc.position.distance_to(from)
 		if d < best_dist:

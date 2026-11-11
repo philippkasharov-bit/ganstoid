@@ -84,4 +84,6 @@ enum CrimeType {
 	EXTORTION,
 	## X2: breaking into a house.
 	BURGLARY,
+	## TR: spraying a gang tag.
+	GRAFFITI,
 }

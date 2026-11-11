@@ -63,6 +63,7 @@ func _process(delta: float) -> void:
 		"Health: %d%%%s   In hand (Q): %s%s   (right mouse aim, left mouse attack)" % [roundi(npc.health * 100), "  BLEEDING (bandage: I)" if npc.bleeding else "", String(state.weapon), "  %d rounds" % state.ammo if state.weapon == &"pistol" else ""],
 		"Food %s   Water %s   Rest %s%s   (I: bag, E: buy, Z: sleep, F: car)" % [_need(npc.hunger), _need(npc.thirst), _need(npc.fatigue), "   ASLEEP..." if state.sleeping else ""],
 		"Stash: %s" % _format_inventory(state.inventory),
+		_turf_line(npc),
 		"Standing: %s" % _format_standing(state),
 		"Businesses: %d   Grow houses: %d" % [BusinessSystem.count_owned(_world), ProductionSystem.count_grow_houses(_world)],
 		"Crew (Tab): %d/%d (lookout %d, dealing %d, muscle %d%s)" % [state.crew_ids.size(), CrewSystem.MAX_CREW, CrewSystem.count_lookouts(_world, state), CrewSystem.count_role(_world, state, GanstoidEnums.CrewRole.DEALER), CrewSystem.count_role(_world, state, GanstoidEnums.CrewRole.MUSCLE), ", driver" if CrewSystem.count_role(_world, state, GanstoidEnums.CrewRole.DRIVER) > 0 else ""],
@@ -82,6 +83,19 @@ func _clock() -> String:
 	return "%02d:%02d" % [int(hours), int(fmod(hours, 1.0) * 60.0)]
 
 ## People on the street right now (indoors ones are not drawn).
+func _turf_line(npc: NPCData) -> String:
+	var t := TerritorySystem.data(_world)
+	if t == null:
+		return ""
+	var c := TerritoryData.cell_of(npc.position)
+	var owner := TerritorySystem.controller(t, c)
+	var who := "nobody's" if owner == &"" else ("YOURS" if owner == TerritorySystem.PLAYER else _gang_name(owner))
+	return "Turf: %s block (you %d)   blocks held %d   (T: tag, U: turf map)" % [who, roundi(TerritorySystem.get_influence(t, c, TerritorySystem.PLAYER)), TerritorySystem.cells_held(t, TerritorySystem.PLAYER)]
+
+func _gang_name(id: StringName) -> String:
+	var e: Entity = _world.entities.get(id)
+	return e.get_component(ComponentNames.GANG).display_name if e != null else String(id)
+
 static func _need(v: float) -> String:
 	if v < NeedsSystem.LOW:
 		return "LOW %d%%" % roundi(v * 100)
