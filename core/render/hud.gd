@@ -92,10 +92,6 @@ func _turf_line(npc: NPCData) -> String:
 	var who := "nobody's" if owner == &"" else ("YOURS" if owner == TerritorySystem.PLAYER else _gang_name(owner))
 	return "Turf: %s block (you %d)   blocks held %d   (T: tag, U: turf map)" % [who, roundi(TerritorySystem.get_influence(t, c, TerritorySystem.PLAYER)), TerritorySystem.cells_held(t, TerritorySystem.PLAYER)]
 
-func _gang_name(id: StringName) -> String:
-	var e: Entity = _world.entities.get(id)
-	return e.get_component(ComponentNames.GANG).display_name if e != null else String(id)
-
 static func _need(v: float) -> String:
 	if v < NeedsSystem.LOW:
 		return "LOW %d%%" % roundi(v * 100)
