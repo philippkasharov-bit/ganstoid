@@ -194,7 +194,8 @@ func _clashes(t: TerritoryData) -> void:
 				strong.append(g)
 		if strong.size() < 2 or rng.randf() > CLASH_CHANCE:
 			continue
-		strong.sort_custom(func(a: StringName, b: StringName) -> bool: return t.cells[c][a] > t.cells[c][b])
+		var w := _world
+		strong.sort_custom(func(a: StringName, b: StringName) -> bool: return t.cells[c][a] * GunTrade.armed_edge(w, a) > t.cells[c][b] * GunTrade.armed_edge(w, b))   # WP1: better armed, stronger
 		var winner: StringName = strong[0]
 		var loser: StringName = strong[1]
 		add_influence(t, c, winner, CLASH_SHIFT * 0.5)

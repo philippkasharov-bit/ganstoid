@@ -48,7 +48,7 @@ static func buy(world: World, me: NPCData, state: PlayerStateData, source_id: St
 		return {"ok": false, "reason": "not_sold_here"}
 	if not is_open(world, source_id):
 		return {"ok": false, "reason": "closed"}
-	if it["kind"] == "weapon" and kind == "dealer" and state.rank < RankSystem.GUN_RANK:
+	if it["kind"] == "weapon" and kind == "dealer" and state.rank < it.get("rank", RankSystem.GUN_RANK):
 		return {"ok": false, "reason": "nobody_gun"}   # RK1: they don't sell iron to a nobody
 	var price: int = it["price"]
 	if me.cash < price:
@@ -68,6 +68,10 @@ static func buy(world: World, me: NPCData, state: PlayerStateData, source_id: St
 static func owned_weapons(state: PlayerStateData) -> Array[StringName]:
 	var out: Array[StringName] = [&"fists"]
 	for w in CombatSystem.ORDER:
-		if w != &"fists" and state.inventory.get(ItemCatalog.item_for_weapon(w), 0) > 0:
-			out.append(w)
+		if w == &"fists":
+			continue
+		for id in ItemCatalog.ITEMS:
+			if ItemCatalog.ITEMS[id].get("weapon", &"") == w and state.inventory.get(id, 0) > 0:
+				out.append(w)
+				break
 	return out

@@ -68,7 +68,7 @@ static func _train(world: World, state: PlayerStateData, w: Dictionary, result: 
 ## Hits whoever stands first on the line: the player, a bystander or nobody.
 static func npc_shoot(world: World, shooter: NPCData, target: Vector2, rng: RandomNumberGenerator) -> Dictionary:
 	var w: Dictionary = WEAPONS[&"pistol"]
-	var spread := deg_to_rad(NPC_SPREAD_DEG)
+	var spread := deg_to_rad(NPC_SPREAD_DEG) / (GunTrade.armed_edge(world, shooter.gang_id) if shooter.gang_id != &"" else 1.0)
 	var dir := (target - shooter.position).normalized().rotated(rng.randf_range(-spread, spread))
 	var result := _fire(world, shooter, dir, w)
 	world.event_bus.emit(GanstoidEvents.GUNSHOT, {"position": shooter.position, "heard_m": w["heard_m"], "tick": world.tick})

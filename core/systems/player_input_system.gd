@@ -375,7 +375,12 @@ func _start_buy(dealer_id: StringName) -> Dictionary:
 
 func _attempt_sell(player_npc: NPCData) -> Dictionary:
 	var target_id := _find_nearest_npc(player_npc.position)
-	if target_id == &"" or not _is_dealer(target_id):
+	if target_id == &"":
+		return {}
+	var buyer: NPCData = _world.entities[target_id].get_component(ComponentNames.NPC)
+	if not buyer.is_dealer and buyer.gang_id != &"":   # WP1: a gang member buys your gun
+		return GunTrade.sell(_world, player_npc, _world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE), buyer)
+	if not _is_dealer(target_id):
 		return {}
 	var state: PlayerStateData = _world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
 	return DealSystem.start_handoff(_world, target_id, _best_to_sell(state), "sell")

@@ -19,7 +19,8 @@ const ITEMS := {
 	&"bandage": {"name": "Bandage", "kind": "medical", "price": 12, "sold_at": "shop", "heal": 0.15},
 	&"bat":     {"name": "Baseball bat", "kind": "weapon", "price": 45, "sold_at": "workshop", "weapon": &"bat"},
 	&"knife":   {"name": "Knife", "kind": "weapon", "price": 35, "sold_at": "workshop", "weapon": &"knife"},
-	&"pistol":  {"name": "Pistol (no papers)", "kind": "weapon", "price": 450, "sold_at": "dealer", "weapon": &"pistol"},
+	&"pistol":  {"name": "Pistol (no papers)", "kind": "weapon", "price": 450, "sold_at": "dealer", "weapon": &"pistol", "trade": 600, "standing": 0.1, "armory": 1},
+	&"pistol_clean": {"name": "Clean pistol (new, no history)", "kind": "weapon", "price": 900, "sold_at": "dealer", "weapon": &"pistol", "rank": 2, "trade": 1300, "standing": 0.2, "armory": 2},
 	&"ammo":    {"name": "Box of 9 mm (12)", "kind": "ammo", "price": 40, "sold_at": "dealer", "rounds": 12},
 }
 

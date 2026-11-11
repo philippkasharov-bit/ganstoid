@@ -17,3 +17,4 @@ extends Resource
 ## True once influence has been driven to 0 — contract against the player
 ## (if any) is permanently cleared when this flips.
 @export var is_destroyed: bool = false
+@export var armory: int = 0   # WP1: guns you sold them (clean ones count double): they shoot straighter, win more fights
