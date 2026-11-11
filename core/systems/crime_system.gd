@@ -196,6 +196,23 @@ static func _get_player_entity(world: World) -> Entity:
 		return entity
 	return null
 
+## W1: how far a face can be made out: daylight vs street-lit night.
+const SIGHT_DAY_M := ENCOUNTER_RADIUS
+const SIGHT_NIGHT_M := 8.0
+const DAY_FROM_HOUR := 6.5
+const DAY_TO_HOUR := 19.5
+
+## W1: could someone standing at `eye` see what happens at `at` right now?
+## In range for the light, and no wall in between. (Facing and attention come
+## with the full perception pass; this is the honest minimum: no seeing
+## through buildings, no reading a face at 15 m in the dark.)
+static func can_see(world: World, eye: Vector2, at: Vector2) -> bool:
+	var hour := SimClock.day_fraction(world.tick) * 24.0
+	var reach := SIGHT_DAY_M if hour >= DAY_FROM_HOUR and hour < DAY_TO_HOUR else SIGHT_NIGHT_M
+	if eye.distance_to(at) > reach:
+		return false
+	return SimNav.active == null or SimNav.active.collision.line_clear(eye, at, 0.0)
+
 ## Public (not just commit_crime's internal step) so any other player
 ## action that should be witnessable -- DealSystem's drug deals, which
 ## aren't a "crime" in the commit_crime sense but still carry the
@@ -224,8 +241,10 @@ static func broadcast_witnesses(world: World, position: Vector2, severity: float
 			continue
 		if npc.is_crew:
 			continue  # batch 15: your own crew don't report you (snitching is its own, rarer path)
+		if npc.is_down or not can_see(world, npc.position, position):
+			continue   # W1: out cold, dead, too far for the light, or a wall in the way: saw nothing
 		RecognitionSystem.register_witness(npc, severity)
-		if npc.position.distance_to(position) <= ENCOUNTER_RADIUS and RecognitionSystem.roll_recognized(npc, world.runtime_rng):
+		if RecognitionSystem.roll_recognized(npc, world.runtime_rng):
 			if covered and world.runtime_rng.randf() < CrewSystem.LOOKOUT_SUPPRESS_CHANCE:
 				_lookout_saved_you(world)
 				continue  # batch 17: your lookout gave the signal -- this witness didn't clock you
