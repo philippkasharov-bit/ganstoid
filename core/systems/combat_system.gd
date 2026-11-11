@@ -152,6 +152,11 @@ static func _people_near(world: World, p: Vector2, attacker_id: StringName) -> A
 			out.append(npc)
 	return out
 
+## V1: a person hit by the player's car: seen like any blow, and their gang notices.
+static func report_hit(world: World, at: Vector2, result: Dictionary) -> void:
+	_witness(world, at, {"heard_m": 0.0}, result)
+	world.event_bus.emit(GanstoidEvents.ASSAULTED, {"victim_id": result["hit_id"], "position": at, "tick": world.tick})
+
 ## Seen like any crime: a blow that lands is assault, a body on the ground is
 ## murder. A shot is heard: everyone within earshot counts as a witness of it.
 static func _witness(world: World, at: Vector2, w: Dictionary, result: Dictionary) -> void:

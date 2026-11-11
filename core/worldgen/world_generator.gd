@@ -13,6 +13,7 @@ static func generate_real_city_game(world: World, seed: int, city: CityData, cen
 	var building_ids := CityRoles.generate(world, seed, city, centre, radius)
 	PopulationSeeder.seed(world, seed + 1, population_count, building_ids)
 	GoodsCatalog.seed_goods(world)
+	VehicleSeeder.seed(world, seed + 2, city, centre, radius)
 	_spawn_player_near(world, building_ids, centre)
 
 ## Player starts at the home nearest the district centre.

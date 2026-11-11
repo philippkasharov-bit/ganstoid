@@ -86,6 +86,9 @@ func _get_entity_position(entity: Entity) -> Variant:
 	var building: BuildingData = entity.get_component(ComponentNames.BUILDING)
 	if building != null:
 		return building.position
+	var car: VehicleData = entity.get_component(ComponentNames.VEHICLE)
+	if car != null:
+		return car.position
 	return null
 
 ## Call this after moving an entity's position (NPC movement system, Phase 1+)

@@ -61,7 +61,7 @@ func _process(delta: float) -> void:
 		"Cash: $%d clean, $%d dirty" % [npc.cash - state.dirty_cash, state.dirty_cash],
 		"Heat: %s" % GanstoidEnums.LawTier.keys()[state.law_tier],
 		"Health: %d%%%s   In hand (Q): %s%s   (right mouse aim, left mouse attack)" % [roundi(npc.health * 100), "  BLEEDING (bandage: I)" if npc.bleeding else "", String(state.weapon), "  %d rounds" % state.ammo if state.weapon == &"pistol" else ""],
-		"Food %s   Water %s   Rest %s%s   (I: bag, E: buy, Z: sleep)" % [_need(npc.hunger), _need(npc.thirst), _need(npc.fatigue), "   ASLEEP..." if state.sleeping else ""],
+		"Food %s   Water %s   Rest %s%s   (I: bag, E: buy, Z: sleep, F: car)" % [_need(npc.hunger), _need(npc.thirst), _need(npc.fatigue), "   ASLEEP..." if state.sleeping else ""],
 		"Stash: %s" % _format_inventory(state.inventory),
 		"Standing: %s" % _format_standing(state),
 		"Businesses: %d   Grow houses: %d" % [BusinessSystem.count_owned(_world), ProductionSystem.count_grow_houses(_world)],

@@ -57,13 +57,23 @@ func _sync_visuals() -> void:
 		if visual == null:
 			continue
 		var npc: NPCData = people[id].get_component(ComponentNames.NPC)
-		visual.visible = not npc.indoors
+		visual.visible = not npc.indoors and not (people[id].has_component(ComponentNames.PLAYER_STATE) and _in_car(people[id]))
 		if visual.visible:
 			visual.position = npc.position
 			var tint := Color.WHITE if not npc.is_down else (KO_TINT if npc.ko_until_tick >= 0 else DOWN_TINT)
 			if visual.modulate != tint:
 				visual.modulate = tint   # combat: a body on the ground, or someone out cold
 				visual.scale = Vector2(1.0, 0.55) if npc.is_down else Vector2.ONE
+
+	for id in _world.get_entities_with_component(ComponentNames.VEHICLE):
+		var car_visual: Node2D = _visuals.get(id)
+		if car_visual != null:
+			var car: VehicleData = _world.entities[id].get_component(ComponentNames.VEHICLE)
+			car_visual.position = car.position
+			car_visual.rotation = car.heading
+
+static func _in_car(player: Entity) -> bool:
+	return (player.get_component(ComponentNames.PLAYER_STATE) as PlayerStateData).vehicle_id != &""
 
 func _remove_stale_visuals() -> void:
 	for id in _visuals.keys():

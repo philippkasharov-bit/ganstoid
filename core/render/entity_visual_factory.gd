@@ -30,6 +30,10 @@ static func create_visual(entity: Entity) -> Node2D:
 			return null   # thousands of homes: the map already shows them
 		return _make_rect(Vector2.ONE * BUILDING_MARK_M, BUILDING_COLORS.get(building.building_type, Color.GRAY))
 
+	var car: VehicleData = entity.get_component(ComponentNames.VEHICLE)
+	if car != null:
+		return _make_car(car)
+
 	# Checked before the generic NPC case: the player entity carries BOTH
 	# PlayerStateData and NPCData (see PlayerFactory) -- without this order,
 	# the player would render identically to every civilian.
@@ -62,6 +66,20 @@ static func _make_rect(size: Vector2, color: Color) -> Node2D:
 	])
 	poly.color = color
 	return poly
+
+## V1: a car seen from above: body, darker roof, windscreen toward the front (+x).
+static func _make_car(car: VehicleData) -> Node2D:
+	var node := Node2D.new()
+	var half := Vector2(car.length_m, car.width_m) * 0.5
+	var body := Rect2(-half, half * 2.0)
+	var roof := Rect2(Vector2(-half.x * 0.55, -half.y * 0.8), Vector2(half.x * 1.0, half.y * 1.6))
+	var glass := Rect2(Vector2(half.x * 0.45, -half.y * 0.75), Vector2(half.x * 0.22, half.y * 1.5))
+	node.draw.connect(func() -> void:
+		node.draw_rect(body.grow(0.08), Color(0.05, 0.05, 0.06))
+		node.draw_rect(body, car.color)
+		node.draw_rect(roof, car.color.darkened(0.25))
+		node.draw_rect(glass, Color(0.55, 0.7, 0.8)))
+	return node
 
 ## A person: filled dot with a dark rim so it reads on both day and night maps.
 static func _make_person(color: Color, scale: float = 1.0, rim: Color = Color(0.08, 0.08, 0.1)) -> Node2D:

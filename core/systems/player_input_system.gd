@@ -49,6 +49,7 @@ const AIM_SPEED := SimUnits.WALK * 0.6   # weapon up: a careful step, no running
 const STORE_ACTION := &"store"
 const INVENTORY_ACTION := &"inventory"   # G2: I
 const SLEEP_ACTION := &"sleep"           # G2: Z
+const CAR_ACTION := &"car_door"          # V1: F
 const SLOT_ACTIONS: Array[StringName] = [&"slot_1", &"slot_2", &"slot_3", &"slot_4", &"slot_5", &"slot_6", &"slot_7", &"slot_8", &"slot_9"]
 
 func _init(world: World) -> void:
@@ -86,6 +87,7 @@ func _init(world: World) -> void:
 	_bind_key(STORE_ACTION, KEY_E)
 	_bind_key(INVENTORY_ACTION, KEY_I)
 	_bind_key(SLEEP_ACTION, KEY_Z)
+	_bind_key(CAR_ACTION, KEY_F)
 	for i in SLOT_ACTIONS.size():
 		_bind_key(SLOT_ACTIONS[i], KEY_1 + i)
 	_bind_mouse(ATTACK_ACTION, MOUSE_BUTTON_LEFT)
@@ -131,6 +133,14 @@ func process_entities(entities: Dictionary, delta: float, tick: int) -> void:
 			StreetTalk.say(_world, state, NeedsSystem.toggle_sleep(_world, npc, state))
 		if state.sleeping:
 			continue   # asleep: nothing else until you wake
+		if Input.is_action_just_pressed(CAR_ACTION):
+			StreetTalk.say(_world, state, VehicleSystem.use_door(_world, npc, state))
+		var wired := VehicleSystem.advance_hotwire(_world, npc, state)
+		if not wired.is_empty():
+			StreetTalk.say(_world, state, wired)
+		if state.vehicle_id != &"":
+			_drive(npc, state, delta)
+			continue   # at the wheel: WASD drive the car
 		_combat_input(npc, state, tick)
 		if _store_input(npc, state) or _inventory_input(npc, state):
 			continue   # a menu is open: the number keys belong to it
@@ -209,6 +219,18 @@ func _store_input(npc: NPCData, state: PlayerStateData) -> bool:
 		if Input.is_action_just_pressed(SLOT_ACTIONS[i]):
 			StreetTalk.say(_world, state, ShopSystem.buy(_world, npc, state, state.store_id, stock[i]))
 	return true
+
+## V1: WASD drive; the player rides along.
+func _drive(npc: NPCData, state: PlayerStateData, delta: float) -> void:
+	var car: VehicleData = _world.entities[state.vehicle_id].get_component(ComponentNames.VEHICLE)
+	var input := _move_input()
+	var out := VehicleSystem.drive(_world, car, -input.y, input.x, delta)
+	npc.position = car.position
+	_world.reindex_position(npc.id)
+	if out.has("hit"):
+		CombatSystem.report_hit(_world, car.position, out["hit"])
+	if out.get("crash", 0.0) > 8.0:
+		npc.health = maxf(0.0, npc.health - out["crash"] * 0.02)   # a hard crash shakes you up
 
 ## G2: I opens what you carry; 1-9 eat, drink or apply that line.
 func _inventory_input(npc: NPCData, state: PlayerStateData) -> bool:
