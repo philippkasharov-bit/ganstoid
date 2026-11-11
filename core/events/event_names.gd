@@ -15,3 +15,8 @@ const CRIME_WITNESSED := &"crime_witnessed"
 ## Combat C2: a shot fired. Payload: {position: Vector2, heard_m: float, tick: int}.
 ## Consumed by NPCScheduleSystem (people in earshot run for cover).
 const GUNSHOT := &"gunshot"
+
+## Combat C6: the player's blow or round landed. Payload: {victim_id: StringName,
+## position: Vector2 (the player's), tick: int}. Consumed by NPCCombatSystem
+## (the victim's gang comes for you).
+const ASSAULTED := &"assaulted"

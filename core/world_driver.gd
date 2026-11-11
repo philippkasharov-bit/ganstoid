@@ -37,5 +37,13 @@ func _physics_process(delta: float) -> void:
 		return   # routes still loading: nobody moves yet
 	world.step(delta)
 
+## C6 permadeath: once the player is down, Enter starts a new run (new seed).
+func _unhandled_input(event: InputEvent) -> void:
+	if not event.is_action_pressed("ui_accept"):
+		return
+	var player: Entity = world.entities.get(PlayerFactory.PLAYER_ENTITY_ID)
+	if player != null and (player.get_component(ComponentNames.NPC) as NPCData).is_down:
+		get_tree().reload_current_scene()
+
 func _exit_tree() -> void:
 	SimNav.uninstall()

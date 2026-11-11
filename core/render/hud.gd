@@ -45,6 +45,9 @@ func _process(delta: float) -> void:
 		return
 	var npc: NPCData = player.get_component(ComponentNames.NPC)
 	var state: PlayerStateData = player.get_component(ComponentNames.PLAYER_STATE)
+	if npc.is_down:
+		text = "You are dead. The city goes on without you.\n\nPress Enter to start a new life."
+		return
 	text = "\n".join([
 		"Cash: $%d clean, $%d dirty" % [npc.cash - state.dirty_cash, state.dirty_cash],
 		"Heat: %s" % GanstoidEnums.LawTier.keys()[state.law_tier],

@@ -31,6 +31,10 @@ static func register_all(world: World) -> void:
 	world.register_system(ProductionSystem.new(world))
 	world.register_system(EconomySystem.new(world))
 
+	var npc_combat := NPCCombatSystem.new(world)
+	world.register_system(npc_combat)
+	world.event_bus.subscribe(npc_combat.on_assaulted)
+
 	var cop_ai := CopAISystem.new(world)
 	world.register_system(cop_ai)
 	world.event_bus.subscribe(cop_ai.on_crime_witnessed)

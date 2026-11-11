@@ -82,4 +82,5 @@ extends Resource
 @export var ammo: int = 12                      # pistol rounds carried
 @export var attack_ready_tick: int = 0          # no new attack before this tick
 @export var shots_fired: int = 0
+@export var last_shot_tick: int = -1000000         # C6: cops treat a recent shooter as armed
 var last_attack: Dictionary = {}                # the latest blow or shot, for AimView to draw

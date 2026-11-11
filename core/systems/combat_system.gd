@@ -18,6 +18,8 @@ const WEAPONS := {
 		"spread_hip_deg": 8.0, "spread_aim_deg": 2.0, "heard_m": 300.0},
 }
 const ORDER: Array[StringName] = [&"fists", &"pistol"]
+const NPC_SPREAD_DEG := 9.0     # C6: cops and gang members fire from the hip, under stress
+const THREAT_S := 10.0          # C6: a raised or recently fired gun keeps you a threat this long
 
 ## Next weapon in hand (Q).
 static func cycle_weapon(state: PlayerStateData) -> StringName:
@@ -39,14 +41,34 @@ static func attack(world: World, me: NPCData, state: PlayerStateData, tick: int,
 	var result := _swing(world, me, dir, w) if w["melee"] else _shoot(world, me, state, dir, w, rng)
 	result["ok"] = true
 	result["weapon"] = state.weapon
+	if not w["melee"]:
+		state.last_shot_tick = tick
 	_witness(world, me.position, w, result)
+	if result.has("hit_id"):
+		world.event_bus.emit(GanstoidEvents.ASSAULTED, {"victim_id": result["hit_id"], "position": me.position, "tick": tick})
 	return result
+
+## C6: an NPC (cop, gang member) fires one pistol round at `target` from the hip.
+## Hits whoever stands first on the line: the player, a bystander or nobody.
+static func npc_shoot(world: World, shooter: NPCData, target: Vector2, rng: RandomNumberGenerator) -> Dictionary:
+	var w: Dictionary = WEAPONS[&"pistol"]
+	var spread := deg_to_rad(NPC_SPREAD_DEG)
+	var dir := (target - shooter.position).normalized().rotated(rng.randf_range(-spread, spread))
+	var result := _fire(world, shooter, dir, w)
+	world.event_bus.emit(GanstoidEvents.GUNSHOT, {"position": shooter.position, "heard_m": w["heard_m"], "tick": world.tick})
+	return result
+
+## C6: the player counts as an armed threat while the pistol is up or was fired lately.
+static func is_armed_threat(state: PlayerStateData, tick: int) -> bool:
+	if state.weapon != &"pistol":   # an empty gun pointed at a cop still looks like a gun
+		return false
+	return state.aiming or tick - state.last_shot_tick < int(THREAT_S * SimClock.TICKS_PER_SECOND)
 
 static func _swing(world: World, me: NPCData, dir: Vector2, w: Dictionary) -> Dictionary:
 	var best: NPCData = null
 	var best_d: float = w["range"]
 	var half_arc := deg_to_rad(w["arc_deg"]) * 0.5
-	for npc in _people_near(world, me.position):
+	for npc in _people_near(world, me.position, me.id):
 		var to := npc.position - me.position
 		var d := to.length()
 		if d <= best_d and absf(dir.angle_to(to)) <= half_arc and _clear(me.position, npc.position):
@@ -60,11 +82,15 @@ static func _shoot(world: World, me: NPCData, state: PlayerStateData, dir: Vecto
 	state.ammo -= 1
 	state.shots_fired += 1
 	var spread := deg_to_rad(w["spread_aim_deg"] if state.aiming else w["spread_hip_deg"])
-	dir = dir.rotated(rng.randf_range(-spread, spread))
+	return _fire(world, me, dir.rotated(rng.randf_range(-spread, spread)), w)
+
+## One round from `shooter` along `dir`: stops in the first standing body or wall.
+static func _fire(world: World, shooter: NPCData, dir: Vector2, w: Dictionary) -> Dictionary:
+	var me := shooter
 	var reach := _wall_distance(me.position, dir, w["range"])
 	var best: NPCData = null
 	var best_t := reach
-	for npc in _people_near(world, me.position):
+	for npc in _people_near(world, me.position, me.id):
 		var t := (npc.position - me.position).dot(dir)
 		if t > 0.0 and t < best_t and (me.position + dir * t).distance_to(npc.position) <= BODY_R:
 			best = npc
@@ -96,12 +122,13 @@ static func _wall_distance(from: Vector2, dir: Vector2, reach: float) -> float:
 static func _clear(a: Vector2, b: Vector2) -> bool:
 	return SimNav.active == null or SimNav.active.collision.line_clear(a, b, 0.0)
 
-## Everyone on the street near `p` who can be hurt: not the player, not indoors, not already down.
-static func _people_near(world: World, p: Vector2) -> Array[NPCData]:
+## Everyone on the street near `p` who can be hurt (the player too): not the one
+## attacking, not indoors, not already down.
+static func _people_near(world: World, p: Vector2, attacker_id: StringName) -> Array[NPCData]:
 	var out: Array[NPCData] = []
 	for id in world.spatial_index.query_nearby(p):
 		var entity: Entity = world.entities.get(id)
-		if entity == null or entity.has_component(ComponentNames.PLAYER_STATE):
+		if entity == null or id == attacker_id:
 			continue
 		var npc: NPCData = entity.get_component(ComponentNames.NPC)
 		if npc != null and not npc.indoors and not npc.is_down:

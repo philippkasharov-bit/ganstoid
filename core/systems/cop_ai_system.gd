@@ -281,7 +281,13 @@ func _advance_alert(npc: NPCData, delta: float, tick: int) -> void:
 		_stand_down(npc.id)  # no longer wanted -- nothing left to respond to
 		return
 	var player_npc: NPCData = player_entity.get_component(ComponentNames.NPC)
-	if npc.position.distance_to(player_npc.position) <= ARREST_RADIUS:
+	if player_npc.is_down:
+		_stand_down(npc.id)
+		return
+	var combat := _world.find_system(NPCCombatSystem) as NPCCombatSystem
+	if combat != null and combat.cop_engages(npc, player_npc, player_state, tick):
+		return   # C6: an armed threat in sight: hold and shoot, no walking in for the cuffs
+	if npc.position.distance_to(player_npc.position) <= ARREST_RADIUS and not CombatSystem.is_armed_threat(player_state, tick):
 		_arrest(player_npc, player_state)
 		_stand_down(npc.id)
 		return

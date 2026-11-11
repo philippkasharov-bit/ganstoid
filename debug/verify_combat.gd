@@ -7,7 +7,7 @@
 extends SceneTree
 
 func _initialize() -> void:
-	var ok := _fists() and _pistol() and _gunshot_panic()
+	var ok := _fists() and _pistol() and _gunshot_panic() and _gang_fights_back() and _cops_shoot_only_armed()
 	if ok:
 		print("COMBAT_VERIFY: PASS")
 	quit(0 if ok else 1)
@@ -91,6 +91,41 @@ func _gunshot_panic() -> bool:
 	schedule.on_gunshot(GanstoidEvents.GUNSHOT, {"position": Vector2(100, 100), "heard_m": 300.0, "tick": 0})
 	print("gunshot: fled %d, close now heading to %s at %.1f m/s, far heading to %s" % [schedule.fled, schedule.street.final_of(&"close"), schedule.street.pace_now.get(&"close", 0.0), schedule.street.final_of(&"far")])
 	return _check(schedule.fled == 1 and schedule.street.final_of(&"close") == Vector2(160, 140) and schedule.street.final_of(&"far") == Vector2(500, 500), "people in earshot run home, the rest carry on")
+
+## C6: hurt a gang member and the gang nearby turns on you and fires; the player
+## can be hurt and put down for good.
+func _gang_fights_back() -> bool:
+	var w := _world_with([["victim", Vector2(101, 100)], ["brother", Vector2(106, 106)], ["stranger", Vector2(96, 108)], ["far_brother", Vector2(400, 100)]])
+	var world: World = w[0]
+	var me: NPCData = w[1]
+	for id in ["victim", "brother", "far_brother"]:
+		_npc(world, id).gang_id = &"g1"
+	var combat := NPCCombatSystem.new(world)
+	world.event_bus.subscribe(combat.on_assaulted)
+	var state: PlayerStateData = w[2]
+	state.aim_point = Vector2(105, 100)
+	CombatSystem.attack(world, me, state, 0, RandomNumberGenerator.new())
+	var players := world.get_entities_with_component(ComponentNames.PLAYER_STATE)
+	for t in range(1, 60 * 30):
+		combat.process_entities(players, 1.0 / 60.0, t)
+		if me.is_down and combat.hostile.is_empty():
+			break
+	print("gang: hostile %s, shots %d, player health %.2f, down %s" % [combat.hostile.keys(), combat.shots_fired, me.health, me.is_down])
+	return _check(combat.hostile.is_empty() and combat.shots_fired >= 2 and me.is_down and not _npc(world, "stranger").is_busy, "the near gang fires until the player is down, then stands down; others stay out")
+
+## C6: an alerted cop shoots only at an armed threat in sight.
+func _cops_shoot_only_armed() -> bool:
+	var w := _world_with([["cop", Vector2(110, 100)]])
+	var world: World = w[0]
+	var state: PlayerStateData = w[2]
+	var combat := NPCCombatSystem.new(world)
+	var cop := _npc(world, "cop")
+	var unarmed := combat.cop_engages(cop, w[1], state, 100)
+	state.weapon = &"pistol"
+	state.aiming = true
+	var armed := not combat.cop_engages(cop, w[1], state, 100)
+	print("cop: engages unarmed %s, still closing in at 10 m %s, shots %d" % [unarmed, armed, combat.shots_fired])
+	return _check(not unarmed and combat.shots_fired == 1, "cops fire only at a raised gun (and keep closing from 10 m)")
 
 func _check(ok: bool, what: String) -> bool:
 	if not ok:
