@@ -29,10 +29,13 @@ func _ready() -> void:
 	roster.setup(_world)
 	var store := StorePanel.new()   # G1: E at a counter
 	get_parent().add_child.call_deferred(store)
-	store.setup(_world)
+	store.setup(_world, Vector2(12, 290))
 	var bag := InventoryPanel.new()   # G2: I
 	get_parent().add_child.call_deferred(bag)
-	bag.setup(_world)
+	bag.setup(_world, Vector2(12, 290))
+	var menu := ActionMenu.new()      # UI1: E
+	get_parent().add_child.call_deferred(menu)
+	menu.setup(_world, Vector2(12, 290))
 
 func _process(delta: float) -> void:
 	if _world == null:
@@ -61,7 +64,7 @@ func _process(delta: float) -> void:
 		"Cash: $%d clean, $%d dirty" % [npc.cash - state.dirty_cash, state.dirty_cash],
 		"Rank: %s (%d to next)   Heat: %s" % [RankSystem.name_of(state.rank), RankSystem.to_next(_world, npc, state), GanstoidEnums.LawTier.keys()[state.law_tier]],
 		"Health: %d%%%s   In hand (Q): %s%s   (right mouse aim, left mouse attack)" % [roundi(npc.health * 100), "  BLEEDING (bandage: I)" if npc.bleeding else "", String(state.weapon), "  %d rounds" % state.ammo if state.weapon == &"pistol" else ""],
-		"Food %s   Water %s   Rest %s%s   (I: bag, E: buy, Z: sleep, F: car)" % [_need(npc.hunger), _need(npc.thirst), _need(npc.fatigue), "   ASLEEP..." if state.sleeping else ""],
+		"Food %s   Water %s   Rest %s%s   (E: actions, I: bag, Z: sleep, F: car)" % [_need(npc.hunger), _need(npc.thirst), _need(npc.fatigue), "   ASLEEP..." if state.sleeping else ""],
 		"Stash: %s" % _format_inventory(state.inventory),
 		_turf_line(npc),
 		"Standing: %s" % _format_standing(state),

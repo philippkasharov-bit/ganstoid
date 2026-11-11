@@ -47,6 +47,7 @@ const LINES := {
 	"gun_sold": ["Iron moved: ${n}. They won't forget who strapped them.", "Sold the piece for ${n}. Good business."],
 	"no_gun_to_sell": ["You've got no gun to sell."],
 	"not_a_buyer": ["They're not buying."],
+	"nothing_here": ["Nothing to do here."],
 	"bought": ["Paid ${n}.", "${n}, bagged.", "Done. ${n} lighter."],
 	"closed": ["Shutters down. Opens at seven.", "Closed for the night."],
 	"not_sold_here": ["They don't carry that here."],

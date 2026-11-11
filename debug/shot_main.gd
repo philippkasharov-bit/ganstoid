@@ -24,6 +24,11 @@ func _run(main: Node, args: Dictionary) -> void:
 		main.get_node("Camera2D").zoom = Vector2.ONE * float(args["zoom"])
 	for i in 4:
 		await process_frame
+	if args.has("menu"):   # UI1 look: the E menu open
+		var st: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
+		st.menu_options = PackedStringArray(["Shop here", "Mug them (knife out)", "Pickpocket", "Recruit into your crew", "Get in the car", "Spray your tag"])
+		await process_frame
+		await process_frame
 	if args.has("aim"):   # combat look: pistol raised toward a point right of the player, one shot
 		var player: Entity = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID]
 		var state: PlayerStateData = player.get_component(ComponentNames.PLAYER_STATE)

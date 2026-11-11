@@ -155,7 +155,7 @@ func process_entities(entities: Dictionary, delta: float, tick: int) -> void:
 			_drive(npc, state, delta)
 			continue   # at the wheel: WASD drive the car
 		_combat_input(npc, state, tick)
-		if _store_input(npc, state) or _inventory_input(npc, state):
+		if _action_menu_input(npc, state) or _store_input(npc, state) or _inventory_input(npc, state):
 			continue   # a menu is open: the number keys belong to it
 		var input_dir := _move_input()
 		if input_dir != Vector2.ZERO:
@@ -168,8 +168,6 @@ func process_entities(entities: Dictionary, delta: float, tick: int) -> void:
 			_world.reindex_position(npc.id)
 		if Input.is_action_just_pressed("ui_accept"):
 			_report(state, _attempt_interact(npc))
-		if Input.is_action_just_pressed("ui_cancel"):
-			_report(state, _attempt_sell(npc))
 		if Input.is_action_just_pressed(RECRUIT_ACTION):
 			var target_id := _find_nearest_npc(npc.position)
 			if target_id != &"":
@@ -212,13 +210,10 @@ func _combat_input(npc: NPCData, state: PlayerStateData, tick: int) -> void:
 ## G1: E opens / closes the nearest counter; 1-9 buy that line; Esc or walking
 ## off closes it. Returns true while a menu is open (other actions wait).
 func _store_input(npc: NPCData, state: PlayerStateData) -> bool:
+	if state.store_id == &"":
+		return false
 	if Input.is_action_just_pressed(STORE_ACTION):
-		if state.store_id != &"":
-			state.store_id = &""
-			return true
-		state.store_id = _find_counter(npc.position)
-		if state.store_id == &"":
-			StreetTalk.say_key(_world, state, "no_counter")
+		state.store_id = &""
 		return true
 	if state.store_id == &"":
 		return false
@@ -246,6 +241,94 @@ func _drive(npc: NPCData, state: PlayerStateData, delta: float) -> void:
 		CombatSystem.report_hit(_world, car.position, out["hit"])
 	if out.get("crash", 0.0) > 8.0:
 		npc.health = maxf(0.0, npc.health - out["crash"] * 0.02)   # a hard crash shakes you up
+
+## UI1: E opens one menu of everything you can do right here (shop, buy,
+## sell, pickpocket, mug, recruit, rob, break in, take the car...); 1-9 picks,
+## E or Esc closes. Replaces the old one-key-per-action scheme (Esc to sell).
+var _menu_runs: Array[Callable] = []
+
+func _action_menu_input(npc: NPCData, state: PlayerStateData) -> bool:
+	if state.store_id != &"" or state.inventory_open:
+		return false
+	if Input.is_action_just_pressed(STORE_ACTION):
+		if not state.menu_options.is_empty():
+			state.menu_options = []
+			return true
+		_menu_runs.clear()
+		var labels: PackedStringArray = []
+		for option in _options(npc, state):
+			labels.append(option[0])
+			_menu_runs.append(option[1])
+		state.menu_options = labels
+		if labels.is_empty():
+			StreetTalk.say_key(_world, state, "nothing_here")
+		return true
+	if state.menu_options.is_empty():
+		return false
+	if Input.is_action_just_pressed("ui_cancel"):
+		state.menu_options = []
+		return true
+	for i in mini(_menu_runs.size(), SLOT_ACTIONS.size()):
+		if Input.is_action_just_pressed(SLOT_ACTIONS[i]):
+			state.menu_options = []
+			var result: Variant = _menu_runs[i].call()
+			if result is Dictionary and not result.is_empty():
+				_report(state, result)
+			return true
+	return true
+
+## What you can do where you stand, in the order it reads best.
+func _options(npc: NPCData, state: PlayerStateData) -> Array:
+	var out: Array = []
+	var pos := npc.position
+	var counter := _find_counter(pos)
+	var person := _find_nearest_npc(pos)
+	var p: NPCData = _world.entities[person].get_component(ComponentNames.NPC) if person != &"" else null
+	if counter != &"":
+		out.append(["Shop here", func() -> Dictionary:
+			state.store_id = counter
+			return {}])
+	if p != null and p.is_dealer:
+		out.append(["Buy a bag of weed", func() -> Dictionary: return _start_buy(person)])
+		var good := _best_to_sell(state)
+		if state.inventory.get(good, 0) > 0:
+			out.append(["Sell %s" % String(good), func() -> Dictionary: return DealSystem.start_handoff(_world, person, good, "sell")])
+	if p != null and not p.is_dealer and p.gang_id != &"" and ShopSystem.owned_weapons(state).has(&"pistol"):
+		out.append(["Sell them a gun", func() -> Dictionary: return GunTrade.sell(_world, npc, state, p)])
+	if p != null and not p.is_dealer and not p.is_cop and not p.is_crew:
+		if state.weapon != &"fists":
+			out.append(["Mug them (%s out)" % String(state.weapon), func() -> Dictionary:
+				state.aiming = true
+				return StreetCrime.mug(_world, npc, state, p)])
+		out.append(["Pickpocket", func() -> Dictionary: return CrimeSystem.commit_crime(_world, GanstoidEnums.CrimeType.PICKPOCKET, person)])
+		out.append(["Recruit into your crew", func() -> Dictionary: return CrewSystem.recruit(_world, person)])
+	var crew := _find_nearest_crew(pos, state)
+	if crew != &"":
+		out.append(["Crew: post as lookout", func() -> Dictionary: return CrewSystem.toggle_post(_world, crew)])
+		out.append(["Crew: deal for you", func() -> Dictionary: return CrewDealerSystem.toggle(_world, crew)])
+		out.append(["Crew: muscle", func() -> Dictionary: return CrewMuscleSystem.toggle(_world, crew)])
+		out.append(["Crew: driver", func() -> Dictionary: return CrewSystem.toggle_driver(_world, crew)])
+	var lab := _find_own_grow_house(pos)
+	if lab != &"":
+		out.append(["Collect the product", func() -> Dictionary: return ProductionSystem.collect(_world, lab)])
+		out.append(["Switch what it makes", func() -> Dictionary: return ProductionSystem.switch_product(_world, lab)])
+	var turf := _find_nearest_gang_territory_building(pos)
+	if turf != &"":
+		out.append(["Ask for a gang job", func() -> Dictionary: return CrimeSystem.do_gang_job(_world, turf)])
+	var biz := _find_nearest_robbable_building(pos)
+	if biz != &"":
+		out.append(["Rob the place", func() -> Dictionary: return CrimeSystem.rob_building(_world, biz)])
+	var house := _find_nearest_house(pos)
+	if house != &"" and house != npc.home_building_id:
+		out.append(["Break in", func() -> Dictionary: return StreetCrime.start_burglary(_world, npc, state, house)])
+	var bld := _find_nearest_building(pos)
+	if bld != &"":
+		out.append(["Buy this property", func() -> Dictionary: return _buy_building(bld)])
+	if VehicleSystem.nearest_car(_world, pos) != null:
+		out.append(["Get in the car", func() -> Dictionary: return VehicleSystem.use_door(_world, npc, state)])
+	if TerritorySystem.data(_world) != null:
+		out.append(["Spray your tag", func() -> Dictionary: return TerritorySystem.tag(_world, npc)])
+	return out.slice(0, SLOT_ACTIONS.size())
 
 ## G2: I opens what you carry; 1-9 eat, drink or apply that line.
 func _inventory_input(npc: NPCData, state: PlayerStateData) -> bool:
