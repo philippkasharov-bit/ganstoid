@@ -8,6 +8,7 @@ func _initialize() -> void:
 	for a in OS.get_cmdline_user_args():
 		var kv := a.trim_prefix("--").split("=")
 		args[kv[0]] = kv[1] if kv.size() > 1 else ""
+	Engine.set_meta("skip_new_game", true)   # O1: screenshots start straight in (Normal / Street life)
 	var main: Node = load("res://scenes/main.tscn").instantiate()
 	root.add_child(main)
 	_run(main, args)

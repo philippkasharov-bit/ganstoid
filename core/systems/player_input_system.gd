@@ -44,6 +44,8 @@ const BUY_BUSINESS_ACTION := &"buy_business"
 const ATTACK_ACTION := &"attack"
 const AIM_ACTION := &"aim"
 const SWITCH_WEAPON_ACTION := &"switch_weapon"
+const SHIFT_HOURS := 4          # O1: honest work at any open counter
+const SHIFT_PAY_PER_HOUR := 15
 const AIM_SPEED := SimUnits.WALK * 0.6   # weapon up: a careful step, no running
 ## G1: E opens the counter you stand at (shop, workshop, dealer); 1-9 buy.
 const STORE_ACTION := &"store"
@@ -135,6 +137,12 @@ func process_entities(entities: Dictionary, delta: float, tick: int) -> void:
 			continue   # permadeath: nothing more to do
 		if state.prison_until_tick > 0:
 			continue   # CP1: inside; the days pass on their own
+		if state.work_until_tick > 0:
+			if tick >= state.work_until_tick:
+				state.work_until_tick = 0
+				Wallet.earn_clean(_world, SHIFT_PAY_PER_HOUR * SHIFT_HOURS)
+				StreetTalk.say_key(_world, state, "shift_done", int(SHIFT_PAY_PER_HOUR * SHIFT_HOURS * GameRules.money(_world)))
+			continue   # O1: at work; the hours pass fast
 		if Input.is_action_just_pressed(SLEEP_ACTION):
 			StreetTalk.say(_world, state, NeedsSystem.toggle_sleep(_world, npc, state))
 		if state.sleeping:
@@ -305,6 +313,10 @@ func _options(npc: NPCData, state: PlayerStateData) -> Array:
 		out.append(["Shop here", func() -> Dictionary:
 			state.store_id = counter
 			return {}])
+		if ShopSystem.counter_kind(_world, counter) != "dealer" and ShopSystem.is_open(_world, counter):
+			out.append(["Work a %d-hour shift ($%d/h, clean)" % [SHIFT_HOURS, SHIFT_PAY_PER_HOUR], func() -> Dictionary:
+				state.work_until_tick = _world.tick + SimClock.hours(SHIFT_HOURS)
+				return {"ok": true, "effect": "shift_start"}])
 	if p != null and p.is_fixer and state.job.is_empty():
 		out.append(["Ask for work", func() -> Dictionary:
 			state.job_offers = JobSystem.offers(_world, state, npc)

@@ -22,7 +22,7 @@ static func register_all(world: World) -> void:
 	world.register_system(schedule)
 	world.event_bus.subscribe(schedule.on_gunshot)
 	world.register_system(PlayerInputSystem.new(world))
-	world.register_system(NeedsSystem.new())
+	world.register_system(NeedsSystem.new(world))
 	world.register_system(WitnessCallSystem.new(world))
 	world.register_system(RankSystem.new(world))
 	world.register_system(JobSystem.new(world))

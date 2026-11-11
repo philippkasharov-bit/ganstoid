@@ -42,7 +42,7 @@ static func summary(state: PlayerStateData) -> String:
 
 ## Gains XP and says so when a level is reached.
 static func train(world: World, state: PlayerStateData, skill: StringName, xp: float) -> void:
-	var up := gain(state, skill, xp)
+	var up := gain(state, skill, xp * GameRules.xp(world))   # O1
 	if up > 0:
 		state.last_message = "%s up: level %d." % [String(skill).capitalize(), up]
 		state.message_serial += 1

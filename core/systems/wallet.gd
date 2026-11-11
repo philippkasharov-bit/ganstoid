@@ -20,11 +20,12 @@ static func _state(world: World) -> PlayerStateData:
 	return world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
 
 static func earn_dirty(world: World, amount: int) -> void:
+	amount = int(amount * GameRules.money(world))   # O1: play style
 	_npc(world).cash += amount
 	_state(world).dirty_cash += amount
 
 static func earn_clean(world: World, amount: int) -> void:
-	_npc(world).cash += amount
+	_npc(world).cash += int(amount * GameRules.money(world))
 
 static func clean(world: World) -> int:
 	return _npc(world).cash - _state(world).dirty_cash

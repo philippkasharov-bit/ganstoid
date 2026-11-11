@@ -74,9 +74,18 @@ static func npc_shoot(world: World, shooter: NPCData, target: Vector2, rng: Rand
 	var w: Dictionary = WEAPONS[&"pistol"]
 	var spread := deg_to_rad(NPC_SPREAD_DEG) / (GunTrade.armed_edge(world, shooter.gang_id) if shooter.gang_id != &"" else 1.0)
 	var dir := (target - shooter.position).normalized().rotated(rng.randf_range(-spread, spread))
-	var result := _fire(world, shooter, dir, w)
+	var shot := w.duplicate()
+	shot["damage"] *= GameRules.hurt(world) if _player_on_line(world, shooter, dir) else 1.0   # O1: difficulty
+	var result := _fire(world, shooter, dir, shot)
 	world.event_bus.emit(GanstoidEvents.GUNSHOT, {"position": shooter.position, "heard_m": w["heard_m"], "tick": world.tick})
 	return result
+
+static func _player_on_line(world: World, shooter: NPCData, dir: Vector2) -> bool:
+	var p: Entity = world.entities.get(PlayerFactory.PLAYER_ENTITY_ID)
+	if p == null:
+		return false
+	var rel: Vector2 = (p.get_component(ComponentNames.NPC) as NPCData).position - shooter.position
+	return rel.dot(dir) > 0.0 and absf(dir.cross(rel)) < BODY_R * 2.0
 
 ## C6: the player counts as an armed threat while the pistol is up or was fired lately.
 static func is_armed_threat(state: PlayerStateData, tick: int) -> bool:

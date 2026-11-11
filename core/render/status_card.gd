@@ -64,7 +64,7 @@ func _process(delta: float) -> void:
 	_left = 0.25
 	var player: Entity = _world.entities.get(PlayerFactory.PLAYER_ENTITY_ID)
 	var ready := SimNav.active != null and SimNav.active.is_ready()
-	visible = player != null and ready and not player.get_component(ComponentNames.NPC).is_down
+	visible = player != null and ready and not player.get_component(ComponentNames.NPC).is_down and GameRules.of(_world) != null   # O1: hidden until the new-game choice
 	if visible and player.get_component(ComponentNames.PLAYER_STATE).prison_until_tick > 0:
 		var left: int = player.get_component(ComponentNames.PLAYER_STATE).prison_until_tick - _world.tick
 		_top.text = "IN PRISON"
@@ -75,6 +75,8 @@ func _process(delta: float) -> void:
 	var npc: NPCData = player.get_component(ComponentNames.NPC)
 	var state: PlayerStateData = player.get_component(ComponentNames.PLAYER_STATE)
 	_top.text = "$%d   ·   %s" % [npc.cash, RankSystem.name_of(state.rank)]
+	if state.work_until_tick > 0:
+		_top.text += "   ·   AT WORK"
 	_top.add_theme_color_override("font_color", UiPanel.ACCENT)
 	var heat := clampi(state.law_tier, 0, HEAT_COLORS.size() - 1)
 	_mid.text = "Heat: %s   ·   %s%s%s" % [String(GanstoidEnums.LawTier.keys()[state.law_tier]).capitalize(), String(state.weapon).capitalize(), " (%d)" % state.ammo if state.weapon == &"pistol" else "", "   ·   BLEEDING" if npc.bleeding else ""]

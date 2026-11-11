@@ -64,6 +64,14 @@ func _process(delta: float) -> void:
 	if npc.is_down and npc.ko_until_tick >= 0:
 		text = "Knocked out..."
 		return
+	if npc.is_down and not HallOfFame.read().is_empty():
+		var lines: PackedStringArray = ["You are dead. The city goes on without you.", "", "HALL OF FAME"]
+		for r in HallOfFame.top(5):
+			lines.append("%s  ·  %.1f days  ·  $%d  ·  %s  ·  %s" % [r["rank_name"], r["days"], r["cash"], r["traits"], r["mode"]])
+		lines.append("")
+		lines.append("Press Enter to start a new life.")
+		text = "\n".join(lines)
+		return
 	if npc.is_down:
 		text = "You are dead. The city goes on without you.\n\nPress Enter to start a new life."
 		return

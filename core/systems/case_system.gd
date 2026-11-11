@@ -41,7 +41,7 @@ func on_crime_witnessed(event_name: StringName, payload: Dictionary) -> void:
 		var sev := float(payload.get("severity", 0.0))
 		if Traits.has(state, &"dealer") and is_equal_approx(sev, CrimeSystem.SEVERITY_BY_TYPE[GanstoidEnums.CrimeType.DRUG_DEAL_OBSERVED]):
 			sev *= 1.5   # T1 Plug: they know what you do
-		state.case_evidence += sev * EVIDENCE_PER
+		state.case_evidence += sev * EVIDENCE_PER * GameRules.evidence(_world)   # O1
 
 func process_entities(entities: Dictionary, _delta: float, tick: int) -> void:
 	for p in entities.values():

@@ -88,6 +88,7 @@ extends Resource
 @export var sleeping_home: bool = false
 @export var health_at_sleep: float = 1.0
 ## V1: the car you are in (driving), and a hotwire in progress.
+@export var work_until_tick: int = 0             # O1: on a shift until this tick (time runs fast)
 @export var case_evidence: float = 0.0          # I1: what the police have on you (witness reports)
 @export var prison_until_tick: int = 0           # CP1: serving time until this tick (0 = free)
 @export var deeds: Dictionary = {}              # T1: deed -> count

@@ -21,17 +21,22 @@ const LOW := 0.25
 const SLEEP_SPEED := 60               # sim steps per frame while asleep
 const BED_M := 6.0                    # this close to your own door counts as home
 
-func _init() -> void:
+var _world_ref: WeakRef
+
+func _init(world: World = null) -> void:
+	_world_ref = weakref(world) if world != null else null
 	tick_rate = GanstoidEnums.TickRate.HOT
 	required_component = ComponentNames.PLAYER_STATE
 
 func process_entities(entities: Dictionary, delta: float, _tick: int) -> void:
 	var days := delta / float(SimClock.day_ticks) * SimClock.TICKS_PER_SECOND
+	var w: World = _world_ref.get_ref() if _world_ref != null else null
+	var needs_days := days * GameRules.needs(w)   # O1: play style
 	for player in entities.values():
 		var me: NPCData = player.get_component(ComponentNames.NPC)
 		var state: PlayerStateData = player.get_component(ComponentNames.PLAYER_STATE)
 		if not me.is_down and state.prison_until_tick <= 0:   # CP1: inside you are fed
-			_drain(me, state, days)
+			_drain(me, state, needs_days)
 
 func _drain(me: NPCData, state: PlayerStateData, days: float) -> void:
 	me.hunger = maxf(0.0, me.hunger - HUNGER_PER_DAY * days)
