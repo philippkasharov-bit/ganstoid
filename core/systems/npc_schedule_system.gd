@@ -57,7 +57,7 @@ func process_entities(entities: Dictionary, delta: float, tick: int) -> void:
 		_enrol(entities, tick, false)  # somebody new arrived
 	_last_tick = tick
 	if SimNav.active != null:
-		SimNav.active.new_tick()
+		SimNav.active.new_tick(tick)
 	var due: Variant = _due.get(tick)
 	if due != null:
 		_due.erase(tick)

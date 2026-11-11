@@ -17,10 +17,13 @@ var nav_dir: String
 var alley_cost := 1.0:
 	set(v):
 		alley_cost = v
-		for f in _loaded:
-			if f.begins_with("alley_"):
-				NavigationServer2D.region_set_travel_cost(_loaded[f], v)
-		# (loaded regions pick the new cost up at the map's next background sync)
+		_recost("alley_", v)
+## MR6: travel cost of shop-lot regions (public layer): 1.0 while businesses are
+## open, high at night so civilians keep to the sidewalk then.
+var lot_cost := 1.0:
+	set(v):
+		lot_cost = v
+		_recost("lot_", v)
 var _ready_latched := false   # true from the first successful is_ready() until the tiles change
 var _tiles := {}    # file -> Rect2
 var _loaded := {}   # file -> region RID
@@ -43,6 +46,19 @@ func _init(focus_point: Vector2, load_radius: float = 700.0, layer: String = "fu
 	focus(focus_point)
 
 ## Load tiles within `radius` of p, unload the rest. Returns true if anything changed.
+## Re-costs loaded regions whose file starts with `prefix`; wakes the sleeping map
+## so its next background sync picks the cost up.
+func _recost(prefix: String, cost: float) -> void:
+	var any := false
+	for f in _loaded:
+		if f.begins_with(prefix):
+			NavigationServer2D.region_set_travel_cost(_loaded[f], cost)
+			any = true
+	if any and map.is_valid():
+		_ready_latched = false
+		NavigationServer2D.map_set_active(map, true)
+		_changed_at = NavigationServer2D.map_get_iteration_id(map)
+
 func focus(p: Vector2) -> bool:
 	var area := Rect2(p - Vector2(radius, radius), Vector2(radius, radius) * 2)
 	var changed := false
@@ -54,6 +70,8 @@ func focus(p: Vector2) -> bool:
 			NavigationServer2D.region_set_navigation_polygon(r, load(nav_dir + f))
 			if f.begins_with("alley_"):
 				NavigationServer2D.region_set_travel_cost(r, alley_cost)
+			elif f.begins_with("lot_"):
+				NavigationServer2D.region_set_travel_cost(r, lot_cost)
 			_loaded[f] = r
 			changed = true
 		elif not want and _loaded.has(f):

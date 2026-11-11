@@ -131,7 +131,30 @@ def cut_grass(w, strips):
     return w, kept_m2
 
 
-def main(src, size, dst, city_path=None, section_path=None):
+SHOP_USES = ("parking", "commercial", "civic")   # lots customers walk across while the place is open
+MIN_LOT_M2 = 25.0
+LOT_WALL_M = 0.6
+LOT_GATE_M = 1.5    # shortest frontage on public ground a lot needs to count as reachable
+
+
+def shop_lots(parcels_path, bld_path, walk, alley):
+    """MR6: open ground of shop, office, civic and parking lots: their forecourts and
+    customer parking. Baked as its own region so its cost can follow opening hours."""
+    lots = [Polygon(l["poly"]).buffer(0) for l in json.load(open(parcels_path))["parcels"] if l["use"] in SHOP_USES]
+    blds = unary_union([Polygon(b["poly"]).buffer(0) for b in json.load(open(bld_path))["buildings"]])
+    # walls kept a body's width off: where a lot region meets the paving at a building
+    # corner, the seam hop between the two regions would otherwise graze the wall
+    ground = unary_union(lots).difference(blds.buffer(LOT_WALL_M)).difference(walk).difference(alley)
+    # only lots with a real way in from the street: a piece walled off by buildings or
+    # private ground would be an island civilians could be snapped onto and stranded
+    edge = unary_union([walk, alley]).buffer(0.05)
+    tree = STRtree([edge])
+    keep = [g for g in getattr(ground, "geoms", [ground]) if g.geom_type == "Polygon" and g.area >= MIN_LOT_M2
+            and len(tree.query(g)) and g.exterior.intersection(edge).length >= LOT_GATE_M]
+    return unary_union(keep)
+
+
+def main(src, size, dst, city_path=None, section_path=None, bld_path=None, parcels_path=None):
     size = float(size)
     pub = json.load(open(src))
     zones = pub["zones"]
@@ -147,7 +170,8 @@ def main(src, size, dst, city_path=None, section_path=None):
         verge_parts = list(getattr(verge, "geoms", [verge]))
         verge_tree = STRtree(verge_parts)
     tile = size / TILES
-    out = {"tiles": TILES, "size_m": size, "walk": {}, "alley": {}}
+    lot = shop_lots(parcels_path, bld_path, walk, alley) if parcels_path else Polygon()
+    out = {"tiles": TILES, "size_m": size, "walk": {}, "alley": {}, "lot": {}}
     grass_m2 = kept_m2 = 0.0
     for tx in range(TILES):
         for ty in range(TILES):
@@ -165,10 +189,12 @@ def main(src, size, dst, city_path=None, section_path=None):
                 kept_m2 += kept
             out["walk"][key] = shapes(w)
             out["alley"][key] = shapes(alley.intersection(clip))
-    print("walk shapes %d, alley shapes %d" % (sum(map(len, out["walk"].values())), sum(map(len, out["alley"].values()))))
+            out["lot"][key] = shapes(lot.intersection(clip))
+    print("walk shapes %d, alley shapes %d, shop lot shapes %d (%.1f ha)" % (sum(map(len, out["walk"].values())),
+          sum(map(len, out["alley"].values())), sum(map(len, out["lot"].values())), lot.area / 1e4))
     print("parkway grass taken off the civilian mesh: %.0f m2; left walkable because the paving beside it is broken: %.0f m2" % (grass_m2, kept_m2))
     json.dump(out, open(dst, "w"), separators=(",", ":"))
 
 
 if __name__ == "__main__":
-    main(*sys.argv[1:6])
+    main(*sys.argv[1:8])

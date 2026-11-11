@@ -16,7 +16,7 @@ step "doors";                                  python3 -I doors.py $D/city_v1.js
 step "public space (sidewalks, crosswalks)";   python3 -I public_space.py $D/city_v1.json $D/buildings_v1.json $D/public_v1.json
 step "street cross-section";                   python3 -I street_section.py $D/city_v1.json $D/buildings_v1.json $D/public_v1.json $D/section_v1.json
 step "nav shapes: everything walkable";        python3 -I nav_obstacles.py $D/city_v1.json $D/buildings_v1.json nav_obstacles.json
-step "nav shapes: public ground";              python3 -I nav_public.py $D/public_v1.json "$(python3 -I -c "import json;print(json.load(open('$D/city_v1.json'))['size_m'])")" nav_public.json $D/city_v1.json $D/section_v1.json
+step "nav shapes: public ground";              python3 -I nav_public.py $D/public_v1.json "$(python3 -I -c "import json;print(json.load(open('$D/city_v1.json'))['size_m'])")" nav_public.json $D/city_v1.json $D/section_v1.json $D/buildings_v1.json $D/parcels_v1.json
 cd ../..
 step "bake full navmesh";    "$GODOT" --headless --path . -s tools/city/bake_navmesh.gd 2>&1 | grep -E "baked|unbakeable|SCRIPT ERROR" || true
 step "bake public navmesh";  "$GODOT" --headless --path . -s tools/city/bake_public_navmesh.gd 2>&1 | grep -E "baked|unbakeable|SCRIPT ERROR" || true

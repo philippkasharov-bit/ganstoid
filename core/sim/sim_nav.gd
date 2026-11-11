@@ -85,9 +85,19 @@ func finished(mover_id: StringName, goal: Vector2) -> bool:
 	var plan: Dictionary = _plans.get(mover_id, {})
 	return not plan.is_empty() and plan["i"] >= plan["pts"].size() and plan["goal"].distance_to(goal) <= REPATH_M
 
-## Called once per sim tick: refills the civilians' route-planning ration.
-func new_tick() -> void:
+const SHOP_OPEN_HOUR := 7.0      # MR6: shop lots are public ground while businesses are open
+const SHOP_CLOSE_HOUR := 22.0
+const CLOSED_LOT_COST := 20.0   # after hours civilians keep off them unless there is no other way
+
+## Called once per sim tick: refills the civilians' route-planning ration and
+## opens or closes the shop lots with the clock.
+func new_tick(tick: int = -1) -> void:
 	_ticks += 1
+	if tick >= 0 and navs.has("public"):
+		var hour := SimClock.day_fraction(tick) * 24.0
+		var cost := 1.0 if hour >= SHOP_OPEN_HOUR and hour < SHOP_CLOSE_HOUR else CLOSED_LOT_COST
+		if navs["public"].lot_cost != cost:
+			navs["public"].lot_cost = cost
 	if _ticks % PUBLIC_PLAN_EVERY_TICKS == 0:
 		_public_plans_left = PUBLIC_PLANS_PER_TICK
 
@@ -155,7 +165,9 @@ func _keep_right(pts: PackedVector2Array, lane: float) -> PackedVector2Array:
 	var out := pts.duplicate()
 	for i in range(1, pts.size() - 1):
 		var along := (pts[i + 1] - pts[i - 1]).normalized()
-		out[i] = pts[i] + Vector2(-along.y, along.x) * lane   # no snap back to the mesh: that lookup costs ~1 ms a point
+		var q := pts[i] + Vector2(-along.y, along.x) * lane   # no snap back to the mesh: that lookup costs ~1 ms a point
+		if not collision.blocked(q, 0.0):   # a corner hugging a wall keeps the shortest line there
+			out[i] = q
 	return out
 
 ## This walker's own distance right of the shortest line, 0 .. MAX_LANE_M.

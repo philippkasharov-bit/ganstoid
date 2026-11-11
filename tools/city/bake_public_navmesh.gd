@@ -24,7 +24,7 @@ func _initialize() -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT_DIR))
 	for f in DirAccess.get_files_at(OUT_DIR):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(OUT_DIR + f))
-	for layer in ["walk", "alley"]:
+	for layer in ["walk", "alley", "lot"]:   # lot = shop parking/forecourts (MR6), cost follows opening hours
 		for tx in TILES:
 			for ty in TILES:
 				var shapes: Array = raw[layer]["%d_%d" % [tx, ty]]
