@@ -1,6 +1,6 @@
 ## Screenshot tool for the game scene (not a check): loads scenes/main.tscn,
 ## waits for the street routes, fast-forwards the sim, saves a PNG.
-## Run: godot --rendering-driver opengl3 --path . -s debug/shot_main.gd -- --out=<png> [--sim=<seconds>] [--zoom=<px/m>] [--hour=<0-23>]
+## Run: godot --rendering-driver opengl3 --path . -s debug/shot_main.gd -- --out=<png> [--sim=<seconds>] [--zoom=<px/m>] [--hour=<0-23>] [--aim]
 extends SceneTree
 
 func _initialize() -> void:
@@ -23,6 +23,15 @@ func _run(main: Node, args: Dictionary) -> void:
 	if args.has("zoom"):
 		main.get_node("Camera2D").zoom = Vector2.ONE * float(args["zoom"])
 	for i in 4:
+		await process_frame
+	if args.has("aim"):   # combat look: pistol raised toward a point right of the player, one shot
+		var player: Entity = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID]
+		var state: PlayerStateData = player.get_component(ComponentNames.PLAYER_STATE)
+		state.weapon = &"pistol"
+		root.get_viewport().warp_mouse(root.get_viewport().get_visible_rect().size * 0.5 + Vector2(260, -90))
+		Input.action_press(PlayerInputSystem.AIM_ACTION)   # through the real input path
+		await process_frame
+		Input.action_press(PlayerInputSystem.ATTACK_ACTION)
 		await process_frame
 	await RenderingServer.frame_post_draw
 	root.get_viewport().get_texture().get_image().save_png(args.get("out", "/tmp/main.png"))

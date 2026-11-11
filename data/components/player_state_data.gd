@@ -73,3 +73,13 @@ extends Resource
 ## Batch 24: how much of the player's NPCData.cash is dirty (crime money).
 ## Clean = cash - dirty_cash. See Wallet.
 @export var dirty_cash: int = 0
+
+## Combat (C1). Mouse aim like Project Zomboid: the body faces the cursor, holding
+## the right button raises the weapon (slower walk, tighter shots).
+@export var aim_point: Vector2 = Vector2.ZERO   # world position under the mouse, metres
+@export var aiming: bool = false
+@export var weapon: StringName = &"fists"       # key into CombatSystem.WEAPONS
+@export var ammo: int = 12                      # pistol rounds carried
+@export var attack_ready_tick: int = 0          # no new attack before this tick
+@export var shots_fired: int = 0
+var last_attack: Dictionary = {}                # the latest blow or shot, for AimView to draw

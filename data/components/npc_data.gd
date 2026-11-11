@@ -71,6 +71,11 @@ extends Resource
 ## "inside" is a state, and the NPC rests on the building's door point.)
 @export var indoors: bool = false
 
+## Combat (C1): 1.0 = unhurt. At 0 the person is down for good (permadeath city):
+## they stay where they fell and every routine system skips them.
+@export_range(0.0, 1.0) var health: float = 1.0
+@export var is_down: bool = false
+
 ## Batch 15: this NPC turned down the player's recruitment pitch -- final,
 ## so the pitch can't be re-rolled until they say yes.
 @export var recruit_refused: bool = false

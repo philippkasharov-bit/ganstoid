@@ -18,7 +18,9 @@ extends RefCounted
 
 static func register_all(world: World) -> void:
 	world.register_system(RecognitionSystem.new())
-	world.register_system(NPCScheduleSystem.new(world))
+	var schedule := NPCScheduleSystem.new(world)
+	world.register_system(schedule)
+	world.event_bus.subscribe(schedule.on_gunshot)
 	world.register_system(PlayerInputSystem.new(world))
 	world.register_system(CrewSystem.new(world))
 	world.register_system(CrewLoyaltySystem.new(world))

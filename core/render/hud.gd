@@ -48,6 +48,7 @@ func _process(delta: float) -> void:
 	text = "\n".join([
 		"Cash: $%d clean, $%d dirty" % [npc.cash - state.dirty_cash, state.dirty_cash],
 		"Heat: %s" % GanstoidEnums.LawTier.keys()[state.law_tier],
+		"Health: %d%%   In hand (Q): %s%s   (right mouse aim, left mouse attack)" % [roundi(npc.health * 100), String(state.weapon), "  %d rounds" % state.ammo if state.weapon == &"pistol" else ""],
 		"Stash: %s" % _format_inventory(state.inventory),
 		"Standing: %s" % _format_standing(state),
 		"Businesses: %d   Grow houses: %d" % [BusinessSystem.count_owned(_world), ProductionSystem.count_grow_houses(_world)],

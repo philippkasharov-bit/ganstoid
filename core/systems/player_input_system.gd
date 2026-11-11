@@ -39,6 +39,12 @@ const MUSCLE_ACTION := &"crew_muscle"
 const DRIVER_ACTION := &"crew_driver"
 ## Batch 23: B buys the nearest business.
 const BUY_BUSINESS_ACTION := &"buy_business"
+## Combat C3: Zomboid-style mouse aim. Left button attacks toward the cursor,
+## right button held raises the weapon, Q changes weapon.
+const ATTACK_ACTION := &"attack"
+const AIM_ACTION := &"aim"
+const SWITCH_WEAPON_ACTION := &"switch_weapon"
+const AIM_SPEED := SimUnits.WALK * 0.6   # weapon up: a careful step, no running
 
 func _init(world: World) -> void:
 	_world_ref = weakref(world)
@@ -72,23 +78,43 @@ func _init(world: World) -> void:
 		var buy_key := InputEventKey.new()
 		buy_key.physical_keycode = KEY_B
 		InputMap.action_add_event(BUY_BUSINESS_ACTION, buy_key)
+	_bind_mouse(ATTACK_ACTION, MOUSE_BUTTON_LEFT)
+	_bind_mouse(AIM_ACTION, MOUSE_BUTTON_RIGHT)
+	if not InputMap.has_action(SWITCH_WEAPON_ACTION):
+		InputMap.add_action(SWITCH_WEAPON_ACTION)
+		var q_key := InputEventKey.new()
+		q_key.physical_keycode = KEY_Q
+		InputMap.action_add_event(SWITCH_WEAPON_ACTION, q_key)
 	tick_rate = GanstoidEnums.TickRate.HOT
 	required_component = ComponentNames.PLAYER_STATE
+
+static func _bind_mouse(action: StringName, button: MouseButton) -> void:
+	if InputMap.has_action(action):
+		return
+	InputMap.add_action(action)
+	var ev := InputEventMouseButton.new()
+	ev.button_index = button
+	InputMap.action_add_event(action, ev)
 
 ## required_component = PLAYER_STATE means this dict has exactly one entry,
 ## by construction (PlayerFactory composes PLAYER_STATE onto exactly one
 ## entity) -- looping is just the idiomatic way to reach that one entity
 ## via SystemBase's dict-shaped contract, not a sign more than one is expected.
-func process_entities(entities: Dictionary, delta: float, _tick: int) -> void:
+func process_entities(entities: Dictionary, delta: float, tick: int) -> void:
 	for entity in entities.values():
 		var npc: NPCData = entity.get_component(ComponentNames.NPC)
 		var state: PlayerStateData = entity.get_component(ComponentNames.PLAYER_STATE)
 		if not state.pending_deal.is_empty():
 			_report(state, DealSystem.advance_handoff(_world, npc, state))
 			continue  # rooted mid-handoff (batch 11) -- no movement, no new actions
+		if npc.is_down:
+			continue   # permadeath: nothing more to do
+		_combat_input(npc, state, tick)
 		var input_dir := _move_input()
 		if input_dir != Vector2.ZERO:
 			var speed := RUN_SPEED if Input.is_physical_key_pressed(KEY_SHIFT) else MOVE_SPEED
+			if state.aiming:
+				speed = AIM_SPEED
 			var step := input_dir.normalized() * speed * CrewSystem.player_speed_multiplier(_world, state) * delta
 			npc.position = SimNav.active.slide(npc.position, step) if SimNav.active != null else npc.position + step   # walls are solid
 			_world.reindex_position(npc.id)
@@ -120,6 +146,20 @@ func process_entities(entities: Dictionary, delta: float, _tick: int) -> void:
 			var building_id := _find_nearest_building(npc.position)
 			if building_id != &"":
 				StreetTalk.say(_world, state, _buy_building(building_id))
+
+## Combat C3: aim is held, attacks fire toward state.aim_point (written each
+## frame by AimView from the mouse), Q swaps weapons.
+func _combat_input(npc: NPCData, state: PlayerStateData, tick: int) -> void:
+	state.aiming = Input.is_action_pressed(AIM_ACTION)
+	if Input.is_action_just_pressed(SWITCH_WEAPON_ACTION):
+		StreetTalk.say_key(_world, state, "weapon_" + String(CombatSystem.cycle_weapon(state)))
+	var melee: bool = CombatSystem.WEAPONS[state.weapon]["melee"]
+	if Input.is_action_just_pressed(ATTACK_ACTION) or (melee and Input.is_action_pressed(ATTACK_ACTION)):   # pistol: one shot a click
+		var result := CombatSystem.attack(_world, npc, state, tick, _world.runtime_rng)
+		if result.get("ok", false):
+			state.last_attack = result
+		elif result.get("reason", "") == "no_ammo" and Input.is_action_just_pressed(ATTACK_ACTION):
+			StreetTalk.say(_world, state, result)
 
 ## Batch 16: every action result goes through here -- crew take their cut
 ## of any score, then the street-voice line is posted.

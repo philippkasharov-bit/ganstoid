@@ -1,10 +1,11 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://core/world_driver.gd" id="1"]
 [ext_resource type="Script" path="res://core/render/render_sync.gd" id="2"]
 [ext_resource type="Script" path="res://core/render/hud.gd" id="3"]
 [ext_resource type="Script" path="res://core/render/city_layer.gd" id="4"]
 [ext_resource type="Script" path="res://core/render/player_camera.gd" id="5"]
+[ext_resource type="Script" path="res://core/render/aim_view.gd" id="6"]
 
 [node name="Main" type="Node2D"]
 
@@ -17,6 +18,10 @@ world_driver_path = NodePath("../WorldDriver")
 
 [node name="RenderSync" type="Node2D" parent="."]
 script = ExtResource("2")
+world_driver_path = NodePath("../WorldDriver")
+
+[node name="AimView" type="Node2D" parent="."]
+script = ExtResource("6")
 world_driver_path = NodePath("../WorldDriver")
 
 [node name="Camera2D" type="Camera2D" parent="."]

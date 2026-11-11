@@ -11,3 +11,7 @@ extends RefCounted
 ## witness_id: StringName}. Consumed by EscalationTickSystem (raises
 ## law_tier) and CopAISystem (alerts nearby cops).
 const CRIME_WITNESSED := &"crime_witnessed"
+
+## Combat C2: a shot fired. Payload: {position: Vector2, heard_m: float, tick: int}.
+## Consumed by NPCScheduleSystem (people in earshot run for cover).
+const GUNSHOT := &"gunshot"

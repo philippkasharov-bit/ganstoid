@@ -26,6 +26,7 @@ const OUTING_SLACK := 1.3          # only go out with this much more free time t
 
 var street: NPCStreet
 var outings_started := 0           # realism counter (verify_sim_life)
+var fled := 0                      # people sent running by gunfire (verify_combat)
 
 var _world_ref: WeakRef
 var _world: World:
@@ -67,7 +68,7 @@ func process_entities(entities: Dictionary, delta: float, tick: int) -> void:
 			_due[tick + 1].append_array(due.slice(WAKES_PER_TICK))
 			due = due.slice(0, WAKES_PER_TICK)
 		for npc in due:
-			if not (npc.is_crew or npc.is_cop):
+			if not (npc.is_crew or npc.is_cop or npc.is_down):
 				_plan_day(npc, tick)
 	street.step_all(delta, tick, _player_position())
 
@@ -77,6 +78,25 @@ func process_entities(entities: Dictionary, delta: float, tick: int) -> void:
 func settle_all(tick: int) -> void:
 	_resync(_world.get_entities_with_component(ComponentNames.NPC), tick)
 	_last_tick = tick
+
+## Combat C5: a shot. Everyone outside within earshot (dealers excepted: they
+## have heard it before) runs for home at a jog; the calendar takes over again
+## once they are in.
+func on_gunshot(event_name: StringName, payload: Dictionary) -> void:
+	if event_name != GanstoidEvents.GUNSHOT:
+		return
+	var at: Vector2 = payload["position"]
+	var reach_sq: float = payload["heard_m"] * payload["heard_m"]
+	for npc in street.outside.duplicate():
+		if npc.is_dealer or npc.is_down or npc.is_crew or npc.is_cop or npc.position.distance_squared_to(at) > reach_sq:
+			continue
+		if not _has_building(npc.home_building_id):
+			continue
+		var home := _door(npc.home_building_id)
+		_homebound[npc.id] = true
+		_visit_until.erase(npc.id)
+		street.start_trip(npc, [], home, SimUnits.JOG)
+		fled += 1
 
 ## How many people are inside a business on an errand or evening out right now (checks).
 func visiting_count() -> int:
@@ -131,7 +151,7 @@ func _enrol(entities: Dictionary, tick: int, settle: bool) -> void:
 	_seen_entities = entities.size()
 	for entity in entities.values():
 		var npc: NPCData = entity.get_component(ComponentNames.NPC)
-		if npc.is_cop or npc.is_crew or entity.has_component(ComponentNames.PLAYER_STATE):
+		if npc.is_cop or npc.is_crew or npc.is_down or entity.has_component(ComponentNames.PLAYER_STATE):
 			continue
 		if _enrolled.has(npc.id) and not settle:
 			continue

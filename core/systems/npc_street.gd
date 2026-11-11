@@ -69,7 +69,7 @@ func step_all(delta: float, tick: int, player_pos: Vector2) -> void:
 	var i := outside.size() - 1
 	while i >= 0:
 		var npc: NPCData = outside[i]
-		var leaves := npc.is_crew or npc.is_cop   # recruited: CrewSystem moves them from here on
+		var leaves := npc.is_crew or npc.is_cop or npc.is_down   # recruited: CrewSystem moves them; down: they lie where they fell
 		if not leaves and not npc.is_busy:
 			leaves = _move(npc, delta, tick, player_pos)
 			if not leaves and npc.position.distance_squared_to(player_pos) < Crowd.RANGE_M * Crowd.RANGE_M:

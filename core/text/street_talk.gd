@@ -7,6 +7,9 @@ class_name StreetTalk
 extends RefCounted
 
 const LINES := {
+	"no_ammo": ["Click. Empty.", "Out of rounds.", "Nothing left in the clip."],
+	"weapon_fists": ["Hands up. Old school.", "Fists it is."],
+	"weapon_pistol": ["Strapped.", "Pistol out. Careful now."],
 	"handoff_started": ["Aight, hold up... lemme see the paper.", "Keep it low. Hand it over slow.", "Eyes open. We doin' this quick."],
 	"buy": ["Good lookin'. That's ${n}.", "Pleasure doin' business. ${n}, we square.", "Fresh pack for ${n}. Don't say I never looked out."],
 	"buy_ripped": ["Bag's empty. He took ${n} and dipped.", "You just got finessed. ${n} gone, no pack.", "That's air in the bag. ${n} down the drain."],

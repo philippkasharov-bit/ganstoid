@@ -19,6 +19,8 @@ extends Node2D
 ## scene layout.
 @export var world_driver_path: NodePath
 
+const DOWN_TINT := Color(0.55, 0.12, 0.1)
+
 var _world: World
 var _visuals: Dictionary = {}  # StringName -> Node2D
 var _visuals_for := -1          # entity count the visuals were last built for
@@ -57,6 +59,9 @@ func _sync_visuals() -> void:
 		visual.visible = not npc.indoors
 		if visual.visible:
 			visual.position = npc.position
+			if npc.is_down and visual.modulate != DOWN_TINT:
+				visual.modulate = DOWN_TINT   # combat: a body on the ground
+				visual.scale = Vector2(1.0, 0.55)
 
 func _remove_stale_visuals() -> void:
 	for id in _visuals.keys():

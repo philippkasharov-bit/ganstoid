@@ -170,9 +170,11 @@ func process_entities(entities: Dictionary, delta: float, tick: int) -> void:
 		_cops.clear()
 		for entity in entities.values():
 			var person: NPCData = entity.get_component(ComponentNames.NPC)
-			if person.is_cop:
+			if person.is_cop and not person.is_down:
 				_cops.append(person)
 	for npc in _cops:
+		if npc.is_down:
+			continue
 		if _alerted.get(npc.id, false):
 			_advance_alert(npc, delta, tick)
 		else:
