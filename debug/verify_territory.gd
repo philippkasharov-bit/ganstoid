@@ -51,6 +51,17 @@ func _initialize() -> void:
 	print("held %d, cash %d -> %d" % [TerritorySystem.cells_held(t, TerritorySystem.PLAYER), cash_before, me.cash])
 	if not _check(TerritorySystem.cells_held(t, TerritorySystem.PLAYER) >= 1 and me.cash > cash_before, "held blocks pay street tax in the morning"):
 		return
+	# RG2: two strong gangs in one cell fight it out
+	var war := Vector2i(-80, -80)
+	TerritorySystem.set_influence(t, war, &"gang_0", 95.0)
+	TerritorySystem.set_influence(t, war, &"gang_1", 85.0)
+	world.runtime_rng.seed = 1
+	for h in 15:
+		world.tick += SimClock.hours(1.0)
+		turf.process_entities(players, 0.0, world.tick)
+	print("15 h of a contested block: clashes %d, gang_0 %.0f, gang_1 %.0f, spread to a neighbour %.0f" % [turf.clashes, TerritorySystem.get_influence(t, war, &"gang_0"), TerritorySystem.get_influence(t, war, &"gang_1"), TerritorySystem.get_influence(t, war + Vector2i(1, 0), &"gang_0")])
+	if not _check(turf.clashes >= 2 and TerritorySystem.get_influence(t, war, &"gang_1") < 85.0 - 15.0 * TerritorySystem.DECAY_PER_HOUR, "gangs fight over shared blocks and the weaker side is pushed back"):
+		return
 	print("TERRITORY_VERIFY: PASS")
 	quit()
 

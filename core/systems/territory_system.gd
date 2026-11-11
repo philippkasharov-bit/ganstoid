@@ -29,8 +29,14 @@ const PROVOKE := 25.0                    # your influence on a gang's cell that 
 const SQUAD_SIZE := 3
 const WAR_COOLDOWN_H := 3.0
 const MEMBERS_PER_GANG := 10
+const SPREAD_PER_HOUR := 1.2            # RG2: a held cell leaks influence into its neighbours
+const CLASH_AT := 40.0                   # RG2: two gangs both this strong in one cell fight over it
+const CLASH_CHANCE := 0.2
+const CLASH_SHIFT := 12.0
+const HIT_CHANCE := 0.15                 # RG3: a gang at war with you hits your shop or crew, per hour
 const GANG_COLORS := {&"gang_0": Color(0.55, 0.2, 0.75), &"gang_1": Color(0.1, 0.55, 0.85), &"gang_2": Color(0.85, 0.7, 0.1), &"player": Color(0.1, 0.85, 0.3)}
 
+var clashes := 0                         # gang-on-gang fights (checks)
 var _world_ref: WeakRef
 var _world: World:
 	get:
@@ -161,6 +167,81 @@ func _hourly(t: TerritoryData) -> void:
 			var floor_v := HOME_FLOOR if homes.has([c, g]) else 0.0
 			t.cells[c][g] = maxf(floor_v, t.cells[c][g] - DECAY_PER_HOUR)
 	_player_sources(t)
+	_spread(t)
+	_clashes(t)
+	_retaliate(t)
+
+## RG2: gangs grow out from what they hold.
+func _spread(t: TerritoryData) -> void:
+	var adds: Array = []
+	for c in t.cells:
+		var g := controller(t, c)
+		if g == &"" or g == PLAYER:
+			continue
+		for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			adds.append([c + d, g])
+	for a in adds:
+		add_influence(t, a[0], a[1], SPREAD_PER_HOUR)
+
+## RG2: where two gangs are both strong they fight; someone gets hurt, the
+## stronger crew pushes the other back.
+func _clashes(t: TerritoryData) -> void:
+	var rng := _world.runtime_rng
+	for c in t.cells:
+		var strong: Array = []
+		for g in t.cells[c]:
+			if g != PLAYER and t.cells[c][g] >= CLASH_AT:
+				strong.append(g)
+		if strong.size() < 2 or rng.randf() > CLASH_CHANCE:
+			continue
+		strong.sort_custom(func(a: StringName, b: StringName) -> bool: return t.cells[c][a] > t.cells[c][b])
+		var winner: StringName = strong[0]
+		var loser: StringName = strong[1]
+		add_influence(t, c, winner, CLASH_SHIFT * 0.5)
+		add_influence(t, c, loser, -CLASH_SHIFT)
+		_wound_member(loser)
+		clashes += 1
+
+## RG3: a gang at war with you hits back where it hurts: your shop's till, or
+## one of your crew working its streets.
+func _retaliate(t: TerritoryData) -> void:
+	var rng := _world.runtime_rng
+	for g in t.war_until:
+		if _world.tick >= t.war_until[g] + SimClock.hours(WAR_COOLDOWN_H) or rng.randf() > HIT_CHANCE:
+			continue
+		var player: Entity = _world.entities.get(PlayerFactory.PLAYER_ENTITY_ID)
+		if player == null:
+			return
+		var state: PlayerStateData = player.get_component(ComponentNames.PLAYER_STATE)
+		for crew_id in state.crew_ids:
+			var e: Entity = _world.entities.get(crew_id)
+			var n: NPCData = e.get_component(ComponentNames.NPC) if e != null else null
+			if n != null and not n.is_down and get_influence(t, TerritoryData.cell_of(n.position), g) >= PROVOKE:
+				n.health = maxf(0.0, n.health - 0.5)
+				n.bleeding = true
+				_world.event_bus.emit(GanstoidEvents.WOUNDED, {"id": crew_id})
+				StreetTalk.say_key(_world, state, "crew_hit")
+				break
+		for b in _world.get_entities_with_component(ComponentNames.BUILDING).values():
+			var bd: BuildingData = b.get_component(ComponentNames.BUILDING)
+			if BusinessSystem.owned_by_player(bd) and bd.cash_on_hand > 0 and get_influence(t, TerritoryData.cell_of(bd.position), g) >= PROVOKE:
+				bd.cash_on_hand = 0
+				bd.has_been_hit = true
+				StreetTalk.say_key(_world, state, "shop_hit")
+				break
+
+func _wound_member(gang_id: StringName) -> void:
+	var gang_e: Entity = _world.entities.get(gang_id)
+	if gang_e == null:
+		return
+	for m in gang_e.get_component(ComponentNames.GANG).member_npc_ids:
+		var e: Entity = _world.entities.get(m)
+		var n: NPCData = e.get_component(ComponentNames.NPC) if e != null else null
+		if n != null and not n.is_down:
+			n.health = maxf(0.0, n.health - 0.6)
+			n.bleeding = true
+			_world.event_bus.emit(GanstoidEvents.WOUNDED, {"id": m})
+			return
 
 func _player_sources(t: TerritoryData) -> void:
 	for player in _world.get_entities_with_component(ComponentNames.PLAYER_STATE).values():

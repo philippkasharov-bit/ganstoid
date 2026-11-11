@@ -36,6 +36,8 @@ const LINES := {
 	"street_tax": ["Street tax came in: ${n}.", "Your blocks paid up: ${n}."],
 	"gang_coming": ["Word is a crew's coming for you. Watch the street.", "They noticed you on their turf. Company's coming."],
 	"nobody_gun": ["\"I don't sell iron to nobodies. Make a name first.\"", "\"Who even are you? No gun.\""],
+	"crew_hit": ["They got one of yours. Crew's bleeding.", "Your boy got jumped on their streets."],
+	"shop_hit": ["They hit your shop. Till's empty.", "Your store got cleaned out. Message received."],
 	"bought": ["Paid ${n}.", "${n}, bagged.", "Done. ${n} lighter."],
 	"closed": ["Shutters down. Opens at seven.", "Closed for the night."],
 	"not_sold_here": ["They don't carry that here."],
