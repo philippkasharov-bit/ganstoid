@@ -17,6 +17,17 @@ const GROW_DAILY_COST := 40
 const GROW_YIELD := 6
 const STORAGE_CAP := 30
 const GOOD_ID := &"weed"
+## DR1: what a safehouse can make, abstracted (no procedures): daily supplies
+## cost, units a day, how loud it is (witness severity) and the chance a day
+## that it goes wrong (a meth cook catches fire: stock lost).
+const RECIPES := {
+	&"weed":   {"cost": 40, "yield": 6, "severity": 0.1, "mishap": 0.0},
+	&"pills":  {"cost": 120, "yield": 5, "severity": 0.15, "mishap": 0.0},
+	&"meth":   {"cost": 150, "yield": 6, "severity": 0.35, "mishap": 0.05},
+	&"coke":   {"cost": 300, "yield": 5, "severity": 0.2, "mishap": 0.0},
+	&"heroin": {"cost": 260, "yield": 4, "severity": 0.25, "mishap": 0.0},
+}
+const ORDER: Array[StringName] = [&"weed", &"pills", &"meth", &"coke", &"heroin"]
 
 var _last_harvest_tick := 0
 var _world_ref: WeakRef
@@ -46,13 +57,19 @@ static func grow_all(world: World) -> int:
 		var building: BuildingData = entity.get_component(ComponentNames.BUILDING)
 		if not is_grow_house(building) or building.stored_product >= STORAGE_CAP:
 			continue
-		if player_npc.cash < GROW_DAILY_COST:
-			continue  # can't pay for supplies -- no harvest today
-		Wallet.spend(world, GROW_DAILY_COST)
-		var added := mini(GROW_YIELD, STORAGE_CAP - building.stored_product)
+		var r: Dictionary = RECIPES.get(building.product, RECIPES[GOOD_ID])
+		if player_npc.cash < r["cost"]:
+			continue  # can't pay for supplies -- nothing made today
+		Wallet.spend(world, r["cost"])
+		if world.runtime_rng.randf() < r["mishap"]:
+			building.stored_product = 0   # DR1: the cook went up; the stock with it
+			StreetTalk.say_key(world, world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE), "lab_fire")
+			CrimeSystem.broadcast_witnesses(world, building.position, 0.6, false)
+			continue
+		var added := mini(int(r["yield"]), STORAGE_CAP - building.stored_product)
 		building.stored_product += added
 		grown += added
-		CrimeSystem.broadcast_witnesses(world, building.position, CrimeSystem.SEVERITY_BY_TYPE[GanstoidEnums.CrimeType.DRUG_DEAL_OBSERVED], false)
+		CrimeSystem.broadcast_witnesses(world, building.position, r["severity"], false)
 	return grown
 
 static func count_grow_houses(world: World) -> int:
@@ -87,8 +104,17 @@ static func collect(world: World, building_id: StringName) -> Dictionary:
 		return {"ok": false, "reason": "nothing_grown"}
 	var qty := building.stored_product
 	building.stored_product = 0
-	state.inventory[GOOD_ID] = state.inventory.get(GOOD_ID, 0) + qty
+	state.inventory[building.product] = state.inventory.get(building.product, 0) + qty
 	return {"ok": true, "effect": "harvest_collected", "quantity": qty}
+
+## DR1: C at your safehouse: collect what is there, then switch to the next product.
+static func switch_product(world: World, building_id: StringName) -> Dictionary:
+	var building: BuildingData = world.entities[building_id].get_component(ComponentNames.BUILDING)
+	if building.stored_product > 0:
+		collect(world, building_id)
+	building.product = ORDER[(ORDER.find(building.product) + 1) % ORDER.size()]
+	var r: Dictionary = RECIPES[building.product]
+	return {"ok": true, "effect": "product_" + String(building.product), "amount": r["cost"]}
 
 ## Raid hook (CopAISystem._conduct_raid): cops take whatever is stored.
 static func seize_stored(world: World, building: BuildingData) -> int:

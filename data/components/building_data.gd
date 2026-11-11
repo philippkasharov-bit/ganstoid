@@ -47,4 +47,5 @@ extends Resource
 ## buildings) or &"workshop" (warehouses, garages, workshops -- never retail).
 ## Empty for every other role.
 @export var business_kind: StringName = &""
+@export var product: StringName = &"weed"   # DR1: what your safehouse makes (ProductionSystem.RECIPES)
 @export var looted_tick: int = -1000000   # X2: last burgled (houses restock in a few days)

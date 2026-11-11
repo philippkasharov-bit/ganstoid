@@ -13,6 +13,9 @@ extends RefCounted
 const GOODS := [
 	{"good_id": &"weed", "display_name": "Weed", "base_price": 20, "is_illegal": true},
 	{"good_id": &"pills", "display_name": "Pills", "base_price": 40, "is_illegal": true},
+	{"good_id": &"meth", "display_name": "Meth", "base_price": 60, "is_illegal": true},
+	{"good_id": &"coke", "display_name": "Coke", "base_price": 85, "is_illegal": true},
+	{"good_id": &"heroin", "display_name": "Heroin", "base_price": 95, "is_illegal": true},
 ]
 
 static func seed_goods(world: World) -> void:

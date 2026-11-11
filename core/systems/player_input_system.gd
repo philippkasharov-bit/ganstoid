@@ -51,6 +51,7 @@ const INVENTORY_ACTION := &"inventory"   # G2: I
 const SLEEP_ACTION := &"sleep"           # G2: Z
 const CAR_ACTION := &"car_door"          # V1: F
 const TAG_ACTION := &"tag"               # TR: T
+const PRODUCT_ACTION := &"product"       # DR1: C at your safehouse
 const SLOT_ACTIONS: Array[StringName] = [&"slot_1", &"slot_2", &"slot_3", &"slot_4", &"slot_5", &"slot_6", &"slot_7", &"slot_8", &"slot_9"]
 
 func _init(world: World) -> void:
@@ -90,6 +91,7 @@ func _init(world: World) -> void:
 	_bind_key(SLEEP_ACTION, KEY_Z)
 	_bind_key(CAR_ACTION, KEY_F)
 	_bind_key(TAG_ACTION, KEY_T)
+	_bind_key(PRODUCT_ACTION, KEY_C)
 	for i in SLOT_ACTIONS.size():
 		_bind_key(SLOT_ACTIONS[i], KEY_1 + i)
 	_bind_mouse(ATTACK_ACTION, MOUSE_BUTTON_LEFT)
@@ -145,6 +147,10 @@ func process_entities(entities: Dictionary, delta: float, tick: int) -> void:
 			StreetTalk.say(_world, state, wired)
 		if Input.is_action_just_pressed(TAG_ACTION) and state.vehicle_id == &"" and TerritorySystem.data(_world) != null:
 			StreetTalk.say(_world, state, TerritorySystem.tag(_world, npc))
+		if Input.is_action_just_pressed(PRODUCT_ACTION):
+			var lab := _find_own_grow_house(npc.position)
+			if lab != &"":
+				StreetTalk.say(_world, state, ProductionSystem.switch_product(_world, lab))
 		if state.vehicle_id != &"":
 			_drive(npc, state, delta)
 			continue   # at the wheel: WASD drive the car
@@ -371,7 +377,19 @@ func _attempt_sell(player_npc: NPCData) -> Dictionary:
 	var target_id := _find_nearest_npc(player_npc.position)
 	if target_id == &"" or not _is_dealer(target_id):
 		return {}
-	return DealSystem.start_handoff(_world, target_id, &"weed", "sell")
+	var state: PlayerStateData = _world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
+	return DealSystem.start_handoff(_world, target_id, _best_to_sell(state), "sell")
+
+## DR1: Esc sells the most valuable drug you carry (weed if none).
+func _best_to_sell(state: PlayerStateData) -> StringName:
+	var best: StringName = &"weed"
+	var best_price := -1
+	for good in _world.economy_items:
+		var item: EconomyItemData = _world.economy_items[good]
+		if state.inventory.get(good, 0) >= DealSystem.TRADE_QUANTITY and item.current_price > best_price:
+			best_price = item.current_price
+			best = good
+	return best
 
 func _is_dealer(npc_id: StringName) -> bool:
 	var entity: Entity = _world.entities.get(npc_id)
