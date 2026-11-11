@@ -55,6 +55,7 @@ func _initialize() -> void:
 
 	var unwitnessed := CrimeSystem.commit_crime(world, GanstoidEnums.CrimeType.PICKPOCKET, victim_id)
 	assert(unwitnessed.get("ok", false), "pickpocket should still succeed mechanically even when nobody recognizes it")
+	(world.find_system(WitnessCallSystem) as WitnessCallSystem).flush()   # W2: a recognised witness phones it in a few seconds later
 	# Seeing the crime gives the victim a fresh (severity-sized) chance to
 	# recognize you on the spot, so a report CAN legitimately happen here.
 	# The real rule: crime_heat moves if and only if a witness reported.

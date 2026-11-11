@@ -354,6 +354,9 @@ func _options(npc: NPCData, state: PlayerStateData) -> Array:
 	var bld := _find_nearest_building(pos)
 	if bld != &"":
 		out.append(["Buy this property", func() -> Dictionary: return _buy_building(bld)])
+	var traffic := TrafficSystem.traffic_car_near(_world, pos)
+	if traffic != null:
+		out.append(["Pull the driver out (carjack)", func() -> Dictionary: return TrafficSystem.carjack(_world, npc, state, traffic)])
 	if VehicleSystem.nearest_car(_world, pos) != null:
 		out.append(["Get in the car", func() -> Dictionary: return VehicleSystem.use_door(_world, npc, state)])
 	if TerritorySystem.data(_world) != null:

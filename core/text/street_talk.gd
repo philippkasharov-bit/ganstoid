@@ -64,6 +64,8 @@ const LINES := {
 	"paid_off": ["${n} and a handshake. Never saw you.", "${n}. Memory wiped."],
 	"bribed": ["${n} in the pocket. Paperwork gets lost.", "Officer takes ${n}. Your file got thinner."],
 	"bribe_refused": ["\"You just made it worse.\" He's writing it down.", "Wrong cop. That's going in the report."],
+	"chase_on": ["Lights in the mirror. They're on you.", "Patrol car behind you. Lose them."],
+	"chase_lost": ["Lost them. Heat's off for now.", "No lights behind you. Clean getaway."],
 	"bought": ["Paid ${n}.", "${n}, bagged.", "Done. ${n} lighter."],
 	"closed": ["Shutters down. Opens at seven.", "Closed for the night."],
 	"not_sold_here": ["They don't carry that here."],

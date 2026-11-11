@@ -26,6 +26,7 @@ func _ready() -> void:
 	var saved := SaveGame.read()   # SL1: carry on where the last session ended, if alive
 	seed_used = saved["seed"] if not saved.is_empty() else randi()
 	SystemRegistry.register_all(world)
+	TrafficSystem.roads = city.roads   # V2: traffic drives the real streets
 	WorldGenerator.generate_real_city_game(world, seed_used, city, city.spawn, DISTRICT_RADIUS, GAME_POPULATION)
 	world.tick = SimClock.hours(START_HOUR)
 	if not saved.is_empty():
