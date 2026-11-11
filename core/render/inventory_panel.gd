@@ -21,4 +21,6 @@ func refresh() -> void:
 	if rows.is_empty():
 		rows.append(["", "Nothing. Stores sell food and water.", ""])
 	rows.append(["", "Skills: " + Skills.summary(state), ""])
+	rows.append(["", "Crew %d/%d (Tab)   ·   businesses %d   ·   labs %d" % [state.crew_ids.size(), CrewSystem.MAX_CREW, BusinessSystem.count_owned(_world), ProductionSystem.count_grow_houses(_world)], ""])
+	rows.append(["", "Rank: %s, %d points to the next" % [RankSystem.name_of(state.rank), RankSystem.to_next(_world, _world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC), state)], ""])
 	show_panel("Bag", rows, "1-9 use    I / Esc close")

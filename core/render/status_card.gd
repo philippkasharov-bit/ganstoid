@@ -1,0 +1,93 @@
+## UI2: the always-on status card (top left): money, rank, heat, what is in
+## your hand, four bars (health, food, water, rest), turf and clock. Read-only.
+class_name StatusCard
+extends PanelContainer
+
+const BAR_W := 150.0
+const HEAT_COLORS := [Color("6fbf73"), Color("e8c547"), Color("e8913a"), Color("e0533d"), Color("b0203a")]
+var _world: World
+var _top := Label.new()
+var _mid := Label.new()
+var _bars := {}
+var _bottom := Label.new()
+var _left := 0.0
+
+func setup(world: World) -> void:
+	_world = world
+	position = Vector2(12, 10)
+	add_theme_stylebox_override("panel", UiPanel.card_style())
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 5)
+	add_child(box)
+	for l in [_top, _mid, _bottom]:
+		l.add_theme_color_override("font_color", UiPanel.TEXT)
+	_top.add_theme_font_size_override("font_size", 18)
+	_mid.add_theme_font_size_override("font_size", 14)
+	_bottom.add_theme_font_size_override("font_size", 13)
+	_bottom.add_theme_color_override("font_color", UiPanel.DIM)
+	box.add_child(_top)
+	box.add_child(_mid)
+	for need in [["health", "Health", Color("d9534f")], ["hunger", "Food", Color("e8a33a")], ["thirst", "Water", Color("4aa3df")], ["fatigue", "Rest", Color("9b8ce0")]]:
+		box.add_child(_bar_row(need[0], need[1], need[2]))
+	box.add_child(_bottom)
+	visible = false
+
+func _bar_row(key: String, label: String, col: Color) -> Control:
+	var row := HBoxContainer.new()
+	var name := Label.new()
+	name.text = label
+	name.custom_minimum_size = Vector2(56, 0)
+	name.add_theme_font_size_override("font_size", 13)
+	name.add_theme_color_override("font_color", UiPanel.DIM)
+	var bar := ProgressBar.new()
+	bar.custom_minimum_size = Vector2(BAR_W, 12)
+	bar.show_percentage = false
+	bar.max_value = 1.0
+	var bg := StyleBoxFlat.new()
+	bg.bg_color = Color(1, 1, 1, 0.08)
+	bg.set_corner_radius_all(3)
+	var fill := StyleBoxFlat.new()
+	fill.bg_color = col
+	fill.set_corner_radius_all(3)
+	bar.add_theme_stylebox_override("background", bg)
+	bar.add_theme_stylebox_override("fill", fill)
+	bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(name)
+	row.add_child(bar)
+	_bars[key] = bar
+	return row
+
+func _process(delta: float) -> void:
+	_left -= delta
+	if _world == null or _left > 0.0:
+		return
+	_left = 0.25
+	var player: Entity = _world.entities.get(PlayerFactory.PLAYER_ENTITY_ID)
+	var ready := SimNav.active != null and SimNav.active.is_ready()
+	visible = player != null and ready and not player.get_component(ComponentNames.NPC).is_down
+	if not visible:
+		return
+	var npc: NPCData = player.get_component(ComponentNames.NPC)
+	var state: PlayerStateData = player.get_component(ComponentNames.PLAYER_STATE)
+	_top.text = "$%d   ·   %s" % [npc.cash, RankSystem.name_of(state.rank)]
+	_top.add_theme_color_override("font_color", UiPanel.ACCENT)
+	var heat := clampi(state.law_tier, 0, HEAT_COLORS.size() - 1)
+	_mid.text = "Heat: %s   ·   %s%s%s" % [String(GanstoidEnums.LawTier.keys()[state.law_tier]).capitalize(), String(state.weapon).capitalize(), " (%d)" % state.ammo if state.weapon == &"pistol" else "", "   ·   BLEEDING" if npc.bleeding else ""]
+	_mid.add_theme_color_override("font_color", HEAT_COLORS[heat] if not npc.bleeding else Color("e0533d"))
+	for key in _bars:
+		_bars[key].value = npc.get(key)
+	var hours := SimClock.day_fraction(_world.tick) * 24.0
+	var clean := npc.cash - state.dirty_cash
+	_bottom.text = "%02d:%02d%s   ·   clean $%d / dirty $%d   ·   %s" % [int(hours), int(fmod(hours, 1.0) * 60.0), "  (asleep)" if state.sleeping else "", clean, state.dirty_cash, _turf(npc)]
+
+func _turf(npc: NPCData) -> String:
+	var t := TerritorySystem.data(_world)
+	if t == null:
+		return ""
+	var owner := TerritorySystem.controller(t, TerritoryData.cell_of(npc.position))
+	if owner == &"":
+		return "nobody's block"
+	if owner == TerritorySystem.PLAYER:
+		return "YOUR block"
+	var e: Entity = _world.entities.get(owner)
+	return (e.get_component(ComponentNames.GANG).display_name if e != null else String(owner)) + " turf"

@@ -21,7 +21,7 @@ var _message_time_left := 0.0
 func _ready() -> void:
 	_world = get_node(world_driver_path).world
 	position = Vector2(12, 8)
-	add_theme_font_size_override("font_size", 16)
+	add_theme_font_size_override("font_size", 13)
 	add_theme_color_override("font_outline_color", Color.BLACK)
 	add_theme_constant_override("outline_size", 4)
 	var roster := CrewRoster.new()  # batch 22: Tab toggles it
@@ -36,6 +36,13 @@ func _ready() -> void:
 	var menu := ActionMenu.new()      # UI1: E
 	get_parent().add_child.call_deferred(menu)
 	menu.setup(_world, Vector2(12, 290))
+	var card := StatusCard.new()      # UI2: bars and status
+	get_parent().add_child.call_deferred(card)
+	card.setup(_world)
+	var toast := Toast.new()          # UI2: pop-up lines
+	get_parent().add_child.call_deferred(toast)
+	toast.setup(_world)
+	position = Vector2(12, 250)
 
 func _process(delta: float) -> void:
 	if _world == null:
@@ -60,26 +67,13 @@ func _process(delta: float) -> void:
 	if npc.is_down:
 		text = "You are dead. The city goes on without you.\n\nPress Enter to start a new life."
 		return
-	text = "\n".join([
-		"Cash: $%d clean, $%d dirty" % [npc.cash - state.dirty_cash, state.dirty_cash],
-		"Rank: %s (%d to next)   Heat: %s" % [RankSystem.name_of(state.rank), RankSystem.to_next(_world, npc, state), GanstoidEnums.LawTier.keys()[state.law_tier]],
-		"Health: %d%%%s   In hand (Q): %s%s   (right mouse aim, left mouse attack)" % [roundi(npc.health * 100), "  BLEEDING (bandage: I)" if npc.bleeding else "", String(state.weapon), "  %d rounds" % state.ammo if state.weapon == &"pistol" else ""],
-		"Food %s   Water %s   Rest %s%s   (E: actions, I: bag, Z: sleep, F: car)" % [_need(npc.hunger), _need(npc.thirst), _need(npc.fatigue), "   ASLEEP..." if state.sleeping else ""],
-		"Stash: %s" % _format_inventory(state.inventory),
-		_turf_line(npc),
-		"Standing: %s" % _format_standing(state),
-		"Businesses: %d   Grow houses: %d" % [BusinessSystem.count_owned(_world), ProductionSystem.count_grow_houses(_world)],
-		"Crew (Tab): %d/%d (lookout %d, dealing %d, muscle %d%s)" % [state.crew_ids.size(), CrewSystem.MAX_CREW, CrewSystem.count_lookouts(_world, state), CrewSystem.count_role(_world, state, GanstoidEnums.CrewRole.DEALER), CrewSystem.count_role(_world, state, GanstoidEnums.CrewRole.MUSCLE), ", driver" if CrewSystem.count_role(_world, state, GanstoidEnums.CrewRole.DRIVER) > 0 else ""],
-	])
-	text += "\n%s   %d fps (%.0f ms)   people outdoors %d" % [_clock(), Engine.get_frames_per_second(), 1000.0 / maxf(Engine.get_frames_per_second(), 1.0), _outdoors()]
+	# UI2: the status card and toasts carry the game state; this line only
+	# keeps what has no home yet (a deal in progress) and a small fps readout.
+	text = "%d fps" % Engine.get_frames_per_second()
 	if not state.pending_deal.is_empty():
-		text += "\nDealing... %ds" % ceili(state.pending_deal["ticks_left"] / 60.0)
-	if state.message_serial != _seen_serial:
-		_seen_serial = state.message_serial
-		_message_time_left = MESSAGE_SECONDS
-	if _message_time_left > 0.0:
-		_message_time_left -= delta
-		text += "\n\n\"%s\"" % state.last_message
+		text += "   ·   Dealing... %ds" % ceili(state.pending_deal["ticks_left"] / 60.0)
+	if state.hotwire_id != &"" or state.burglary_id != &"":
+		text += "   ·   Working... stay put"
 
 func _clock() -> String:
 	var hours := SimClock.day_fraction(_world.tick) * 24.0

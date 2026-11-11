@@ -19,18 +19,7 @@ func setup(world: World, at: Vector2) -> void:
 	_world = world
 	position = at
 	custom_minimum_size = Vector2(340, 0)
-	var style := StyleBoxFlat.new()
-	style.bg_color = BG
-	style.border_color = ACCENT
-	style.border_width_left = 4
-	style.set_corner_radius_all(6)
-	style.content_margin_left = 16
-	style.content_margin_right = 16
-	style.content_margin_top = 12
-	style.content_margin_bottom = 12
-	style.shadow_color = Color(0, 0, 0, 0.45)
-	style.shadow_size = 8
-	add_theme_stylebox_override("panel", style)
+	add_theme_stylebox_override("panel", card_style())
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 6)
 	add_child(box)
@@ -44,6 +33,21 @@ func setup(world: World, at: Vector2) -> void:
 	_footer.add_theme_color_override("font_color", DIM)
 	box.add_child(_footer)
 	visible = false
+
+## The shared card look (also used by the status card and toasts).
+static func card_style() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = BG
+	style.border_color = ACCENT
+	style.border_width_left = 4
+	style.set_corner_radius_all(6)
+	style.content_margin_left = 16
+	style.content_margin_right = 16
+	style.content_margin_top = 12
+	style.content_margin_bottom = 12
+	style.shadow_color = Color(0, 0, 0, 0.45)
+	style.shadow_size = 8
+	return style
 
 func _process(_delta: float) -> void:
 	if _world != null:
