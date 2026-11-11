@@ -14,16 +14,19 @@ const BODY_R := 0.35            # metres: a body's half-width, what a round must
 const RAY_STEP_M := 0.25        # wall test step along a shot
 const WEAPONS := {
 	&"fists": {"melee": true, "range": 1.3, "arc_deg": 80.0, "damage": 0.2, "cooldown_s": 0.55, "heard_m": 0.0},
+	&"knife": {"melee": true, "range": 1.1, "arc_deg": 60.0, "damage": 0.45, "cooldown_s": 0.5, "heard_m": 0.0},
+	&"bat": {"melee": true, "range": 1.7, "arc_deg": 100.0, "damage": 0.35, "cooldown_s": 0.85, "heard_m": 0.0},
 	&"pistol": {"melee": false, "range": 35.0, "damage": 0.55, "cooldown_s": 0.3,
 		"spread_hip_deg": 8.0, "spread_aim_deg": 2.0, "heard_m": 300.0},
 }
-const ORDER: Array[StringName] = [&"fists", &"pistol"]
+const ORDER: Array[StringName] = [&"fists", &"knife", &"bat", &"pistol"]
 const NPC_SPREAD_DEG := 9.0     # C6: cops and gang members fire from the hip, under stress
 const THREAT_S := 10.0          # C6: a raised or recently fired gun keeps you a threat this long
 
-## Next weapon in hand (Q).
+## Next weapon you actually carry (Q); fists are always there.
 static func cycle_weapon(state: PlayerStateData) -> StringName:
-	state.weapon = ORDER[(ORDER.find(state.weapon) + 1) % ORDER.size()]
+	var owned := ShopSystem.owned_weapons(state)
+	state.weapon = owned[(owned.find(state.weapon) + 1) % owned.size()]
 	return state.weapon
 
 ## One attack toward state.aim_point. Returns {ok, weapon, hit_id?, downed?, end, reason?}
@@ -81,7 +84,7 @@ static func _swing(world: World, me: NPCData, dir: Vector2, w: Dictionary) -> Di
 static func _shoot(world: World, me: NPCData, state: PlayerStateData, dir: Vector2, w: Dictionary, rng: RandomNumberGenerator) -> Dictionary:
 	state.ammo -= 1
 	state.shots_fired += 1
-	var spread := deg_to_rad(w["spread_aim_deg"] if state.aiming else w["spread_hip_deg"])
+	var spread := deg_to_rad(w["spread_aim_deg"] if state.aiming else w["spread_hip_deg"]) * NeedsSystem.spread_factor(me)
 	return _fire(world, me, dir.rotated(rng.randf_range(-spread, spread)), w)
 
 ## One round from `shooter` along `dir`: stops in the first standing body or wall.

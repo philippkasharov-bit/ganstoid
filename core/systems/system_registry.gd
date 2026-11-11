@@ -22,6 +22,7 @@ static func register_all(world: World) -> void:
 	world.register_system(schedule)
 	world.event_bus.subscribe(schedule.on_gunshot)
 	world.register_system(PlayerInputSystem.new(world))
+	world.register_system(NeedsSystem.new())
 	world.register_system(CrewSystem.new(world))
 	world.register_system(CrewLoyaltySystem.new(world))
 	world.register_system(CrewDealerSystem.new(world))

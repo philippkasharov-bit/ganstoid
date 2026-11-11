@@ -79,8 +79,15 @@ extends Resource
 @export var aim_point: Vector2 = Vector2.ZERO   # world position under the mouse, metres
 @export var aiming: bool = false
 @export var weapon: StringName = &"fists"       # key into CombatSystem.WEAPONS
-@export var ammo: int = 12                      # pistol rounds carried
+@export var ammo: int = 0                       # pistol rounds carried (G1: bought in boxes from dealers)
 @export var attack_ready_tick: int = 0          # no new attack before this tick
 @export var shots_fired: int = 0
 @export var last_shot_tick: int = -1000000         # C6: cops treat a recent shooter as armed
+## G2 needs / G3 wounds.
+@export var sleeping: bool = false
+@export var sleeping_home: bool = false
+@export var health_at_sleep: float = 1.0
+@export var bleeding: bool = false
+var inventory_open: bool = false                # G2: I shows what you carry (not saved)
+var store_id: StringName = &""                  # G1: counter whose menu is open (not saved)
 var last_attack: Dictionary = {}                # the latest blow or shot, for AimView to draw

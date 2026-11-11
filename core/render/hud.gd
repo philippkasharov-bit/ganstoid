@@ -27,6 +27,12 @@ func _ready() -> void:
 	var roster := CrewRoster.new()  # batch 22: Tab toggles it
 	get_parent().add_child.call_deferred(roster)
 	roster.setup(_world)
+	var store := StorePanel.new()   # G1: E at a counter
+	get_parent().add_child.call_deferred(store)
+	store.setup(_world)
+	var bag := InventoryPanel.new()   # G2: I
+	get_parent().add_child.call_deferred(bag)
+	bag.setup(_world)
 
 func _process(delta: float) -> void:
 	if _world == null:
@@ -51,7 +57,8 @@ func _process(delta: float) -> void:
 	text = "\n".join([
 		"Cash: $%d clean, $%d dirty" % [npc.cash - state.dirty_cash, state.dirty_cash],
 		"Heat: %s" % GanstoidEnums.LawTier.keys()[state.law_tier],
-		"Health: %d%%   In hand (Q): %s%s   (right mouse aim, left mouse attack)" % [roundi(npc.health * 100), String(state.weapon), "  %d rounds" % state.ammo if state.weapon == &"pistol" else ""],
+		"Health: %d%%%s   In hand (Q): %s%s   (right mouse aim, left mouse attack)" % [roundi(npc.health * 100), "  BLEEDING" if state.bleeding else "", String(state.weapon), "  %d rounds" % state.ammo if state.weapon == &"pistol" else ""],
+		"Food %s   Water %s   Rest %s%s   (I: bag, E: buy, Z: sleep)" % [_need(npc.hunger), _need(npc.thirst), _need(npc.fatigue), "   ASLEEP..." if state.sleeping else ""],
 		"Stash: %s" % _format_inventory(state.inventory),
 		"Standing: %s" % _format_standing(state),
 		"Businesses: %d   Grow houses: %d" % [BusinessSystem.count_owned(_world), ProductionSystem.count_grow_houses(_world)],
@@ -72,6 +79,11 @@ func _clock() -> String:
 	return "%02d:%02d" % [int(hours), int(fmod(hours, 1.0) * 60.0)]
 
 ## People on the street right now (indoors ones are not drawn).
+static func _need(v: float) -> String:
+	if v < NeedsSystem.LOW:
+		return "LOW %d%%" % roundi(v * 100)
+	return "%d%%" % roundi(v * 100)
+
 func _outdoors() -> int:
 	var n := 0
 	for e in _world.get_entities_with_component(ComponentNames.NPC).values():

@@ -7,6 +7,8 @@ extends RefCounted
 
 ## MG1a: new game on the REAL city. Only buildings within `radius` metres of
 ## `centre` are simulated (the active district); positions are metres.
+const STARTING_CASH := 40   # G1: broke on day one: enough for a few meals
+
 static func generate_real_city_game(world: World, seed: int, city: CityData, centre: Vector2, radius: float, population_count: int) -> void:
 	var building_ids := CityRoles.generate(world, seed, city, centre, radius)
 	PopulationSeeder.seed(world, seed + 1, population_count, building_ids)
@@ -24,4 +26,4 @@ static func _spawn_player_near(world: World, building_ids: Array[StringName], ce
 			best_d = d
 			best_id = id
 	var home: BuildingData = world.entities[best_id].get_component(ComponentNames.BUILDING)
-	PlayerFactory.spawn(world, home.position, best_id)
+	PlayerFactory.spawn(world, home.position, best_id, STARTING_CASH)

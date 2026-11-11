@@ -45,6 +45,11 @@ const ATTACK_ACTION := &"attack"
 const AIM_ACTION := &"aim"
 const SWITCH_WEAPON_ACTION := &"switch_weapon"
 const AIM_SPEED := SimUnits.WALK * 0.6   # weapon up: a careful step, no running
+## G1: E opens the counter you stand at (shop, workshop, dealer); 1-9 buy.
+const STORE_ACTION := &"store"
+const INVENTORY_ACTION := &"inventory"   # G2: I
+const SLEEP_ACTION := &"sleep"           # G2: Z
+const SLOT_ACTIONS: Array[StringName] = [&"slot_1", &"slot_2", &"slot_3", &"slot_4", &"slot_5", &"slot_6", &"slot_7", &"slot_8", &"slot_9"]
 
 func _init(world: World) -> void:
 	_world_ref = weakref(world)
@@ -78,6 +83,11 @@ func _init(world: World) -> void:
 		var buy_key := InputEventKey.new()
 		buy_key.physical_keycode = KEY_B
 		InputMap.action_add_event(BUY_BUSINESS_ACTION, buy_key)
+	_bind_key(STORE_ACTION, KEY_E)
+	_bind_key(INVENTORY_ACTION, KEY_I)
+	_bind_key(SLEEP_ACTION, KEY_Z)
+	for i in SLOT_ACTIONS.size():
+		_bind_key(SLOT_ACTIONS[i], KEY_1 + i)
 	_bind_mouse(ATTACK_ACTION, MOUSE_BUTTON_LEFT)
 	_bind_mouse(AIM_ACTION, MOUSE_BUTTON_RIGHT)
 	if not InputMap.has_action(SWITCH_WEAPON_ACTION):
@@ -87,6 +97,14 @@ func _init(world: World) -> void:
 		InputMap.action_add_event(SWITCH_WEAPON_ACTION, q_key)
 	tick_rate = GanstoidEnums.TickRate.HOT
 	required_component = ComponentNames.PLAYER_STATE
+
+static func _bind_key(action: StringName, key: Key) -> void:
+	if InputMap.has_action(action):
+		return
+	InputMap.add_action(action)
+	var ev := InputEventKey.new()
+	ev.physical_keycode = key
+	InputMap.action_add_event(action, ev)
 
 static func _bind_mouse(action: StringName, button: MouseButton) -> void:
 	if InputMap.has_action(action):
@@ -109,12 +127,19 @@ func process_entities(entities: Dictionary, delta: float, tick: int) -> void:
 			continue  # rooted mid-handoff (batch 11) -- no movement, no new actions
 		if npc.is_down:
 			continue   # permadeath: nothing more to do
+		if Input.is_action_just_pressed(SLEEP_ACTION):
+			StreetTalk.say(_world, state, NeedsSystem.toggle_sleep(_world, npc, state))
+		if state.sleeping:
+			continue   # asleep: nothing else until you wake
 		_combat_input(npc, state, tick)
+		if _store_input(npc, state) or _inventory_input(npc, state):
+			continue   # a menu is open: the number keys belong to it
 		var input_dir := _move_input()
 		if input_dir != Vector2.ZERO:
 			var speed := RUN_SPEED if Input.is_physical_key_pressed(KEY_SHIFT) else MOVE_SPEED
 			if state.aiming:
 				speed = AIM_SPEED
+			speed *= NeedsSystem.speed_factor(npc)
 			var step := input_dir.normalized() * speed * CrewSystem.player_speed_multiplier(_world, state) * delta
 			npc.position = SimNav.active.slide(npc.position, step) if SimNav.active != null else npc.position + step   # walls are solid
 			_world.reindex_position(npc.id)
@@ -160,6 +185,73 @@ func _combat_input(npc: NPCData, state: PlayerStateData, tick: int) -> void:
 			state.last_attack = result
 		elif result.get("reason", "") == "no_ammo" and Input.is_action_just_pressed(ATTACK_ACTION):
 			StreetTalk.say(_world, state, result)
+
+## G1: E opens / closes the nearest counter; 1-9 buy that line; Esc or walking
+## off closes it. Returns true while a menu is open (other actions wait).
+func _store_input(npc: NPCData, state: PlayerStateData) -> bool:
+	if Input.is_action_just_pressed(STORE_ACTION):
+		if state.store_id != &"":
+			state.store_id = &""
+			return true
+		state.store_id = _find_counter(npc.position)
+		if state.store_id == &"":
+			StreetTalk.say_key(_world, state, "no_counter")
+		return true
+	if state.store_id == &"":
+		return false
+	var counter: Entity = _world.entities.get(state.store_id)
+	var at: Vector2 = _counter_position(counter)
+	if Input.is_action_just_pressed("ui_cancel") or at.distance_to(npc.position) > CrimeSystem.INTERACT_RADIUS * 2.0:
+		state.store_id = &""
+		return true
+	var stock := ItemCatalog.stock(ShopSystem.counter_kind(_world, state.store_id))
+	for i in mini(stock.size(), SLOT_ACTIONS.size()):
+		if Input.is_action_just_pressed(SLOT_ACTIONS[i]):
+			StreetTalk.say(_world, state, ShopSystem.buy(_world, npc, state, state.store_id, stock[i]))
+	return true
+
+## G2: I opens what you carry; 1-9 eat, drink or apply that line.
+func _inventory_input(npc: NPCData, state: PlayerStateData) -> bool:
+	if Input.is_action_just_pressed(INVENTORY_ACTION):
+		state.inventory_open = not state.inventory_open
+		return true
+	if not state.inventory_open:
+		return false
+	if Input.is_action_just_pressed("ui_cancel"):
+		state.inventory_open = false
+		return true
+	var items := carried(state)
+	for i in mini(items.size(), SLOT_ACTIONS.size()):
+		if Input.is_action_just_pressed(SLOT_ACTIONS[i]):
+			StreetTalk.say(_world, state, NeedsSystem.use_item(npc, state, items[i]))
+	return true
+
+## What you carry, in catalogue order (the inventory menu's lines).
+static func carried(state: PlayerStateData) -> Array[StringName]:
+	var out: Array[StringName] = []
+	for id in ItemCatalog.ITEMS:
+		if state.inventory.get(id, 0) > 0:
+			out.append(id)
+	return out
+
+## Nearest dealer or open-for-business counter within reach.
+func _find_counter(position: Vector2) -> StringName:
+	var best_id: StringName = &""
+	var best_dist := CrimeSystem.INTERACT_RADIUS
+	for id in _world.spatial_index.query_nearby(position):
+		if ShopSystem.counter_kind(_world, id) == "":
+			continue
+		var d := _counter_position(_world.entities[id]).distance_to(position)
+		if d <= best_dist:
+			best_dist = d
+			best_id = id
+	return best_id
+
+static func _counter_position(entity: Entity) -> Vector2:
+	if entity == null:
+		return Vector2.INF
+	var npc: NPCData = entity.get_component(ComponentNames.NPC)
+	return npc.position if npc != null else entity.get_component(ComponentNames.BUILDING).position
 
 ## Batch 16: every action result goes through here -- crew take their cut
 ## of any score, then the street-voice line is posted.

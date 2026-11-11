@@ -43,8 +43,14 @@ func _install_routes() -> void:
 func _physics_process(delta: float) -> void:
 	if SimNav.active == null or not SimNav.active.is_ready():
 		return   # routes still loading: nobody moves yet
-	world.step(delta)
+	var steps := NeedsSystem.SLEEP_SPEED if _asleep() else 1   # G2: sleep is the only fast-forward
+	for i in steps:
+		world.step(delta)
 	_keep_save()
+
+func _asleep() -> bool:
+	var player: Entity = world.entities.get(PlayerFactory.PLAYER_ENTITY_ID)
+	return player != null and (player.get_component(ComponentNames.PLAYER_STATE) as PlayerStateData).sleeping
 
 ## SL1: save every in-game hour (2.5 real minutes); a dead player's save is gone.
 func _keep_save() -> void:

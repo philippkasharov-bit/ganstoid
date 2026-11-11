@@ -44,6 +44,11 @@ func _initialize() -> void:
 	var player_state: PlayerStateData = player_entity.get_component(ComponentNames.PLAYER_STATE)
 	var player_npc: NPCData = player_entity.get_component(ComponentNames.NPC)
 	player_npc.position = cop_npc.position
+	# G2: the long patrol run above lasts game days; the player would have died of thirst
+	player_npc.hunger = 1.0
+	player_npc.thirst = 1.0
+	player_npc.health = 1.0
+	player_npc.is_down = false
 	world.reindex_position(PlayerFactory.PLAYER_ENTITY_ID)
 	player_state.law_tier = GanstoidEnums.LawTier.WARNED
 	world.event_bus.emit(GanstoidEvents.CRIME_WITNESSED, {

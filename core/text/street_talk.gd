@@ -7,8 +7,23 @@ class_name StreetTalk
 extends RefCounted
 
 const LINES := {
+	"used_food": ["That hit the spot.", "Better. Stomach's quiet."],
+	"used_drink": ["Cold. Good.", "Throat's not dry anymore."],
+	"used_medical": ["Wrapped tight. Bleeding stopped.", "Patched up. It'll hold."],
+	"dont_have": ["You don't have that."],
+	"cant_use": ["Can't use that here."],
+	"not_tired": ["Not tired. Can't sleep now."],
+	"sleep_home": ["Your own bed. Lights out.", "Home. Sleep."],
+	"sleep_rough": ["Sleeping rough. Keep one eye open.", "Lying down where you are. Risky."],
+	"woke": ["Up. Back to it.", "Awake."],
+	"bought": ["Paid ${n}.", "${n}, bagged.", "Done. ${n} lighter."],
+	"closed": ["Shutters down. Opens at seven.", "Closed for the night."],
+	"not_sold_here": ["They don't carry that here."],
+	"no_counter": ["Nobody selling anything here."],
 	"no_ammo": ["Click. Empty.", "Out of rounds.", "Nothing left in the clip."],
 	"weapon_fists": ["Hands up. Old school.", "Fists it is."],
+	"weapon_knife": ["Blade out.", "Knife in hand."],
+	"weapon_bat": ["Batter up.", "Bat on the shoulder."],
 	"weapon_pistol": ["Strapped.", "Pistol out. Careful now."],
 	"handoff_started": ["Aight, hold up... lemme see the paper.", "Keep it low. Hand it over slow.", "Eyes open. We doin' this quick."],
 	"buy": ["Good lookin'. That's ${n}.", "Pleasure doin' business. ${n}, we square.", "Fresh pack for ${n}. Don't say I never looked out."],

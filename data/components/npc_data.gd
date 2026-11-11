@@ -11,6 +11,7 @@ extends Resource
 ## --- Needs (Zomboid-style survival layer, lighter weight) ---
 @export_range(0.0, 1.0) var hunger: float = 1.0
 @export_range(0.0, 1.0) var fatigue: float = 1.0
+@export_range(0.0, 1.0) var thirst: float = 1.0   # G2: 1 = not thirsty
 @export_range(0.0, 1.0) var stress: float = 0.0
 
 ## --- Schedule ---
