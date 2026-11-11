@@ -30,7 +30,7 @@ func process_entities(entities: Dictionary, delta: float, _tick: int) -> void:
 	for player in entities.values():
 		var me: NPCData = player.get_component(ComponentNames.NPC)
 		var state: PlayerStateData = player.get_component(ComponentNames.PLAYER_STATE)
-		if not me.is_down:
+		if not me.is_down and state.prison_until_tick <= 0:   # CP1: inside you are fed
 			_drain(me, state, days)
 
 func _drain(me: NPCData, state: PlayerStateData, days: float) -> void:

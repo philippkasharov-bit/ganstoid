@@ -133,6 +133,8 @@ func process_entities(entities: Dictionary, delta: float, tick: int) -> void:
 			continue  # rooted mid-handoff (batch 11) -- no movement, no new actions
 		if npc.is_down:
 			continue   # permadeath: nothing more to do
+		if state.prison_until_tick > 0:
+			continue   # CP1: inside; the days pass on their own
 		if Input.is_action_just_pressed(SLEEP_ACTION):
 			StreetTalk.say(_world, state, NeedsSystem.toggle_sleep(_world, npc, state))
 		if state.sleeping:
@@ -294,6 +296,8 @@ func _options(npc: NPCData, state: PlayerStateData) -> Array:
 				state.job_offers = []
 				return JobSystem.take(_world, state, job)])
 		return out
+	if state.case_evidence > 0.0:
+		out.append(["Call a lawyer ($%d, case -%d)" % [CaseSystem.LAWYER_FEE, int(CaseSystem.LAWYER_CUT)], func() -> Dictionary: return CaseSystem.lawyer(_world, npc, state)])
 	var counter := _find_counter(pos)
 	var person := _find_nearest_npc(pos)
 	var p: NPCData = _world.entities[person].get_component(ComponentNames.NPC) if person != &"" else null

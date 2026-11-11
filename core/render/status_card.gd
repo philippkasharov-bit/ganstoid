@@ -65,6 +65,11 @@ func _process(delta: float) -> void:
 	var player: Entity = _world.entities.get(PlayerFactory.PLAYER_ENTITY_ID)
 	var ready := SimNav.active != null and SimNav.active.is_ready()
 	visible = player != null and ready and not player.get_component(ComponentNames.NPC).is_down
+	if visible and player.get_component(ComponentNames.PLAYER_STATE).prison_until_tick > 0:
+		var left: int = player.get_component(ComponentNames.PLAYER_STATE).prison_until_tick - _world.tick
+		_top.text = "IN PRISON"
+		_mid.text = "%.1f days left (time runs fast)" % (float(left) / SimClock.day_ticks)
+		return
 	if not visible:
 		return
 	var npc: NPCData = player.get_component(ComponentNames.NPC)
@@ -78,6 +83,8 @@ func _process(delta: float) -> void:
 		_bars[key].value = npc.get(key)
 	var hours := SimClock.day_fraction(_world.tick) * 24.0
 	var clean := npc.cash - state.dirty_cash
+	if state.case_evidence > 0.0:
+		_mid.text += "   ·   Case %d%s" % [roundi(state.case_evidence), " WARRANT" if state.case_evidence >= CaseSystem.WARRANT_AT else ""]
 	if not state.job.is_empty():
 		_mid.text += "   ·   JOB: %s" % state.job["text"]
 	_bottom.text = "%02d:%02d%s   ·   clean $%d / dirty $%d   ·   %s" % [int(hours), int(fmod(hours, 1.0) * 60.0), "  (asleep)" if state.sleeping else "", clean, state.dirty_cash, _turf(npc)]

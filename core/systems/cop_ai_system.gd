@@ -305,13 +305,25 @@ func _advance_alert(npc: NPCData, delta: float, tick: int) -> void:
 func _arrest(player_npc: NPCData, player_state: PlayerStateData) -> void:
 	player_state.law_tier = GanstoidEnums.LawTier.CLEAN
 	DealSystem.cancel_handoff(_world, player_state)  # batch 11: getting busted mid-handoff kills the deal
+	CrewLoyaltySystem.on_player_arrested(_world, player_state)  # batch 16
+	var days := CaseSystem.sentence(_world, player_npc, player_state)   # CP1: court
+	if days > 0:
+		StreetTalk.say_key(_world, player_state, "sentenced", days)
+		for id in _alerted.keys():
+			_stand_down(id)
+		return
 	var seized := Wallet.seize_dirty(_world, ARREST_SEIZE_FRACTION)  # batch 24
 	StreetTalk.say_key(_world, player_state, "arrested_seized" if seized > 0 else "arrested", seized)
-	CrewLoyaltySystem.on_player_arrested(_world, player_state)  # batch 16
 	if player_npc.home_building_id != &"" and _world.entities.has(player_npc.home_building_id):
 		var home: BuildingData = _world.entities[player_npc.home_building_id].get_component(ComponentNames.BUILDING)
 		player_npc.position = home.position
 		_world.reindex_position(PlayerFactory.PLAYER_ENTITY_ID)
+
+## I1: a warrant is out and this cop has just seen you (CaseSystem decides).
+func alert(cop_id: StringName) -> void:
+	if not _alerted.has(cop_id):
+		_alerted[cop_id] = true
+		_alert_set_tick[cop_id] = _world.tick
 
 func _stand_down(cop_id: StringName) -> void:
 	_alerted.erase(cop_id)

@@ -50,7 +50,10 @@ func _physics_process(delta: float) -> void:
 
 func _asleep() -> bool:
 	var player: Entity = world.entities.get(PlayerFactory.PLAYER_ENTITY_ID)
-	return player != null and (player.get_component(ComponentNames.PLAYER_STATE) as PlayerStateData).sleeping
+	if player == null:
+		return false
+	var st: PlayerStateData = player.get_component(ComponentNames.PLAYER_STATE)
+	return st.sleeping or st.prison_until_tick > 0   # CP1: time inside passes fast too
 
 ## SL1: save every in-game hour (2.5 real minutes); a dead player's save is gone.
 func _keep_save() -> void:
