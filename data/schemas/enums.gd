@@ -82,4 +82,6 @@ enum CrimeType {
 	GANG_JOB,
 	## Batch 19: crew muscle leaning on a shop for protection money.
 	EXTORTION,
+	## X2: breaking into a house.
+	BURGLARY,
 }

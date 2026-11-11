@@ -135,6 +135,9 @@ func process_entities(entities: Dictionary, delta: float, tick: int) -> void:
 			continue   # asleep: nothing else until you wake
 		if Input.is_action_just_pressed(CAR_ACTION):
 			StreetTalk.say(_world, state, VehicleSystem.use_door(_world, npc, state))
+		var burgled := StreetCrime.advance_burglary(_world, npc, state)
+		if not burgled.is_empty():
+			StreetTalk.say(_world, state, burgled)
 		var wired := VehicleSystem.advance_hotwire(_world, npc, state)
 		if not wired.is_empty():
 			StreetTalk.say(_world, state, wired)
@@ -304,7 +307,12 @@ func _attempt_interact(player_npc: NPCData) -> Dictionary:
 	var grow_id := _find_own_grow_house(player_npc.position)
 	if grow_id != &"":
 		return ProductionSystem.collect(_world, grow_id)  # batch 25: at your own grow house, Enter picks up
+	var state: PlayerStateData = _world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
 	var target_id := _find_nearest_npc(player_npc.position)
+	if state.aiming and state.weapon != &"fists":   # X2: weapon up = a mugging, not a lift
+		var mark := _find_npc_within(player_npc.position, StreetCrime.MUG_REACH_M)
+		if mark != &"":
+			return StreetCrime.mug(_world, player_npc, state, _world.entities[mark].get_component(ComponentNames.NPC))
 	if target_id != &"":
 		if _is_dealer(target_id):
 			return _start_buy(target_id)
@@ -315,7 +323,35 @@ func _attempt_interact(player_npc: NPCData) -> Dictionary:
 	var building_id := _find_nearest_robbable_building(player_npc.position)
 	if building_id != &"":
 		return CrimeSystem.rob_building(_world, building_id)
+	var house_id := _find_nearest_house(player_npc.position)
+	if house_id != &"":
+		return StreetCrime.start_burglary(_world, player_npc, state, house_id)   # X2
 	return {}
+
+## X2: the nearest residence door within reach.
+func _find_nearest_house(position: Vector2) -> StringName:
+	var best_id: StringName = &""
+	var best_dist := CrimeSystem.INTERACT_RADIUS
+	for id in _world.spatial_index.query_nearby(position):
+		var entity: Entity = _world.entities.get(id)
+		var b: BuildingData = entity.get_component(ComponentNames.BUILDING) if entity != null else null
+		if b != null and b.building_type == GanstoidEnums.BuildingType.RESIDENCE and b.position.distance_to(position) <= best_dist:
+			best_dist = b.position.distance_to(position)
+			best_id = id
+	return best_id
+
+func _find_npc_within(position: Vector2, reach: float) -> StringName:
+	var best_id: StringName = &""
+	var best_dist := reach
+	for id in _world.spatial_index.query_nearby(position):
+		var entity: Entity = _world.entities.get(id)
+		var npc: NPCData = entity.get_component(ComponentNames.NPC) if entity != null else null
+		if npc == null or npc.is_crew or npc.is_down or npc.indoors or id == PlayerFactory.PLAYER_ENTITY_ID:
+			continue
+		if npc.position.distance_to(position) <= best_dist:
+			best_dist = npc.position.distance_to(position)
+			best_id = id
+	return best_id
 
 ## Batch 14: refuse a buy up front when the player can't cover the current
 ## street price, so they hear "you broke" instead of waiting out a 3s

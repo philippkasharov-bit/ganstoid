@@ -61,6 +61,7 @@ const SEVERITY_BY_TYPE := {
 	GanstoidEnums.CrimeType.MURDER: 1.0,
 	GanstoidEnums.CrimeType.GANG_JOB: 0.3,
 	GanstoidEnums.CrimeType.EXTORTION: 0.35,
+	GanstoidEnums.CrimeType.BURGLARY: 0.4,
 }
 
 ## victim_id is only consumed by crime types that need one (PICKPOCKET);
