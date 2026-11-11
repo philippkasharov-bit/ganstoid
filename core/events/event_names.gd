@@ -20,3 +20,7 @@ const GUNSHOT := &"gunshot"
 ## position: Vector2 (the player's), tick: int}. Consumed by NPCCombatSystem
 ## (the victim's gang comes for you).
 const ASSAULTED := &"assaulted"
+
+## G3: someone took a hit (anyone, by anyone). Payload: {id: StringName}.
+## Consumed by WoundSystem (bleeding, waking from a knockout).
+const WOUNDED := &"wounded"

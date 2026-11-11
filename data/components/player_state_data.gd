@@ -87,7 +87,6 @@ extends Resource
 @export var sleeping: bool = false
 @export var sleeping_home: bool = false
 @export var health_at_sleep: float = 1.0
-@export var bleeding: bool = false
 var inventory_open: bool = false                # G2: I shows what you carry (not saved)
 var store_id: StringName = &""                  # G1: counter whose menu is open (not saved)
 var last_attack: Dictionary = {}                # the latest blow or shot, for AimView to draw

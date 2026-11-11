@@ -13,15 +13,16 @@ extends RefCounted
 const BODY_R := 0.35            # metres: a body's half-width, what a round must pass within
 const RAY_STEP_M := 0.25        # wall test step along a shot
 const WEAPONS := {
-	&"fists": {"melee": true, "range": 1.3, "arc_deg": 80.0, "damage": 0.2, "cooldown_s": 0.55, "heard_m": 0.0},
+	&"fists": {"melee": true, "blunt": true, "range": 1.3, "arc_deg": 80.0, "damage": 0.2, "cooldown_s": 0.55, "heard_m": 0.0},
 	&"knife": {"melee": true, "range": 1.1, "arc_deg": 60.0, "damage": 0.45, "cooldown_s": 0.5, "heard_m": 0.0},
-	&"bat": {"melee": true, "range": 1.7, "arc_deg": 100.0, "damage": 0.35, "cooldown_s": 0.85, "heard_m": 0.0},
+	&"bat": {"melee": true, "blunt": true, "range": 1.7, "arc_deg": 100.0, "damage": 0.35, "cooldown_s": 0.85, "heard_m": 0.0},
 	&"pistol": {"melee": false, "range": 35.0, "damage": 0.55, "cooldown_s": 0.3,
 		"spread_hip_deg": 8.0, "spread_aim_deg": 2.0, "heard_m": 300.0},
 }
 const ORDER: Array[StringName] = [&"fists", &"knife", &"bat", &"pistol"]
 const NPC_SPREAD_DEG := 9.0     # C6: cops and gang members fire from the hip, under stress
-const THREAT_S := 10.0          # C6: a raised or recently fired gun keeps you a threat this long
+const THREAT_S := 10.0
+const KO_S := 90.0             # G3: out cold this long (real seconds)          # C6: a raised or recently fired gun keeps you a threat this long
 
 ## Next weapon you actually carry (Q); fists are always there.
 static func cycle_weapon(state: PlayerStateData) -> StringName:
@@ -79,7 +80,7 @@ static func _swing(world: World, me: NPCData, dir: Vector2, w: Dictionary) -> Di
 			best_d = d
 	if best == null:
 		return {"end": me.position + dir * w["range"]}
-	return _hurt(best, w["damage"])
+	return _hurt(world, best, w)
 
 static func _shoot(world: World, me: NPCData, state: PlayerStateData, dir: Vector2, w: Dictionary, rng: RandomNumberGenerator) -> Dictionary:
 	state.ammo -= 1
@@ -100,15 +101,28 @@ static func _fire(world: World, shooter: NPCData, dir: Vector2, w: Dictionary) -
 			best_t = t
 	var out := {"end": me.position + dir * best_t}
 	if best != null:
-		out.merge(_hurt(best, w["damage"]))
+		out.merge(_hurt(world, best, w))
 	return out
 
-static func _hurt(npc: NPCData, damage: float) -> Dictionary:
-	npc.health = maxf(0.0, npc.health - damage)
+## G3: blades and bullets open a wound that bleeds; a beating that takes the
+## last of someone's health knocks them out (KO_S) instead of killing them.
+static func _hurt(world: World, npc: NPCData, w: Dictionary) -> Dictionary:
+	npc.health = maxf(0.0, npc.health - w["damage"])
+	var blunt: bool = w.get("blunt", false)
+	if not blunt:
+		npc.bleeding = true
+	var out := {"hit_id": npc.id, "end": npc.position}
 	if npc.health <= 0.0:
 		npc.is_down = true
 		npc.is_busy = false
-	return {"hit_id": npc.id, "downed": npc.is_down, "end": npc.position}
+		if blunt:
+			npc.ko_until_tick = world.tick + int(KO_S * SimClock.TICKS_PER_SECOND)
+			out["knocked_out"] = true
+		else:
+			npc.bleeding = false
+			out["downed"] = true
+	world.event_bus.emit(GanstoidEvents.WOUNDED, {"id": npc.id})
+	return out
 
 ## Distance along `dir` to the first wall, or `reach` if none.
 static func _wall_distance(from: Vector2, dir: Vector2, reach: float) -> float:
@@ -141,7 +155,7 @@ static func _people_near(world: World, p: Vector2, attacker_id: StringName) -> A
 ## Seen like any crime: a blow that lands is assault, a body on the ground is
 ## murder. A shot is heard: everyone within earshot counts as a witness of it.
 static func _witness(world: World, at: Vector2, w: Dictionary, result: Dictionary) -> void:
-	var crime := GanstoidEnums.CrimeType.ASSAULT
+	var crime := GanstoidEnums.CrimeType.ASSAULT   # a knockout is still assault
 	if result.get("downed", false):
 		crime = GanstoidEnums.CrimeType.MURDER
 	elif not result.has("hit_id") and w["heard_m"] <= 0.0:

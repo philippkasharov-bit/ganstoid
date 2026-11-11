@@ -98,6 +98,12 @@ func on_gunshot(event_name: StringName, payload: Dictionary) -> void:
 		street.start_trip(npc, [], home, SimUnits.JOG)
 		fled += 1
 
+## G3: someone back on their feet (a knockout ended): pick their day up again.
+func replan(npc: NPCData, tick: int) -> void:
+	street.forget_trip(npc.id)
+	_routine_wake.erase(npc.id)
+	_plan_day(npc, tick)
+
 ## How many people are inside a business on an errand or evening out right now (checks).
 func visiting_count() -> int:
 	return _visit_until.size()

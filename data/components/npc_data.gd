@@ -76,6 +76,10 @@ extends Resource
 ## they stay where they fell and every routine system skips them.
 @export_range(0.0, 1.0) var health: float = 1.0
 @export var is_down: bool = false
+## G3 wounds: a cut or a bullet bleeds until bandaged (or until you bleed out);
+## a beating knocks you out instead of killing you: down until ko_until_tick.
+@export var bleeding: bool = false
+@export var ko_until_tick: int = -1
 
 ## Batch 15: this NPC turned down the player's recruitment pitch -- final,
 ## so the pitch can't be re-rolled until they say yes.

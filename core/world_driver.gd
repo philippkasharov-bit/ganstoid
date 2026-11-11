@@ -55,7 +55,7 @@ func _asleep() -> bool:
 ## SL1: save every in-game hour (2.5 real minutes); a dead player's save is gone.
 func _keep_save() -> void:
 	var player: Entity = world.entities.get(PlayerFactory.PLAYER_ENTITY_ID)
-	if player != null and (player.get_component(ComponentNames.NPC) as NPCData).is_down:
+	if player != null and _dead(player.get_component(ComponentNames.NPC)):
 		if not _dead_handled:
 			_dead_handled = true
 			SaveGame.delete()
@@ -74,8 +74,11 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not event.is_action_pressed("ui_accept"):
 		return
 	var player: Entity = world.entities.get(PlayerFactory.PLAYER_ENTITY_ID)
-	if player != null and (player.get_component(ComponentNames.NPC) as NPCData).is_down:
+	if player != null and _dead(player.get_component(ComponentNames.NPC)):
 		get_tree().reload_current_scene()
 
 func _exit_tree() -> void:
 	SimNav.uninstall()
+
+static func _dead(npc: NPCData) -> bool:
+	return npc.is_down and npc.ko_until_tick < 0   # out cold is not dead

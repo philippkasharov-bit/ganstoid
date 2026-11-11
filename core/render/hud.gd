@@ -51,13 +51,16 @@ func _process(delta: float) -> void:
 		return
 	var npc: NPCData = player.get_component(ComponentNames.NPC)
 	var state: PlayerStateData = player.get_component(ComponentNames.PLAYER_STATE)
+	if npc.is_down and npc.ko_until_tick >= 0:
+		text = "Knocked out..."
+		return
 	if npc.is_down:
 		text = "You are dead. The city goes on without you.\n\nPress Enter to start a new life."
 		return
 	text = "\n".join([
 		"Cash: $%d clean, $%d dirty" % [npc.cash - state.dirty_cash, state.dirty_cash],
 		"Heat: %s" % GanstoidEnums.LawTier.keys()[state.law_tier],
-		"Health: %d%%%s   In hand (Q): %s%s   (right mouse aim, left mouse attack)" % [roundi(npc.health * 100), "  BLEEDING" if state.bleeding else "", String(state.weapon), "  %d rounds" % state.ammo if state.weapon == &"pistol" else ""],
+		"Health: %d%%%s   In hand (Q): %s%s   (right mouse aim, left mouse attack)" % [roundi(npc.health * 100), "  BLEEDING (bandage: I)" if npc.bleeding else "", String(state.weapon), "  %d rounds" % state.ammo if state.weapon == &"pistol" else ""],
 		"Food %s   Water %s   Rest %s%s   (I: bag, E: buy, Z: sleep)" % [_need(npc.hunger), _need(npc.thirst), _need(npc.fatigue), "   ASLEEP..." if state.sleeping else ""],
 		"Stash: %s" % _format_inventory(state.inventory),
 		"Standing: %s" % _format_standing(state),

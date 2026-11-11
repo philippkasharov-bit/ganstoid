@@ -20,6 +20,7 @@ extends Node2D
 @export var world_driver_path: NodePath
 
 const DOWN_TINT := Color(0.55, 0.12, 0.1)
+const KO_TINT := Color(0.55, 0.55, 0.7)
 
 var _world: World
 var _visuals: Dictionary = {}  # StringName -> Node2D
@@ -59,9 +60,10 @@ func _sync_visuals() -> void:
 		visual.visible = not npc.indoors
 		if visual.visible:
 			visual.position = npc.position
-			if npc.is_down and visual.modulate != DOWN_TINT:
-				visual.modulate = DOWN_TINT   # combat: a body on the ground
-				visual.scale = Vector2(1.0, 0.55)
+			var tint := Color.WHITE if not npc.is_down else (KO_TINT if npc.ko_until_tick >= 0 else DOWN_TINT)
+			if visual.modulate != tint:
+				visual.modulate = tint   # combat: a body on the ground, or someone out cold
+				visual.scale = Vector2(1.0, 0.55) if npc.is_down else Vector2.ONE
 
 func _remove_stale_visuals() -> void:
 	for id in _visuals.keys():
