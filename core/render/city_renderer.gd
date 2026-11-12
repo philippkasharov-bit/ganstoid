@@ -117,6 +117,7 @@ func _build() -> void:
 	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: _draw_band_details(ci, ramps[r], wells[r]), tiles, FINE_ZOOM)
 	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: CityGround.details(ci, barriers[r], points[r], night), tiles, FINE_ZOOM)
 	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: _draw_buildings(ci, blds[r]), tiles)
+	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: _draw_building_details(ci, blds[r]), tiles, MID_ZOOM)
 	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: CityGround.trees(ci, trees[r], night), tiles, MID_ZOOM)
 	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: FreewayPainter.paint(ci, roads[r].filter(func(x: Dictionary) -> bool: return OVER_BUILDINGS.has(x["tier"])), WIDTH, night, false), tiles, 0.0, MID_ZOOM)
 	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: FreewayPainter.paint(ci, roads[r].filter(func(x: Dictionary) -> bool: return OVER_BUILDINGS.has(x["tier"])), WIDTH, night, true), tiles, MID_ZOOM)   # MF1: with lane striping up close
@@ -250,34 +251,33 @@ const SHADOW_DIR := Vector2(0.55, 0.42)       # metres of shadow per metre of he
 const SHADOW_MAX_M := 45.0
 const AWNINGS := [Color("b23a3a"), Color("2f6d8f"), Color("3f7f4f"), Color("c08a2e"), Color("6b4a8f"), Color("d0d0c8")]
 
+## Roofs only (every zoom). Shadows dropped (Phil: not needed).
 func _draw_buildings(ci: CanvasItem, blds: Array) -> void:
 	var cols: Dictionary = BUILDING_NIGHT if night else BUILDING_DAY
-	var shade := Color(0, 0, 0, 0.0) if night else Color(0.12, 0.1, 0.05, 0.16)
-	var polys: Array = []
 	for b in blds:
 		var poly: PackedVector2Array = b["poly"]
 		var open_poly := poly.slice(0, poly.size() - 1) if poly[0] == poly[poly.size() - 1] else poly
-		if Geometry2D.triangulate_polygon(open_poly).is_empty():
+		if open_poly.size() < 3 or Geometry2D.triangulate_polygon(open_poly).is_empty():
+			continue   # a footprint Godot cannot fill (self-touching): skip rather than error
+		var levels: int = b.get("levels", 1)
+		ci.draw_colored_polygon(open_poly, cols.get(b["kind"], cols["building"]).lightened(minf(0.18, levels * 0.012)))
+
+## Walls, rooftop plant and shop awnings: only up close, where you can see them
+## (at city zoom these thousands of lines were most of the cost of zooming).
+func _draw_building_details(ci: CanvasItem, blds: Array) -> void:
+	var cols: Dictionary = BUILDING_NIGHT if night else BUILDING_DAY
+	for b in blds:
+		var poly: PackedVector2Array = b["poly"]
+		var open_poly := poly.slice(0, poly.size() - 1) if poly[0] == poly[poly.size() - 1] else poly
+		if open_poly.size() < 3:
 			continue
-		polys.append([b, open_poly])
-	if not night:
-		for e in polys:   # shadows first, all of them, so no roof is ever under a neighbour's shadow
-			var off: Vector2 = SHADOW_DIR * minf(SHADOW_MAX_M, int(e[0].get("levels", 1)) * STOREY_M)
-			# one see-through shape: the footprint swept to its shadow's end, so the
-			# street and sidewalk show through it (an opaque one read as building on the road)
-			var hull := Geometry2D.convex_hull(e[1] + _moved(e[1], off))
-			if hull.size() >= 4:
-				ci.draw_colored_polygon(hull.slice(0, hull.size() - 1), shade)
-	for e in polys:
-		var b: Dictionary = e[0]
 		var levels: int = b.get("levels", 1)
 		var col: Color = cols.get(b["kind"], cols["building"]).lightened(minf(0.18, levels * 0.012))
-		ci.draw_colored_polygon(e[1], col)
-		ci.draw_polyline(b["poly"], col.darkened(0.3), 0.3)   # wall outline, metres
+		ci.draw_polyline(poly, col.darkened(0.3), 0.3)   # wall outline, metres
 		if levels >= 6:
-			_rooftop(ci, e[1], col)
+			_rooftop(ci, open_poly, col)
 		if b["kind"] == "commercial" and b.has("door"):
-			_awning(ci, e[1], b["door"], b["id"])
+			_awning(ci, open_poly, b["door"], b["id"])
 
 static func _moved(poly: PackedVector2Array, by: Vector2) -> PackedVector2Array:
 	var out := PackedVector2Array()
