@@ -252,7 +252,7 @@ const AWNINGS := [Color("b23a3a"), Color("2f6d8f"), Color("3f7f4f"), Color("c08a
 
 func _draw_buildings(ci: CanvasItem, blds: Array) -> void:
 	var cols: Dictionary = BUILDING_NIGHT if night else BUILDING_DAY
-	var shade := Color(0, 0, 0, 0.0) if night else Color("bdb39c")
+	var shade := Color(0, 0, 0, 0.0) if night else Color(0.12, 0.1, 0.05, 0.16)
 	var polys: Array = []
 	for b in blds:
 		var poly: PackedVector2Array = b["poly"]
@@ -263,9 +263,11 @@ func _draw_buildings(ci: CanvasItem, blds: Array) -> void:
 	if not night:
 		for e in polys:   # shadows first, all of them, so no roof is ever under a neighbour's shadow
 			var off: Vector2 = SHADOW_DIR * minf(SHADOW_MAX_M, int(e[0].get("levels", 1)) * STOREY_M)
-			var steps := clampi(ceili(off.length() / 6.0), 1, 5)   # the footprint swept toward the shadow's end
-			for k in range(1, steps + 1):
-				ci.draw_colored_polygon(_moved(e[1], off * float(k) / steps), shade)
+			# one see-through shape: the footprint swept to its shadow's end, so the
+			# street and sidewalk show through it (an opaque one read as building on the road)
+			var hull := Geometry2D.convex_hull(e[1] + _moved(e[1], off))
+			if hull.size() >= 4:
+				ci.draw_colored_polygon(hull.slice(0, hull.size() - 1), shade)
 	for e in polys:
 		var b: Dictionary = e[0]
 		var levels: int = b.get("levels", 1)
