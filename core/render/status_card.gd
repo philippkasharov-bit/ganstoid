@@ -1,74 +1,76 @@
-## UI2/UI6: the always-on status card (top left): money, rank, heat, what is
-## in your hand, money split and turf. Needs show as moodles on the right and
-## the clock top-right (Zomboid layout). Read-only.
+## UI2/UI21: the always-on status card (top left), one plain style: a column
+## of "label  value" rows, labels dim, values white, all the same size, no
+## colour coding (bleeding and needs live in the right-hand column). Rows:
+## cash, rank, heat, hand, turf, plus case / job / asleep / at work / prison
+## while they apply. Read-only.
 class_name StatusCard
 extends PanelContainer
 
-const HEAT_COLORS := [Color("6fbf73"), Color("e8c547"), Color("e8913a"), Color("e0533d"), Color("b0203a")]
+const REFRESH_S := 0.25
+
 var _world: World
-var _top := Label.new()
-var _mid := Label.new()
-var _bottom := Label.new()
+var _grid := GridContainer.new()
 var _left := 0.0
+var _key := ""
 
 func setup(world: World) -> void:
 	_world = world
 	position = Vector2(6, 6)
 	add_theme_stylebox_override("panel", UiPanel.card_style())
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 1)
-	add_child(box)
-	for l in [_top, _mid, _bottom]:
-		l.add_theme_color_override("font_color", UiPanel.TEXT)
-	_top.add_theme_font_size_override("font_size", 13)
-	_top.add_theme_font_override("font", UiTheme.font("bungee"))
-	_mid.add_theme_font_size_override("font_size", 11)
-	_bottom.add_theme_font_size_override("font_size", 10)
-	_bottom.add_theme_color_override("font_color", UiPanel.DIM)
-	box.add_child(_top)
-	box.add_child(_mid)
-	box.add_child(_bottom)
+	_grid.columns = 2
+	_grid.add_theme_constant_override("h_separation", 14)
+	_grid.add_theme_constant_override("v_separation", 0)
+	add_child(_grid)
 	visible = false
 
 func _process(delta: float) -> void:
 	_left -= delta
 	if _world == null or _left > 0.0:
 		return
-	_left = 0.25
+	_left = REFRESH_S
 	var player: Entity = _world.entities.get(PlayerFactory.PLAYER_ENTITY_ID)
 	var ready := SimNav.active != null and SimNav.active.is_ready()
 	visible = player != null and ready and not player.get_component(ComponentNames.NPC).is_down and GameRules.of(_world) != null   # O1: hidden until the new-game choice
-	if visible and player.get_component(ComponentNames.PLAYER_STATE).prison_until_tick > 0:
-		var left: int = player.get_component(ComponentNames.PLAYER_STATE).prison_until_tick - _world.tick
-		_top.text = "IN PRISON"
-		_mid.text = "%.1f days left (time runs fast)" % (float(left) / SimClock.day_ticks)
-		return
 	if not visible:
 		return
-	var npc: NPCData = player.get_component(ComponentNames.NPC)
-	var state: PlayerStateData = player.get_component(ComponentNames.PLAYER_STATE)
-	_top.text = "$%d   ·   %s" % [npc.cash, RankSystem.name_of(state.rank)]
-	if state.work_until_tick > 0:
-		_top.text += "   ·   AT WORK"
-	_top.add_theme_color_override("font_color", UiPanel.ACCENT)
-	var heat := clampi(state.law_tier, 0, HEAT_COLORS.size() - 1)
-	_mid.text = "Heat: %s   ·   %s%s%s" % [String(GanstoidEnums.LawTier.keys()[state.law_tier]).capitalize(), String(state.weapon).capitalize(), " (%d)" % state.ammo if state.weapon == &"pistol" else "", "   ·   BLEEDING" if npc.bleeding else ""]
-	_mid.add_theme_color_override("font_color", HEAT_COLORS[heat] if not npc.bleeding else Color("e0533d"))
-	var clean := npc.cash - state.dirty_cash
+	var rows := _rows(player.get_component(ComponentNames.NPC), player.get_component(ComponentNames.PLAYER_STATE))
+	var key := str(rows)
+	if key != _key:
+		_key = key
+		_show(rows)
+
+## [label, value] pairs, in order.
+func _rows(npc: NPCData, state: PlayerStateData) -> Array:
+	if state.prison_until_tick > 0:
+		return [["Status", "In prison"], ["Days left", "%.1f" % (float(state.prison_until_tick - _world.tick) / SimClock.day_ticks)]]
+	var out: Array = [["Cash", "$%d  (dirty $%d)" % [npc.cash, state.dirty_cash]], ["Rank", RankSystem.name_of(state.rank)],
+		["Heat", String(GanstoidEnums.LawTier.keys()[state.law_tier]).capitalize()],
+		["Hand", String(state.weapon).capitalize() + (" (%d)" % state.ammo if state.weapon == &"pistol" else "")],
+		["Turf", _turf(npc)]]
 	if state.case_evidence > 0.0:
-		_mid.text += "   ·   Case %d%s" % [roundi(state.case_evidence), " WARRANT" if state.case_evidence >= CaseSystem.WARRANT_AT else ""]
+		out.append(["Case", "%d%s" % [roundi(state.case_evidence), "  warrant" if state.case_evidence >= CaseSystem.WARRANT_AT else ""]])
 	if not state.job.is_empty():
-		_mid.text += "   ·   JOB: %s" % state.job["text"]
-	_bottom.text = "%sclean $%d / dirty $%d   ·   %s" % ["ASLEEP   ·   " if state.sleeping else "", clean, state.dirty_cash, _turf(npc)]
+		out.append(["Job", state.job["text"]])
+	if state.sleeping or state.work_until_tick > 0:
+		out.append(["Status", "Asleep" if state.sleeping else "At work"])
+	return out
+
+func _show(rows: Array) -> void:
+	for c in _grid.get_children():
+		_grid.remove_child(c)
+		c.queue_free()
+	for r in rows:
+		_grid.add_child(UiTheme.label(r[0], UiTheme.FONT_SMALL, UiTheme.DIM))
+		_grid.add_child(UiTheme.label(r[1], UiTheme.FONT_SMALL, UiTheme.TEXT))
 
 func _turf(npc: NPCData) -> String:
 	var t := TerritorySystem.data(_world)
 	if t == null:
-		return ""
+		return "-"
 	var owner := TerritorySystem.controller(t, TerritoryData.cell_of(npc.position))
 	if owner == &"":
-		return "nobody's block"
+		return "Nobody's block"
 	if owner == TerritorySystem.PLAYER:
-		return "YOUR block"
+		return "Your block"
 	var e: Entity = _world.entities.get(owner)
 	return (e.get_component(ComponentNames.GANG).display_name if e != null else String(owner)) + " turf"

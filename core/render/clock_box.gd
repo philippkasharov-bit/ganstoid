@@ -11,7 +11,7 @@ func setup(world: World) -> void:
 	add_theme_stylebox_override("panel", UiTheme.window_box())
 	_time.add_theme_font_override("font", UiTheme.font("bungee"))
 	_time.add_theme_font_size_override("font_size", 12)
-	_time.add_theme_color_override("font_color", UiTheme.ACCENT)
+	_time.add_theme_color_override("font_color", UiTheme.TEXT)   # UI21: same white as the status card
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 0)
 	add_child(box)
