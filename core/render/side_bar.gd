@@ -11,9 +11,14 @@ const BUTTONS := [
 	["Crew", "Tab", &"ui_focus_next", "crew"],
 	["Turf", "U", &"turf_map", "turf"],
 ]
-const SIZE := Vector2(56, 64)
+const SIZE := Vector2(60, 60)
 
-func setup() -> void:
+var _world: World
+var _badges: Array[Label] = []
+var _left := 0.0
+
+func setup(world: World) -> void:
+	_world = world
 	add_theme_constant_override("separation", 4)
 	position = Vector2(10, 150)
 	for b in BUTTONS:
@@ -25,14 +30,19 @@ func _button(label: String, key: String, action: StringName, icon: String) -> Bu
 	stack.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	stack.add_theme_constant_override("separation", 0)
 	stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var art := Moodles.icon_or_glyph(icon, label.left(1), 42.0)
+	var art := Moodles.icon_or_glyph(icon, label.left(1), 46.0)
 	art.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	stack.add_child(art)
-	var k := UiTheme.label(key, UiTheme.FONT_SMALL, UiTheme.ACCENT)
-	k.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	k.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	stack.add_child(k)
 	b.add_child(stack)
+	var k := UiTheme.label(key, 11, UiTheme.ACCENT)   # the key, top-left like a keycap
+	k.add_theme_color_override("font_outline_color", Color.BLACK)
+	k.add_theme_constant_override("outline_size", 3)
+	k.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	k.position = Vector2(3, 1)
+	b.add_child(k)
+	var badge := Moodles.badge("", UiTheme.BG_HEADER)
+	b.add_child(badge)
+	_badges.append(badge)
 	b.focus_mode = Control.FOCUS_NONE
 	b.custom_minimum_size = SIZE
 	b.add_theme_font_size_override("font_size", UiTheme.FONT_SMALL)
@@ -50,3 +60,22 @@ func _send(action: StringName) -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 	Input.action_release(action)
+
+## UI8: a number on each button: bag weight, total skill levels, crew, blocks held.
+func _process(delta: float) -> void:
+	_left -= delta
+	if _world == null or _left > 0.0:
+		return
+	_left = 0.5
+	var p: Entity = _world.entities.get(PlayerFactory.PLAYER_ENTITY_ID)
+	if p == null or _badges.size() < 4:
+		return
+	var state: PlayerStateData = p.get_component(ComponentNames.PLAYER_STATE)
+	var levels := 0
+	for s in Skills.NAMES:
+		levels += Skills.level(state, s)
+	var t := TerritorySystem.data(_world)
+	_badges[0].text = "%.1fkg" % InventoryWindow.carried_kg(state)
+	_badges[1].text = "Lv%d" % levels
+	_badges[2].text = "%d/%d" % [state.crew_ids.size(), CrewSystem.MAX_CREW]
+	_badges[3].text = str(TerritorySystem.cells_held(t, TerritorySystem.PLAYER)) if t != null else "-"

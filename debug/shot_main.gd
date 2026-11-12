@@ -50,6 +50,12 @@ func _run(main: Node, args: Dictionary) -> void:
 		for n in main.get_node("HudLayer").get_children():
 			if n is InventoryWindow:
 				win = n
+		for i in 3:
+			await process_frame
+		for n in main.get_node("HudLayer").get_children():
+			if n is Moodles:
+				var first: Control = n.get_child(1)
+				n._show_tip(first, Moodles.list(driver.world, me, st)[0])
 		root.get_viewport().warp_mouse(Vector2(370, 330))
 		await process_frame
 		win._show_tip(&"pistol")

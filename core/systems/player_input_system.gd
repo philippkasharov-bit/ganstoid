@@ -379,6 +379,9 @@ func _options(npc: NPCData, state: PlayerStateData) -> Array:
 
 ## G2: I opens what you carry; 1-9 eat, drink or apply that line.
 func _inventory_input(npc: NPCData, state: PlayerStateData) -> bool:
+	if state.ui_use != &"":   # UI5/UI8: a bag line or a moodle was clicked
+		_use_or_hold(npc, state, state.ui_use)
+		state.ui_use = &""
 	if Input.is_action_just_pressed(INVENTORY_ACTION):
 		state.inventory_open = not state.inventory_open
 		return true
@@ -391,9 +394,6 @@ func _inventory_input(npc: NPCData, state: PlayerStateData) -> bool:
 	for i in mini(items.size(), SLOT_ACTIONS.size()):
 		if Input.is_action_just_pressed(SLOT_ACTIONS[i]):
 			_use_or_hold(npc, state, items[i])
-	if state.ui_use != &"":
-		_use_or_hold(npc, state, state.ui_use)
-		state.ui_use = &""
 	return true
 
 ## UI5: a bag line is eaten/drunk/applied, or a weapon is taken in hand.

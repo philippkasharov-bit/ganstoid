@@ -8,12 +8,14 @@ func _initialize() -> void:
 	npc.hunger = 0.4
 	npc.health = 0.7
 	var shown := Moodles.list(null, npc, state)
-	ok = ok and shown.size() == 2 and shown[0][1] == "Hungry" and shown[0][2] == 1 and shown[1][1] == "Hurt"
+	ok = ok and shown.size() == 2 and shown[0]["name"] == "Hungry" and shown[0]["level"] == 1 and shown[0]["value"] == "40%" and shown[1]["name"] == "Hurt"
 	npc.hunger = 0.02
 	npc.bleeding = true
 	state.law_tier = 2
 	shown = Moodles.list(null, npc, state)
-	var names := shown.map(func(m: Array) -> String: return m[1])
-	ok = ok and shown[0][2] == 4 and names.has("Bleeding") and names.has("Wanted")
+	var names := shown.map(func(m: Dictionary) -> String: return m["name"])
+	ok = ok and shown[0]["level"] == 4 and names.has("Bleeding") and names.has("Wanted")
+	state.inventory = {&"chips": 1, &"burrito": 2, &"water": 1}
+	ok = ok and Moodles.best_item(state, "food") == &"burrito" and Moodles.best_item(state, "medical") == &""
 	print("MOODLES_VERIFY: ", "PASS" if ok else "FAIL")
 	quit()
