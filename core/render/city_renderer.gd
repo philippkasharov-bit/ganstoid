@@ -262,7 +262,7 @@ func _draw_buildings(ci: CanvasItem, blds: Array) -> void:
 	if not night:
 		for e in polys:   # shadows first, all of them, so no roof is ever under a neighbour's shadow
 			var off: Vector2 = SHADOW_DIR * minf(SHADOW_MAX_M, int(e[0].get("levels", 1)) * STOREY_M)
-			var steps := clampi(ceili(off.length() / 3.0), 1, 12)   # the footprint swept toward the shadow's end
+			var steps := clampi(ceili(off.length() / 6.0), 1, 5)   # the footprint swept toward the shadow's end
 			for k in range(1, steps + 1):
 				ci.draw_colored_polygon(_moved(e[1], off * float(k) / steps), shade)
 	for e in polys:

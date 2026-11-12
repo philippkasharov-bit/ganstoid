@@ -28,6 +28,7 @@ func _ready() -> void:
 	seed_used = saved["seed"] if not saved.is_empty() else randi()
 	SystemRegistry.register_all(world)
 	TrafficSystem.roads = city.roads   # V2: traffic drives the real streets
+	TrafficSystem.junctions = Junctions.load_file()   # MP3a: lights and stop signs
 	WorldGenerator.generate_real_city_game(world, seed_used, city, city.spawn, DISTRICT_RADIUS, GAME_POPULATION)
 	world.tick = SimClock.hours(START_HOUR)
 	if not saved.is_empty():

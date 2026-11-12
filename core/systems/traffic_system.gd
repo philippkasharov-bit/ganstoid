@@ -27,6 +27,9 @@ const DRIVER := &"traffic"
 const COP_DRIVER := &"cop_car"
 
 static var roads: Array = []        # set by WorldDriver (the city's streets)
+static var junctions: Junctions     # MP3a: signals and stop signs (set by WorldDriver)
+const STOP_LINE_M := 14.0           # a red light or stop sign this far ahead: stop
+const STOP_SIGN_WAIT_S := 1.5
 var _ends := {}                     # quantised end point -> [[road index, from_start]]
 var _drive := {}                    # car id -> [road index, point index, dir (+1/-1)]
 var _crumbs := PackedVector2Array()
@@ -145,7 +148,7 @@ func _step(id: StringName, me: NPCData, delta: float) -> void:
 	var along := (pts[d[1]] - prev).normalized()
 	var target: Vector2 = pts[d[1]] + Vector2(-along.y, along.x) * float(road.get("w", 8.0)) * 0.25   # right-hand lane
 	var cruise := SPEED_ART if road["tier"] == "art" else SPEED
-	var blocked := _something_ahead(car, me)
+	var blocked := _something_ahead(car, me) or _must_stop(id, car)
 	car.speed = move_toward(car.speed, 0.0 if blocked else cruise, (9.0 if blocked else 3.0) * delta)
 	var to := target - car.position
 	var step := car.speed * delta
@@ -171,6 +174,31 @@ func _advance(id: StringName, d: Array, pts: PackedVector2Array) -> void:
 	d[0] = pick[0]
 	d[2] = 1 if pick[1] else -1
 	d[1] = clampi(1 if pick[1] else road_pts.size() - 2, 0, road_pts.size() - 1)
+
+var _stopped_at := {}   # car id -> tick it came to a stop sign
+
+## MP3a: a red or amber light ahead, or a stop sign not yet waited at.
+func _must_stop(id: StringName, car: VehicleData) -> bool:
+	if junctions == null:
+		return false
+	var fwd := Vector2.from_angle(car.heading)
+	for j in junctions.near(car.position + fwd * STOP_LINE_M * 0.5, STOP_LINE_M):
+		var rel: Vector2 = j["c"] - car.position
+		var ahead := rel.dot(fwd)
+		if ahead < 5.0 or ahead > STOP_LINE_M or absf(fwd.cross(rel)) > 6.0:
+			continue
+		if j["kind"] == "signal":
+			return Junctions.light(j, fwd, float(_world.tick) / SimClock.TICKS_PER_SECOND) != "green"
+		var since: int = _stopped_at.get(id, -1)
+		if since < 0:
+			if car.speed < 0.5:
+				_stopped_at[id] = _world.tick
+			return true
+		if _world.tick - since < int(STOP_SIGN_WAIT_S * SimClock.TICKS_PER_SECOND):
+			return true
+		return false
+	_stopped_at.erase(id)
+	return false
 
 ## A person, a moving car or you in the lane just ahead (parked cars sit
 ## at the kerb, outside the lane, and are ignored).

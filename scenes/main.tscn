@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://core/world_driver.gd" id="1"]
 [ext_resource type="Script" path="res://core/render/render_sync.gd" id="2"]
@@ -7,6 +7,7 @@
 [ext_resource type="Script" path="res://core/render/player_camera.gd" id="5"]
 [ext_resource type="Script" path="res://core/render/aim_view.gd" id="6"]
 [ext_resource type="Script" path="res://core/render/turf_overlay.gd" id="7"]
+[ext_resource type="Script" path="res://core/render/street_furniture.gd" id="8"]
 
 [node name="Main" type="Node2D"]
 
@@ -19,6 +20,10 @@ world_driver_path = NodePath("../WorldDriver")
 
 [node name="RenderSync" type="Node2D" parent="."]
 script = ExtResource("2")
+world_driver_path = NodePath("../WorldDriver")
+
+[node name="StreetFurniture" type="Node2D" parent="."]
+script = ExtResource("8")
 world_driver_path = NodePath("../WorldDriver")
 
 [node name="TurfOverlay" type="Node2D" parent="."]
