@@ -77,3 +77,17 @@ static func _remove_from_bag(state: PlayerStateData, id: StringName, n: int) -> 
 		if ItemCatalog.item(id).get("weapon", &"") == state.weapon:
 			state.weapon = &"fists"   # dropped what was in your hand
 	BagGrid.sync(state)
+
+## INV6: what is nearby laid out on a small grid for the Nearby panel: one pile
+## per source, first free spot. Piles that do not fit are left off (rare).
+static func layout(near: Array, cols: int, rows: int) -> Array:
+	var piles: Array = []
+	for src in near:
+		var spot := BagGrid.free_spot(BagGrid.occupancy(piles), src["id"], cols, rows)
+		if spot.is_empty():
+			continue
+		spot["id"] = src["id"]
+		spot["n"] = src["n"]
+		spot["src"] = src
+		piles.append(spot)
+	return piles

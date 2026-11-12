@@ -1,9 +1,11 @@
-## UI5/INV2: the bag (I), built from Tarkov, DayZ and Zomboid: what is in your
-## hands on top, the 8x6 grid where every item takes its real size, anything
-## that found no room listed as loose, weight at the bottom. Drag to arrange,
-## R to turn, double-click or 1-9 to use, right-click for Zomboid-style
-## numbered actions, hover for the item card. Reads state; the one write is
-## state.ui_use, a request the input system carries out on its next tick.
+## UI5/INV2/INV6: the bag (I), built from Tarkov, DayZ and Zomboid. Left: the
+## Nearby grid (DayZ vicinity: what lies on the ground or in an open trunk
+## next to you). Right: what is in your hand and your 8x6 bag grid. Every item
+## takes its real size. Drag to arrange, drag across to drop or pick up, R to
+## turn, double-click to use (or take), right-click for Zomboid-style numbered
+## actions, hover for the item card. Game changes go out as requests
+## (state.ui_use, state.ui_move) the input system carries out; only the bag
+## layout (where a pile sits) is moved here.
 class_name InventoryWindow
 extends UiWindow
 
@@ -23,9 +25,9 @@ var _tip := UiTooltip.new()
 var _menu := ContextMenu.new()
 var _menu_item: StringName = &""
 var _key := ""
-var _near := VBoxContainer.new()
-var _near_src: Array = []
+var _near := BagGridView.new()
 var _menu_src := {}
+const NEAR_COLS := 4
 
 func setup(world: World, at: Vector2) -> void:
 	_world = world
@@ -44,10 +46,10 @@ func setup(world: World, at: Vector2) -> void:
 	mine.add_child(_grid)
 	split.add_child(mine)
 	_loose.autowrap_mode = TextServer.AUTOWRAP_WORD
-	_loose.custom_minimum_size.x = _grid.custom_minimum_size.x
+	_loose.custom_minimum_size.x = _grid.custom_minimum_size.x + _near.custom_minimum_size.x
 	body.add_child(_loose)
 	body.add_child(_weight_text)
-	body.add_child(UiTheme.label("Drag · R turn · double-click use · right-click", 10, UiTheme.DIM))
+	body.add_child(UiTheme.label("Drag · drag across to drop or take · R turn · double-click use · right-click", 10, UiTheme.DIM))
 	_wire_grid()
 	visible = false
 
@@ -56,10 +58,18 @@ func _wire_grid() -> void:
 		add_child(popup)
 		popup.top_level = true
 	_menu.picked.connect(_on_menu_pick)
-	_grid.use_item.connect(func(id: StringName) -> void: _state().ui_use = id)
-	_grid.menu_item.connect(_open_menu)
-	_grid.hover_item.connect(func(id: StringName, at: Vector2) -> void: _show_tip(id, at))
-	_grid.hover_end.connect(_tip.hide_tip)
+	_grid.other = _near
+	_near.other = _grid
+	_grid.use_pile.connect(func(i: int) -> void: _state().ui_use = _grid.piles[i]["id"])
+	_grid.menu_pile.connect(func(i: int, at: Vector2) -> void: _open_menu(_grid.piles[i]["id"], at))
+	_grid.moved.connect(func(i: int, cell: Vector2i, turned: bool) -> void: BagGrid.move(_state(), i, cell, turned))
+	_grid.moved_out.connect(func(i: int) -> void: _state().ui_move = {"op": "drop", "id": _grid.piles[i]["id"], "n": int(_grid.piles[i]["n"])})
+	_near.use_pile.connect(func(i: int) -> void: _take(i, 999))
+	_near.moved_out.connect(func(i: int) -> void: _take(i, 999))
+	_near.menu_pile.connect(_open_near_menu)
+	for view in [_grid, _near]:
+		view.hover_pile.connect(func(i: int, at: Vector2) -> void: _show_tip(view.piles[i]["id"], at))
+		view.hover_end.connect(_tip.hide_tip)
 
 func _process(_delta: float) -> void:
 	var state := _state()
@@ -74,13 +84,11 @@ func _process(_delta: float) -> void:
 	if key != _key:
 		_key = key
 		_rebuild(state)
-
-		_rebuild_near(near)
+		_near.show_piles(Vicinity.layout(near, NEAR_COLS, BagGrid.ROWS))
 
 func _rebuild(state: PlayerStateData) -> void:
 	BagGrid.sync(state)
-	_grid.state = state
-	_grid.queue_redraw()
+	_grid.show_piles(state.bag)
 	_hands.text = "In hand:  %s%s" % [String(state.weapon).capitalize(), "   ·   %d rounds" % state.ammo if state.ammo > 0 else ""]
 	var loose := BagGrid.loose(state)
 	_loose.visible = not loose.is_empty()
@@ -146,50 +154,24 @@ func _show_tip(id: StringName, at: Vector2) -> void:
 	lines.append(["%dx%d cells   ·   %.1f kg   ·   $%d" % [f.x, f.y, it.get("weight", 0.0), it["price"]], UiTheme.DIM])
 	_tip.show_at(at, it["name"], lines)
 
-## INV4: the vicinity column (DayZ): what is on the ground or in the trunk
-## next to you. Double-click takes it all, right-click for one or all.
+## INV6: the Nearby grid (DayZ vicinity), same look as the bag.
 func _vicinity_pane() -> VBoxContainer:
 	var pane := VBoxContainer.new()
-	pane.custom_minimum_size = Vector2(120, 0)
 	var title := UiTheme.label("Nearby", UiTheme.FONT_SMALL, UiTheme.DIM)
 	title.add_theme_font_override("font", UiTheme.font("marker"))
 	pane.add_child(title)
-	_near.add_theme_constant_override("separation", 1)
+	_near.resize_grid(NEAR_COLS, BagGrid.ROWS)
 	pane.add_child(_near)
 	return pane
 
-func _rebuild_near(near: Array) -> void:
-	_near_src = near
-	for c in _near.get_children():
-		_near.remove_child(c)
-		c.queue_free()
-	if near.is_empty():
-		_near.add_child(UiTheme.label("Nothing here.", UiTheme.FONT_SMALL, UiTheme.DIM))
-	for src in near:
-		_near.add_child(_near_row(src))
+func _take(i: int, n: int) -> void:
+	_state().ui_move = {"op": "take", "src": _near.piles[i]["src"], "n": n}
 
-func _near_row(src: Dictionary) -> Button:
-	var b := Button.new()
-	b.flat = true
-	b.focus_mode = Control.FOCUS_NONE
-	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	b.text = "%s%s x%d" % ["" if src["kind"] == "ground" else "TRUNK  ", BagGridView._short(src["id"]), src["n"]]
-	b.add_theme_font_size_override("font_size", UiTheme.FONT_SMALL)
-	var kind: String = ItemCatalog.item(src["id"]).get("kind", "goods")
-	b.add_theme_color_override("font_color", KIND_COLOURS.get(kind, UiTheme.TEXT))
-	b.tooltip_text = "%s (%s). Double-click: take all." % [_name(src["id"]), "on the ground" if src["kind"] == "ground" else "in the trunk"]
-	b.gui_input.connect(func(e: InputEvent) -> void: _on_near_input(e, src))
-	return b
-
-func _on_near_input(e: InputEvent, src: Dictionary) -> void:
-	if not e is InputEventMouseButton or not e.pressed:
-		return
-	if e.button_index == MOUSE_BUTTON_LEFT and e.double_click:
-		_state().ui_move = {"op": "take", "src": src, "n": 999}
-	elif e.button_index == MOUSE_BUTTON_RIGHT:
-		_menu_item = src["id"]
-		_menu_src = src
-		_menu.open_at(get_global_mouse_position(), [{"text": "Take one"}, {"text": "Take all (%d)" % src["n"]}])
+func _open_near_menu(i: int, at: Vector2) -> void:
+	_menu_item = _near.piles[i]["id"]
+	_menu_src = _near.piles[i]["src"]
+	_tip.hide_tip()
+	_menu.open_at(at, [{"text": "Take one"}, {"text": "Take all (%d)" % int(_near.piles[i]["n"])}])
 
 func _state() -> PlayerStateData:
 	var p: Entity = _world.entities.get(PlayerFactory.PLAYER_ENTITY_ID) if _world != null else null

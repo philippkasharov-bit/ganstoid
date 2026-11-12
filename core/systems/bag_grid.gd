@@ -28,8 +28,8 @@ static func occupancy(bag: Array, skip: int = -1) -> Dictionary:
 				taken[Vector2i(p["x"] + dx, p["y"] + dy)] = i
 	return taken
 
-static func fits(taken: Dictionary, at: Vector2i, f: Vector2i) -> bool:
-	if at.x < 0 or at.y < 0 or at.x + f.x > COLS or at.y + f.y > ROWS:
+static func fits(taken: Dictionary, at: Vector2i, f: Vector2i, cols: int = COLS, rows: int = ROWS) -> bool:
+	if at.x < 0 or at.y < 0 or at.x + f.x > cols or at.y + f.y > rows:
 		return false
 	for dx in f.x:
 		for dy in f.y:
@@ -38,12 +38,12 @@ static func fits(taken: Dictionary, at: Vector2i, f: Vector2i) -> bool:
 	return true
 
 ## First free spot, reading rows left to right; tries the item upright, then turned.
-static func free_spot(taken: Dictionary, id: StringName) -> Dictionary:
+static func free_spot(taken: Dictionary, id: StringName, cols: int = COLS, rows: int = ROWS) -> Dictionary:
 	for rotated in [false, true]:
 		var f := footprint(id, rotated)
-		for y in ROWS:
-			for x in COLS:
-				if fits(taken, Vector2i(x, y), f):
+		for y in rows:
+			for x in cols:
+				if fits(taken, Vector2i(x, y), f, cols, rows):
 					return {"x": x, "y": y, "r": rotated}
 	return {}
 
