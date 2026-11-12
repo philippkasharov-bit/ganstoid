@@ -77,15 +77,15 @@ func _process(delta: float) -> void:
 		text = "Knocked out..."
 		return
 	if npc.is_down and not HallOfFame.read().is_empty():
-		var lines: PackedStringArray = ["You are dead. The city goes on without you.", "", "HALL OF FAME"]
+		var lines: PackedStringArray = ["You are dead. You lasted %s." % SimClock.lasted(float(_world.tick) / SimClock.day_ticks), "The city goes on without you.", "", "HALL OF FAME"]
 		for r in HallOfFame.top(5):
-			lines.append("%s  ·  %.1f days  ·  $%d  ·  %s  ·  %s" % [r["rank_name"], r["days"], r["cash"], r["traits"], r["mode"]])
+			lines.append("%s  ·  lasted %s  ·  $%d  ·  %s  ·  %s" % [r["rank_name"], SimClock.lasted(r["days"]), r["cash"], r["traits"], r["mode"]])
 		lines.append("")
 		lines.append("Press Enter to start a new life.")
 		text = "\n".join(lines)
 		return
 	if npc.is_down:
-		text = "You are dead. The city goes on without you.\n\nPress Enter to start a new life."
+		text = "You are dead. You lasted %s.\nThe city goes on without you.\n\nPress Enter to start a new life." % SimClock.lasted(float(_world.tick) / SimClock.day_ticks)
 		return
 	# UI2: the status card and toasts carry the game state; this line only
 	# keeps what has no home yet (a deal in progress) and a small fps readout.

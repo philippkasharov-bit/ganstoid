@@ -22,6 +22,6 @@ func _process(_delta: float) -> void:
 		return
 	visible = GameRules.of(_world) != null
 	var hours := SimClock.day_fraction(_world.tick) * 24.0
-	_time.text = "%02d:%02d" % [int(hours), int(fmod(hours, 1.0) * 60.0)]
-	_day.text = "Day %d" % (int(_world.tick / SimClock.day_ticks) + 1)
+	_time.text = "Day %d  ·  %02d:%02d" % [SimClock.day_number(_world.tick), int(hours), int(fmod(hours, 1.0) * 60.0)]
+	_day.text = SimClock.year_month(_world.tick)   # T1: counted from the start of this life
 	position = Vector2(get_viewport_rect().size.x - size.x - 12, 10)
