@@ -15,5 +15,7 @@ func _initialize() -> void:
 	state.inventory = {&"chips": 1, &"burrito": 2, &"water": 1}
 	ok = ok and Moodles.best_item(state, "food") == &"burrito" and Moodles.best_item(state, "medical") == &""
 	ok = ok and Moodles.gauge_colour(0.0).r > 0.8 and Moodles.gauge_colour(1.0).g > Moodles.gauge_colour(1.0).r
+	var e := Moodles.gauge_colour(1.0, "fatigue")
+	ok = ok and e.r > 0.9 and e.g > 0.8 and e.b < 0.4 and Moodles.gauge_colour(0.0, "fatigue").r > 0.8
 	print("MOODLES_VERIFY: ", "PASS" if ok else "FAIL")
 	quit()

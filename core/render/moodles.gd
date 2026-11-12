@@ -24,12 +24,16 @@ const IDENTITY := {
 	"wanted": Color("5a8cf0"), "warrant": Color("e8b35a"), "heavy": Color("a8a8a0"),
 }
 
-## UI11: food and water icons run red (empty) through yellow to green (full).
-const GAUGE := ["hunger", "thirst"]
+## UI11/12: food and water icons run red (empty) through yellow to green
+## (full); energy runs red to yellow.
+const GAUGE := ["hunger", "thirst", "fatigue"]
 
-static func gauge_colour(v: float) -> Color:
+## Energy runs red (empty) to its own yellow (full), not to green.
+static func gauge_colour(v: float, key: String = "hunger") -> Color:
 	var red := Color("e0533d")
 	var yellow := Color("e8c547")
+	if key == "fatigue":
+		return red.lerp(Color("f2d34b"), v)
 	var green := Color("5cc85a")
 	return red.lerp(yellow, v * 2.0) if v < 0.5 else yellow.lerp(green, (v - 0.5) * 2.0)
 
@@ -140,14 +144,16 @@ func _rebuild(npc: NPCData, state: PlayerStateData) -> void:
 			remove_child(c)
 			c.queue_free()
 	for n in notices(npc, state):
-		add_child(_cell(n[0], n[1], 3, "", n[2], n[3], n[4]))
+		var cell := _cell(n[0], n[1], 3, "", n[2], n[3], n[4], Color.TRANSPARENT, 1.0 - npc.health if n[0] == "bleeding" else -1.0)
+		cell.set_meta("pulse", n[0] == "bleeding")
+		add_child(cell)
 	for need in NEEDS:
 		var v := value(npc, need[0])
 		var t: int = _trend.get(need[0], 0)
 		var why := "%d%% %s. %s" % [roundi(v * 100), "rising" if t > 0 else ("falling" if t < 0 else "steady"), need[3]]
-		add_child(_cell(need[0], need[1], level_of(v), ("↑" if t > 0 else "↓").repeat(absi(t)), "%d%%" % roundi(v * 100), why, need[2], gauge_colour(v) if need[0] in GAUGE else Color.TRANSPARENT))
+		add_child(_cell(need[0], need[1], level_of(v), ("↑" if t > 0 else "↓").repeat(absi(t)), "%d%%" % roundi(v * 100), why, need[2], gauge_colour(v, need[0]) if need[0] in GAUGE else Color.TRANSPARENT))
 
-func _cell(icon: String, name: String, level: int, arrow_text: String, number: String, why: String, act: String, tint: Color = Color.TRANSPARENT) -> Button:
+func _cell(icon: String, name: String, level: int, arrow_text: String, number: String, why: String, act: String, tint: Color = Color.TRANSPARENT, fill: float = -1.0) -> Button:
 	var b := Button.new()
 	b.focus_mode = Control.FOCUS_NONE
 	b.custom_minimum_size = CELL
@@ -164,9 +170,10 @@ func _cell(icon: String, name: String, level: int, arrow_text: String, number: S
 	arrow.position = Vector2(0, 0)
 	arrow.size = Vector2(CELL.x, 14)
 	arrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var art := icon_or_glyph(icon, name.left(1), ICON)
+	var art: Control = _filled(icon, fill) if fill >= 0.0 else icon_or_glyph(icon, name.left(1), ICON)
 	art.position = Vector2((CELL.x - ICON) * 0.5, 15)
-	art.modulate = tint if tint.a > 0.0 else IDENTITY.get(icon, col)
+	if fill < 0.0:
+		art.modulate = tint if tint.a > 0.0 else IDENTITY.get(icon, col)
 	var num := UiTheme.label(number, 12, tint.lightened(0.2) if tint.a > 0.0 else (col if level > 0 else IDENTITY.get(icon, col).lightened(0.35)))
 	num.position = Vector2(0, 15 + ICON + 2)
 	num.size = Vector2(CELL.x, 14)
@@ -185,14 +192,36 @@ static func _shadow(c: Control) -> void:
 		c.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
 		c.add_theme_constant_override("outline_size", 4)
 
-## Critical icons pulse, like DayZ's blinking red.
+## UI12: only bleeding pulses (DayZ's blinking blood drop).
 func _blink() -> void:
 	var a := 0.55 + 0.45 * absf(sin(_pulse * 4.0))
 	for c in get_children():
-		if c is Button and c.get_meta("level", 0) == 3:
+		if c is Button and c.get_meta("pulse", false):
 			var frame: StyleBoxFlat = c.get_theme_stylebox("normal")
-			frame.border_color.a = a   # only the red frame pulses; the icon stays readable
+			frame.border_color = Color(1.0, 0.25, 0.3, a)   # only bleeding pulses; the icon stays readable
 			frame.bg_color = Color(0.2, 0.03, 0.05, 0.7 * a)
+
+## UI12: the blood drop fills from the bottom with blood lost (1 - health):
+## a dim drop behind, the red part clipped to the lost share.
+static func _filled(icon: String, fill: float) -> Control:
+	var holder := Control.new()
+	holder.size = Vector2(ICON, ICON)
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var empty := icon_or_glyph(icon, "B", ICON)
+	empty.modulate = Color(0.35, 0.08, 0.1)
+	holder.add_child(empty)
+	var clip := Control.new()
+	clip.clip_contents = true
+	clip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var h := ICON * clampf(0.2 + fill * 0.8, 0.0, 1.0)   # a fresh wound already shows a little blood
+	clip.position = Vector2(0, ICON - h)
+	clip.size = Vector2(ICON, h)
+	var full := icon_or_glyph(icon, "B", ICON)
+	full.modulate = IDENTITY["bleeding"]
+	full.position = Vector2(0, -(ICON - h))
+	clip.add_child(full)
+	holder.add_child(clip)
+	return holder
 
 ## UI7: art/ui/needs/<name>.png (flat white, tinted here) when present, then
 ## art/ui/icons/<name>.png, else the letter (art swap point).

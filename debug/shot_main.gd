@@ -37,6 +37,7 @@ func _run(main: Node, args: Dictionary) -> void:
 		var me: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
 		me.hunger = 0.25
 		me.thirst = 0.1
+		me.fatigue = 0.4
 		me.health = 0.6
 		me.bleeding = true
 		st.skills = {&"melee": 140.0, &"theft": 30.0, &"driving": 410.0}
