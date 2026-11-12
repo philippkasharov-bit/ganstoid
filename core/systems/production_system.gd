@@ -102,9 +102,12 @@ static func collect(world: World, building_id: StringName) -> Dictionary:
 	var state: PlayerStateData = world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
 	if building.stored_product <= 0:
 		return {"ok": false, "reason": "nothing_grown"}
-	var qty := building.stored_product
-	building.stored_product = 0
+	var qty := mini(building.stored_product, BagGrid.room_for(state, building.product))   # INV3: the rest waits at the lab
+	if qty <= 0:
+		return {"ok": false, "reason": "no_room"}
+	building.stored_product -= qty
 	state.inventory[building.product] = state.inventory.get(building.product, 0) + qty
+	BagGrid.sync(state)
 	return {"ok": true, "effect": "harvest_collected", "quantity": qty}
 
 ## DR1: C at your safehouse: collect what is there, then switch to the next product.

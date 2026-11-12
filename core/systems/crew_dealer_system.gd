@@ -94,7 +94,11 @@ static func toggle(world: World, crew_id: StringName) -> Dictionary:
 
 static func _collect(world: World, state: PlayerStateData, npc: NPCData) -> Dictionary:
 	var payout := CrewLoyaltySystem.pay_out_earnings(world, npc)
-	state.inventory[GOOD_ID] = state.inventory.get(GOOD_ID, 0) + npc.crew_stash
-	npc.crew_stash = 0
+	var back := mini(npc.crew_stash, BagGrid.room_for(state, GOOD_ID))   # INV3: what does not fit stays with them
+	state.inventory[GOOD_ID] = state.inventory.get(GOOD_ID, 0) + back
+	npc.crew_stash -= back
+	BagGrid.sync(state)
+	if npc.crew_stash > 0:
+		return {"ok": true, "effect": "dealer_collected", "payout": payout}   # still posted with the rest
 	npc.crew_role = GanstoidEnums.CrewRole.UNASSIGNED
 	return {"ok": true, "effect": "dealer_collected", "payout": payout}

@@ -147,11 +147,14 @@ static func buy(world: World, dealer_id: StringName, good_id: StringName) -> Dic
 	var cost: int = maxi(1, int(round(item.current_price * TRADE_QUANTITY * mult)))
 	if player_npc.cash < cost:
 		return {"ok": false, "reason": "cant_afford"}
+	if BagGrid.room_for(player_state, good_id) < TRADE_QUANTITY:
+		return {"ok": false, "reason": "no_room"}   # INV3: no space, no deal
 
 	var ripped_off := world.runtime_rng.randf() < ripoff_chance(_relationship(dealer_npc, player_state))
 	Wallet.spend(world, cost)  # batch 24: dirty money first
 	if not ripped_off:
 		player_state.inventory[good_id] = player_state.inventory.get(good_id, 0) + TRADE_QUANTITY
+		BagGrid.sync(player_state)
 	EconomySystem.record_trade(item, BUY_PRESSURE, 0.0)
 	item.player_market_reputation += (1.0 - item.player_market_reputation) * REPUTATION_GAIN_PER_TRADE
 	_bump_relationship(dealer_npc, player_state)
