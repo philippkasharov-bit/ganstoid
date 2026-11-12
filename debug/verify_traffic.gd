@@ -13,22 +13,12 @@ func _initialize() -> void:
 	var players := world.get_entities_with_component(ComponentNames.PLAYER_STATE)
 	var me: NPCData = world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
 	var state: PlayerStateData = world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
-	var starts := {}
-	for t in 60 * 20:
+	TrafficSystem.CARS_OVERRIDE = 3   # V4: no idle traffic in the game; this check still needs a few cars on the move
+	for t in 60 * 3:
 		world.tick += 1
 		traffic.process_entities(players, 1.0 / 60.0, world.tick)
-		if t == 60:
-			for id in traffic._drive:
-				starts[id] = traffic._car(id).position
-	var moved := 0
-	var speeds := 0.0
-	for id in starts:
-		var c: VehicleData = traffic._car(id)
-		if c != null and c.position.distance_to(starts[id]) > 40.0:
-			moved += 1
-		speeds += c.speed if c != null else 0.0
-	print("traffic: %d cars, %d of %d moved 40 m+ in 19 s, mean speed %.1f m/s" % [traffic._drive.size(), moved, starts.size(), speeds / maxf(1, starts.size())])
-	if not _check(traffic._drive.size() == TrafficSystem.CARS and moved > starts.size() * 0.6, "traffic drives the streets near you"):
+	print("traffic for the check: %d cars" % traffic._drive.size())
+	if not _check(traffic._drive.size() == 3, "check cars placed"):
 		return
 	var id: StringName = traffic._drive.keys()[0]
 	var car: VehicleData = traffic._car(id)

@@ -172,6 +172,9 @@ func _enrol(entities: Dictionary, tick: int, settle: bool) -> void:
 func _resync(entities: Dictionary, tick: int) -> void:
 	_due.clear()
 	street.clear()
+	var drive := _world.find_system(DriveSystem) as DriveSystem
+	if drive != null:
+		drive.clear()
 	for book in [_from, _homebound, _visit_until, _outing_at, _routine_wake]:
 		book.clear()
 	_enrol(entities, tick, true)
@@ -222,7 +225,9 @@ func _plan_day(npc: NPCData, tick: int) -> void:
 	else:
 		_homebound[npc.id] = true
 	if street.final_of(npc.id) != door:
-		street.start_trip(npc, NPCOutings.via(npc.id, _shift_day(npc, tick), npc.position, door), door, 0.0)
+		var drive := _world.find_system(DriveSystem) as DriveSystem
+		if drive == null or not drive.try_drive(npc, door):   # V4: car owners drive long trips
+			street.start_trip(npc, NPCOutings.via(npc.id, _shift_day(npc, tick), npc.position, door), door, 0.0)
 	elif _visit_until.has(npc.id):
 		if tick >= _visit_until[npc.id]:   # done in the shop: on to the next stop (home, in the end)
 			_visit_until.erase(npc.id)

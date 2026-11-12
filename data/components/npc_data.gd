@@ -53,6 +53,7 @@ extends Resource
 @export var is_dealer: bool = false
 @export var is_fixer: bool = false
 ## D1: how this person feels about the player (0..1).
+@export var car_id: StringName = &""   # V4: the car this person owns (drives on long trips)
 @export var trust: float = 0.0
 @export var fear: float = 0.0   # JB1: hands out jobs (looks like anyone else)
 

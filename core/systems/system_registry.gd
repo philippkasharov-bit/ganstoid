@@ -27,6 +27,7 @@ static func register_all(world: World) -> void:
 	world.register_system(RankSystem.new(world))
 	world.register_system(JobSystem.new(world))
 	world.register_system(TrafficSystem.new(world))
+	world.register_system(DriveSystem.new(world))
 	var case := CaseSystem.new(world)
 	world.register_system(case)
 	world.event_bus.subscribe(case.on_crime_witnessed)

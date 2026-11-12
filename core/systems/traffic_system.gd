@@ -10,7 +10,8 @@
 class_name TrafficSystem
 extends SystemBase
 
-const CARS := 40
+const CARS := 0                    # V4: no cars driving around for nothing; people drive their own (DriveSystem)
+static var CARS_OVERRIDE := 0      # checks only
 const NEAR_M := 450.0
 const SPAWN_MIN_M := 150.0
 const SPEED := 11.0
@@ -95,7 +96,7 @@ func _keep_near(at: Vector2) -> void:
 		elif car.position.distance_to(at) > NEAR_M:
 			_place(car, at, rng)
 	var tries := 0
-	while _drive.size() < CARS and tries < 20:
+	while _drive.size() < maxi(CARS, CARS_OVERRIDE) and tries < 20:
 		tries += 1
 		var car := VehicleData.new()
 		car.id = StringName("traffic_%d" % _spawned)
@@ -248,7 +249,7 @@ static func traffic_car_near(world: World, at: Vector2) -> VehicleData:
 	for id in world.spatial_index.query_nearby(at):
 		var e: Entity = world.entities.get(id)
 		var c: VehicleData = e.get_component(ComponentNames.VEHICLE) if e != null else null
-		if c != null and c.driver_id == DRIVER and c.position.distance_to(at) <= VehicleSystem.ENTER_M + 1.0:
+		if c != null and c.driver_id != &"" and c.driver_id != COP_DRIVER and c.driver_id != PlayerFactory.PLAYER_ENTITY_ID and c.position.distance_to(at) <= VehicleSystem.ENTER_M + 1.0:
 			return c
 	return null
 
