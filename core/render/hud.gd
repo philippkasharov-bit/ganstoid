@@ -60,6 +60,9 @@ func _ready() -> void:
 	_title_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_title_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	get_parent().add_child.call_deferred(_title_art)
+	var progress := ActionProgress.new()   # TA1: bar over the head
+	get_parent().add_child.call_deferred(progress)
+	progress.setup(_world)
 	var toast := Toast.new()          # UI2: pop-up lines
 	get_parent().add_child.call_deferred(toast)
 	toast.setup(_world)

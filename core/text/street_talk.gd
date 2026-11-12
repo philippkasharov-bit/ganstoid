@@ -86,6 +86,7 @@ const LINES := {
 	"pickpocket": ["Lifted ${n}. Smooth.", "Five-finger discount: ${n}.", "Light fingers. ${n} richer."],
 	"robbery": ["Register cleaned out, ${n}. Move!", "${n} bagged. Don't run, walk.", "Took ${n}. Get ghost."],
 	"gang_job": ["Job's done. The set paid ${n}.", "Handled. ${n} for your trouble.", "Word gets around. ${n} earned."],
+	"interrupted": ["Stopped.", "Cut short."],
 	"no_room": ["No room in the bag. Make space first.", "Bag's full. Something's gotta go."],
 	"cant_afford": ["You broke, fam. Come back with paper.", "No money, no product."],
 	"nothing_to_sell": ["You holdin' nothin'. Stop wastin' my time."],

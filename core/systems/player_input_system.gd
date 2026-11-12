@@ -155,6 +155,8 @@ func process_entities(entities: Dictionary, delta: float, tick: int) -> void:
 		var wired := VehicleSystem.advance_hotwire(_world, npc, state)
 		if not wired.is_empty():
 			StreetTalk.say(_world, state, wired)
+		var busy := _move_input() != Vector2.ZERO or Input.is_action_just_pressed(ATTACK_ACTION)
+		StreetTalk.say(_world, state, TimedAction.advance(_world, npc, state, busy))   # TA1
 		if Input.is_action_just_pressed(TAG_ACTION) and state.vehicle_id == &"" and TerritorySystem.data(_world) != null:
 			StreetTalk.say(_world, state, TerritorySystem.tag(_world, npc))
 		if Input.is_action_just_pressed(PRODUCT_ACTION):
@@ -398,12 +400,7 @@ func _inventory_input(npc: NPCData, state: PlayerStateData) -> bool:
 
 ## UI5: a bag line is eaten/drunk/applied, or a weapon is taken in hand.
 func _use_or_hold(npc: NPCData, state: PlayerStateData, item_id: StringName) -> void:
-	var it := ItemCatalog.item(item_id)
-	if it.get("kind", "") == "weapon" and state.inventory.get(item_id, 0) > 0:
-		state.weapon = it["weapon"]
-		StreetTalk.say_key(_world, state, "weapon_" + String(state.weapon))
-		return
-	StreetTalk.say(_world, state, NeedsSystem.use_item(npc, state, item_id))
+	StreetTalk.say(_world, state, TimedAction.start(_world, state, item_id))   # TA1: takes a few seconds
 
 ## What you carry, in catalogue order (the inventory menu's lines).
 static func carried(state: PlayerStateData) -> Array[StringName]:
