@@ -102,6 +102,7 @@ func _build() -> void:
 	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: CityGround.lots(ci, lots[r], night), tiles)
 	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: CityGround.surfaces(ci, surfaces[r], night), tiles)
 	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: CityGround.lot_lines(ci, lots[r], night), tiles, FINE_ZOOM)
+	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: CityGround.parking_stalls(ci, surfaces[r], night), tiles, FINE_ZOOM)   # DT1
 	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: _draw_sidewalks(ci, roads[r]), tiles)
 	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: _draw_tiers(ci, roads[r], DRAW_ORDER), tiles)
 	var drives := _bucket(city.driveways, tiles, _feature_bounds)

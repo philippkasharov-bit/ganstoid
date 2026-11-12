@@ -67,22 +67,109 @@ static func crossings(ci: CanvasItem, items: Array, night: bool) -> void:
 		for i in pts.size() - 1:
 			ci.draw_dashed_line(pts[i], pts[i + 1], col, 3.0, 0.6)   # continental stripes across the roadway
 
+## DT1: primitive props (boxes, discs, lines) for everything on the street,
+## shaped enough to read at a glance; real models replace them later.
 static func trees(ci: CanvasItem, items: PackedVector2Array, night: bool) -> void:
 	var pal: Dictionary = NIGHT if night else DAY
 	for p in items:
-		ci.draw_circle(p, TREE_R, pal["tree"])
-		ci.draw_arc(p, TREE_R, 0.0, TAU, 14, pal["tree_rim"], 0.25)
+		var h := absi(hash(p))
+		var r := TREE_R * (0.8 + float(h % 40) / 100.0)
+		for k in 3:   # a clump of canopy, not a coin
+			var o := Vector2.from_angle(float((h >> (k * 4)) % 628) / 100.0) * r * 0.35
+			ci.draw_circle(p + o, r * 0.75, pal["tree"])
+		ci.draw_circle(p, r * 0.35, pal["tree_rim"])
 
 static func details(ci: CanvasItem, barriers: Array, points: Array, night: bool) -> void:
 	var pal: Dictionary = NIGHT if night else DAY
 	for b in barriers:
-		ci.draw_polyline(b["pts"], pal[b["kind"]], 0.5 if b["kind"] == "hedge" else 0.25)
+		_barrier(ci, b, pal)
 	for p in points:
-		if night and p["kind"] == "lamp":
-			ci.draw_circle(p["p"], LAMP_GLOW_R, pal["lamp_glow"])
 		if p["kind"] in ["signal", "stop", "bus_stop"]:
 			continue   # MP3b: lights and stop signs are drawn live at junctions (StreetFurniture); no buses
-		ci.draw_circle(p["p"], POINT_R[p["kind"]], pal[p["kind"]])
+		_prop(ci, p["kind"], p["p"], pal, night)
+
+static func _barrier(ci: CanvasItem, b: Dictionary, pal: Dictionary) -> void:
+	var pts: PackedVector2Array = b["pts"]
+	var col: Color = pal[b["kind"]]
+	match b["kind"]:
+		"wall":
+			ci.draw_polyline(pts, col.darkened(0.35), 0.45)
+			ci.draw_polyline(pts, col, 0.3)
+		"hedge":
+			ci.draw_polyline(pts, col, 0.9)
+			ci.draw_polyline(pts, col.darkened(0.2), 0.4)
+		_:
+			ci.draw_polyline(pts, col, 0.12)   # fence, rail, gate: a thin line with posts
+			for i in pts.size() - 1:
+				var seg := pts[i].distance_to(pts[i + 1])
+				var n := int(seg / 2.5)
+				for k in n + 1:
+					ci.draw_rect(Rect2(pts[i].lerp(pts[i + 1], float(k) / maxf(1, n)) - Vector2(0.1, 0.1), Vector2(0.2, 0.2)), col.darkened(0.3))
+
+static func _prop(ci: CanvasItem, kind: String, at: Vector2, pal: Dictionary, night: bool) -> void:
+	var turn := float(absi(hash(at)) % 628) / 100.0
+	var f := Vector2.from_angle(turn)
+	var col: Color = pal[kind]
+	match kind:
+		"lamp":
+			if night:
+				ci.draw_circle(at + f * 1.3, LAMP_GLOW_R, pal["lamp_glow"])
+			ci.draw_line(at, at + f * 1.3, col.darkened(0.2), 0.12)   # arm
+			ci.draw_rect(Rect2(at - Vector2(0.15, 0.15), Vector2(0.3, 0.3)), col.darkened(0.3))   # pole
+			ci.draw_circle(at + f * 1.3, 0.22, Color("fff3c4") if night else col.lightened(0.3))   # head
+		"bench":
+			var side := f.orthogonal()
+			ci.draw_colored_polygon(PackedVector2Array([at - f * 0.8 - side * 0.25, at + f * 0.8 - side * 0.25, at + f * 0.8 + side * 0.25, at - f * 0.8 + side * 0.25]), col)
+			ci.draw_line(at - f * 0.8 + side * 0.25, at + f * 0.8 + side * 0.25, col.darkened(0.35), 0.12)   # backrest
+		"hydrant":
+			ci.draw_circle(at, 0.22, col)
+			ci.draw_line(at - f * 0.3, at + f * 0.3, col.darkened(0.3), 0.1)   # outlets
+			ci.draw_circle(at, 0.1, col.lightened(0.3))
+		"bin":
+			ci.draw_rect(Rect2(at - Vector2(0.28, 0.28), Vector2(0.56, 0.56)), col)
+			ci.draw_rect(Rect2(at - Vector2(0.18, 0.18), Vector2(0.36, 0.36)), col.darkened(0.3))
+		_:
+			ci.draw_circle(at, POINT_R.get(kind, 0.3), col)
+
+## DT1: painted stalls in parking lots: rows across the lot's long side,
+## 2.7 m bays, 5.5 m deep, a 7 m aisle between row pairs.
+static func parking_stalls(ci: CanvasItem, items: Array, night: bool) -> void:
+	var col := Color(1, 1, 1, 0.35 if night else 0.75)
+	for s in items:
+		if s["kind"] != "parking":
+			continue
+		var poly: PackedVector2Array = s["poly"]
+		if poly.size() < 4:
+			continue
+		var axis := Vector2.RIGHT
+		var longest := 0.0
+		for i in poly.size() - 1:
+			var e := poly[i + 1] - poly[i]
+			if e.length() > longest:
+				longest = e.length()
+				axis = e / e.length()
+		var across := axis.orthogonal()
+		var lo := INF
+		var hi := -INF
+		var a_lo := INF
+		var a_hi := -INF
+		for p in poly:
+			lo = minf(lo, p.dot(across))
+			hi = maxf(hi, p.dot(across))
+			a_lo = minf(a_lo, p.dot(axis))
+			a_hi = maxf(a_hi, p.dot(axis))
+		if (hi - lo) * (a_hi - a_lo) > 60000.0:
+			continue   # huge lots: skip (thousands of lines)
+		var band := lo + 1.0
+		while band + 5.5 <= hi:
+			var x := a_lo
+			while x <= a_hi:
+				var p0 := axis * x + across * band
+				var p1 := axis * x + across * (band + 5.5)
+				for piece in Geometry2D.intersect_polyline_with_polygon(PackedVector2Array([p0, p1]), poly):
+					ci.draw_polyline(piece, col, 0.12)
+				x += 2.7
+			band += 5.5 + (7.0 if int((band - lo) / 12.5) % 2 == 0 else 0.0)
 
 static func _fill(ci: CanvasItem, poly: PackedVector2Array, col: Color) -> void:
 	if poly.size() >= 3 and not Geometry2D.triangulate_polygon(poly).is_empty():
