@@ -30,11 +30,12 @@ func setup_window(id: String, title: String, at: Vector2, min_size: Vector2) -> 
 	body.add_theme_constant_override("separation", 4)
 	pad.add_child(body)
 	column.add_child(pad)
+	_add_decor(id)
 
 func _build_header(title: String) -> PanelContainer:
 	var header := PanelContainer.new()
 	header.add_theme_stylebox_override("panel", UiTheme.header_box())
-	header.custom_minimum_size.y = UiTheme.HEADER_H + 4
+	header.custom_minimum_size.y = UiTheme.HEADER_H
 	header.mouse_filter = Control.MOUSE_FILTER_PASS
 	var row := HBoxContainer.new()
 	header.add_child(row)
@@ -73,3 +74,41 @@ func move_to(at: Vector2) -> void:
 	var screen := get_viewport_rect().size
 	position = at.clamp(Vector2.ZERO, (screen - size).max(Vector2.ZERO))
 	_positions[window_id] = position
+
+## UI18: masking tape on the top corners and one sticker, picked from the
+## window id so each page keeps its own look. Drawn straight onto the page
+## (a container would stretch child decals), so it never takes the mouse.
+const STICKERS := ["boombox", "fireball", "spraycan", "cassette", "sneaker", "buckethat", "dollar_star", "eyeball", "bolt"]
+const TAPE_H := 12.0
+const STICKER_H := 40.0
+
+var _decor: Array = []   # [texture, centre offset from a corner, corner (0 top-left .. 2 bottom-right), height, angle]
+
+func _add_decor(id: String) -> void:
+	var tape := _art("marker/tape")
+	if tape != null:
+		_decor.append([tape, Vector2(4, 2), 0, TAPE_H, -35.0])
+		_decor.append([tape, Vector2(-4, 2), 1, TAPE_H, 33.0])
+	var pick: int = absi(id.hash())
+	var sticker := _art("stickers/" + STICKERS[pick % STICKERS.size()])
+	if sticker != null:
+		_decor.append([sticker, Vector2(-14, -10), 2, STICKER_H, -14.0 + float(pick % 28)])
+	var layer := Node2D.new()   # not a Control, so the container leaves it alone; draws over the page
+	layer.name = "Decor"
+	add_child(layer)
+	layer.draw.connect(func() -> void: _draw_decor(layer))
+	resized.connect(layer.queue_redraw)
+
+static func _art(name: String) -> Texture2D:
+	var path := UiTheme.STREET + name + ".png"
+	return load(path) if ResourceLoader.exists(path) else null
+
+func _draw_decor(layer: Node2D) -> void:
+	var corners := [Vector2.ZERO, Vector2(size.x, 0), size]
+	for d in _decor:
+		var tex: Texture2D = d[0]
+		var h: float = d[3]
+		var w := h * tex.get_width() / tex.get_height()
+		layer.draw_set_transform(corners[d[2]] + d[1], deg_to_rad(d[4]), Vector2.ONE)
+		layer.draw_texture_rect(tex, Rect2(Vector2(-w, -h) * 0.5, Vector2(w, h)), false)
+	layer.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)

@@ -35,7 +35,7 @@ func _row(index: int, option: Dictionary) -> Button:
 	b.flat = true
 	b.disabled = not enabled
 	b.focus_mode = Control.FOCUS_NONE
-	b.custom_minimum_size = Vector2(180, UiTheme.ROW_H)
+	b.custom_minimum_size = Vector2(140, UiTheme.ROW_H)
 	b.add_theme_font_size_override("font_size", UiTheme.FONT_BODY)
 	b.add_theme_color_override("font_color", UiTheme.TEXT)
 	b.add_theme_color_override("font_disabled_color", UiTheme.DIM)

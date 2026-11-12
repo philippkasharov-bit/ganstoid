@@ -26,17 +26,17 @@ var _key := ""
 
 func setup(world: World, at: Vector2) -> void:
 	_world = world
-	setup_window("bag", "Bag", at, Vector2(560, 320))
+	setup_window("bag", "Bag", at, Vector2(420, 0))
 	closed.connect(func() -> void:
 		var state := _state()
 		if state != null:
 			state.inventory_open = false)
 	var split := HBoxContainer.new()
-	split.add_theme_constant_override("separation", 14)
+	split.add_theme_constant_override("separation", 8)
 	body.add_child(split)
 	split.add_child(_you_pane())
 	split.add_child(VSeparator.new())   # vertical: the chain only runs across
-	_about.custom_minimum_size.x = 200
+	_about.custom_minimum_size.x = 150
 	_about.add_theme_constant_override("separation", 3)
 	split.add_child(_about)
 	add_child(_tip)
@@ -49,7 +49,7 @@ func setup(world: World, at: Vector2) -> void:
 
 func _you_pane() -> VBoxContainer:
 	var pane := VBoxContainer.new()
-	pane.custom_minimum_size.x = 320
+	pane.custom_minimum_size.x = 230
 	pane.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	pane.add_child(UiTheme.label("YOU", UiTheme.FONT_SMALL, UiTheme.DIM))
 	pane.add_child(_hands)
@@ -58,7 +58,7 @@ func _you_pane() -> VBoxContainer:
 	_lines.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	pane.add_child(_lines)
 	_weight_bar.show_percentage = false
-	_weight_bar.custom_minimum_size.y = 6
+	_weight_bar.custom_minimum_size.y = 4
 	var fill := UiTheme.box(UiTheme.ACCENT, Color.TRANSPARENT, 0)
 	fill.set_content_margin_all(0)
 	_weight_bar.add_theme_stylebox_override("fill", fill)

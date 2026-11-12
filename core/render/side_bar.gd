@@ -11,7 +11,7 @@ const BUTTONS := [
 	["Crew", "Tab", &"ui_focus_next", "crew"],
 	["Turf", "U", &"turf_map", "turf"],
 ]
-const SIZE := Vector2(60, 60)
+const SIZE := Vector2(42, 42)
 
 var _world: World
 var _badges: Array[Label] = []
@@ -19,8 +19,8 @@ var _left := 0.0
 
 func setup(world: World) -> void:
 	_world = world
-	add_theme_constant_override("separation", 4)
-	position = Vector2(10, 150)
+	add_theme_constant_override("separation", 3)
+	position = Vector2(6, 110)
 	for b in BUTTONS:
 		add_child(_button(b[0], b[1], b[2], b[3]))
 
@@ -30,11 +30,11 @@ func _button(label: String, key: String, action: StringName, icon: String) -> Bu
 	stack.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	stack.add_theme_constant_override("separation", 0)
 	stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var art := Moodles.icon_or_glyph(icon, label.left(1), 46.0)
+	var art := Moodles.icon_or_glyph(icon, label.left(1), 32.0)
 	art.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	stack.add_child(art)
 	b.add_child(stack)
-	var k := UiTheme.label(key, 11, UiTheme.ACCENT)   # the key, top-left like a keycap
+	var k := UiTheme.label(key, 9, UiTheme.ACCENT)   # the key, top-left like a keycap
 	k.add_theme_font_override("font", UiTheme.font("bungee"))
 	k.add_theme_color_override("font_outline_color", Color.BLACK)
 	k.add_theme_constant_override("outline_size", 3)

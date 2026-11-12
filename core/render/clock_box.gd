@@ -10,7 +10,7 @@ func setup(world: World) -> void:
 	_world = world
 	add_theme_stylebox_override("panel", UiTheme.window_box())
 	_time.add_theme_font_override("font", UiTheme.font("bungee"))
-	_time.add_theme_font_size_override("font_size", 17)
+	_time.add_theme_font_size_override("font_size", 12)
 	_time.add_theme_color_override("font_color", UiTheme.ACCENT)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 0)
@@ -27,4 +27,4 @@ func _process(_delta: float) -> void:
 	var hours := SimClock.day_fraction(_world.tick) * 24.0
 	_time.text = "Day %d  ·  %02d:%02d" % [SimClock.day_number(_world.tick), int(hours), int(fmod(hours, 1.0) * 60.0)]
 	_day.text = SimClock.year_month(_world.tick)   # T1: counted from the start of this life
-	position = Vector2(get_viewport_rect().size.x - size.x - 12, 10)
+	position = Vector2(get_viewport_rect().size.x - size.x - 6, 6)

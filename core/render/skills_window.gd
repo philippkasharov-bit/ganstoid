@@ -4,7 +4,7 @@ class_name SkillsWindow
 extends UiWindow
 
 const ACTION := &"skills_window"
-const BOX := Vector2(18, 14)
+const BOX := Vector2(11, 9)
 
 var _world: World
 var _rows := VBoxContainer.new()
@@ -12,8 +12,8 @@ var _key := ""
 
 func setup(world: World, at: Vector2) -> void:
 	_world = world
-	setup_window("skills", "Skills", at, Vector2(380, 0))
-	_rows.add_theme_constant_override("separation", 8)
+	setup_window("skills", "Skills", at, Vector2(250, 0))
+	_rows.add_theme_constant_override("separation", 3)
 	body.add_child(_rows)
 	body.add_child(UiTheme.label("You learn by doing.    K / Esc close", UiTheme.FONT_SMALL, UiTheme.DIM))
 	if not InputMap.has_action(ACTION):
@@ -49,10 +49,10 @@ func _rebuild(state: PlayerStateData) -> void:
 ## Level n starts at 25 n^2 XP; the box after the last full one shows progress.
 func _skill_row(name: String, xp: float) -> HBoxContainer:
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 3)
+	row.add_theme_constant_override("separation", 2)
 	var title := UiTheme.label(name)
 	title.add_theme_font_override("font", UiTheme.font("marker"))
-	title.custom_minimum_size.x = 110
+	title.custom_minimum_size.x = 70
 	row.add_child(title)
 	var lvl := mini(Skills.MAX_LEVEL, int(sqrt(xp / Skills.XP_PER_LEVEL_SQ)))
 	var lo := Skills.XP_PER_LEVEL_SQ * lvl * lvl

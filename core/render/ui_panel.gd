@@ -18,26 +18,26 @@ var _footer := Label.new()
 func setup(world: World, at: Vector2) -> void:
 	_world = world
 	position = at
-	custom_minimum_size = Vector2(340, 0)
+	custom_minimum_size = Vector2(240, 0)
 	add_theme_stylebox_override("panel", card_style())
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 6)
 	add_child(box)
-	_title.add_theme_font_size_override("font_size", 19)
+	_title.add_theme_font_size_override("font_size", 14)
 	_title.add_theme_color_override("font_color", ACCENT)
 	_title.add_theme_font_override("font", UiTheme.font("marker"))
 	box.add_child(_title)
 	box.add_child(UiTheme.divider())
-	_rows.add_theme_constant_override("separation", 3)
+	_rows.add_theme_constant_override("separation", 1)
 	box.add_child(_rows)
-	_footer.add_theme_font_size_override("font_size", 13)
+	_footer.add_theme_font_size_override("font_size", 10)
 	_footer.add_theme_color_override("font_color", DIM)
 	box.add_child(_footer)
 	visible = false
 
 ## The shared card look (also used by the status card and toasts).
 static func card_style() -> StyleBox:
-	return UiTheme.window_box(14)   # UI17: same flat jacket panel as the windows
+	return UiTheme.window_box(8)   # UI17: same flat jacket panel as the windows
 
 func _process(_delta: float) -> void:
 	if _world != null:
@@ -59,7 +59,7 @@ func show_panel(title: String, rows: Array, footer: String) -> void:
 		c.queue_free()
 	for r in rows:
 		var line := HBoxContainer.new()
-		line.add_theme_constant_override("separation", 10)
+		line.add_theme_constant_override("separation", 6)
 		var k := Label.new()
 		k.text = " %s " % r[0] if r[0] != "" else "   "
 		k.add_theme_color_override("font_color", ACCENT)
@@ -75,6 +75,8 @@ func show_panel(title: String, rows: Array, footer: String) -> void:
 		var v := Label.new()
 		v.text = r[2]
 		v.add_theme_color_override("font_color", DIM)
+		for part in [k, t, v]:
+			part.add_theme_font_size_override("font_size", UiTheme.FONT_BODY)   # UI18: compact rows
 		line.add_child(k)
 		line.add_child(t)
 		line.add_child(v)

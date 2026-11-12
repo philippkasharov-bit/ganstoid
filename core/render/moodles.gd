@@ -8,8 +8,8 @@
 class_name Moodles
 extends VBoxContainer
 
-const ICON := 34.0
-const CELL := Vector2(48, 62)
+const ICON := 24.0
+const CELL := Vector2(36, 46)
 const EMPTY := Color(0.0, 0.0, 0.0, 0.5)   # the unfilled part of every icon
 const OK := Color(0.93, 0.93, 0.9)
 const STATE_COLOURS := [OK, Color("e8c547"), Color("e8913a"), Color("e0533d")]
@@ -90,7 +90,7 @@ func _add_glow(cell: Button) -> void:
 	glow.texture = _glow_texture()
 	glow.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	glow.size = Vector2(ICON, ICON) * 1.6
-	glow.position = Vector2((CELL.x - glow.size.x) * 0.5, 11 + (ICON - glow.size.y) * 0.5)
+	glow.position = Vector2((CELL.x - glow.size.x) * 0.5, 9 + (ICON - glow.size.y) * 0.5)
 	glow.pivot_offset = glow.size * 0.5
 	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	glow.show_behind_parent = false
@@ -205,14 +205,14 @@ func _cell(icon: String, name: String, level: int, arrow_text: String, number: S
 	b.custom_minimum_size = CELL
 	b.set_meta("level", level)
 	var col: Color = tint if tint.a > 0.0 else IDENTITY.get(icon, UiTheme.TEXT)
-	var arrow := UiTheme.label(arrow_text, 10, STATE_COLOURS[level])
-	arrow.size = Vector2(CELL.x, 11)
+	var arrow := UiTheme.label(arrow_text, 8, STATE_COLOURS[level])
+	arrow.size = Vector2(CELL.x, 9)
 	arrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var art := _filled(icon, fill, col)
 	art.name = "Art"
-	art.position = Vector2((CELL.x - ICON) * 0.5, 11)
-	var num := UiTheme.label(number, 11, col.lightened(0.25))
-	num.position = Vector2(0, 11 + ICON)
+	art.position = Vector2((CELL.x - ICON) * 0.5, 9)
+	var num := UiTheme.label(number, 9, col.lightened(0.25))
+	num.position = Vector2(0, 9 + ICON)
 	num.size = Vector2(CELL.x, 13)
 	num.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	for part in [arrow, art, num]:

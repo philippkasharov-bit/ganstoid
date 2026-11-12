@@ -30,13 +30,13 @@ func _ready() -> void:
 	roster.setup(_world)
 	var store := StorePanel.new()   # G1: E at a counter
 	get_parent().add_child.call_deferred(store)
-	store.setup(_world, Vector2(84, 150))
+	store.setup(_world, Vector2(54, 110))
 	var bag := InventoryWindow.new()  # UI5: I
 	get_parent().add_child.call_deferred(bag)
-	bag.setup(_world, Vector2(84, 150))
+	bag.setup(_world, Vector2(54, 110))
 	var menu := ActionMenu.new()      # UI1: E
 	get_parent().add_child.call_deferred(menu)
-	menu.setup(_world, Vector2(84, 150))
+	menu.setup(_world, Vector2(54, 110))
 	var card := StatusCard.new()      # UI2: bars and status
 	get_parent().add_child.call_deferred(card)
 	card.setup(_world)
@@ -63,7 +63,7 @@ func _ready() -> void:
 	var toast := Toast.new()          # UI2: pop-up lines
 	get_parent().add_child.call_deferred(toast)
 	toast.setup(_world)
-	position = Vector2(84, 150)
+	position = Vector2(54, 110)
 
 func _process(delta: float) -> void:
 	if _world == null:
@@ -79,8 +79,8 @@ func _process(delta: float) -> void:
 		return
 	if has_theme_font_override("font"):
 		remove_theme_font_override("font")
-		add_theme_font_size_override("font_size", 13)
-		position = Vector2(84, 150)
+		add_theme_font_size_override("font_size", 11)
+	position = Vector2(6, get_viewport_rect().size.y - size.y - 4)   # UI18: fps and deal timers bottom-left, off the panels
 	_refresh_in -= delta
 	if _refresh_in > 0.0:
 		return   # the text walks every building twice: four times a second is plenty
