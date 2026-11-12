@@ -1,5 +1,6 @@
 ## UI4: Zomboid-style right-click menu: a plain list at the cursor, rows
-## light up on hover, greyed rows show why they cannot be picked.
+## light up on hover, greyed rows show why they cannot be picked. Rows are
+## numbered and keys 1-9 pick them, so an action is one right-click + one key.
 class_name ContextMenu
 extends PanelContainer
 
@@ -28,7 +29,8 @@ func open_at(screen_pos: Vector2, options: Array) -> void:
 func _row(index: int, option: Dictionary) -> Button:
 	var enabled: bool = option.get("enabled", true)
 	var b := Button.new()
-	b.text = option["text"] if enabled else "%s  (%s)" % [option["text"], option.get("why", "")]
+	var key := "%d   " % (index + 1) if index < 9 else "    "
+	b.text = key + (option["text"] if enabled else "%s  (%s)" % [option["text"], option.get("why", "")])
 	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	b.flat = true
 	b.disabled = not enabled
@@ -46,6 +48,13 @@ func _row(index: int, option: Dictionary) -> Button:
 func _input(event: InputEvent) -> void:
 	if not visible:
 		return
+	if event is InputEventKey and event.pressed and not event.echo:
+		var n: int = event.keycode - KEY_1
+		var rows := _list.get_children()
+		if n >= 0 and n < mini(9, rows.size()) and not (rows[n] as Button).disabled:
+			get_viewport().set_input_as_handled()
+			(rows[n] as Button).pressed.emit()
+			return
 	var click: bool = event is InputEventMouseButton and event.pressed
 	if (click and not get_global_rect().has_point(event.position)) or event.is_action_pressed("ui_cancel"):
 		visible = false

@@ -28,6 +28,13 @@ func _initialize() -> void:
 	ok = _c(ok, 4, rows.size() == 2 and (rows[1] as Button).disabled)
 	(rows[0] as Button).pressed.emit()
 	ok = _c(ok, 5, got[0] == 0 and not menu.visible)
+	menu.open_at(Vector2(10, 10), [{"text": "Open door"}, {"text": "Kick in"}])
+	await process_frame
+	var key := InputEventKey.new()
+	key.keycode = KEY_2
+	key.pressed = true
+	menu._input(key)
+	ok = _c(ok, 7, got[0] == 1 and not menu.visible)
 	var tip := UiTooltip.new()
 	root.add_child(tip)
 	tip.show_at(screen - Vector2(2, 2), "Pistol", [["Damage 24", UiTheme.TEXT]], "Cheap 9mm.")
