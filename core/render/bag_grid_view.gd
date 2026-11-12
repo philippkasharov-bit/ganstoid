@@ -49,7 +49,7 @@ func _draw_pile(p: Dictionary, r: Rect2, lit: bool) -> void:
 	var kind: String = ItemCatalog.item(p["id"]).get("kind", "goods")
 	var col: Color = InventoryWindow.KIND_COLOURS.get(kind, UiTheme.DIM)
 	var inner := r.grow(-1.5)
-	draw_rect(inner, Color(col, 0.16 if not lit else 0.3))
+	draw_rect(inner, Color(0.02, 0.02, 0.03, 0.55) if not lit else Color(col, 0.22))
 	draw_rect(inner, Color(col, 0.75), false, 1.0)
 	ItemArt.draw(self, p["id"], inner.grow(-3), col, p["r"])
 	var font := UiTheme.font("bungee")

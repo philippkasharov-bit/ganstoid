@@ -14,7 +14,7 @@ static var _cache := {}
 static func draw(ci: CanvasItem, id: StringName, rect: Rect2, colour: Color, turned: bool) -> void:
 	var tex := _texture(id)
 	if tex != null:
-		ci.draw_texture_rect(tex, rect.grow(-3), false)
+		_draw_fitted(ci, tex, rect.grow(-2), turned)
 		return
 	var c := rect.get_center()
 	var long := maxf(rect.size.x, rect.size.y) * 0.42
@@ -25,6 +25,17 @@ static func draw(ci: CanvasItem, id: StringName, rect: Rect2, colour: Color, tur
 	if pts.size() >= 3:
 		ci.draw_colored_polygon(pts, colour)
 		ci.draw_polyline(pts + PackedVector2Array([pts[0]]), INK, 1.5, true)
+
+## Keeps the picture's shape and turns it a quarter when the pile lies turned
+## (pictures are stored lying the way the item's unturned footprint does).
+static func _draw_fitted(ci: CanvasItem, tex: Texture2D, rect: Rect2, turned: bool) -> void:
+	var t := tex.get_size()
+	var box := Vector2(rect.size.y, rect.size.x) if turned else rect.size
+	var k := minf(box.x / t.x, box.y / t.y)
+	var drawn := t * k
+	ci.draw_set_transform(rect.get_center(), PI * 0.5 if turned else 0.0, Vector2.ONE)
+	ci.draw_texture_rect(tex, Rect2(-drawn * 0.5, drawn), false)
+	ci.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 static func _texture(id: StringName) -> Texture2D:
 	if not _cache.has(id):
