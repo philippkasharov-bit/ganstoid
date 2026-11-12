@@ -80,6 +80,8 @@ static func details(ci: CanvasItem, barriers: Array, points: Array, night: bool)
 	for p in points:
 		if night and p["kind"] == "lamp":
 			ci.draw_circle(p["p"], LAMP_GLOW_R, pal["lamp_glow"])
+		if p["kind"] in ["signal", "stop", "bus_stop"]:
+			continue   # MP3b: lights and stop signs are drawn live at junctions (StreetFurniture); no buses
 		ci.draw_circle(p["p"], POINT_R[p["kind"]], pal[p["kind"]])
 
 static func _fill(ci: CanvasItem, poly: PackedVector2Array, col: Color) -> void:

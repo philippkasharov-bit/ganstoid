@@ -5,7 +5,10 @@ Junctions = points where 3+ street ends meet (residential, arterial, hill).
   stop:   residential-only junctions (all-way or two-way stops)
 Bus stops: along arterials every BUS_EVERY_M on the right-hand kerb.
 
-Usage: python3 -I intersections.py <city_v1.json> <out intersections_v1.json>
+Usage: python3 -I intersections.py <city_v1.json> <out intersections_v1.json> [real_v1.json]
+With real_v1.json (the full OSM extract), a junction gets a signal or stop sign only
+where OpenStreetMap has one mapped (highway=traffic_signals / stop within SNAP_M);
+other junctions are uncontrolled. Bus stops dropped (Phil: no buses).
 """
 import json
 import math
@@ -17,8 +20,34 @@ BUS_EVERY_M = 400.0
 STREETS = ("res", "art", "hill")
 
 
-def main(city_path, out_path):
+SNAP_M = 22.0
+
+
+def real_controls(real_path):
+    if not real_path:
+        return None
+    pts = json.load(open(real_path))["points"]
+    grid = defaultdict(list)
+    for p in pts:
+        if p["kind"] in ("signal", "stop"):
+            grid[(int(p["p"][0] // 50), int(p["p"][1] // 50))].append(p)
+    return grid
+
+
+def control_at(grid, x, y):
+    best, best_d = None, SNAP_M
+    for gx in range(int(x // 50) - 1, int(x // 50) + 2):
+        for gy in range(int(y // 50) - 1, int(y // 50) + 2):
+            for p in grid.get((gx, gy), []):
+                d = math.hypot(p["p"][0] - x, p["p"][1] - y)
+                if d < best_d or (p["kind"] == "signal" and d < SNAP_M and best and best["kind"] == "stop"):
+                    best, best_d = p, d
+    return best["kind"] if best else None
+
+
+def main(city_path, out_path, real_path=None):
     city = json.load(open(city_path))
+    grid = real_controls(real_path)
     # every vertex of every street: an end is one leg in, a through point two
     at = defaultdict(list)
     for r in city["roads"]:
@@ -42,10 +71,12 @@ def main(city_path, out_path):
             continue
         x = sum(r["pts"][i][0] for r, i in lst) / len(lst)
         y = sum(r["pts"][i][1] for r, i in lst) / len(lst)
-        kind = "signal" if any(l[3] == "art" for l in legs) else "stop"
+        kind = ("signal" if any(l[3] == "art" for l in legs) else "stop") if grid is None else control_at(grid, x, y)
+        if kind is None:
+            continue   # an uncontrolled junction: nothing stands there
         junctions.append({"c": [round(x, 1), round(y, 1)], "kind": kind, "legs": legs})
     stops = []
-    for r in city["roads"]:
+    for r in ([] if grid is not None else city["roads"]):
         if r["tier"] != "art":
             continue
         pts, carry = r["pts"], BUS_EVERY_M * 0.5
@@ -65,4 +96,4 @@ def main(city_path, out_path):
 
 
 if __name__ == "__main__":
-    main(*sys.argv[1:3])
+    main(*sys.argv[1:4])
