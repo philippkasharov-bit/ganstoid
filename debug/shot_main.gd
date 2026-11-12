@@ -42,7 +42,7 @@ func _run(main: Node, args: Dictionary) -> void:
 		me.bleeding = true
 		st.skills = {&"melee": 140.0, &"theft": 30.0, &"driving": 410.0}
 		for n in main.get_node("HudLayer").get_children():
-			if n is SkillsWindow:
+			if n is CharacterWindow:
 				n.visible = true
 		st.inventory_open = true
 		for i in 3:

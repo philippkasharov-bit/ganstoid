@@ -46,7 +46,7 @@ func _ready() -> void:
 	var moodles := Moodles.new()
 	get_parent().add_child.call_deferred(moodles)
 	moodles.setup(_world)
-	var skills := SkillsWindow.new()
+	var skills := CharacterWindow.new()
 	get_parent().add_child.call_deferred(skills)
 	skills.setup(_world, Vector2(600, 200))
 	var bar := SideBar.new()

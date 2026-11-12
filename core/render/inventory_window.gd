@@ -18,7 +18,6 @@ var _hands := UiTheme.label("")
 var _lines := VBoxContainer.new()
 var _weight_bar := ProgressBar.new()
 var _weight_text := UiTheme.label("", UiTheme.FONT_SMALL, UiTheme.DIM)
-var _about := VBoxContainer.new()
 var _tip := UiTooltip.new()
 var _menu := ContextMenu.new()
 var _menu_item: StringName = &""
@@ -26,19 +25,12 @@ var _key := ""
 
 func setup(world: World, at: Vector2) -> void:
 	_world = world
-	setup_window("bag", "Bag", at, Vector2(420, 0))
+	setup_window("bag", "Bag", at, Vector2(250, 0))
 	closed.connect(func() -> void:
 		var state := _state()
 		if state != null:
 			state.inventory_open = false)
-	var split := HBoxContainer.new()
-	split.add_theme_constant_override("separation", 8)
-	body.add_child(split)
-	split.add_child(_you_pane())
-	split.add_child(VSeparator.new())   # vertical: the chain only runs across
-	_about.custom_minimum_size.x = 150
-	_about.add_theme_constant_override("separation", 3)
-	split.add_child(_about)
+	body.add_child(_you_pane())   # UI19: items only; who you are lives in the character window (K)
 	add_child(_tip)
 	_tip.top_level = true
 	add_child(_menu)
@@ -49,9 +41,8 @@ func setup(world: World, at: Vector2) -> void:
 
 func _you_pane() -> VBoxContainer:
 	var pane := VBoxContainer.new()
-	pane.custom_minimum_size.x = 230
+	pane.custom_minimum_size.x = 240
 	pane.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	pane.add_child(UiTheme.label("YOU", UiTheme.FONT_SMALL, UiTheme.DIM))
 	pane.add_child(_hands)
 	pane.add_child(UiTheme.divider())
 	_lines.add_theme_constant_override("separation", 0)
@@ -86,11 +77,22 @@ func _rebuild(state: PlayerStateData) -> void:
 	for c in _lines.get_children():
 		c.queue_free()
 	var items := PlayerInputSystem.carried(state)
+	var kind_now := ""
 	for i in items.size():
-		_lines.add_child(_item_row(i, items[i], state.inventory[items[i]]))
+		var kind: String = ItemCatalog.item(items[i])["kind"]
+		if kind != kind_now:   # catalog order is already grouped, so the 1-9 keys still match the lines
+			kind_now = kind
+			_lines.add_child(_group_header(kind))
+		if not _collapsed.has(kind):
+			_lines.add_child(_item_row(i, items[i], state.inventory[items[i]]))
+	var goods_header := false
 	for good in state.inventory:
 		if not ItemCatalog.ITEMS.has(good) and state.inventory[good] > 0:
-			_lines.add_child(_goods_row(good, state.inventory[good]))
+			if not goods_header:
+				goods_header = true
+				_lines.add_child(_group_header("goods"))
+			if not _collapsed.has("goods"):
+				_lines.add_child(_goods_row(good, state.inventory[good]))
 	if _lines.get_child_count() == 0:
 		_lines.add_child(UiTheme.label("Nothing. Stores sell food and water.", UiTheme.FONT_BODY, UiTheme.DIM))
 	var kg := carried_kg(state)
@@ -98,7 +100,6 @@ func _rebuild(state: PlayerStateData) -> void:
 	_weight_bar.value = minf(kg, ItemCatalog.CARRY_KG)
 	_weight_text.text = "Weight %.1f / %.0f kg" % [kg, ItemCatalog.CARRY_KG]
 	_weight_text.add_theme_color_override("font_color", UiTheme.BAD if kg > ItemCatalog.CARRY_KG else UiTheme.DIM)
-	_rebuild_about(state)
 
 static func carried_kg(state: PlayerStateData) -> float:
 	var kg := 0.0
@@ -171,23 +172,27 @@ func _show_tip(id: StringName) -> void:
 	lines.append(["%.1f kg   ·   $%d" % [it.get("weight", 0.0), it["price"]], UiTheme.DIM])
 	_tip.show_at(get_global_mouse_position(), it["name"], lines)
 
-func _rebuild_about(state: PlayerStateData) -> void:
-	for c in _about.get_children():
-		c.queue_free()
-	var npc: NPCData = _world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
-	_about.add_child(UiTheme.label("CHARACTER", UiTheme.FONT_SMALL, UiTheme.DIM))
-	_about.add_child(UiTheme.label("Rank: " + RankSystem.name_of(state.rank), UiTheme.FONT_BODY, UiTheme.ACCENT))
-	_about.add_child(UiTheme.label("%d points to next" % RankSystem.to_next(_world, npc, state), UiTheme.FONT_SMALL, UiTheme.DIM))
-	_about.add_child(UiTheme.label("Fame %d" % roundi(state.fame), UiTheme.FONT_SMALL))
-	_about.add_child(UiTheme.label("Ammo %d rounds" % state.ammo, UiTheme.FONT_SMALL))
-	_about.add_child(UiTheme.divider())
-	for s in Skills.NAMES:
-		_about.add_child(UiTheme.label("%s  %d" % [String(s).capitalize(), Skills.level(state, s)], UiTheme.FONT_SMALL))
-	_about.add_child(UiTheme.divider())
-	var traits := UiTheme.label("Traits: " + Traits.summary(state), UiTheme.FONT_SMALL, UiTheme.DIM)
-	traits.autowrap_mode = TextServer.AUTOWRAP_WORD
-	_about.add_child(traits)
-	_about.add_child(UiTheme.label("Crew %d/%d   ·   businesses %d" % [state.crew_ids.size(), CrewSystem.MAX_CREW, BusinessSystem.count_owned(_world)], UiTheme.FONT_SMALL, UiTheme.DIM))
+const GROUP_NAMES := {"drink": "Drinks", "food": "Food", "medical": "Medical", "weapon": "Weapons", "ammo": "Ammo", "goods": "Street goods"}
+var _collapsed := {}
+
+## UI19: a category line like Zomboid's, click to fold it away.
+func _group_header(kind: String) -> Button:
+	var b := Button.new()
+	b.flat = true
+	b.focus_mode = Control.FOCUS_NONE
+	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	b.text = ("+ " if _collapsed.has(kind) else "- ") + GROUP_NAMES.get(kind, kind.capitalize()).to_upper()
+	b.add_theme_font_override("font", UiTheme.font("marker"))
+	b.add_theme_font_size_override("font_size", UiTheme.FONT_SMALL)
+	b.add_theme_color_override("font_color", KIND_COLOURS.get(kind, UiTheme.DIM))
+	b.custom_minimum_size.y = 16
+	b.pressed.connect(func() -> void:
+		if _collapsed.has(kind):
+			_collapsed.erase(kind)
+		else:
+			_collapsed[kind] = true
+		_key = "")
+	return b
 
 func _state() -> PlayerStateData:
 	var p: Entity = _world.entities.get(PlayerFactory.PLAYER_ENTITY_ID) if _world != null else null

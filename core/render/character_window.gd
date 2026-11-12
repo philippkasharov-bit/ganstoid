@@ -1,6 +1,7 @@
-## UI6: skills (K), Zomboid-style: each skill a name and ten level boxes,
-## the next box filling as XP comes in. Read-only.
-class_name SkillsWindow
+## UI6/UI19: the character window (K), Zomboid-style tabs: Info (rank, fame,
+## traits, crew, businesses) and Skills (ten level boxes per skill, the next
+## box filling as XP comes in). Read-only.
+class_name CharacterWindow
 extends UiWindow
 
 const ACTION := &"skills_window"
@@ -8,14 +9,20 @@ const BOX := Vector2(11, 9)
 
 var _world: World
 var _rows := VBoxContainer.new()
+var _info := VBoxContainer.new()
+var _tabs := UiTabs.new()
 var _key := ""
 
 func setup(world: World, at: Vector2) -> void:
 	_world = world
-	setup_window("skills", "Skills", at, Vector2(250, 0))
+	setup_window("character", "Character", at, Vector2(250, 0))
 	_rows.add_theme_constant_override("separation", 3)
-	body.add_child(_rows)
-	body.add_child(UiTheme.label("You learn by doing.    K / Esc close", UiTheme.FONT_SMALL, UiTheme.DIM))
+	_info.add_theme_constant_override("separation", 2)
+	body.add_child(_tabs)
+	_tabs.add_tab("Info", _info)
+	_tabs.add_tab("Skills", _rows)
+	_tabs.pick(0)
+	body.add_child(UiTheme.label("K / Esc close", UiTheme.FONT_SMALL, UiTheme.DIM))
 	if not InputMap.has_action(ACTION):
 		InputMap.add_action(ACTION)
 		var ev := InputEventKey.new()
@@ -34,10 +41,40 @@ func _process(_delta: float) -> void:
 	if p == null:
 		return
 	var state: PlayerStateData = p.get_component(ComponentNames.PLAYER_STATE)
-	var key := str(state.skills)
+	var key := "%s|%d|%d|%d" % [state.skills, state.rank, roundi(state.fame), state.crew_ids.size()]
 	if key != _key:
 		_key = key
 		_rebuild(state)
+		_rebuild_info(state)
+
+func _rebuild_info(state: PlayerStateData) -> void:
+	for c in _info.get_children():
+		_info.remove_child(c)
+		c.queue_free()
+	var npc: NPCData = _world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
+	var rank := UiTheme.label(RankSystem.name_of(state.rank), UiTheme.FONT_TITLE, UiTheme.ACCENT)
+	rank.add_theme_font_override("font", UiTheme.font("marker"))
+	_info.add_child(rank)
+	for line in [["Next rank", "%d pts" % RankSystem.to_next(_world, npc, state)], ["Fame", str(roundi(state.fame))],
+			["Cash", "$%d" % npc.cash], ["Crew", "%d/%d" % [state.crew_ids.size(), CrewSystem.MAX_CREW]],
+			["Businesses", str(BusinessSystem.count_owned(_world))], ["Labs", str(ProductionSystem.count_grow_houses(_world))]]:
+		_info.add_child(_stat_row(line[0], line[1]))
+	_info.add_child(UiTheme.divider())
+	var traits := UiTheme.label("Traits: " + Traits.summary(state), UiTheme.FONT_SMALL, UiTheme.DIM)
+	traits.autowrap_mode = TextServer.AUTOWRAP_WORD
+	traits.custom_minimum_size.x = 230
+	_info.add_child(traits)
+
+## "Fame ........ 12": name left, number right in Bungee.
+static func _stat_row(name: String, value: String) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	var n := UiTheme.label(name, UiTheme.FONT_SMALL, UiTheme.DIM)
+	n.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var v := UiTheme.label(value, UiTheme.FONT_SMALL, UiTheme.TEXT)
+	v.add_theme_font_override("font", UiTheme.font("bungee"))
+	row.add_child(n)
+	row.add_child(v)
+	return row
 
 func _rebuild(state: PlayerStateData) -> void:
 	for c in _rows.get_children():

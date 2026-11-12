@@ -7,7 +7,7 @@ extends VBoxContainer
 ## [label, key shown, input action, icon name]
 const BUTTONS := [
 	["Bag", "I", &"inventory", "bag"],
-	["Skills", "K", &"skills_window", "skills"],
+	["Character", "K", &"skills_window", "skills"],
 	["Crew", "Tab", &"ui_focus_next", "crew"],
 	["Turf", "U", &"turf_map", "turf"],
 ]
