@@ -12,6 +12,7 @@ signal hover_item(id: StringName, at: Vector2)
 signal hover_end
 
 const CELL := 32.0
+const COUNT_H := 10.0
 const LINE := Color(1, 1, 1, 0.09)
 const OK_GHOST := Color(0.36, 0.78, 0.35, 0.35)
 const BAD_GHOST := Color(0.86, 0.3, 0.28, 0.35)
@@ -51,11 +52,15 @@ func _draw_pile(p: Dictionary, r: Rect2, lit: bool) -> void:
 	var inner := r.grow(-1.5)
 	draw_rect(inner, Color(0.02, 0.02, 0.03, 0.55) if not lit else Color(col, 0.22))
 	draw_rect(inner, Color(col, 0.75), false, 1.0)
-	ItemArt.draw(self, p["id"], inner.grow(-3), col, p["r"])
-	var font := UiTheme.font("bungee")
-	draw_string(font, inner.position + Vector2(3, 10), _short(p["id"]), HORIZONTAL_ALIGNMENT_LEFT, inner.size.x - 4, 7, Color(1, 1, 1, 0.85))
+	# UI22: nothing printed over the picture. The name is on hover; a pile's
+	# count gets its own strip along the bottom and the picture sits above it.
+	var art := inner.grow(-3)
 	if int(p["n"]) > 1:
-		draw_string(font, inner.end - Vector2(inner.size.x - 2, 3), "x%d" % int(p["n"]), HORIZONTAL_ALIGNMENT_RIGHT, inner.size.x - 4, 9, UiTheme.ACCENT)
+		art.size.y -= COUNT_H
+		var strip := Rect2(inner.position.x, inner.end.y - COUNT_H, inner.size.x, COUNT_H)
+		draw_rect(strip, Color(0, 0, 0, 0.6))
+		draw_string(UiTheme.font("bungee"), strip.position + Vector2(0, COUNT_H - 2), "%d" % int(p["n"]), HORIZONTAL_ALIGNMENT_CENTER, strip.size.x, 8, UiTheme.TEXT)
+	ItemArt.draw(self, p["id"], art, col, p["r"])
 
 ## The pile under the mouse while dragging, plus a ghost on the cells it would take.
 func _draw_drag() -> void:

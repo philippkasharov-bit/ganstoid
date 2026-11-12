@@ -11,7 +11,7 @@ const BUTTONS := [
 	["Crew", "Tab", &"ui_focus_next", "crew"],
 	["Turf", "U", &"turf_map", "turf"],
 ]
-const SIZE := Vector2(42, 42)
+const SIZE := Vector2(46, 44)
 
 var _world: World
 var _badges: Array[Label] = []
@@ -30,19 +30,20 @@ func _button(label: String, key: String, action: StringName, icon: String) -> Bu
 	stack.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	stack.add_theme_constant_override("separation", 0)
 	stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var art := Moodles.icon_or_glyph(icon, label.left(1), 32.0)
+	var art := Moodles.icon_or_glyph(icon, label.left(1), 28.0)   # UI22: icon on top, text under it, nothing overlaps
 	art.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	stack.add_child(art)
+	var line := HBoxContainer.new()
+	line.alignment = BoxContainer.ALIGNMENT_CENTER
+	line.add_theme_constant_override("separation", 4)
+	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var k := UiTheme.label(key, 9, UiTheme.DIM)
+	var badge := UiTheme.label("", 9, UiTheme.TEXT)
+	for part in [k, badge]:
+		part.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		line.add_child(part)
+	stack.add_child(line)
 	b.add_child(stack)
-	var k := UiTheme.label(key, 9, UiTheme.ACCENT)   # the key, top-left like a keycap
-	k.add_theme_font_override("font", UiTheme.font("bungee"))
-	k.add_theme_color_override("font_outline_color", Color.BLACK)
-	k.add_theme_constant_override("outline_size", 3)
-	k.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	k.position = Vector2(3, 1)
-	b.add_child(k)
-	var badge := Moodles.badge("", UiTheme.BG_HEADER)
-	b.add_child(badge)
 	_badges.append(badge)
 	b.focus_mode = Control.FOCUS_NONE
 	b.custom_minimum_size = SIZE

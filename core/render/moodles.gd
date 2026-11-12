@@ -62,7 +62,7 @@ var _lost := 0.0
 
 func setup(world: World) -> void:
 	_world = world
-	add_theme_constant_override("separation", 0)
+	add_theme_constant_override("separation", 5)   # UI22: a gap so one number never touches the next arrows
 	resized.connect(queue_redraw)
 	add_child(_tip)
 	_tip.top_level = true
