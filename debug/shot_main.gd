@@ -32,7 +32,7 @@ func _run(main: Node, args: Dictionary) -> void:
 		await process_frame
 	if args.has("bag"):   # UI5 look: the bag open with a mixed load, hovering the pistol line
 		var st: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
-		st.inventory = {&"water": 2, &"burrito": 1, &"bandage": 3, &"knife": 1, &"pistol": 1, &"ammo": 2, &"weed": 4}
+		st.inventory = {&"water": 2, &"soda": 1, &"chips": 2, &"burrito": 1, &"bandage": 7, &"bat": 1, &"knife": 1, &"pistol": 1, &"weed": 14}
 		st.ammo = 24
 		var me: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
 		me.hunger = 0.25
@@ -56,7 +56,7 @@ func _run(main: Node, args: Dictionary) -> void:
 		st.law_tier = 1
 		root.get_viewport().warp_mouse(Vector2(370, 330))
 		await process_frame
-		win._show_tip(&"pistol")
+		win._show_tip(&"pistol", Vector2(330, 230))
 		await process_frame
 	if args.has("aim"):   # combat look: pistol raised toward a point right of the player, one shot
 		var player: Entity = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID]
