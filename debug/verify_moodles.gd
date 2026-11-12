@@ -7,7 +7,8 @@ func _initialize() -> void:
 	var ok := Moodles.notices(npc, state).is_empty()   # nothing wrong: no notices
 	ok = ok and Moodles.level_of(0.9) == 0 and Moodles.level_of(0.4) == 1 and Moodles.level_of(0.2) == 2 and Moodles.level_of(0.05) == 3
 	ok = ok and Moodles.value(npc, "calm") == 1.0
-	ok = ok and Moodles.arrows(-0.6) == -1 and Moodles.arrows(-1.5) == -2 and Moodles.arrows(5.0) == 3 and Moodles.arrows(0.01) == 0
+	ok = ok and Moodles.arrows(-0.6) == -1 and Moodles.arrows(-3.0) == -2 and Moodles.arrows(5.0) == 2 and Moodles.arrows(0.01) == 0
+	ok = ok and Moodles.arrows(-5.0, true) == -3 and Moodles.arrows(-0.6, true) == -1   # three only in a critical moment
 	npc.bleeding = true
 	state.law_tier = 2
 	var names := Moodles.notices(npc, state).map(func(n: Array) -> String: return n[1])

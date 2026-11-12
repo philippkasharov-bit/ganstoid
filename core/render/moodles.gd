@@ -15,7 +15,8 @@ const OK := Color(0.93, 0.93, 0.9)
 const STATE_COLOURS := [OK, Color("e8c547"), Color("e8913a"), Color("e0533d")]
 const REFRESH_S := 0.25
 const TREND_S := 1.0                      # real seconds between trend samples
-const ARROW_PER_DAY := [0.15, 0.9, 3.0]   # change per game day for 1, 2, 3 arrows
+const ARROW_PER_DAY := [0.15, 2.0]   # change per game day for 1 and 2 arrows
+const HIT_DROP := 0.05               # health lost in one sample that counts as a fight
 
 ## [key (icon file + npc field), name, what a click does, why it matters]
 ## UI10: each icon keeps its own colour (what it is); how bad it is shows in
@@ -56,6 +57,7 @@ var _trend := {}
 var _key := ""
 var _pulse := 0.0
 var _tip := UiTooltip.new()
+var _alert := UiTheme.label("BLEEDING  -  click to bandage", 13, Color.WHITE)
 
 func setup(world: World) -> void:
 	_world = world
@@ -63,6 +65,14 @@ func setup(world: World) -> void:
 	resized.connect(queue_redraw)
 	add_child(_tip)
 	_tip.top_level = true
+	var tag := UiTheme.box(Color("b0202c"), Color(0, 0, 0, 0.8), 1)
+	tag.set_corner_radius_all(4)
+	tag.set_content_margin_all(4)
+	_alert.add_theme_stylebox_override("normal", tag)
+	_alert.top_level = true
+	_alert.visible = false
+	_alert.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_alert)
 
 ## The one thin bar behind the column (a box container draws no panel itself).
 func _draw() -> void:
@@ -97,12 +107,16 @@ static func notices(npc: NPCData, state: PlayerStateData) -> Array:
 		out.append(["heavy", "Heavy load", "%.0fkg" % kg, "%.1f of %.0f kg. Click: open the bag." % [kg, ItemCatalog.CARRY_KG], "bag", clampf(kg / (ItemCatalog.CARRY_KG * 1.5), 0.0, 1.0)])
 	return out
 
-## Arrows from a change per game day: positive up, negative down, 0..3 each way.
-static func arrows(per_day: float) -> int:
+## UI14: arrows from a change per game day: ↓ normal drain, ↓↓ fast (a meal,
+## sleep, a wound), ↓↓↓ only in a critical moment (a fight, bleeding, or the
+## need nearly empty). Positive up, negative down.
+static func arrows(per_day: float, critical: bool = false) -> int:
 	var n := 0
 	for edge in ARROW_PER_DAY:
 		if absf(per_day) >= edge:
 			n += 1
+	if n == 2 and critical:
+		n = 3
 	return n if per_day > 0.0 else -n
 
 func _process(delta: float) -> void:
@@ -136,7 +150,9 @@ func _sample_trend(npc: NPCData) -> void:
 	for need in NEEDS:
 		var now := value(npc, need[0])
 		if _before.has(need[0]) and ticks > 0:
-			_trend[need[0]] = arrows((now - _before[need[0]]) / ticks * SimClock.day_ticks)
+			var hit: bool = need[0] == "health" and _before[need[0]] - now >= HIT_DROP
+			var critical: bool = hit or now < 0.15 or (need[0] == "health" and npc.bleeding)
+			_trend[need[0]] = arrows((now - _before[need[0]]) / ticks * SimClock.day_ticks, critical)
 		_before[need[0]] = now
 	_before_tick = _world.tick
 
@@ -150,7 +166,7 @@ func _state_key(npc: NPCData, state: PlayerStateData) -> String:
 
 func _rebuild(npc: NPCData, state: PlayerStateData) -> void:
 	for c in get_children():
-		if c != _tip:
+		if c != _tip and c != _alert:
 			remove_child(c)
 			c.queue_free()
 	for n in notices(npc, state):
@@ -193,12 +209,16 @@ static func _shadow(c: Control) -> void:
 		c.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
 		c.add_theme_constant_override("outline_size", 4)
 
-## UI12: only bleeding pulses (DayZ's blinking blood drop).
+## UI12/14: only bleeding blinks (on/off like DayZ's blood drop), with an
+## alert tag beside it that blinks with it.
 func _blink() -> void:
-	var a := 0.55 + 0.45 * absf(sin(_pulse * 4.0))
+	var on := fmod(_pulse, 0.8) < 0.5
+	_alert.visible = false
 	for c in get_children():
 		if c is Button and c.get_meta("pulse", false):
-			c.modulate.a = a
+			c.modulate.a = 1.0 if on else 0.2
+			_alert.visible = on
+			_alert.position = c.global_position + Vector2(-_alert.size.x - 6, (CELL.y - _alert.size.y) * 0.5)
 
 ## UI13: an icon filled from the bottom to `fill`: the dark empty silhouette
 ## behind, the coloured part clipped to the filled share.
