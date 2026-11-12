@@ -51,8 +51,8 @@ func _separate(movers: Array, fixed: PackedVector2Array, collision: CityCollisio
 	for k in movers.size():
 		var p: Vector2 = movers[k].position
 		var cell := Vector2i((p / CELL_M).floor())
-		for dx in [-1, 0, 1]:
-			for dy in [-1, 0, 1]:
+		for dx in range(-1, 2):
+			for dy in range(-1, 2):
 				for other in grid.get(cell + Vector2i(dx, dy), []):
 					if other == k or (other >= 0 and other < k):
 						continue   # each mover pair once; fixed bodies (negative) every time
