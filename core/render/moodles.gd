@@ -4,7 +4,7 @@
 class_name Moodles
 extends VBoxContainer
 
-const SIZE := 44.0
+const SIZE := 48.0
 const LEVEL_COLOURS := [Color("8a7a3a"), Color("a3632b"), Color("a83a2c"), Color("7d1420")]
 const REFRESH_S := 0.25
 const NEED_EDGES := [0.5, 0.7, 0.85, 0.95]
@@ -73,16 +73,29 @@ func _rebuild(shown: Array) -> void:
 
 func _icon(m: Array) -> PanelContainer:
 	var box := PanelContainer.new()
-	var style := UiTheme.box(LEVEL_COLOURS[m[2] - 1], Color(0, 0, 0, 0.7), 2)
+	var style := UiTheme.box(Color(0.1, 0.1, 0.11, 0.95), LEVEL_COLOURS[m[2] - 1].lightened(0.15), 3)
 	style.set_corner_radius_all(6)
-	style.set_content_margin_all(0)
+	style.set_content_margin_all(3)
 	box.add_theme_stylebox_override("panel", style)
 	box.custom_minimum_size = Vector2(SIZE, SIZE)
 	box.tooltip_text = "%s (%s)\n%s" % [m[1], ["mild", "moderate", "severe", "critical"][m[2] - 1], m[3]]
-	var glyph := UiTheme.label(m[0], 22, Color(1, 1, 1, 0.92))
-	glyph.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	glyph.add_theme_color_override("font_outline_color", Color.BLACK)
-	glyph.add_theme_constant_override("outline_size", 4)
-	box.add_child(glyph)
+	box.add_child(icon_or_glyph(String(m[1]).split(" ")[0].to_lower(), m[0], SIZE - 6.0))
 	return box
+
+## UI7: art/ui/icons/<name>.png when present, else the letter (art swap point).
+static func icon_or_glyph(name: String, glyph: String, px: float) -> Control:
+	var path := "res://art/ui/icons/%s.png" % name
+	if ResourceLoader.exists(path):
+		var tex := TextureRect.new()
+		tex.texture = load(path)
+		tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		tex.custom_minimum_size = Vector2(px, px)
+		tex.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		return tex
+	var l := UiTheme.label(glyph, 22, Color(1, 1, 1, 0.92))
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	l.add_theme_color_override("font_outline_color", Color.BLACK)
+	l.add_theme_constant_override("outline_size", 4)
+	return l
