@@ -4,10 +4,10 @@
 class_name UiPanel
 extends PanelContainer
 
-const BG := Color(0.06, 0.06, 0.08, 0.93)
-const ACCENT := Color(0.95, 0.72, 0.2)
-const TEXT := Color(0.92, 0.92, 0.9)
-const DIM := Color(0.6, 0.6, 0.62)
+const BG := UiTheme.BG
+const ACCENT := UiTheme.ACCENT
+const TEXT := UiTheme.TEXT
+const DIM := UiTheme.DIM
 const KEY_BG := Color(0.95, 0.72, 0.2, 0.18)
 
 var _world: World
