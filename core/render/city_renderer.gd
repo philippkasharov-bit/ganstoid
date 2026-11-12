@@ -101,8 +101,6 @@ func _build() -> void:
 	var surfaces := _bucket(real.surfaces, tiles, _centre_of_poly)
 	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: CityGround.lots(ci, lots[r], night), tiles)
 	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: CityGround.surfaces(ci, surfaces[r], night), tiles)
-	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: CityGround.lot_lines(ci, lots[r], night), tiles, FINE_ZOOM)
-	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: CityGround.parking_stalls(ci, surfaces[r], night), tiles, FINE_ZOOM)   # DT1
 	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: _draw_sidewalks(ci, roads[r]), tiles)
 	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: _draw_tiers(ci, roads[r], DRAW_ORDER), tiles)
 	var drives := _bucket(city.driveways, tiles, _feature_bounds)
@@ -252,16 +250,56 @@ const SHADOW_DIR := Vector2(0.55, 0.42)       # metres of shadow per metre of he
 const SHADOW_MAX_M := 45.0
 const AWNINGS := [Color("b23a3a"), Color("2f6d8f"), Color("3f7f4f"), Color("c08a2e"), Color("6b4a8f"), Color("d0d0c8")]
 
-## Roofs only (every zoom). Shadows dropped (Phil: not needed).
+## B1: buildings as boxes seen slightly from the south (GTA 2 / old-school
+## 2.5D): the roof is lifted up-screen by its height, and the walls that face
+## the camera fill the gap. Everything stays on the ground plane underneath
+## (people, doors, collision); only the drawing leans. Drawn back to front.
+const LIFT_PER_M := 0.22          # screen metres up per metre of height
+const LIFT_MAX_M := 22.0
+const STOREY_M_DRAW := 3.2
+
 func _draw_buildings(ci: CanvasItem, blds: Array) -> void:
 	var cols: Dictionary = BUILDING_NIGHT if night else BUILDING_DAY
+	var items: Array = []
 	for b in blds:
 		var poly: PackedVector2Array = b["poly"]
 		var open_poly := poly.slice(0, poly.size() - 1) if poly[0] == poly[poly.size() - 1] else poly
 		if open_poly.size() < 3 or Geometry2D.triangulate_polygon(open_poly).is_empty():
 			continue   # a footprint Godot cannot fill (self-touching): skip rather than error
+		var low := -INF
+		for p in open_poly:
+			low = maxf(low, p.y)
+		items.append([low, b, open_poly])
+	items.sort_custom(func(a: Array, c: Array) -> bool: return a[0] < c[0])   # back (north) first
+	for it in items:
+		var b: Dictionary = it[1]
+		var poly: PackedVector2Array = it[2]
 		var levels: int = b.get("levels", 1)
-		ci.draw_colored_polygon(open_poly, cols.get(b["kind"], cols["building"]).lightened(minf(0.18, levels * 0.012)))
+		var roof_col: Color = cols.get(b["kind"], cols["building"]).lightened(minf(0.18, levels * 0.012))
+		var lift := Vector2(0.0, -minf(LIFT_MAX_M, levels * STOREY_M_DRAW * LIFT_PER_M))
+		var wall_col := roof_col.darkened(0.28)
+		for i in poly.size():   # walls facing the camera (their outward side points down-screen)
+			var a := poly[i]
+			var c := poly[(i + 1) % poly.size()]
+			var e := c - a
+			if e.length() < 0.05:
+				continue
+			var out := Vector2(e.y, -e.x) if _is_ccw(poly) else Vector2(-e.y, e.x)
+			if out.y <= 0.0:
+				continue
+			var shade := wall_col.darkened(0.12) if absf(out.normalized().x) > 0.7 else wall_col
+			if absf(e.x) < 0.02 * e.length():
+				continue   # a wall seen edge-on
+			ci.draw_primitive(PackedVector2Array([a, c, c + lift, a + lift]), PackedColorArray([shade, shade, shade, shade]), PackedVector2Array())   # a quad, no triangulation
+		ci.draw_colored_polygon(_moved(poly, lift), roof_col)
+
+static func _is_ccw(poly: PackedVector2Array) -> bool:
+	var area := 0.0
+	for i in poly.size():
+		var a := poly[i]
+		var c := poly[(i + 1) % poly.size()]
+		area += a.x * c.y - c.x * a.y
+	return area > 0.0   # in screen coords (y down) a positive sum winds clockwise on screen
 
 ## Walls, rooftop plant and shop awnings: only up close, where you can see them
 ## (at city zoom these thousands of lines were most of the cost of zooming).
@@ -274,9 +312,10 @@ func _draw_building_details(ci: CanvasItem, blds: Array) -> void:
 			continue
 		var levels: int = b.get("levels", 1)
 		var col: Color = cols.get(b["kind"], cols["building"]).lightened(minf(0.18, levels * 0.012))
-		ci.draw_polyline(poly, col.darkened(0.3), 0.3)   # wall outline, metres
+		var lift := Vector2(0.0, -minf(LIFT_MAX_M, levels * STOREY_M_DRAW * LIFT_PER_M))
+		ci.draw_polyline(_moved(poly, lift), col.darkened(0.3), 0.3)   # roof edge, metres
 		if levels >= 6:
-			_rooftop(ci, open_poly, col)
+			_rooftop(ci, _moved(open_poly, lift), col)
 		if b["kind"] == "commercial" and b.has("door"):
 			_awning(ci, open_poly, b["door"], b["id"])
 
