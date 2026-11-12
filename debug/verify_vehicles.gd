@@ -64,6 +64,18 @@ func _initialize() -> void:
 	print("ran into a walker at speed: %s, their health %.2f, bleeding %s" % [hit.keys(), walker.health, walker.bleeding])
 	if not _check(hit.get("hit_id") == &"walker" and walker.health < 0.4, "a person hit at speed is badly hurt"):
 		return
+	# V3: cars are solid
+	var a2 := _car(world, &"a2", Vector2(500, 500), false)
+	var b2 := _car(world, &"b2", Vector2(506, 500), false)
+	a2.speed = 10.0
+	var crash := {}
+	for k in 60:
+		crash = VehicleSystem.drive(world, a2, 0.0, 0.0, 1.0 / 60.0)
+		if crash.has("hit_car"):
+			break
+	print("car into car: hit %s, front car pushed to %.1f, dents %.2f / %.2f" % [crash.get("hit_car"), b2.position.x, a2.damage, b2.damage])
+	if not _check(crash.get("hit_car") == &"b2" and b2.position.x > 506.0 and a2.damage > 0.0 and a2.position.x < 503.0, "cars do not drive through each other"):
+		return
 	print("VEHICLES_VERIFY: PASS")
 	quit()
 

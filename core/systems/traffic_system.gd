@@ -37,6 +37,10 @@ var _chaser: StringName = &""
 var _far_ticks := 0
 var _spawned := 0
 var _nearby: Array[int] = []
+var _blocks: Array[StringName] = []
+var _block_tick := -1000000
+const BLOCK_EVERY_S := 30.0
+const BLOCK_AHEAD_M := 140.0
 var _world_ref: WeakRef
 var _world: World:
 	get:
@@ -282,6 +286,9 @@ func _pursuit(me: NPCData, state: PlayerStateData, delta: float, tick: int) -> v
 		if cops != null:
 			cops._arrest(me, state)
 		return
+	if mine != null and tick - _block_tick > int(BLOCK_EVERY_S * SimClock.TICKS_PER_SECOND) and mine.speed > 8.0:
+		_roadblock(mine)
+		_block_tick = tick
 	_far_ticks = _far_ticks + 1 if gap > LOSE_M else 0
 	if _far_ticks > int(LOSE_S * SimClock.TICKS_PER_SECOND):
 		_end_chase(state, "lost")
@@ -301,7 +308,40 @@ func _start_chase(state: PlayerStateData) -> void:
 	_far_ticks = 0
 	StreetTalk.say_key(_world, state, "chase_on")
 
+## V3: two patrol cars parked nose to nose across the street ahead of you.
+func _roadblock(mine: VehicleData) -> void:
+	var fwd := Vector2.from_angle(mine.heading)
+	var spot := mine.position + fwd * BLOCK_AHEAD_M
+	var best := Vector2.INF
+	var along := fwd
+	for i in _nearby:
+		var pts: PackedVector2Array = roads[i]["pts"]
+		for k in pts.size() - 1:
+			var q := Geometry2D.get_closest_point_to_segment(spot, pts[k], pts[k + 1])
+			if q.distance_to(spot) < best.distance_to(spot):
+				best = q
+				along = (pts[k + 1] - pts[k]).normalized()
+	if best == Vector2.INF or best.distance_to(spot) > 40.0:
+		return
+	for side in [-1.0, 1.0]:
+		var cop := VehicleData.new()
+		cop.id = StringName("block_%d" % _spawned)
+		_spawned += 1
+		cop.color = Color(0.12, 0.12, 0.14)
+		cop.driver_id = COP_DRIVER
+		cop.touched = true
+		cop.heading = along.orthogonal().angle()
+		cop.position = best + along * side * 1.2 + along.orthogonal() * side * 2.0
+		var e := Entity.new(cop.id)
+		e.add_component(cop)
+		_world.register_entity(e)
+		_blocks.append(cop.id)
+
 func _end_chase(state: PlayerStateData, how: String) -> void:
+	for b in _blocks:
+		if _world.entities.has(b):
+			_world.unregister_entity(b)
+	_blocks.clear()
 	if _chaser != &"":
 		_world.unregister_entity(_chaser)
 	_chaser = &""

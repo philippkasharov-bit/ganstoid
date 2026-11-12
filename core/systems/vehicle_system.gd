@@ -95,6 +95,18 @@ static func drive(world: World, car: VehicleData, throttle: float, steer: float,
 	var forward := Vector2.from_angle(car.heading)
 	var next := car.position + forward * car.speed * delta
 	var nose := next + forward * signf(car.speed) * car.length_m * 0.5
+	var other := _car_at(world, nose, car.id)
+	if other != null:   # V3: cars are solid: hit one and both get dented, you stop, it gets shoved
+		var impact := absf(car.speed)
+		car.damage = minf(WRECKED, car.damage + impact * 0.015)
+		other.damage = minf(WRECKED, other.damage + impact * 0.015)
+		other.position += Vector2.from_angle(car.heading) * minf(1.5, impact * 0.08)
+		other.touched = true
+		world.reindex_position(other.id)
+		out["crash"] = impact
+		out["hit_car"] = other.id
+		car.speed = -car.speed * 0.15
+		return out
 	if _blocked(nose, 0.0):
 		car.damage = minf(WRECKED, car.damage + absf(car.speed) * 0.02)
 		out["crash"] = absf(car.speed)
@@ -127,6 +139,19 @@ static func _run_into(world: World, car: VehicleData, forward: Vector2) -> Dicti
 		car.damage = minf(WRECKED, car.damage + 0.03)
 		return result
 	return {}
+
+## Another car whose body covers point `p` (oriented box test).
+static func _car_at(world: World, p: Vector2, self_id: StringName) -> VehicleData:
+	for id in world.spatial_index.query_nearby(p):
+		if id == self_id:
+			continue
+		var c := _car(world, id)
+		if c == null:
+			continue
+		var rel := (p - c.position).rotated(-c.heading)
+		if absf(rel.x) <= c.length_m * 0.5 and absf(rel.y) <= c.width_m * 0.5:
+			return c
+	return null
 
 static func nearest_car(world: World, at: Vector2) -> VehicleData:
 	var best: VehicleData = null
