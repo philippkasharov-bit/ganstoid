@@ -34,6 +34,15 @@ func _run(main: Node, args: Dictionary) -> void:
 		var st: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
 		st.inventory = {&"water": 2, &"burrito": 1, &"bandage": 3, &"knife": 1, &"pistol": 1, &"ammo": 2, &"weed": 4}
 		st.ammo = 24
+		var me: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
+		me.hunger = 0.25
+		me.thirst = 0.1
+		me.health = 0.6
+		me.bleeding = true
+		st.skills = {&"melee": 140.0, &"theft": 30.0, &"driving": 410.0}
+		for n in main.get_node("HudLayer").get_children():
+			if n is SkillsWindow:
+				n.visible = true
 		st.inventory_open = true
 		for i in 3:
 			await process_frame
@@ -41,7 +50,7 @@ func _run(main: Node, args: Dictionary) -> void:
 		for n in main.get_node("HudLayer").get_children():
 			if n is InventoryWindow:
 				win = n
-		root.get_viewport().warp_mouse(Vector2(300, 470))
+		root.get_viewport().warp_mouse(Vector2(370, 330))
 		await process_frame
 		win._show_tip(&"pistol")
 		await process_frame

@@ -29,20 +29,32 @@ func _ready() -> void:
 	roster.setup(_world)
 	var store := StorePanel.new()   # G1: E at a counter
 	get_parent().add_child.call_deferred(store)
-	store.setup(_world, Vector2(12, 290))
+	store.setup(_world, Vector2(80, 150))
 	var bag := InventoryWindow.new()  # UI5: I
 	get_parent().add_child.call_deferred(bag)
-	bag.setup(_world, Vector2(12, 290))
+	bag.setup(_world, Vector2(80, 150))
 	var menu := ActionMenu.new()      # UI1: E
 	get_parent().add_child.call_deferred(menu)
-	menu.setup(_world, Vector2(12, 290))
+	menu.setup(_world, Vector2(80, 150))
 	var card := StatusCard.new()      # UI2: bars and status
 	get_parent().add_child.call_deferred(card)
 	card.setup(_world)
+	var clock := ClockBox.new()       # UI6: Zomboid layout
+	get_parent().add_child.call_deferred(clock)
+	clock.setup(_world)
+	var moodles := Moodles.new()
+	get_parent().add_child.call_deferred(moodles)
+	moodles.setup(_world)
+	var skills := SkillsWindow.new()
+	get_parent().add_child.call_deferred(skills)
+	skills.setup(_world, Vector2(600, 200))
+	var bar := SideBar.new()
+	get_parent().add_child.call_deferred(bar)
+	bar.setup()
 	var toast := Toast.new()          # UI2: pop-up lines
 	get_parent().add_child.call_deferred(toast)
 	toast.setup(_world)
-	position = Vector2(12, 250)
+	position = Vector2(80, 150)
 
 func _process(delta: float) -> void:
 	if _world == null:
