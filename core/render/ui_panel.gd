@@ -37,21 +37,7 @@ func setup(world: World, at: Vector2) -> void:
 
 ## The shared card look (also used by the status card and toasts).
 static func card_style() -> StyleBox:
-	var satin := UiTheme.texture_box("tex/satin", Color(0.55, 0.55, 0.6), 14)
-	if satin != null:
-		return satin   # UI16: same jacket satin as the windows
-	var style := StyleBoxFlat.new()
-	style.bg_color = BG
-	style.border_color = ACCENT
-	style.border_width_left = 4
-	style.set_corner_radius_all(6)
-	style.content_margin_left = 16
-	style.content_margin_right = 16
-	style.content_margin_top = 12
-	style.content_margin_bottom = 12
-	style.shadow_color = Color(0, 0, 0, 0.45)
-	style.shadow_size = 8
-	return style
+	return UiTheme.window_box(14)   # UI17: same flat jacket panel as the windows
 
 func _process(_delta: float) -> void:
 	if _world != null:

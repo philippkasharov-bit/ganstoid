@@ -1,5 +1,6 @@
-## UI4/UI16: the one visual language for every panel. UI16 dresses it in the
-## 90s street look: black satin team-jacket panels, a cassette label for the
+## UI4/UI16/UI17: the one visual language for every panel. The 90s street
+## look: flat matte black panels with off-white piping and a hard purple drop
+## shadow (team-jacket colour blocking, no photo texture), a cassette label for the
 ## title bar (marker-pen title), a gold rope chain for dividers, Bungee for
 ## numbers. Panels read colours, fonts and boxes from here, so restyling the
 ## game stays a one-file change. Art lives in art/ui/street/, swappable.
@@ -34,13 +35,18 @@ static func box(bg: Color, border: Color = FRAME, width: int = 1) -> StyleBoxFla
 	style.set_content_margin_all(PAD)
 	return style
 
-static func window_box() -> StyleBox:
-	var satin := texture_box("tex/satin", Color(0.55, 0.55, 0.6), 1)
-	if satin == null:
-		var style := box(BG)
-		style.set_content_margin_all(1)
-		return style
-	return satin
+const PANEL := Color("141416")
+const PIPING := Color(0.91, 0.89, 0.82, 0.9)
+const DROP := Color("5b2a8c")            # hard, offset, no blur: printed-flyer shadow
+
+static func window_box(margin: int = 2) -> StyleBox:
+	var style := box(PANEL, PIPING, 2)
+	style.set_corner_radius_all(2)
+	style.set_content_margin_all(margin)
+	style.shadow_color = DROP
+	style.shadow_size = 1
+	style.shadow_offset = Vector2(5, 5)
+	return style
 
 ## The cassette label: cream with red and blue stripes, title in marker.
 static func header_box() -> StyleBox:

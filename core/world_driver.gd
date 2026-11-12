@@ -23,6 +23,7 @@ var _saved_hour := 0
 var _dead_handled := false
 
 func _ready() -> void:
+	UserDirMove.run()   # UI17: saves from before the rename to Tagged
 	city = CityData.load_file()
 	var saved := SaveGame.read()   # SL1: carry on where the last session ended, if alive
 	seed_used = saved["seed"] if not saved.is_empty() else randi()
