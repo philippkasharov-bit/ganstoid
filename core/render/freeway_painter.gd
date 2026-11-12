@@ -19,15 +19,28 @@ const NIGHT := {"deck": Color("3a3c44"), "barrier": Color("24252b"), "shadow": C
 
 static func paint(ci: CanvasItem, roads: Array, widths: Dictionary, night: bool, markings: bool) -> void:
 	var pal: Dictionary = NIGHT if night else DAY
-	var ordered := roads.filter(func(r: Dictionary) -> bool: return r["tier"] == "ramp") + roads.filter(func(r: Dictionary) -> bool: return r["tier"] == "fwy")
-	for road in ordered:
-		ci.draw_polyline(_shifted(road["pts"], SHADOW_OFFSET), pal["shadow"], _w(road, widths) + 1.0)   # opaque: overlapping shadows must not stack darker
-	for road in ordered:
-		var w := _w(road, widths)
-		_band(ci, road["pts"], pal["barrier"], w)
-		_band(ci, road["pts"], pal["deck"], w - BARRIER_M * 2.0)
-		if markings:
-			_stripes(ci, road["pts"], w, pal)
+	# MF2: deck by deck from the lowest, each with its own shadow, so the upper
+	# deck of an interchange is drawn over (and shades) the one beneath it
+	var layers := {}
+	for r in roads:
+		var lv: int = r.get("layer", 0)
+		if not layers.has(lv):
+			layers[lv] = []
+		layers[lv].append(r)
+	var keys := layers.keys()
+	keys.sort()
+	for lv in keys:
+		var deck: Array = layers[lv]
+		var ordered := deck.filter(func(r: Dictionary) -> bool: return r["tier"] == "ramp") + deck.filter(func(r: Dictionary) -> bool: return r["tier"] == "fwy")
+		var lift := SHADOW_OFFSET * (1.0 + 0.6 * maxi(0, lv))   # higher decks throw their shadow further
+		for road in ordered:
+			ci.draw_polyline(_shifted(road["pts"], lift), pal["shadow"], _w(road, widths) + 1.0)   # opaque: overlapping shadows must not stack darker
+		for road in ordered:
+			var w := _w(road, widths)
+			_band(ci, road["pts"], pal["barrier"], w)
+			_band(ci, road["pts"], pal["deck"], w - BARRIER_M * 2.0)
+			if markings:
+				_stripes(ci, road["pts"], w, pal)
 
 static func _w(road: Dictionary, widths: Dictionary) -> float:
 	return road.get("w", widths[road["tier"]])
