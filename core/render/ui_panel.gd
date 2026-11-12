@@ -23,10 +23,11 @@ func setup(world: World, at: Vector2) -> void:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 6)
 	add_child(box)
-	_title.add_theme_font_size_override("font_size", 17)
+	_title.add_theme_font_size_override("font_size", 19)
 	_title.add_theme_color_override("font_color", ACCENT)
+	_title.add_theme_font_override("font", UiTheme.font("marker"))
 	box.add_child(_title)
-	box.add_child(HSeparator.new())
+	box.add_child(UiTheme.divider())
 	_rows.add_theme_constant_override("separation", 3)
 	box.add_child(_rows)
 	_footer.add_theme_font_size_override("font_size", 13)
@@ -35,7 +36,10 @@ func setup(world: World, at: Vector2) -> void:
 	visible = false
 
 ## The shared card look (also used by the status card and toasts).
-static func card_style() -> StyleBoxFlat:
+static func card_style() -> StyleBox:
+	var satin := UiTheme.texture_box("tex/satin", Color(0.55, 0.55, 0.6), 14)
+	if satin != null:
+		return satin   # UI16: same jacket satin as the windows
 	var style := StyleBoxFlat.new()
 	style.bg_color = BG
 	style.border_color = ACCENT
@@ -73,6 +77,7 @@ func show_panel(title: String, rows: Array, footer: String) -> void:
 		var k := Label.new()
 		k.text = " %s " % r[0] if r[0] != "" else "   "
 		k.add_theme_color_override("font_color", ACCENT)
+		k.add_theme_font_override("font", UiTheme.font("bungee"))
 		var kb := StyleBoxFlat.new()
 		kb.bg_color = KEY_BG if r[0] != "" else Color.TRANSPARENT
 		kb.set_corner_radius_all(3)

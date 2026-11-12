@@ -35,6 +35,7 @@ func _button(label: String, key: String, action: StringName, icon: String) -> Bu
 	stack.add_child(art)
 	b.add_child(stack)
 	var k := UiTheme.label(key, 11, UiTheme.ACCENT)   # the key, top-left like a keycap
+	k.add_theme_font_override("font", UiTheme.font("bungee"))
 	k.add_theme_color_override("font_outline_color", Color.BLACK)
 	k.add_theme_constant_override("outline_size", 3)
 	k.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -48,7 +49,7 @@ func _button(label: String, key: String, action: StringName, icon: String) -> Bu
 	b.add_theme_font_size_override("font_size", UiTheme.FONT_SMALL)
 	b.add_theme_color_override("font_color", UiTheme.TEXT)
 	b.add_theme_color_override("font_hover_color", UiTheme.ACCENT)
-	b.add_theme_stylebox_override("normal", UiTheme.box(UiTheme.BG))
+	b.add_theme_stylebox_override("normal", UiTheme.window_box())
 	b.add_theme_stylebox_override("hover", UiTheme.box(UiTheme.BG_HEADER, UiTheme.ACCENT))
 	b.add_theme_stylebox_override("pressed", UiTheme.box(UiTheme.BG_ROW_SELECT, UiTheme.ACCENT))
 	b.tooltip_text = "%s (%s)" % [label, key]

@@ -35,7 +35,7 @@ func setup(world: World, at: Vector2) -> void:
 	split.add_theme_constant_override("separation", 14)
 	body.add_child(split)
 	split.add_child(_you_pane())
-	split.add_child(VSeparator.new())
+	split.add_child(VSeparator.new())   # vertical: the chain only runs across
 	_about.custom_minimum_size.x = 200
 	_about.add_theme_constant_override("separation", 3)
 	split.add_child(_about)
@@ -53,7 +53,7 @@ func _you_pane() -> VBoxContainer:
 	pane.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	pane.add_child(UiTheme.label("YOU", UiTheme.FONT_SMALL, UiTheme.DIM))
 	pane.add_child(_hands)
-	pane.add_child(HSeparator.new())
+	pane.add_child(UiTheme.divider())
 	_lines.add_theme_constant_override("separation", 0)
 	_lines.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	pane.add_child(_lines)
@@ -135,7 +135,9 @@ func _row_button(key: String, text: String, count: int, kg: float, kind: String)
 	chip.color = KIND_COLOURS.get(kind, UiTheme.DIM)
 	chip.custom_minimum_size = Vector2(4, UiTheme.ROW_H - 6)
 	chip.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	for part in [UiTheme.label(" %s" % key if key != "" else "  ", UiTheme.FONT_BODY, UiTheme.ACCENT), chip,
+	var key_label := UiTheme.label(" %s" % key if key != "" else "  ", UiTheme.FONT_BODY, UiTheme.ACCENT)
+	key_label.add_theme_font_override("font", UiTheme.font("bungee"))
+	for part in [key_label, chip,
 			UiTheme.label("%s  x%d" % [text, count]), UiTheme.label("%.1f kg " % kg if kg > 0.0 else "", UiTheme.FONT_SMALL, UiTheme.DIM)]:
 		part.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		line.add_child(part)
@@ -178,10 +180,10 @@ func _rebuild_about(state: PlayerStateData) -> void:
 	_about.add_child(UiTheme.label("%d points to next" % RankSystem.to_next(_world, npc, state), UiTheme.FONT_SMALL, UiTheme.DIM))
 	_about.add_child(UiTheme.label("Fame %d" % roundi(state.fame), UiTheme.FONT_SMALL))
 	_about.add_child(UiTheme.label("Ammo %d rounds" % state.ammo, UiTheme.FONT_SMALL))
-	_about.add_child(HSeparator.new())
+	_about.add_child(UiTheme.divider())
 	for s in Skills.NAMES:
 		_about.add_child(UiTheme.label("%s  %d" % [String(s).capitalize(), Skills.level(state, s)], UiTheme.FONT_SMALL))
-	_about.add_child(HSeparator.new())
+	_about.add_child(UiTheme.divider())
 	var traits := UiTheme.label("Traits: " + Traits.summary(state), UiTheme.FONT_SMALL, UiTheme.DIM)
 	traits.autowrap_mode = TextServer.AUTOWRAP_WORD
 	_about.add_child(traits)

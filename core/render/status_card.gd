@@ -14,13 +14,14 @@ var _left := 0.0
 func setup(world: World) -> void:
 	_world = world
 	position = Vector2(12, 10)
-	add_theme_stylebox_override("panel", UiTheme.box(UiTheme.BG))
+	add_theme_stylebox_override("panel", UiPanel.card_style())
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 5)
 	add_child(box)
 	for l in [_top, _mid, _bottom]:
 		l.add_theme_color_override("font_color", UiPanel.TEXT)
 	_top.add_theme_font_size_override("font_size", 18)
+	_top.add_theme_font_override("font", UiTheme.font("bungee"))
 	_mid.add_theme_font_size_override("font_size", 14)
 	_bottom.add_theme_font_size_override("font_size", 13)
 	_bottom.add_theme_color_override("font_color", UiPanel.DIM)

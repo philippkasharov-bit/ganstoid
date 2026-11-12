@@ -51,6 +51,7 @@ func _skill_row(name: String, xp: float) -> HBoxContainer:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 3)
 	var title := UiTheme.label(name)
+	title.add_theme_font_override("font", UiTheme.font("marker"))
 	title.custom_minimum_size.x = 110
 	row.add_child(title)
 	var lvl := mini(Skills.MAX_LEVEL, int(sqrt(xp / Skills.XP_PER_LEVEL_SQ)))

@@ -34,11 +34,11 @@ func setup_window(id: String, title: String, at: Vector2, min_size: Vector2) -> 
 func _build_header(title: String) -> PanelContainer:
 	var header := PanelContainer.new()
 	header.add_theme_stylebox_override("panel", UiTheme.header_box())
-	header.custom_minimum_size.y = UiTheme.HEADER_H
+	header.custom_minimum_size.y = UiTheme.HEADER_H + 4
 	header.mouse_filter = Control.MOUSE_FILTER_PASS
 	var row := HBoxContainer.new()
 	header.add_child(row)
-	_title = UiTheme.label(title.to_upper(), UiTheme.FONT_TITLE, UiTheme.ACCENT)
+	_title = UiTheme.title_label(title.to_upper())
 	_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	row.add_child(_title)
@@ -46,6 +46,9 @@ func _build_header(title: String) -> PanelContainer:
 	close.text = "x"
 	close.flat = true
 	close.focus_mode = Control.FOCUS_NONE
+	close.add_theme_font_override("font", UiTheme.font("marker"))
+	close.add_theme_color_override("font_color", UiTheme.INK)
+	close.add_theme_color_override("font_hover_color", UiTheme.BAD)
 	close.tooltip_text = "Close"
 	close.pressed.connect(close_window)
 	row.add_child(close)

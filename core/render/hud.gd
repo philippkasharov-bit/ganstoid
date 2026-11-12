@@ -17,6 +17,7 @@ var _seen_serial := 0
 var _refresh_in := 0.0
 const REFRESH_SECONDS := 0.25
 var _message_time_left := 0.0
+var _title_art: TextureRect
 
 func _ready() -> void:
 	_world = get_node(world_driver_path).world
@@ -51,6 +52,14 @@ func _ready() -> void:
 	var bar := SideBar.new()
 	get_parent().add_child.call_deferred(bar)
 	bar.setup(_world)
+	_title_art = TextureRect.new()    # UI16: the title art while the streets load
+	if ResourceLoader.exists(UiTheme.STREET + "title.jpg"):
+		_title_art.texture = load(UiTheme.STREET + "title.jpg")
+	_title_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_title_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	_title_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_title_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	get_parent().add_child.call_deferred(_title_art)
 	var toast := Toast.new()          # UI2: pop-up lines
 	get_parent().add_child.call_deferred(toast)
 	toast.setup(_world)
@@ -59,9 +68,19 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if _world == null:
 		return
-	if SimNav.active == null or not SimNav.active.is_ready():
+	var loading := SimNav.active == null or not SimNav.active.is_ready()
+	_title_art.visible = loading
+	if loading:
 		text = "Loading the streets of the city..."
+		move_to_front()   # the loading line sits on the title art, bottom-left
+		position = Vector2(28, get_viewport_rect().size.y - 56)
+		add_theme_font_override("font", UiTheme.font("marker"))
+		add_theme_font_size_override("font_size", 24)
 		return
+	if has_theme_font_override("font"):
+		remove_theme_font_override("font")
+		add_theme_font_size_override("font_size", 13)
+		position = Vector2(84, 150)
 	_refresh_in -= delta
 	if _refresh_in > 0.0:
 		return   # the text walks every building twice: four times a second is plenty
