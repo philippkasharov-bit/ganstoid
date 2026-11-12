@@ -16,6 +16,14 @@ const TREND_S := 1.0                      # real seconds between trend samples
 const ARROW_PER_DAY := [0.15, 0.9, 3.0]   # change per game day for 1, 2, 3 arrows
 
 ## [key (icon file + npc field), name, what a click does, why it matters]
+## UI10: each icon keeps its own colour (what it is); how bad it is shows in
+## the frame, arrows and number (white fine, then yellow, orange, red).
+const IDENTITY := {
+	"hunger": Color("e0a050"), "thirst": Color("4fa8e8"), "fatigue": Color("f2d34b"),
+	"health": Color("e4574f"), "calm": Color("a98be0"), "bleeding": Color("ff4a55"),
+	"wanted": Color("5a8cf0"), "warrant": Color("e8b35a"), "heavy": Color("a8a8a0"),
+}
+
 const NEEDS := [
 	["hunger", "Food", "food", "Click: eat the most filling food you carry."],
 	["thirst", "Water", "drink", "Click: drink the best drink you carry."],
@@ -134,7 +142,7 @@ func _cell(icon: String, name: String, level: int, arrow_text: String, number: S
 	var b := Button.new()
 	b.focus_mode = Control.FOCUS_NONE
 	b.custom_minimum_size = CELL
-	var back := UiTheme.box(Color(0.05, 0.05, 0.06, 0.62), Color.TRANSPARENT, 0)
+	var back := UiTheme.box(Color(0.05, 0.05, 0.06, 0.62), STATE_COLOURS[level] if level > 0 else Color.TRANSPARENT, 2 if level > 0 else 0)
 	back.set_corner_radius_all(6)
 	b.add_theme_stylebox_override("normal", back)
 	b.add_theme_stylebox_override("pressed", back)
@@ -149,8 +157,8 @@ func _cell(icon: String, name: String, level: int, arrow_text: String, number: S
 	arrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var art := icon_or_glyph(icon, name.left(1), ICON)
 	art.position = Vector2((CELL.x - ICON) * 0.5, 15)
-	art.modulate = col
-	var num := UiTheme.label(number, 12, col)
+	art.modulate = IDENTITY.get(icon, col)
+	var num := UiTheme.label(number, 12, col if level > 0 else IDENTITY.get(icon, col).lightened(0.35))
 	num.position = Vector2(0, 15 + ICON + 2)
 	num.size = Vector2(CELL.x, 14)
 	num.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -173,7 +181,9 @@ func _blink() -> void:
 	var a := 0.55 + 0.45 * absf(sin(_pulse * 4.0))
 	for c in get_children():
 		if c is Button and c.get_meta("level", 0) == 3:
-			c.modulate.a = a
+			var frame: StyleBoxFlat = c.get_theme_stylebox("normal")
+			frame.border_color.a = a   # only the red frame pulses; the icon stays readable
+			frame.bg_color = Color(0.2, 0.03, 0.05, 0.7 * a)
 
 ## UI7: art/ui/needs/<name>.png (flat white, tinted here) when present, then
 ## art/ui/icons/<name>.png, else the letter (art swap point).
