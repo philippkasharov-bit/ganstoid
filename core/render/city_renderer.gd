@@ -240,16 +240,83 @@ func _draw_tiers(ci: CanvasItem, roads: Array, tiers: Array[String]) -> void:
 			if road["tier"] == tier:
 				_thick_line(ci, road, pal[tier], 0.0)
 
+## MP7: buildings with height. Each casts a shadow away from the afternoon
+## sun as long as it is tall (3.2 m a storey); taller roofs read a touch
+## lighter, towers get rooftop plant; shops and restaurants get a coloured
+## awning over the wall their door is on.
+const STOREY_M := 3.2
+const SHADOW_DIR := Vector2(0.55, 0.42)       # metres of shadow per metre of height
+const SHADOW_MAX_M := 45.0
+const AWNINGS := [Color("b23a3a"), Color("2f6d8f"), Color("3f7f4f"), Color("c08a2e"), Color("6b4a8f"), Color("d0d0c8")]
+
 func _draw_buildings(ci: CanvasItem, blds: Array) -> void:
 	var cols: Dictionary = BUILDING_NIGHT if night else BUILDING_DAY
+	var shade := Color(0, 0, 0, 0.0) if night else Color("bdb39c")
+	var polys: Array = []
 	for b in blds:
 		var poly: PackedVector2Array = b["poly"]
 		var open_poly := poly.slice(0, poly.size() - 1) if poly[0] == poly[poly.size() - 1] else poly
 		if Geometry2D.triangulate_polygon(open_poly).is_empty():
 			continue
-		var col: Color = cols.get(b["kind"], cols["building"])
-		ci.draw_colored_polygon(open_poly, col)
-		ci.draw_polyline(poly, col.darkened(0.3), 0.3)   # wall outline, metres
+		polys.append([b, open_poly])
+	if not night:
+		for e in polys:   # shadows first, all of them, so no roof is ever under a neighbour's shadow
+			var off: Vector2 = SHADOW_DIR * minf(SHADOW_MAX_M, int(e[0].get("levels", 1)) * STOREY_M)
+			var steps := clampi(ceili(off.length() / 3.0), 1, 12)   # the footprint swept toward the shadow's end
+			for k in range(1, steps + 1):
+				ci.draw_colored_polygon(_moved(e[1], off * float(k) / steps), shade)
+	for e in polys:
+		var b: Dictionary = e[0]
+		var levels: int = b.get("levels", 1)
+		var col: Color = cols.get(b["kind"], cols["building"]).lightened(minf(0.18, levels * 0.012))
+		ci.draw_colored_polygon(e[1], col)
+		ci.draw_polyline(b["poly"], col.darkened(0.3), 0.3)   # wall outline, metres
+		if levels >= 6:
+			_rooftop(ci, e[1], col)
+		if b["kind"] == "commercial" and b.has("door"):
+			_awning(ci, e[1], b["door"], b["id"])
+
+static func _moved(poly: PackedVector2Array, by: Vector2) -> PackedVector2Array:
+	var out := PackedVector2Array()
+	for p in poly:
+		out.append(p + by)
+	return out
+
+## Plant on a tall roof: a couple of boxes near the middle.
+func _rooftop(ci: CanvasItem, poly: PackedVector2Array, col: Color) -> void:
+	var c := Vector2.ZERO
+	for p in poly:
+		c += p
+	c /= poly.size()
+	if not Geometry2D.is_point_in_polygon(c, poly):
+		return
+	ci.draw_rect(Rect2(c - Vector2(3, 2), Vector2(6, 4)), col.darkened(0.18))
+	ci.draw_rect(Rect2(c + Vector2(4, -1), Vector2(2.5, 2.5)), col.darkened(0.25))
+
+## A shopfront awning along the wall nearest the door.
+func _awning(ci: CanvasItem, poly: PackedVector2Array, door: Vector2, id: StringName) -> void:
+	var best := 0
+	var best_d := INF
+	for i in poly.size():
+		var d := Geometry2D.get_closest_point_to_segment(door, poly[i], poly[(i + 1) % poly.size()]).distance_to(door)
+		if d < best_d:
+			best_d = d
+			best = i
+	var a: Vector2 = poly[best]
+	var c: Vector2 = poly[(best + 1) % poly.size()]
+	var len := a.distance_to(c)
+	if len < 3.0:
+		return
+	var along := (c - a) / len
+	var out := along.orthogonal()
+	if (door - a).dot(out) < 0.0:
+		out = -out   # outward: toward the street the door faces
+	var span := minf(len - 1.0, 12.0)
+	var mid := Geometry2D.get_closest_point_to_segment(door, a, c)
+	var s0 := mid - along * span * 0.5
+	var s1 := mid + along * span * 0.5
+	var col: Color = AWNINGS[absi(hash(id)) % AWNINGS.size()]
+	ci.draw_colored_polygon(PackedVector2Array([s0, s1, s1 + out * 1.4, s0 + out * 1.4]), col.darkened(0.45) if night else col)
 
 ## A wide polyline with round joints at real bends, and at an end only where
 ## another road carries on from that point. The joint there is as wide as the
