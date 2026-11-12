@@ -1,14 +1,16 @@
-## UI9: DayZ-style status bar, bottom-right. The core needs are always on
-## screen as flat white icons that turn yellow, orange and red as they run
-## low (red ones pulse), with ↑/↓ arrows showing how fast they are rising or
-## falling and the % under each. Problems (bleeding, wanted, warrant, heavy)
-## appear to the left only while they apply. Click an icon for the obvious
-## fix; hover for what it means. Reads state; the one write is state.ui_use.
+## UI9/UI13: DayZ-style status column on the right edge of the screen. Each
+## icon fills from the bottom with its number (food 25% = a quarter full) over
+## a dark empty silhouette, with ↑/↓ arrows for how fast it moves and the
+## number under it. No coloured boxes: just the icons on one thin bar.
+## Problems (bleeding, wanted, warrant, heavy) sit on top while they apply;
+## only bleeding pulses. Click an icon for the obvious fix; hover explains.
+## Reads state; the one write is state.ui_use.
 class_name Moodles
-extends HBoxContainer
+extends VBoxContainer
 
-const ICON := 40.0
-const CELL := Vector2(52, 78)
+const ICON := 34.0
+const CELL := Vector2(48, 62)
+const EMPTY := Color(0.0, 0.0, 0.0, 0.5)   # the unfilled part of every icon
 const OK := Color(0.93, 0.93, 0.9)
 const STATE_COLOURS := [OK, Color("e8c547"), Color("e8913a"), Color("e0533d")]
 const REFRESH_S := 0.25
@@ -57,10 +59,17 @@ var _tip := UiTooltip.new()
 
 func setup(world: World) -> void:
 	_world = world
-	add_theme_constant_override("separation", 2)
-	alignment = BoxContainer.ALIGNMENT_END
+	add_theme_constant_override("separation", 0)
+	resized.connect(queue_redraw)
 	add_child(_tip)
 	_tip.top_level = true
+
+## The one thin bar behind the column (a box container draws no panel itself).
+func _draw() -> void:
+	var bar := StyleBoxFlat.new()
+	bar.bg_color = Color(0.05, 0.05, 0.06, 0.35)
+	bar.set_corner_radius_all(8)
+	draw_style_box(bar, Rect2(Vector2(-2, -4), size + Vector2(4, 8)))
 
 ## The 0..1 "how full" value for a need (stress is shown as calm).
 static func value(npc: NPCData, key: String) -> float:
@@ -74,18 +83,18 @@ static func level_of(v: float) -> int:
 		return 2
 	return 1 if v < 0.5 else 0
 
-## Conditional problems as [icon key, name, badge, why, act].
+## Conditional problems as [icon key, name, badge, why, act, fill 0..1].
 static func notices(npc: NPCData, state: PlayerStateData) -> Array:
 	var out: Array = []
 	if npc.bleeding:
-		out.append(["bleeding", "Bleeding", "-%d/m" % roundi(WoundSystem.BLEED_PER_MIN * 100), "Losing %d%% health a minute. Click: apply a bandage." % roundi(WoundSystem.BLEED_PER_MIN * 100), "medical"])
+		out.append(["bleeding", "Bleeding", "-%d/m" % roundi(WoundSystem.BLEED_PER_MIN * 100), "Losing %d%% health a minute. Click: apply a bandage." % roundi(WoundSystem.BLEED_PER_MIN * 100), "medical", clampf(0.2 + (1.0 - npc.health) * 0.8, 0.0, 1.0)])   # blood lost; a fresh wound shows a little
 	if state.law_tier > 0:
-		out.append(["wanted", "Wanted", "%d/4" % state.law_tier, "Heat level %d of 4. Get out of sight and it cools." % state.law_tier, ""])
+		out.append(["wanted", "Wanted", "%d/4" % state.law_tier, "Heat level %d of 4. Get out of sight and it cools." % state.law_tier, "", state.law_tier / 4.0])
 	if state.case_evidence >= CaseSystem.WARRANT_AT:
-		out.append(["warrant", "Warrant", str(roundi(state.case_evidence)), "Case %d (warrant at %d). Cops arrest on sight." % [roundi(state.case_evidence), roundi(CaseSystem.WARRANT_AT)], ""])
+		out.append(["warrant", "Warrant", str(roundi(state.case_evidence)), "Case %d (warrant at %d). Cops arrest on sight." % [roundi(state.case_evidence), roundi(CaseSystem.WARRANT_AT)], "", clampf(state.case_evidence / (CaseSystem.WARRANT_AT * 2.0), 0.0, 1.0)])
 	var kg := InventoryWindow.carried_kg(state)
 	if kg > ItemCatalog.CARRY_KG:
-		out.append(["heavy", "Heavy load", "%.0fkg" % kg, "%.1f of %.0f kg. Click: open the bag." % [kg, ItemCatalog.CARRY_KG], "bag"])
+		out.append(["heavy", "Heavy load", "%.0fkg" % kg, "%.1f of %.0f kg. Click: open the bag." % [kg, ItemCatalog.CARRY_KG], "bag", clampf(kg / (ItemCatalog.CARRY_KG * 1.5), 0.0, 1.0)])
 	return out
 
 ## Arrows from a change per game day: positive up, negative down, 0..3 each way.
@@ -102,7 +111,8 @@ func _process(delta: float) -> void:
 	_pulse += delta
 	_left -= delta
 	_trend_left -= delta
-	position = get_viewport_rect().size - size - Vector2(14, 10)
+	var screen := get_viewport_rect().size
+	position = Vector2(screen.x - size.x - 8, (screen.y - size.y) * 0.5)
 	if _left > 0.0:
 		_blink()
 		return
@@ -144,44 +154,35 @@ func _rebuild(npc: NPCData, state: PlayerStateData) -> void:
 			remove_child(c)
 			c.queue_free()
 	for n in notices(npc, state):
-		var cell := _cell(n[0], n[1], 3, "", n[2], n[3], n[4], Color.TRANSPARENT, 1.0 - npc.health if n[0] == "bleeding" else -1.0)
+		var cell := _cell(n[0], n[1], 3, "", n[2], n[3], n[4], n[5])
 		cell.set_meta("pulse", n[0] == "bleeding")
 		add_child(cell)
 	for need in NEEDS:
 		var v := value(npc, need[0])
 		var t: int = _trend.get(need[0], 0)
 		var why := "%d%% %s. %s" % [roundi(v * 100), "rising" if t > 0 else ("falling" if t < 0 else "steady"), need[3]]
-		add_child(_cell(need[0], need[1], level_of(v), ("↑" if t > 0 else "↓").repeat(absi(t)), "%d%%" % roundi(v * 100), why, need[2], gauge_colour(v, need[0]) if need[0] in GAUGE else Color.TRANSPARENT))
+		add_child(_cell(need[0], need[1], level_of(v), ("↑" if t > 0 else "↓").repeat(absi(t)), "%d%%" % roundi(v * 100), why, need[2], v, gauge_colour(v, need[0]) if need[0] in GAUGE else Color.TRANSPARENT))
 
-func _cell(icon: String, name: String, level: int, arrow_text: String, number: String, why: String, act: String, tint: Color = Color.TRANSPARENT, fill: float = -1.0) -> Button:
+func _cell(icon: String, name: String, level: int, arrow_text: String, number: String, why: String, act: String, fill: float, tint: Color = Color.TRANSPARENT) -> Button:
 	var b := Button.new()
+	b.flat = true   # no box: just the icon
 	b.focus_mode = Control.FOCUS_NONE
 	b.custom_minimum_size = CELL
-	var back := UiTheme.box(Color(0.05, 0.05, 0.06, 0.62), STATE_COLOURS[level] if level > 0 else Color.TRANSPARENT, 2 if level > 0 else 0)
-	back.set_corner_radius_all(6)
-	b.add_theme_stylebox_override("normal", back)
-	b.add_theme_stylebox_override("pressed", back)
-	var hover := back.duplicate()
-	hover.bg_color = Color(0.12, 0.12, 0.13, 0.8)
-	b.add_theme_stylebox_override("hover", hover)
 	b.set_meta("level", level)
-	var col: Color = STATE_COLOURS[level]
-	var arrow := UiTheme.label(arrow_text, 13, col)
-	arrow.position = Vector2(0, 0)
-	arrow.size = Vector2(CELL.x, 14)
+	var col: Color = tint if tint.a > 0.0 else IDENTITY.get(icon, UiTheme.TEXT)
+	var arrow := UiTheme.label(arrow_text, 10, STATE_COLOURS[level])
+	arrow.size = Vector2(CELL.x, 11)
 	arrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var art: Control = _filled(icon, fill) if fill >= 0.0 else icon_or_glyph(icon, name.left(1), ICON)
-	art.position = Vector2((CELL.x - ICON) * 0.5, 15)
-	if fill < 0.0:
-		art.modulate = tint if tint.a > 0.0 else IDENTITY.get(icon, col)
-	var num := UiTheme.label(number, 12, tint.lightened(0.2) if tint.a > 0.0 else (col if level > 0 else IDENTITY.get(icon, col).lightened(0.35)))
-	num.position = Vector2(0, 15 + ICON + 2)
-	num.size = Vector2(CELL.x, 14)
+	var art := _filled(icon, fill, col)
+	art.position = Vector2((CELL.x - ICON) * 0.5, 11)
+	var num := UiTheme.label(number, 11, col.lightened(0.25))
+	num.position = Vector2(0, 11 + ICON)
+	num.size = Vector2(CELL.x, 13)
 	num.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	for part in [arrow, art, num]:
 		_shadow(part)
 		b.add_child(part)
-	b.mouse_entered.connect(func() -> void: _tip.show_at(b.global_position + Vector2(-260, -40), "%s  (%s)" % [name, ["fine", "low", "very low", "critical"][level]], [[why, UiTheme.TEXT]]))
+	b.mouse_entered.connect(func() -> void: _tip.show_at(b.global_position + Vector2(-270, 0), "%s  (%s)" % [name, ["fine", "low", "very low", "critical"][level]], [[why, UiTheme.TEXT]]))
 	b.mouse_exited.connect(_tip.hide_tip)
 	b.pressed.connect(func() -> void: _act(act))
 	return b
@@ -197,27 +198,25 @@ func _blink() -> void:
 	var a := 0.55 + 0.45 * absf(sin(_pulse * 4.0))
 	for c in get_children():
 		if c is Button and c.get_meta("pulse", false):
-			var frame: StyleBoxFlat = c.get_theme_stylebox("normal")
-			frame.border_color = Color(1.0, 0.25, 0.3, a)   # only bleeding pulses; the icon stays readable
-			frame.bg_color = Color(0.2, 0.03, 0.05, 0.7 * a)
+			c.modulate.a = a
 
-## UI12: the blood drop fills from the bottom with blood lost (1 - health):
-## a dim drop behind, the red part clipped to the lost share.
-static func _filled(icon: String, fill: float) -> Control:
+## UI13: an icon filled from the bottom to `fill`: the dark empty silhouette
+## behind, the coloured part clipped to the filled share.
+static func _filled(icon: String, fill: float, colour: Color) -> Control:
 	var holder := Control.new()
 	holder.size = Vector2(ICON, ICON)
 	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var empty := icon_or_glyph(icon, "B", ICON)
-	empty.modulate = Color(0.35, 0.08, 0.1)
+	var empty := icon_or_glyph(icon, icon.left(1).to_upper(), ICON)
+	empty.modulate = EMPTY
 	holder.add_child(empty)
 	var clip := Control.new()
 	clip.clip_contents = true
 	clip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var h := ICON * clampf(0.2 + fill * 0.8, 0.0, 1.0)   # a fresh wound already shows a little blood
+	var h := ICON * clampf(fill, 0.0, 1.0)
 	clip.position = Vector2(0, ICON - h)
 	clip.size = Vector2(ICON, h)
-	var full := icon_or_glyph(icon, "B", ICON)
-	full.modulate = IDENTITY["bleeding"]
+	var full := icon_or_glyph(icon, icon.left(1).to_upper(), ICON)
+	full.modulate = colour
 	full.position = Vector2(0, -(ICON - h))
 	clip.add_child(full)
 	holder.add_child(clip)
