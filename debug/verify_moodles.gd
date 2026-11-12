@@ -1,20 +1,17 @@
-## UI6: moodles appear at the right needs and grow with them.
+## UI9: DayZ-style status: colour steps, trend arrows, problem notices, best item.
 extends SceneTree
 
 func _initialize() -> void:
 	var npc := NPCData.new()
 	var state := PlayerStateData.new()
-	var ok := Moodles.list(null, npc, state).is_empty()   # fed, rested, unhurt, clean: nothing shows
-	npc.hunger = 0.4
-	npc.health = 0.7
-	var shown := Moodles.list(null, npc, state)
-	ok = ok and shown.size() == 2 and shown[0]["name"] == "Hungry" and shown[0]["level"] == 1 and shown[0]["value"] == "40%" and shown[1]["name"] == "Hurt"
-	npc.hunger = 0.02
+	var ok := Moodles.notices(npc, state).is_empty()   # nothing wrong: no notices
+	ok = ok and Moodles.level_of(0.9) == 0 and Moodles.level_of(0.4) == 1 and Moodles.level_of(0.2) == 2 and Moodles.level_of(0.05) == 3
+	ok = ok and Moodles.value(npc, "calm") == 1.0
+	ok = ok and Moodles.arrows(-0.6) == -1 and Moodles.arrows(-1.5) == -2 and Moodles.arrows(5.0) == 3 and Moodles.arrows(0.01) == 0
 	npc.bleeding = true
 	state.law_tier = 2
-	shown = Moodles.list(null, npc, state)
-	var names := shown.map(func(m: Dictionary) -> String: return m["name"])
-	ok = ok and shown[0]["level"] == 4 and names.has("Bleeding") and names.has("Wanted")
+	var names := Moodles.notices(npc, state).map(func(n: Array) -> String: return n[1])
+	ok = ok and names == ["Bleeding", "Wanted"]
 	state.inventory = {&"chips": 1, &"burrito": 2, &"water": 1}
 	ok = ok and Moodles.best_item(state, "food") == &"burrito" and Moodles.best_item(state, "medical") == &""
 	print("MOODLES_VERIFY: ", "PASS" if ok else "FAIL")
