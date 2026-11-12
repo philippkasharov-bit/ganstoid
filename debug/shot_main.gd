@@ -67,6 +67,12 @@ func _run(main: Node, args: Dictionary) -> void:
 		await process_frame
 		Input.action_press(PlayerInputSystem.ATTACK_ACTION)
 		await process_frame
+	if args.has("beat"):   # UI15: freeze the heartbeat at a phase (0 = on the beat)
+		for n in main.get_node("HudLayer").get_children():
+			if n is Moodles:
+				n._pulse = float(args["beat"])
+				n._blink()
+		await process_frame
 	await RenderingServer.frame_post_draw
 	root.get_viewport().get_texture().get_image().save_png(args.get("out", "/tmp/main.png"))
 	quit()

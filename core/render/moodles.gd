@@ -57,7 +57,8 @@ var _trend := {}
 var _key := ""
 var _pulse := 0.0
 var _tip := UiTooltip.new()
-var _alert := UiTheme.label("BLEEDING  -  click to bandage", 13, Color.WHITE)
+var _vignette := TextureRect.new()
+var _lost := 0.0
 
 func setup(world: World) -> void:
 	_world = world
@@ -65,14 +66,16 @@ func setup(world: World) -> void:
 	resized.connect(queue_redraw)
 	add_child(_tip)
 	_tip.top_level = true
-	var tag := UiTheme.box(Color("b0202c"), Color(0, 0, 0, 0.8), 1)
-	tag.set_corner_radius_all(4)
-	tag.set_content_margin_all(4)
-	_alert.add_theme_stylebox_override("normal", tag)
-	_alert.top_level = true
-	_alert.visible = false
-	_alert.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_alert)
+	_vignette.texture = _vignette_texture()
+	_vignette.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_vignette.stretch_mode = TextureRect.STRETCH_SCALE
+	_vignette.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_vignette.visible = false
+
+## The red edge sits under every panel: first child of the HUD layer.
+func _ready() -> void:
+	get_parent().add_child.call_deferred(_vignette)
+	get_parent().move_child.call_deferred(_vignette, 0)
 
 ## The one thin bar behind the column (a box container draws no panel itself).
 func _draw() -> void:
@@ -80,6 +83,19 @@ func _draw() -> void:
 	bar.bg_color = Color(0.05, 0.05, 0.06, 0.35)
 	bar.set_corner_radius_all(8)
 	draw_style_box(bar, Rect2(Vector2(-2, -4), size + Vector2(4, 8)))
+
+func _add_glow(cell: Button) -> void:
+	var glow := TextureRect.new()
+	glow.name = "Glow"
+	glow.texture = _glow_texture()
+	glow.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	glow.size = Vector2(ICON, ICON) * 1.6
+	glow.position = Vector2((CELL.x - glow.size.x) * 0.5, 11 + (ICON - glow.size.y) * 0.5)
+	glow.pivot_offset = glow.size * 0.5
+	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	glow.show_behind_parent = false
+	cell.add_child(glow)
+	cell.move_child(glow, 0)   # behind the drop
 
 ## The 0..1 "how full" value for a need (stress is shown as calm).
 static func value(npc: NPCData, key: String) -> float:
@@ -166,12 +182,15 @@ func _state_key(npc: NPCData, state: PlayerStateData) -> String:
 
 func _rebuild(npc: NPCData, state: PlayerStateData) -> void:
 	for c in get_children():
-		if c != _tip and c != _alert:
+		if c != _tip:
 			remove_child(c)
 			c.queue_free()
 	for n in notices(npc, state):
 		var cell := _cell(n[0], n[1], 3, "", n[2], n[3], n[4], n[5])
-		cell.set_meta("pulse", n[0] == "bleeding")
+		if n[0] == "bleeding":
+			cell.set_meta("pulse", true)
+			_add_glow(cell)
+			_lost = 1.0 - npc.health
 		add_child(cell)
 	for need in NEEDS:
 		var v := value(npc, need[0])
@@ -190,6 +209,7 @@ func _cell(icon: String, name: String, level: int, arrow_text: String, number: S
 	arrow.size = Vector2(CELL.x, 11)
 	arrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var art := _filled(icon, fill, col)
+	art.name = "Art"
 	art.position = Vector2((CELL.x - ICON) * 0.5, 11)
 	var num := UiTheme.label(number, 11, col.lightened(0.25))
 	num.position = Vector2(0, 11 + ICON)
@@ -209,16 +229,58 @@ static func _shadow(c: Control) -> void:
 		c.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
 		c.add_theme_constant_override("outline_size", 4)
 
-## UI12/14: only bleeding blinks (on/off like DayZ's blood drop), with an
-## alert tag beside it that blinks with it.
+## UI15: bleeding beats like a heart (lub-dub, about 80 bpm): the drop pops
+## and glows on each beat and the screen edges flush red, stronger the more
+## blood is lost. Nothing else animates, so the eye goes straight to it.
+const BEAT_S := 0.75
+
+static func heartbeat(t: float) -> float:
+	var p := fmod(t, BEAT_S) / BEAT_S
+	return maxf(exp(-pow(p / 0.07, 2.0)), 0.65 * exp(-pow((p - 0.28) / 0.07, 2.0)))
+
 func _blink() -> void:
-	var on := fmod(_pulse, 0.8) < 0.5
-	_alert.visible = false
+	var beat := heartbeat(_pulse)
+	var bleeding := false
 	for c in get_children():
 		if c is Button and c.get_meta("pulse", false):
-			c.modulate.a = 1.0 if on else 0.2
-			_alert.visible = on
-			_alert.position = c.global_position + Vector2(-_alert.size.x - 6, (CELL.y - _alert.size.y) * 0.5)
+			bleeding = true
+			var art: Control = c.get_node("Art")
+			art.pivot_offset = art.size * 0.5
+			art.scale = Vector2.ONE * (1.0 + 0.22 * beat)
+			var glow: Control = c.get_node("Glow")
+			glow.modulate.a = 0.25 + 0.75 * beat
+			glow.scale = Vector2.ONE * (0.8 + 0.4 * beat)
+	_vignette.visible = bleeding
+	if bleeding:
+		_vignette.size = get_viewport_rect().size
+		_vignette.modulate.a = (0.15 + 0.85 * beat) * clampf(0.2 + _lost * 0.7, 0.0, 0.9)
+
+static func _glow_texture() -> GradientTexture2D:
+	var g := Gradient.new()
+	g.set_color(0, Color(1.0, 0.15, 0.2, 0.9))
+	g.set_color(1, Color(1.0, 0.1, 0.15, 0.0))
+	var tex := GradientTexture2D.new()
+	tex.gradient = g
+	tex.fill = GradientTexture2D.FILL_RADIAL
+	tex.fill_from = Vector2(0.5, 0.5)
+	tex.fill_to = Vector2(0.5, 0.0)
+	tex.width = 64
+	tex.height = 64
+	return tex
+
+## Clear in the middle, blood red at the edges.
+static func _vignette_texture() -> GradientTexture2D:
+	var g := Gradient.new()
+	g.offsets = PackedFloat32Array([0.0, 0.55, 1.0])
+	g.colors = PackedColorArray([Color(0.6, 0.0, 0.03, 0.0), Color(0.6, 0.0, 0.03, 0.0), Color(0.6, 0.0, 0.04, 0.7)])
+	var tex := GradientTexture2D.new()
+	tex.gradient = g
+	tex.fill = GradientTexture2D.FILL_RADIAL
+	tex.fill_from = Vector2(0.5, 0.5)
+	tex.fill_to = Vector2(1.05, 0.5)
+	tex.width = 256
+	tex.height = 256
+	return tex
 
 ## UI13: an icon filled from the bottom to `fill`: the dark empty silhouette
 ## behind, the coloured part clipped to the filled share.
