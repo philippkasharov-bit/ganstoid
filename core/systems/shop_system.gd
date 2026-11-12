@@ -53,11 +53,14 @@ static func buy(world: World, me: NPCData, state: PlayerStateData, source_id: St
 	var price: int = it["price"]
 	if me.cash < price:
 		return {"ok": false, "reason": "cant_afford"}
+	if it["kind"] != "ammo" and BagGrid.room_for(state, item_id) <= 0:
+		return {"ok": false, "reason": "no_room"}   # INV1: the bag is full
 	Wallet.spend(world, price)
 	if it["kind"] == "ammo":
 		state.ammo += int(it["rounds"])
 	else:
 		state.inventory[item_id] = state.inventory.get(item_id, 0) + 1
+		BagGrid.sync(state)
 	var entity: Entity = world.entities.get(source_id)
 	var b: BuildingData = entity.get_component(ComponentNames.BUILDING) if entity != null else null
 	if b != null:

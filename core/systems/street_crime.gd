@@ -62,7 +62,11 @@ static func advance_burglary(world: World, me: NPCData, state: PlayerStateData) 
 	var cash := world.runtime_rng.randi_range(LOOT_MIN, LOOT_MAX)
 	Wallet.earn_dirty(world, cash)
 	var item: StringName = HOUSE_ITEMS[world.runtime_rng.randi() % HOUSE_ITEMS.size()]
-	state.inventory[item] = state.inventory.get(item, 0) + 1
+	if BagGrid.room_for(state, item) > 0:   # INV1: a full bag leaves the item behind; the cash still comes
+		state.inventory[item] = state.inventory.get(item, 0) + 1
+		BagGrid.sync(state)
+	else:
+		item = &""
 	Skills.train(world, state, &"theft", 8.0)
 	_someone_home(world, house_id, me.position)
 	return {"ok": true, "effect": "burgled", "amount": cash, "item": item}

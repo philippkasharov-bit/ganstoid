@@ -38,6 +38,9 @@ extends Resource
 ## sells from the market's abstract stock (World.economy_items), not from
 ## a bag of their own, so they need no inventory of their own to track.
 @export var inventory: Dictionary = {}
+## INV1: where each pile sits in the bag grid: [{id, x, y, r (rotated), n}].
+## inventory stays the count of record; BagGrid keeps this in step with it.
+@export var bag: Array = []
 
 ## Phase 2 batch 8 (locked): the player's standing with each gang (keyed
 ## by GangData.id) and with each unaffiliated "solo" dealer (keyed by
