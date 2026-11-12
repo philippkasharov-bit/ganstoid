@@ -23,6 +23,9 @@ var _tip := UiTooltip.new()
 var _menu := ContextMenu.new()
 var _menu_item: StringName = &""
 var _key := ""
+var _near := VBoxContainer.new()
+var _near_src: Array = []
+var _menu_src := {}
 
 func setup(world: World, at: Vector2) -> void:
 	_world = world
@@ -32,8 +35,14 @@ func setup(world: World, at: Vector2) -> void:
 		if state != null:
 			state.inventory_open = false)
 	_hands.add_theme_font_override("font", UiTheme.font("marker"))
-	body.add_child(_hands)
-	body.add_child(_grid)
+	var split := HBoxContainer.new()   # INV4: DayZ layout, vicinity left, your bag right
+	split.add_theme_constant_override("separation", 8)
+	body.add_child(split)
+	split.add_child(_vicinity_pane())
+	var mine := VBoxContainer.new()
+	mine.add_child(_hands)
+	mine.add_child(_grid)
+	split.add_child(mine)
 	_loose.autowrap_mode = TextServer.AUTOWRAP_WORD
 	_loose.custom_minimum_size.x = _grid.custom_minimum_size.x
 	body.add_child(_loose)
@@ -59,10 +68,14 @@ func _process(_delta: float) -> void:
 		_tip.hide_tip()
 		_menu.visible = false
 		return
-	var key := "%s|%s|%d" % [state.inventory, state.weapon, state.ammo]
+	var npc: NPCData = _world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
+	var near := Vicinity.near(_world, npc, state)
+	var key := "%s|%s|%d|%s" % [state.inventory, state.weapon, state.ammo, near]
 	if key != _key:
 		_key = key
 		_rebuild(state)
+
+		_rebuild_near(near)
 
 func _rebuild(state: PlayerStateData) -> void:
 	BagGrid.sync(state)
@@ -90,17 +103,31 @@ func _open_menu(id: StringName, at: Vector2) -> void:
 	_tip.hide_tip()
 	var kind: String = ItemCatalog.item(id).get("kind", "goods")
 	var options: Array = [{"text": VERBS.get(kind, "Use"), "enabled": VERBS.has(kind), "why": "sell it to a dealer" if kind == "goods" else "loads into your gun"}]
+	var count := int(_state().inventory.get(id, 0))
+	var npc: NPCData = _world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
+	var car := VehicleSystem.nearest_car(_world, npc.position)
+	var trunk_ok := car != null and (car.owner_id == PlayerFactory.PLAYER_ENTITY_ID or not car.locked)
 	options.append({"text": "Inspect", "enabled": true})
-	options.append({"text": "Drop", "enabled": false, "why": "no ground items yet"})
+	options.append({"text": "Drop one", "enabled": true})
+	options.append({"text": "Drop all (%d)" % count, "enabled": count > 1, "why": "only one"})
+	options.append({"text": "Put in trunk", "enabled": trunk_ok, "why": "no open car here"})
+	_menu_src = {}
 	_menu.open_at(at, options)
 
 func _on_menu_pick(index: int) -> void:
 	if _menu_item == &"":
 		return
-	if index == 0:
-		_state().ui_use = _menu_item
-	elif index == 1:
-		_show_tip(_menu_item, get_global_mouse_position())
+	var st := _state()
+	if not _menu_src.is_empty():   # a vicinity row: take one / take all
+		st.ui_move = {"op": "take", "src": _menu_src, "n": 1 if index == 0 else 999}
+		return
+	var count := int(st.inventory.get(_menu_item, 0))
+	match index:
+		0: st.ui_use = _menu_item
+		1: _show_tip(_menu_item, get_global_mouse_position())
+		2: st.ui_move = {"op": "drop", "id": _menu_item, "n": 1}
+		3: st.ui_move = {"op": "drop", "id": _menu_item, "n": count}
+		4: st.ui_move = {"op": "stash", "id": _menu_item, "n": count}
 
 func _show_tip(id: StringName, at: Vector2) -> void:
 	var it := ItemCatalog.item(id)
@@ -118,6 +145,51 @@ func _show_tip(id: StringName, at: Vector2) -> void:
 	var f := ItemCatalog.size_of(id)
 	lines.append(["%dx%d cells   ·   %.1f kg   ·   $%d" % [f.x, f.y, it.get("weight", 0.0), it["price"]], UiTheme.DIM])
 	_tip.show_at(at, it["name"], lines)
+
+## INV4: the vicinity column (DayZ): what is on the ground or in the trunk
+## next to you. Double-click takes it all, right-click for one or all.
+func _vicinity_pane() -> VBoxContainer:
+	var pane := VBoxContainer.new()
+	pane.custom_minimum_size = Vector2(120, 0)
+	var title := UiTheme.label("Nearby", UiTheme.FONT_SMALL, UiTheme.DIM)
+	title.add_theme_font_override("font", UiTheme.font("marker"))
+	pane.add_child(title)
+	_near.add_theme_constant_override("separation", 1)
+	pane.add_child(_near)
+	return pane
+
+func _rebuild_near(near: Array) -> void:
+	_near_src = near
+	for c in _near.get_children():
+		_near.remove_child(c)
+		c.queue_free()
+	if near.is_empty():
+		_near.add_child(UiTheme.label("Nothing here.", UiTheme.FONT_SMALL, UiTheme.DIM))
+	for src in near:
+		_near.add_child(_near_row(src))
+
+func _near_row(src: Dictionary) -> Button:
+	var b := Button.new()
+	b.flat = true
+	b.focus_mode = Control.FOCUS_NONE
+	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	b.text = "%s%s x%d" % ["" if src["kind"] == "ground" else "TRUNK  ", BagGridView._short(src["id"]), src["n"]]
+	b.add_theme_font_size_override("font_size", UiTheme.FONT_SMALL)
+	var kind: String = ItemCatalog.item(src["id"]).get("kind", "goods")
+	b.add_theme_color_override("font_color", KIND_COLOURS.get(kind, UiTheme.TEXT))
+	b.tooltip_text = "%s (%s). Double-click: take all." % [_name(src["id"]), "on the ground" if src["kind"] == "ground" else "in the trunk"]
+	b.gui_input.connect(func(e: InputEvent) -> void: _on_near_input(e, src))
+	return b
+
+func _on_near_input(e: InputEvent, src: Dictionary) -> void:
+	if not e is InputEventMouseButton or not e.pressed:
+		return
+	if e.button_index == MOUSE_BUTTON_LEFT and e.double_click:
+		_state().ui_move = {"op": "take", "src": src, "n": 999}
+	elif e.button_index == MOUSE_BUTTON_RIGHT:
+		_menu_item = src["id"]
+		_menu_src = src
+		_menu.open_at(get_global_mouse_position(), [{"text": "Take one"}, {"text": "Take all (%d)" % src["n"]}])
 
 func _state() -> PlayerStateData:
 	var p: Entity = _world.entities.get(PlayerFactory.PLAYER_ENTITY_ID) if _world != null else null

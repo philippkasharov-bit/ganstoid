@@ -41,6 +41,8 @@ extends Resource
 ## INV1: where each pile sits in the bag grid: [{id, x, y, r (rotated), n}].
 ## inventory stays the count of record; BagGrid keeps this in step with it.
 @export var bag: Array = []
+## INV4: piles you dropped on the street: [{id, n, pos}]. Saved with the game.
+@export var ground: Array = []
 
 ## Phase 2 batch 8 (locked): the player's standing with each gang (keyed
 ## by GangData.id) and with each unaffiliated "solo" dealer (keyed by
@@ -110,6 +112,7 @@ var job_offers: Array = []                      # JB1: offers on screen (not sav
 @export var burglary_done_tick: int = 0
 var inventory_open: bool = false                # G2: I shows what you carry (not saved)
 var timed: Dictionary = {}                      # TA1: the timed action under way {item, start, done} (not saved)
+var ui_move: Dictionary = {}                    # INV4: a bag<->vicinity move the UI asked for (not saved)
 var ui_use: StringName = &""                     # UI5: item clicked in the bag, used next tick (not saved)
 var menu_options: PackedStringArray = []        # UI1: the open E menu (not saved)
 var store_id: StringName = &""                  # G1: counter whose menu is open (not saved)

@@ -34,6 +34,9 @@ func _run(main: Node, args: Dictionary) -> void:
 		var st: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
 		st.inventory = {&"water": 2, &"soda": 1, &"chips": 2, &"burrito": 1, &"bandage": 7, &"bat": 1, &"knife": 1, &"pistol": 1, &"weed": 14}
 		st.ammo = 24
+		var me0: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
+		st.ground = [{"id": &"coffee", "n": 2, "pos": me0.position + Vector2(1.2, 0.5)}, {"id": &"bandage", "n": 3, "pos": me0.position + Vector2(-1.0, 0.8)}]
+		st.timed = {"item": &"burrito", "start": driver.world.tick - 60, "done": driver.world.tick + 120}
 		var me: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
 		me.hunger = 0.25
 		me.thirst = 0.1

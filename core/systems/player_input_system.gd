@@ -381,6 +381,9 @@ func _options(npc: NPCData, state: PlayerStateData) -> Array:
 
 ## G2: I opens what you carry; 1-9 eat, drink or apply that line.
 func _inventory_input(npc: NPCData, state: PlayerStateData) -> bool:
+	if not state.ui_move.is_empty():   # INV4: drop / stash / take from the vicinity panel
+		StreetTalk.say(_world, state, _do_move(npc, state, state.ui_move))
+		state.ui_move = {}
 	if state.ui_use != &"":   # UI5/UI8: a bag line or a moodle was clicked
 		_use_or_hold(npc, state, state.ui_use)
 		state.ui_use = &""
@@ -397,6 +400,16 @@ func _inventory_input(npc: NPCData, state: PlayerStateData) -> bool:
 		if Input.is_action_just_pressed(SLOT_ACTIONS[i]):
 			_use_or_hold(npc, state, items[i])
 	return true
+
+func _do_move(npc: NPCData, state: PlayerStateData, move: Dictionary) -> Dictionary:
+	match move.get("op", ""):
+		"drop":
+			return Vicinity.drop(npc, state, move["id"], move["n"])
+		"stash":
+			return Vicinity.stash(_world, npc, state, move["id"], move["n"])
+		"take":
+			return Vicinity.take(_world, state, move["src"], move["n"])
+	return {}
 
 ## UI5: a bag line is eaten/drunk/applied, or a weapon is taken in hand.
 func _use_or_hold(npc: NPCData, state: PlayerStateData, item_id: StringName) -> void:

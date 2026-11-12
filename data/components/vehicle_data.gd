@@ -14,4 +14,5 @@ extends Resource
 @export var length_m: float = 4.6
 @export var width_m: float = 1.85
 @export var driver_id: StringName = &""
+@export var trunk: Dictionary = {}          # INV4: item id -> count kept in the trunk
 @export var touched: bool = false        # anyone ever got in: only these need saving (the rest are as seeded)
