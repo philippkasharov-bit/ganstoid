@@ -20,16 +20,25 @@ const ARROW_PER_DAY := [0.15, 0.9, 3.0]   # change per game day for 1, 2, 3 arro
 ## the frame, arrows and number (white fine, then yellow, orange, red).
 const IDENTITY := {
 	"hunger": Color("e0a050"), "thirst": Color("4fa8e8"), "fatigue": Color("f2d34b"),
-	"health": Color("e4574f"), "calm": Color("a98be0"), "bleeding": Color("ff4a55"),
+	"health": Color("e4574f"), "calm": Color("5cc85a"), "bleeding": Color("ff4a55"),
 	"wanted": Color("5a8cf0"), "warrant": Color("e8b35a"), "heavy": Color("a8a8a0"),
 }
+
+## UI11: food and water icons run red (empty) through yellow to green (full).
+const GAUGE := ["hunger", "thirst"]
+
+static func gauge_colour(v: float) -> Color:
+	var red := Color("e0533d")
+	var yellow := Color("e8c547")
+	var green := Color("5cc85a")
+	return red.lerp(yellow, v * 2.0) if v < 0.5 else yellow.lerp(green, (v - 0.5) * 2.0)
 
 const NEEDS := [
 	["hunger", "Food", "food", "Click: eat the most filling food you carry."],
 	["thirst", "Water", "drink", "Click: drink the best drink you carry."],
 	["fatigue", "Energy", "sleep", "Click: sleep here (Z). Sleep somewhere safe."],
 	["health", "Health", "medical", "Click: apply a bandage. Rest heals."],
-	["calm", "Calm", "", "Stress spoils aim and talk. Stay out of trouble."],
+	["calm", "Happiness", "", "Stress spoils aim and talk. Stay out of trouble."],
 ]
 
 var _world: World
@@ -136,9 +145,9 @@ func _rebuild(npc: NPCData, state: PlayerStateData) -> void:
 		var v := value(npc, need[0])
 		var t: int = _trend.get(need[0], 0)
 		var why := "%d%% %s. %s" % [roundi(v * 100), "rising" if t > 0 else ("falling" if t < 0 else "steady"), need[3]]
-		add_child(_cell(need[0], need[1], level_of(v), ("↑" if t > 0 else "↓").repeat(absi(t)), "%d%%" % roundi(v * 100), why, need[2]))
+		add_child(_cell(need[0], need[1], level_of(v), ("↑" if t > 0 else "↓").repeat(absi(t)), "%d%%" % roundi(v * 100), why, need[2], gauge_colour(v) if need[0] in GAUGE else Color.TRANSPARENT))
 
-func _cell(icon: String, name: String, level: int, arrow_text: String, number: String, why: String, act: String) -> Button:
+func _cell(icon: String, name: String, level: int, arrow_text: String, number: String, why: String, act: String, tint: Color = Color.TRANSPARENT) -> Button:
 	var b := Button.new()
 	b.focus_mode = Control.FOCUS_NONE
 	b.custom_minimum_size = CELL
@@ -157,8 +166,8 @@ func _cell(icon: String, name: String, level: int, arrow_text: String, number: S
 	arrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var art := icon_or_glyph(icon, name.left(1), ICON)
 	art.position = Vector2((CELL.x - ICON) * 0.5, 15)
-	art.modulate = IDENTITY.get(icon, col)
-	var num := UiTheme.label(number, 12, col if level > 0 else IDENTITY.get(icon, col).lightened(0.35))
+	art.modulate = tint if tint.a > 0.0 else IDENTITY.get(icon, col)
+	var num := UiTheme.label(number, 12, tint.lightened(0.2) if tint.a > 0.0 else (col if level > 0 else IDENTITY.get(icon, col).lightened(0.35)))
 	num.position = Vector2(0, 15 + ICON + 2)
 	num.size = Vector2(CELL.x, 14)
 	num.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
