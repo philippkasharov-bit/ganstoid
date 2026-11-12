@@ -39,20 +39,20 @@ func pick(index: int) -> void:
 	changed.emit(current)
 
 static func _style(b: Button, on: bool) -> void:
-	var swipe := UiTheme.texture_box("marker/swipe_bar", Color.WHITE, 2)
 	var flat := StyleBoxEmpty.new()
 	flat.content_margin_left = 10
 	flat.content_margin_right = 10
-	var look: StyleBox = swipe if on and swipe != null else flat
-	if look is StyleBoxTexture:
-		look.texture_margin_left = 16
-		look.texture_margin_right = 16
-		look.content_margin_left = 10
-		look.content_margin_right = 10
-		look.content_margin_top = 1
-		look.content_margin_bottom = 1
+	var look: StyleBox = flat
+	if on:
+		var under := StyleBoxFlat.new()
+		under.bg_color = Color.TRANSPARENT
+		under.border_width_bottom = 2
+		under.border_color = UiTheme.ACCENT
+		under.content_margin_left = 10
+		under.content_margin_right = 10
+		look = under
 	for state in ["normal", "hover", "pressed"]:
 		b.add_theme_stylebox_override(state, look)
-	b.add_theme_color_override("font_color", UiTheme.INK if on else UiTheme.DIM)
-	b.add_theme_color_override("font_hover_color", UiTheme.INK if on else UiTheme.TEXT)
-	b.add_theme_color_override("font_pressed_color", UiTheme.INK)
+	b.add_theme_color_override("font_color", UiTheme.TEXT if on else UiTheme.DIM)
+	b.add_theme_color_override("font_hover_color", UiTheme.TEXT)
+	b.add_theme_color_override("font_pressed_color", UiTheme.TEXT)

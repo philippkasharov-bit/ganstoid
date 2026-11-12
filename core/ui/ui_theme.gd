@@ -41,35 +41,20 @@ const PIPING := Color(0.91, 0.89, 0.82, 0.9)
 const DROP := Color("5b2a8c")            # hard, offset, no blur: printed-flyer shadow
 
 static func window_box(margin: int = 2) -> StyleBox:
-	var page := texture_box("book/page", Color.WHITE, margin)
-	if page != null:
-		page.texture_margin_left = 10   # nine-patch keeps the paper edge crisp at any size
-		page.texture_margin_right = 10
-		page.texture_margin_top = 10
-		page.texture_margin_bottom = 10
-		return page
-	var style := box(PANEL, PIPING, 2)
+	var style := box(Color(0.075, 0.075, 0.085, 0.95), Color(1, 1, 1, 0.14), 1)   # UI20: flat, Tarkov-plain
 	style.set_corner_radius_all(2)
 	style.set_content_margin_all(margin)
-	style.shadow_color = DROP
-	style.shadow_size = 1
-	style.shadow_offset = Vector2(5, 5)
 	return style
 
 ## The cassette label: cream with red and blue stripes, title in marker.
 static func header_box() -> StyleBox:
-	var swipe := texture_box("marker/swipe_bar", Color.WHITE, 0, false)
-	if swipe == null:
-		var style := box(BG_HEADER)
-		style.set_content_margin_all(0)
-		return style
-	swipe.texture_margin_left = 24   # nine-patch: the brush ends keep their shape
-	swipe.texture_margin_right = 24
-	swipe.texture_margin_top = 8
-	swipe.texture_margin_bottom = 8
-	swipe.content_margin_left = PAD + 4
-	swipe.content_margin_right = 4
-	return swipe
+	var style := box(Color(0.12, 0.12, 0.135, 1.0), Color.TRANSPARENT, 0)   # UI20: a plain title strip
+	style.border_width_bottom = 2
+	style.border_color = ACCENT
+	style.set_content_margin_all(0)
+	style.content_margin_left = PAD + 2
+	style.content_margin_right = 2
+	return style
 
 ## A tiled art box from art/ui/street/<name>.png, or null when it is missing.
 static func texture_box(name: String, tint: Color, margin: int, tile: bool = false) -> StyleBoxTexture:
@@ -87,17 +72,11 @@ static func texture_box(name: String, tint: Color, margin: int, tile: bool = fal
 
 ## Gold rope chain in place of a plain line.
 static func divider() -> Control:
-	var path := STREET + "marker/swipe_thin.png"
-	if not ResourceLoader.exists(path):
-		return HSeparator.new()
-	var strip := TextureRect.new()
-	strip.texture = load(path)
-	strip.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	strip.stretch_mode = TextureRect.STRETCH_SCALE   # one marker stroke across the page
-	strip.modulate = Color(1, 1, 1, 0.55)
-	strip.custom_minimum_size = Vector2(0, 5)
-	strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	return strip
+	var line := ColorRect.new()   # UI20: a hairline, nothing more
+	line.color = Color(1, 1, 1, 0.1)
+	line.custom_minimum_size = Vector2(0, 1)
+	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return line
 
 static var _fonts := {}
 
@@ -127,7 +106,7 @@ static func decal(name: String, height: float, angle_deg: float) -> TextureRect:
 	return t
 
 static func title_label(text: String) -> Label:
-	var l := label(text, FONT_TITLE + 1, INK)
+	var l := label(text, FONT_TITLE, ACCENT)
 	l.add_theme_font_override("font", font("marker"))
 	return l
 

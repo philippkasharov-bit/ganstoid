@@ -30,7 +30,7 @@ func setup_window(id: String, title: String, at: Vector2, min_size: Vector2) -> 
 	body.add_theme_constant_override("separation", 4)
 	pad.add_child(body)
 	column.add_child(pad)
-	_add_decor(id)
+	# UI20: no tape or stickers; _add_decor stays for a skin that wants them
 
 func _build_header(title: String) -> PanelContainer:
 	var header := PanelContainer.new()
@@ -48,7 +48,7 @@ func _build_header(title: String) -> PanelContainer:
 	close.flat = true
 	close.focus_mode = Control.FOCUS_NONE
 	close.add_theme_font_override("font", UiTheme.font("marker"))
-	close.add_theme_color_override("font_color", UiTheme.INK)
+	close.add_theme_color_override("font_color", UiTheme.DIM)
 	close.add_theme_color_override("font_hover_color", UiTheme.BAD)
 	close.tooltip_text = "Close"
 	close.pressed.connect(close_window)
