@@ -7,22 +7,26 @@
 ##   heal     health one use gives back; stops bleeding
 ##   weapon   key into CombatSystem.WEAPONS
 ##   rounds   pistol rounds in one box
+##   weight   kg one carried unit adds (UI5: the bag's weight bar)
 class_name ItemCatalog
 extends RefCounted
 
 const ITEMS := {
-	&"water":   {"name": "Bottle of water", "kind": "drink", "price": 2, "sold_at": "shop", "thirst": 0.5},
-	&"soda":    {"name": "Soda", "kind": "drink", "price": 2, "sold_at": "shop", "thirst": 0.35, "tired": 0.05},
-	&"coffee":  {"name": "Coffee", "kind": "drink", "price": 3, "sold_at": "shop", "thirst": 0.2, "tired": 0.2},
-	&"chips":   {"name": "Bag of chips", "kind": "food", "price": 3, "sold_at": "shop", "hunger": 0.2},
-	&"burrito": {"name": "Burrito", "kind": "food", "price": 7, "sold_at": "shop", "hunger": 0.5},
-	&"bandage": {"name": "Bandage", "kind": "medical", "price": 12, "sold_at": "shop", "heal": 0.15},
-	&"bat":     {"name": "Baseball bat", "kind": "weapon", "price": 45, "sold_at": "workshop", "weapon": &"bat"},
-	&"knife":   {"name": "Knife", "kind": "weapon", "price": 35, "sold_at": "workshop", "weapon": &"knife"},
-	&"pistol":  {"name": "Pistol (no papers)", "kind": "weapon", "price": 450, "sold_at": "dealer", "weapon": &"pistol", "trade": 600, "standing": 0.1, "armory": 1},
-	&"pistol_clean": {"name": "Clean pistol (new, no history)", "kind": "weapon", "price": 900, "sold_at": "dealer", "weapon": &"pistol", "rank": 2, "trade": 1300, "standing": 0.2, "armory": 2},
-	&"ammo":    {"name": "Box of 9 mm (12)", "kind": "ammo", "price": 40, "sold_at": "dealer", "rounds": 12},
+	&"water":   {"weight": 0.5, "name": "Bottle of water", "kind": "drink", "price": 2, "sold_at": "shop", "thirst": 0.5},
+	&"soda":    {"weight": 0.4, "name": "Soda", "kind": "drink", "price": 2, "sold_at": "shop", "thirst": 0.35, "tired": 0.05},
+	&"coffee":  {"weight": 0.3, "name": "Coffee", "kind": "drink", "price": 3, "sold_at": "shop", "thirst": 0.2, "tired": 0.2},
+	&"chips":   {"weight": 0.2, "name": "Bag of chips", "kind": "food", "price": 3, "sold_at": "shop", "hunger": 0.2},
+	&"burrito": {"weight": 0.4, "name": "Burrito", "kind": "food", "price": 7, "sold_at": "shop", "hunger": 0.5},
+	&"bandage": {"weight": 0.1, "name": "Bandage", "kind": "medical", "price": 12, "sold_at": "shop", "heal": 0.15},
+	&"bat":     {"weight": 1.0, "name": "Baseball bat", "kind": "weapon", "price": 45, "sold_at": "workshop", "weapon": &"bat"},
+	&"knife":   {"weight": 0.3, "name": "Knife", "kind": "weapon", "price": 35, "sold_at": "workshop", "weapon": &"knife"},
+	&"pistol":  {"weight": 0.9, "name": "Pistol (no papers)", "kind": "weapon", "price": 450, "sold_at": "dealer", "weapon": &"pistol", "trade": 600, "standing": 0.1, "armory": 1},
+	&"pistol_clean": {"weight": 0.9, "name": "Clean pistol (new, no history)", "kind": "weapon", "price": 900, "sold_at": "dealer", "weapon": &"pistol", "rank": 2, "trade": 1300, "standing": 0.2, "armory": 2},
+	&"ammo":    {"weight": 0.3, "name": "Box of 9 mm (12)", "kind": "ammo", "price": 40, "sold_at": "dealer", "rounds": 12},
 }
+
+## UI5: what the bag holds before you are overloaded (display only for now).
+const CARRY_KG := 12.0
 
 ## Items on sale at a counter of this kind, in menu order.
 static func stock(sold_at: String) -> Array[StringName]:

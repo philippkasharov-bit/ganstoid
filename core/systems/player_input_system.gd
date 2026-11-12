@@ -207,6 +207,8 @@ func process_entities(entities: Dictionary, delta: float, tick: int) -> void:
 ## frame by AimView from the mouse), Q swaps weapons.
 func _combat_input(npc: NPCData, state: PlayerStateData, tick: int) -> void:
 	state.aiming = Input.is_action_pressed(AIM_ACTION)
+	if state.inventory_open:
+		return   # UI5: mouse clicks belong to the bag window while it is open
 	if Input.is_action_just_pressed(SWITCH_WEAPON_ACTION):
 		StreetTalk.say_key(_world, state, "weapon_" + String(CombatSystem.cycle_weapon(state)))
 	var melee: bool = CombatSystem.WEAPONS[state.weapon]["melee"]
@@ -388,8 +390,20 @@ func _inventory_input(npc: NPCData, state: PlayerStateData) -> bool:
 	var items := carried(state)
 	for i in mini(items.size(), SLOT_ACTIONS.size()):
 		if Input.is_action_just_pressed(SLOT_ACTIONS[i]):
-			StreetTalk.say(_world, state, NeedsSystem.use_item(npc, state, items[i]))
+			_use_or_hold(npc, state, items[i])
+	if state.ui_use != &"":
+		_use_or_hold(npc, state, state.ui_use)
+		state.ui_use = &""
 	return true
+
+## UI5: a bag line is eaten/drunk/applied, or a weapon is taken in hand.
+func _use_or_hold(npc: NPCData, state: PlayerStateData, item_id: StringName) -> void:
+	var it := ItemCatalog.item(item_id)
+	if it.get("kind", "") == "weapon" and state.inventory.get(item_id, 0) > 0:
+		state.weapon = it["weapon"]
+		StreetTalk.say_key(_world, state, "weapon_" + String(state.weapon))
+		return
+	StreetTalk.say(_world, state, NeedsSystem.use_item(npc, state, item_id))
 
 ## What you carry, in catalogue order (the inventory menu's lines).
 static func carried(state: PlayerStateData) -> Array[StringName]:

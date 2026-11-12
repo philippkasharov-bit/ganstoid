@@ -30,7 +30,7 @@ func _ready() -> void:
 	var store := StorePanel.new()   # G1: E at a counter
 	get_parent().add_child.call_deferred(store)
 	store.setup(_world, Vector2(12, 290))
-	var bag := InventoryPanel.new()   # G2: I
+	var bag := InventoryWindow.new()  # UI5: I
 	get_parent().add_child.call_deferred(bag)
 	bag.setup(_world, Vector2(12, 290))
 	var menu := ActionMenu.new()      # UI1: E

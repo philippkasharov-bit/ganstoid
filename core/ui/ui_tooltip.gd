@@ -17,6 +17,7 @@ func _init() -> void:
 ## lines: Array of [text, colour]
 func show_at(screen_pos: Vector2, title: String, lines: Array, note: String = "") -> void:
 	for c in _box.get_children():
+		_box.remove_child(c)   # now, not at frame end, so the size below fits the new lines
 		c.queue_free()
 	_box.add_child(UiTheme.label(title, UiTheme.FONT_BODY, UiTheme.ACCENT))
 	for line in lines:
@@ -27,6 +28,7 @@ func show_at(screen_pos: Vector2, title: String, lines: Array, note: String = ""
 		n.custom_minimum_size.x = 220
 		_box.add_child(n)
 	visible = true
+	size = Vector2.ZERO
 	reset_size()
 	var screen := get_viewport_rect().size
 	var at := screen_pos + OFFSET

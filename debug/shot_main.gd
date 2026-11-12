@@ -1,6 +1,6 @@
 ## Screenshot tool for the game scene (not a check): loads scenes/main.tscn,
 ## waits for the street routes, fast-forwards the sim, saves a PNG.
-## Run: godot --rendering-driver opengl3 --path . -s debug/shot_main.gd -- --out=<png> [--sim=<seconds>] [--zoom=<px/m>] [--hour=<0-23>] [--aim]
+## Run: godot --rendering-driver opengl3 --path . -s debug/shot_main.gd -- --out=<png> [--sim=<seconds>] [--zoom=<px/m>] [--hour=<0-23>] [--aim] [--bag]
 extends SceneTree
 
 func _initialize() -> void:
@@ -29,6 +29,21 @@ func _run(main: Node, args: Dictionary) -> void:
 		var st: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
 		st.menu_options = PackedStringArray(["Shop here", "Mug them (knife out)", "Pickpocket", "Recruit into your crew", "Get in the car", "Spray your tag"])
 		await process_frame
+		await process_frame
+	if args.has("bag"):   # UI5 look: the bag open with a mixed load, hovering the pistol line
+		var st: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
+		st.inventory = {&"water": 2, &"burrito": 1, &"bandage": 3, &"knife": 1, &"pistol": 1, &"ammo": 2, &"weed": 4}
+		st.ammo = 24
+		st.inventory_open = true
+		for i in 3:
+			await process_frame
+		var win: InventoryWindow = null
+		for n in main.get_node("HudLayer").get_children():
+			if n is InventoryWindow:
+				win = n
+		root.get_viewport().warp_mouse(Vector2(300, 470))
+		await process_frame
+		win._show_tip(&"pistol")
 		await process_frame
 	if args.has("aim"):   # combat look: pistol raised toward a point right of the player, one shot
 		var player: Entity = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID]
