@@ -111,6 +111,7 @@ func _build() -> void:
 	var barriers := _bucket(real.barriers, tiles, func(b: Dictionary) -> Rect2: return Rect2(b["pts"][0], Vector2.ZERO))
 	var points := _bucket(real.points, tiles, func(p: Dictionary) -> Rect2: return Rect2(p["p"], Vector2.ZERO))
 	var trees := _bucket_points(real.trees, tiles)
+	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: StreetPainter.paint(ci, roads[r], night), tiles, MID_ZOOM)   # SL1: lane markings
 	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: _draw_driveways(ci, drives[r]), tiles)
 	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: CityGround.crossings(ci, crossings[r], night), tiles, MID_ZOOM)
 	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: _draw_band_details(ci, ramps[r], wells[r]), tiles, FINE_ZOOM)

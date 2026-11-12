@@ -144,6 +144,10 @@ func _parse_roads(list: Array) -> String:
 			road["name"] = String(r["name"])
 		if r.has("layer"):   # MF2: deck height (freeways, ramps)
 			road["layer"] = int(r["layer"])
+		if r.has("lanes"):   # SL1: real lane count and one-way (lane markings)
+			road["lanes"] = int(r["lanes"])
+		if r.has("oneway"):
+			road["oneway"] = int(r["oneway"])
 		if r.has("layer"):   # MF2: deck height (freeways, ramps)
 			road["layer"] = int(r["layer"])
 		if r.has("w"):   # MP1: true roadway width (kerb to kerb) and sidewalk+parkway per side, metres

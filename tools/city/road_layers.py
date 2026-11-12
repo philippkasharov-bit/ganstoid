@@ -33,8 +33,19 @@ def main(raw_path, city_path):
         lv = layer_of(tags.get(int(m.group(1)), {})) if m else 0
         r["layer"] = lv
         counts[lv] = counts.get(lv, 0) + 1
+    ones = 0
+    for r in city["roads"]:   # SL1: one-way streets (lane markings, later traffic)
+        if r["tier"] not in ("art", "res"):
+            continue
+        m = re.match(r"base:osm_w(\d+)_", r["id"])
+        t = tags.get(int(m.group(1)), {}) if m else {}
+        if t.get("oneway") in ("yes", "1", "-1"):
+            r["oneway"] = -1 if t.get("oneway") == "-1" else 1
+            ones += 1
+        else:
+            r.pop("oneway", None)
     json.dump(city, open(city_path, "w"), separators=(",", ":"))
-    print("freeway/ramp pieces by layer:", dict(sorted(counts.items())))
+    print("freeway/ramp pieces by layer:", dict(sorted(counts.items())), "one-way streets:", ones)
 
 
 if __name__ == "__main__":
