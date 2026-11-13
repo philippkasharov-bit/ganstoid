@@ -130,3 +130,4 @@ static func record_trade(item: EconomyItemData, buy_pressure: float, sell_drain:
 static func apply_robbery(building: BuildingData, amount_taken: int) -> void:
 	building.cash_on_hand = maxi(0, building.cash_on_hand - amount_taken)
 	building.has_been_hit = true
+	building.hits += 1.0   # E4: robbed again and again, they invest in security, then go under

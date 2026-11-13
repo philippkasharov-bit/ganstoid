@@ -143,6 +143,18 @@ var touched := true
 		if v != trade:
 			touched = true
 		trade = v
+## E4: recent robberies (each adds 1, fading daily); bad days in a row (a
+## shop short of money, or a home behind on rent).
+@export var hits: float = 0.0:
+	set(v):
+		if v != hits:
+			touched = true
+		hits = v
+@export var bad_days: int = 0:
+	set(v):
+		if v != bad_days:
+			touched = true
+		bad_days = v
 ## E2: yesterday's sales (customers + outside buyers).
 @export var last_sales: int = 0:
 	set(v):

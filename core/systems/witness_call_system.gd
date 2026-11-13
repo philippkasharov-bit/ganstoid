@@ -30,6 +30,8 @@ func queue(witness: NPCData, payload: Dictionary) -> void:
 	if player != null:
 		StreetTalk.say_key(_world, player.get_component(ComponentNames.PLAYER_STATE), "witness_running")
 
+var ignored := 0   # E4: calls nobody answered (thin police)
+
 func pending() -> int:
 	return _calls.size()
 
@@ -39,7 +41,7 @@ func process_entities(_entities: Dictionary, _delta: float, tick: int) -> void:
 		var call: Array = _calls[i]
 		if tick >= call[0]:
 			_calls.remove_at(i)
-			_place(call[1], call[2])
+			_place(call[1], call[2], true)
 		i -= 1
 
 ## D1: a witness who was scared or paid off puts the phone down.
@@ -57,9 +59,16 @@ func flush() -> void:
 		_place(call[1], call[2])
 	_calls.clear()
 
-func _place(witness: NPCData, payload: Dictionary) -> void:
+## E4: on a block whose police are thinly funded a call can go nowhere (no car
+## free, nobody picks up): from never on a fully funded block to 6 in 10 on a broke one.
+func _place(witness: NPCData, payload: Dictionary, may_drop: bool = false) -> void:
 	if witness.is_down:
 		silenced += 1
 		return
+	if may_drop and payload.has("position") and BlockEconomyData.of(_world) != null:
+		var police := float(BlockEconomyData.block_at(_world, payload["position"])["police"])
+		if _world.runtime_rng.randf() < (1.0 - police) * 0.6:
+			ignored += 1
+			return
 	payload["tick"] = _world.tick
 	_world.event_bus.emit(GanstoidEvents.CRIME_WITNESSED, payload)

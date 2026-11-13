@@ -78,7 +78,7 @@ func _commuters(world: World) -> Array:
 	var out := []
 	for e in world.get_entities_with_component(ComponentNames.NPC).values():
 		var npc: NPCData = e.get_component(ComponentNames.NPC)
-		if npc.is_cop or npc.is_dealer or npc.work_building_id == &"" or not world.entities.has(npc.work_building_id):
+		if npc.is_cop or npc.is_dealer or npc.work_building_id == &"" or not world.entities.has(npc.work_building_id) or not world.entities.has(npc.home_building_id):   # E4: a homeless worker has no commute
 			continue
 		var home: Vector2 = world.entities[npc.home_building_id].get_component(ComponentNames.BUILDING).position
 		var work: Vector2 = world.entities[npc.work_building_id].get_component(ComponentNames.BUILDING).position

@@ -17,8 +17,8 @@ static func counter_kind(world: World, source_id: StringName) -> String:
 	if npc != null:
 		return "dealer" if npc.is_dealer and not npc.is_down and not npc.indoors else ""
 	var b: BuildingData = entity.get_component(ComponentNames.BUILDING)
-	if b == null or b.building_type != GanstoidEnums.BuildingType.LEGIT_BUSINESS:
-		return ""
+	if b == null or b.building_type != GanstoidEnums.BuildingType.LEGIT_BUSINESS or b.status >= 2:
+		return ""   # E4: a shop that went under sells nothing
 	return String(b.business_kind) if b.business_kind != &"" else "shop"
 
 static func is_open(world: World, source_id: StringName) -> bool:

@@ -40,12 +40,20 @@ static var _homes: Dictionary = {}       # home id -> Array[NPCData] living ther
 static var _staff: Dictionary = {}       # business id -> Array[NPCData] working there
 static var _near: Dictionary = {}        # home id -> Array[BuildingData] shops near it
 static var _all_shops: Array = []        # every legit business
+static var _underpaid := {}              # E4: today, businesses that could not pay all wages
+static var _behind := {}                 # E4: today, homes that could not pay all their rent
+
+## E4: forget who lives and works where (after lay-offs, hires, evictions).
+static func reindex() -> void:
+	_cache_for = 0
 
 ## Runs one day. Returns the day's ledger {inflow, outflow, sales, wages, tax}.
 static func run_day(world: World) -> Dictionary:
 	_index(world)
 	var data := BlockEconomyData.of(world)
 	var led := {"inflow": 0, "outflow": 0, "sales": 0, "wages": 0, "tax": 0}
+	_underpaid.clear()
+	_behind.clear()
 	var sold := {}   # business id -> today's sales
 	_bank_tills()   # E3: yesterday's takings go to the bank; today's stay in the till overnight (that is what a robbery gets)
 	_households_spend(world, data, led, sold)
@@ -54,6 +62,7 @@ static func run_day(world: World) -> Dictionary:
 	_business_costs(world, data, led, sold)
 	_household_savings(world, data)
 	_police(data, led)
+	EconomyFallout.day(world, data, led, _staff, _homes, _underpaid, _behind)   # E4
 	if data != null:
 		data.last_day = led
 	return led
@@ -127,7 +136,11 @@ static func _households_spend(world: World, data: BlockEconomyData, led: Diction
 		var home: BuildingData = world.entities[home_id].get_component(ComponentNames.BUILDING)
 		var people: Array = _homes[home_id]
 		var w := _wealth(data, home.position)
-		led["outflow"] += _pay_from_home(home, people, roundi(lerpf(RENT_PER_HOME.x, RENT_PER_HOME.y, w)))
+		var rent := roundi(lerpf(RENT_PER_HOME.x, RENT_PER_HOME.y, w))
+		var rent_paid := _pay_from_home(home, people, rent)
+		led["outflow"] += rent_paid
+		if rent_paid < rent:
+			_behind[home_id] = true
 		var spent := _pay_from_home(home, people, roundi(lerpf(SPEND_PER_PERSON.x, SPEND_PER_PERSON.y, w) * people.size()))
 		var open: Array = _near.get(home_id, []).filter(_open_shop)
 		if open.is_empty():
@@ -180,6 +193,8 @@ static func _payday(world: World, data: BlockEconomyData, led: Dictionary) -> vo
 			continue
 		for n in _staff[biz_id]:
 			var pay := _pay_from_business(b, n.wage)
+			if pay < n.wage:
+				_underpaid[biz_id] = true
 			led["wages"] += pay
 			var tax := roundi(pay * INCOME_TAX)
 			pay -= tax
@@ -227,4 +242,4 @@ static func _police(data: BlockEconomyData, led: Dictionary) -> void:
 		var pay := roundi(int(bl["budget"]) * POLICE_SHARE)
 		bl["budget"] = int(bl["budget"]) - pay
 		led["outflow"] += pay
-		bl["police"] = clampf(float(bl["budget"]) / POLICE_FULL, 0.05, 1.0)
+		bl["police"] = clampf(0.5 * float(bl["budget"]) / POLICE_FULL + 0.5 * float(bl["wealth"]), 0.05, 1.0)   # E4: the budget, and the pull a rich block has

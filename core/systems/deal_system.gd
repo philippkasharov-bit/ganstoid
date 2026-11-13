@@ -163,6 +163,11 @@ static func buy(world: World, dealer_id: StringName, good_id: StringName) -> Dic
 	CrimeSystem.broadcast_witnesses(world, player_npc.position, CrimeSystem.SEVERITY_BY_TYPE[GanstoidEnums.CrimeType.DRUG_DEAL_OBSERVED])
 	return {"ok": true, "effect": "buy", "good_id": good_id, "quantity": 0 if ripped_off else TRADE_QUANTITY, "cost": cost, "ripped_off": ripped_off}
 
+## E4: what the street pays here: up to a third more on a poor, thinly policed
+## block, a sixth less on a rich, well policed one.
+static func street_mult(world: World, at: Vector2) -> float:
+	return lerpf(0.85, 1.35, float(BlockEconomyData.block_at(world, at)["black"]))
+
 static func sell(world: World, dealer_id: StringName, good_id: StringName) -> Dictionary:
 	var ctx := _resolve_deal(world, dealer_id, good_id)
 	if not ctx.get("ok", false):
@@ -176,6 +181,7 @@ static func sell(world: World, dealer_id: StringName, good_id: StringName) -> Di
 	var item: EconomyItemData = ctx["item"]
 	var dealer_npc: NPCData = ctx["dealer_npc"]
 	var mult := _sell_price_multiplier(item.player_market_reputation) * _relationship_sell_multiplier(_relationship(dealer_npc, player_state)) * (1.0 + HUSTLE_EDGE * Skills.level(player_state, &"hustle")) * Traits.edge(player_state, &"dealer", 1.1) * (0.9 if Traits.has(player_state, &"ghost") else 1.0)
+	mult *= street_mult(world, dealer_npc.position)   # E4: a strong street market pays more
 	var proceeds: int = maxi(1, int(round(item.current_price * TRADE_QUANTITY * mult)))
 	var ripped_off := world.runtime_rng.randf() < ripoff_chance(_relationship(dealer_npc, player_state))
 	if ripped_off:

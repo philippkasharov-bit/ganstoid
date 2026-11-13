@@ -25,7 +25,14 @@ func _initialize() -> void:
 		var now := EconomyFlow.total_money(world)
 		ok = ok and now == before + int(l["inflow"]) - int(l["outflow"])
 		totals.append(now)
-	print("30 days without crime: money %d -> %d" % [start, totals[-1]])
+	var closed := 0
+	var shops := 0
+	for b in BusinessSystem.all_buildings(world):
+		if b.building_type == GanstoidEnums.BuildingType.LEGIT_BUSINESS:
+			shops += 1
+			closed += int(b.status == 2)
+	print("30 days without crime: money %d -> %d, shops closed %d of %d" % [start, totals[-1], closed, shops])
+	ok = ok and closed <= shops / 10   # a quiet city does not fall apart on its own
 	ok = ok and totals[-1] > start * 0.5 and totals[-1] < start * 2.0   # steady, no runaway either way
 	var negative := 0
 	for e in world.get_entities_with_component(ComponentNames.NPC).values():

@@ -45,6 +45,7 @@ func _initialize() -> void:
 			shop = b
 			break
 	shop.cash_on_hand = 140
+	shop.security = 0   # no camera: the whole till is in reach (E4)
 	me.position = shop.position
 	st.inside_id = shop.id
 	var reg: Array = Vicinity.near(world, me, st).filter(func(s: Dictionary) -> bool: return s["id"] == &"cash")

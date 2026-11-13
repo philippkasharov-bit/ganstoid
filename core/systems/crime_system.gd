@@ -130,7 +130,7 @@ static func rob_building(world: World, building_id: StringName) -> Dictionary:
 	if building.cash_on_hand <= 0:
 		return {"ok": false, "reason": "nothing_to_take"}
 	var fraction := world.runtime_rng.randf_range(ROBBERY_TAKE_MIN_FRACTION, ROBBERY_TAKE_MAX_FRACTION)
-	var taken: int = maxi(1, int(round(building.cash_on_hand * fraction)))
+	var taken: int = maxi(1, int(round(building.cash_on_hand * fraction * EconomyFallout.ROB_KEEP[clampi(building.security, 0, 3)])))   # E4: security keeps some of it out of reach
 	EconomySystem.apply_robbery(building, taken)
 	Wallet.earn_dirty(world, taken)  # batch 24
 	broadcast_witnesses(world, building.position, SEVERITY_BY_TYPE[GanstoidEnums.CrimeType.ARMED_ROBBERY])

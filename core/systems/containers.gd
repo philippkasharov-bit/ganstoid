@@ -53,15 +53,18 @@ static func _pay_restock(building: BuildingData, cost: int) -> bool:
 
 ## E3: the money a building's cash drawer or register shows (its real cash).
 static func cash_shown(building: BuildingData, kind: String) -> int:
-	return building.cash_on_hand if LootTables.CASH_IN.has(kind) else 0
+	if not LootTables.CASH_IN.has(kind):
+		return 0
+	return int(building.cash_on_hand * EconomyFallout.ROB_KEEP[clampi(building.security, 0, 3)])   # E4: a locked drop safe keeps the rest
 
 ## E3: takes up to n of the building's real cash; returns how much came out.
 static func take_cash(world: World, building: BuildingData, n: int) -> int:
-	var got := mini(n, building.cash_on_hand)
+	var got := mini(n, int(building.cash_on_hand * EconomyFallout.ROB_KEEP[clampi(building.security, 0, 3)]))
 	building.cash_on_hand -= got
 	building.touched = true
 	if got > 0 and building.building_type == GanstoidEnums.BuildingType.LEGIT_BUSINESS:
 		building.has_been_hit = true
+		building.hits += 1.0   # E4
 	return got
 
 ## Takes up to n of id from a building container; returns how many came out.
