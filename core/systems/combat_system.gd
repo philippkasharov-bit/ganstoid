@@ -44,7 +44,7 @@ static func attack(world: World, me: NPCData, state: PlayerStateData, tick: int,
 		dir = Vector2.RIGHT
 	if w["melee"]:
 		w = w.duplicate()
-		w["damage"] *= Skills.more(state, &"melee") * Traits.edge(state, &"brawler", 1.2)
+		w["damage"] *= Skills.more(state, &"melee") * Traits.edge(state, &"brawler", 1.2) * Stamina.damage_mult(state)   # ST1: winded blows are weaker
 	var result := _swing(world, me, dir, w) if w["melee"] else _shoot(world, me, state, dir, w, rng)
 	_train(world, state, w, result)
 	if result.get("downed", false):

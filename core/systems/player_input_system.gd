@@ -173,11 +173,13 @@ func process_entities(entities: Dictionary, delta: float, tick: int) -> void:
 			continue   # a menu is open: the number keys belong to it
 		_hotbar_input(state)   # HB1: otherwise 1-9 are the hotbar
 		var input_dir := _move_input()
+		var running := Input.is_physical_key_pressed(KEY_SHIFT) and Stamina.can_run(state) and not state.aiming
+		Stamina.update(state, running, input_dir != Vector2.ZERO, delta)   # ST1: breath
 		if input_dir != Vector2.ZERO:
-			var speed := RUN_SPEED if Input.is_physical_key_pressed(KEY_SHIFT) else MOVE_SPEED
+			var speed := RUN_SPEED if running else MOVE_SPEED
 			if state.aiming:
 				speed = AIM_SPEED
-			speed *= NeedsSystem.speed_factor(npc) * BodyParts.move_mult(state)   # HP1: hurt legs limp
+			speed *= NeedsSystem.speed_factor(npc) * BodyParts.move_mult(state) * Stamina.speed_mult(state)   # HP1 limp, ST1 heavy load
 			var step := input_dir.normalized() * speed * CrewSystem.player_speed_multiplier(_world, state) * delta
 			npc.position = SimNav.active.slide(npc.position, step) if SimNav.active != null else npc.position + step   # walls are solid
 			_world.reindex_position(npc.id)
@@ -221,6 +223,8 @@ func _combat_input(npc: NPCData, state: PlayerStateData, tick: int) -> void:
 		var result := CombatSystem.attack(_world, npc, state, tick, _world.runtime_rng)
 		if result.get("ok", false):
 			state.last_attack = result
+			if melee:
+				Stamina.swing(state)   # ST1: every swing costs breath
 		elif result.get("reason", "") == "no_ammo" and Input.is_action_just_pressed(ATTACK_ACTION):
 			StreetTalk.say(_world, state, result)
 

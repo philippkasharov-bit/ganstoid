@@ -94,6 +94,8 @@ extends Resource
 @export var shots_fired: int = 0
 @export var last_shot_tick: int = -1000000         # C6: cops treat a recent shooter as armed
 ## G2 needs / G3 wounds.
+@export var endurance: float = 1.0               # ST1: breath, 0..1 (Zomboid endurance)
+@export var winded: bool = false                # ST1: out of breath until it is back over Stamina.CATCH_AT
 @export var sleeping: bool = false
 @export var sleep_until_tick: int = 0          # SL1: wake at this tick (0: when rested)
 @export var sleeping_home: bool = false

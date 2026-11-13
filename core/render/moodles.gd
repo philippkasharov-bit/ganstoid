@@ -28,6 +28,7 @@ const NEEDS := {
 	"stress": ["calm", "stress", ["Anxious", "Agitated", "Stressed", "Nervous Wreck"], "Stress spoils your aim and your talk.", ""],
 }
 const NEED_EDGES := [0.5, 0.7, 0.85, 0.95]
+const BREATH_EDGES := [0.4, 0.65, 0.85, 0.95]
 const VALUE_NAMES := {"hunger": "Food %d%%", "thirst": "Water %d%%", "tired": "Energy %d%%", "injured": "Health %d%%", "stress": "Stress %d%%"}
 const HURT_EDGES := [0.15, 0.35, 0.6, 0.8]
 
@@ -69,7 +70,12 @@ static func _problems(out: Array, npc: NPCData, state: PlayerStateData) -> void:
 	if state.case_evidence >= CaseSystem.WARRANT_AT:
 		out.append(["warrant", "Warrant", 3, false, "There is a warrant out. Cops arrest on sight.", "", "Case %d" % roundi(state.case_evidence)])
 	if InventoryWindow.carried_kg(state) > ItemCatalog.CARRY_KG:
-		out.append(["heavy", "Heavy Load", 1, false, "You carry too much.", "bag", "%.1f / %.0f kg" % [InventoryWindow.carried_kg(state), ItemCatalog.CARRY_KG]])
+		out.append(["heavy", "Heavy Load", 1, false, "You walk slower and tire faster. Drop something.", "bag", "%.1f / %.0f kg" % [InventoryWindow.carried_kg(state), ItemCatalog.CARRY_KG]])
+	var lvl := level(1.0 - state.endurance, BREATH_EDGES)   # ST1: Zomboid's exertion moodle
+	if lvl > 0 or state.winded:
+		lvl = maxi(lvl, 3 if state.winded else 1)
+		out.append(["breath", ["Winded", "Out of Breath", "Exhausted", "Spent"][lvl - 1], lvl, false,
+			"Can't run until you catch your breath. Blows are weaker." if state.winded else "Running and fighting wear you out. Walk or stand to recover.", "", "Breath %d%%" % roundi(state.endurance * 100)])
 
 ## 0 none, 1..4 by how far past each edge `lack` is.
 static func level(lack: float, edges: Array) -> int:
