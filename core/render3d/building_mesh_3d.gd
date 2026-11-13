@@ -29,6 +29,7 @@ const DOOR := Color("3a2a1e")
 const FRAME := Color("ece6d8")
 const ROLLUP := Color("8d9093")
 const TRIM := 0.45
+const GLOW := {"commercial": 0.85, "apartments": 0.45, "house": 0.35, "civic": 0.5, "industrial": 0.15, "garage": 0.0}   # R3D10: share of windows lit at night
 const DOOR_W := 1.1
 const DOOR_H := 2.1
 const HIP_MAX_AREA := 400.0
@@ -51,7 +52,8 @@ static func add(st: SurfaceTool, b: Dictionary, v: Callable, tag: int = 0) -> vo
 	var col: Color = pal[rng.randi() % pal.size()].lightened(rng.randf_range(-0.04, 0.05))
 	var style := {"win_w": rng.randf_range(0.8, 1.6), "win_h": rng.randf_range(1.0, 1.5), "gap": rng.randf_range(2.4, 4.2),
 		"shop": (kind == "commercial") and rng.randf() < 0.8, "rollup": kind in ["industrial", "garage"] and rng.randf() < 0.6,
-		"awning": AWNINGS[rng.randi() % AWNINGS.size()], "storey": storey}
+		"awning": AWNINGS[rng.randi() % AWNINGS.size()], "storey": storey,
+		"tag": tag, "glow": GLOW.get(kind, 0.3), "seed": rng.randi()}
 	st.set_uv(Vector2(0, tag))   # R3D7: the Cutaway cuts this building whole by its tag
 	var ccw := _ccw(poly)
 	var door_edge := _door_edge(poly, b.get("door", Vector2.INF))
@@ -131,7 +133,9 @@ static func _openings(st: SurfaceTool, v: Callable, a: Vector2, c: Vector2, out:
 	var proud := out * 0.04
 	var front := door_t >= 0.0
 	if front and s["shop"] and length > 4.0:
+		st.set_uv(Vector2(1.0, s["tag"]))   # R3D10: a shop front glows at night
 		quad(st, [v.call(a + dir * 0.5 + proud, 0.4), v.call(c - dir * 0.5 + proud, 0.4), v.call(c - dir * 0.5 + proud, 2.6), v.call(a + dir * 0.5 + proud, 2.6)], n, SHOP_GLASS)
+		st.set_uv(Vector2(0.0, s["tag"]))
 		quad(st, [v.call(a + proud, 2.8), v.call(c + proud, 2.8), v.call(c + out * 1.3, 2.4), v.call(a + out * 1.3, 2.4)], Vector3.UP, s["awning"])
 	elif front:
 		var mid := a.lerp(c, door_t) + proud
@@ -152,7 +156,10 @@ static func _openings(st: SurfaceTool, v: Callable, a: Vector2, c: Vector2, out:
 			var p := a.lerp(c, t) + proud
 			var w2 := dir * float(s["win_w"]) * 0.5
 			var y := lv * float(s["storey"]) + 1.0
+			var lit := float(absi(hash([s["seed"], a, k, lv])) % 100) < float(s["glow"]) * 100.0   # R3D10: someone home
+			st.set_uv(Vector2(0.8 if lit else 0.0, s["tag"]))
 			quad(st, [v.call(p - w2, y), v.call(p + w2, y), v.call(p + w2, y + s["win_h"]), v.call(p - w2, y + s["win_h"])], n, GLASS)
+			st.set_uv(Vector2(0.0, s["tag"]))
 
 static func _open(poly: PackedVector2Array) -> PackedVector2Array:
 	return poly.slice(0, poly.size() - 1) if poly.size() > 3 and poly[0] == poly[poly.size() - 1] else poly

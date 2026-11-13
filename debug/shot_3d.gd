@@ -1,4 +1,4 @@
-## R3D screenshot: the 3D look test. godot --path . -s debug/shot_3d.gd -- --out=<png> [--size=<ortho m>] [--radius=<m>] [--sim=<seconds of sim to run first>] [--behind (R3D4: stand the player behind the nearest tall building)] [--inside (R3D5: in the nearest house)] [--turn=<quarters>]
+## R3D screenshot: the 3D look test. godot --path . -s debug/shot_3d.gd -- --out=<png> [--size=<ortho m>] [--radius=<m>] [--sim=<seconds of sim to run first>] [--behind (R3D4: stand the player behind the nearest tall building)] [--inside (R3D5: in the nearest house)] [--turn=<quarters>] [--hour=<0-24> (R3D10)]
 extends SceneTree
 
 func _initialize() -> void:
@@ -11,6 +11,8 @@ func _initialize() -> void:
 		preview.radius_m = float(args["radius"])
 	preview.live_sim = args.has("sim")
 	root.add_child(preview)
+	if args.has("hour"):
+		preview.day_night.hour_override = float(args["hour"])
 	if preview.live_sim:   # R3D3: let the routes load, then the morning rush run a while
 		while SimNav.active == null or not SimNav.active.is_ready():
 			await process_frame

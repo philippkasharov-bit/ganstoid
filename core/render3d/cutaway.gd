@@ -8,6 +8,8 @@
 ## R3D8: Zomboid's vision cone: what is outside your field of view (and,
 ## indoors, everything outside the room) is drawn dark and grey; a small
 ## ring round you is always seen.
+## R3D10: night: the city goes dark except in lamp pools and headlights
+## (DayNight3D sends them), and lit windows and shop fronts glow.
 ## R3D5: inside a building, its roof and upper floors go, and the walls on
 ## the camera's side drop to waist height, so you see the room you are in.
 class_name Cutaway
@@ -35,6 +37,11 @@ uniform vec2 look = vec2(1.0, 0.0);   // where you face, 3D x/z
 uniform float cone_cos = 0.34;        // half the field of view (about 70 degrees)
 uniform float near_m = 3.5;           // always seen round you
 uniform float unseen = 0.42;          // how bright the unseen world is
+uniform float night = 0.0;            // 0 day .. 1 night
+uniform vec4 lights[64];              // x, z (3D), radius, strength
+uniform int light_count = 0;
+uniform float moon = 0.28;
+varying float glow;                   // a lit window / shop front (UV.x)
 varying vec3 world_pos;
 varying flat int tag;  // the building this vertex belongs to (0: road, ground, palm)
 varying vec2 palm;     // a palm's foot in 3D x/z
@@ -42,6 +49,7 @@ varying vec2 palm;     // a palm's foot in 3D x/z
 void vertex() {
 	world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	tag = int(UV.y + 0.5);
+	glow = use_vertex ? UV.x : 0.0;
 	palm = vec2(MODEL_MATRIX[3].x, MODEL_MATRIX[3].z);
 }
 
@@ -70,6 +78,17 @@ bool cut_room() {
 	return world_pos.y > ceiling || (near_side && world_pos.y > waist);
 }
 
+// Lamp pools and headlights here (0..1).
+float lamp() {
+	float sum = 0.0;
+	for (int i = 0; i < light_count; i++) {
+		float d = distance(world_pos.xz, lights[i].xy);
+		float f = max(0.0, 1.0 - d / lights[i].z);
+		sum += f * f * lights[i].w;
+	}
+	return min(sum, 1.0);
+}
+
 // 1: in your field of view; 0: not seen (soft edges).
 float seen() {
 	vec2 d = world_pos.xz - focus.xz;
@@ -96,7 +115,10 @@ void fragment() {
 	}
 	float lit = seen();
 	vec3 grey = vec3(dot(col, vec3(0.3, 0.59, 0.11)));
-	ALBEDO = mix(mix(grey, col, 0.35) * unseen, col, lit);
+	float pool = lamp();
+	float bright = mix(1.0, max(moon, pool), night);   // at night you see what is lit
+	ALBEDO = mix(mix(grey, col, 0.35) * unseen, col, lit) * bright;
+	EMISSION = night * (vec3(1.0, 0.78, 0.45) * pool * 0.45 * col + vec3(1.0, 0.82, 0.5) * glow * 0.9);
 	ROUGHNESS = roughness;
 }
 """
@@ -122,6 +144,15 @@ static func aim(focus: Vector3, view_dir: Vector3) -> void:
 	for mat in _materials:
 		mat.set_shader_parameter("focus", focus)
 		mat.set_shader_parameter("view_dir", view_dir.normalized())
+
+## R3D10: how dark it is and the lights near you (x, z in 3D, radius, strength).
+static func light(dark: float, lights: PackedVector4Array) -> void:
+	var list := lights.duplicate()
+	list.resize(64)
+	for mat in _materials:
+		mat.set_shader_parameter("night", dark)
+		mat.set_shader_parameter("lights", list)
+		mat.set_shader_parameter("light_count", mini(lights.size(), 64))
 
 ## R3D8: which way you face (map radians): the vision cone.
 static func facing(angle: float) -> void:

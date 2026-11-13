@@ -11,7 +11,10 @@ const RADIUS_M := 110.0
 const GROUND := Color("e9e1cf")
 
 var centre := Vector2.ZERO
-var rig := CameraRig3D.new()   # R3D6: follows the player, zooms, turns
+var rig := CameraRig3D.new()
+var day_night := DayNight3D.new()   # R3D10: sun, sky, lamps by the game clock
+var env: Environment
+var sun: DirectionalLight3D   # R3D6: follows the player, zooms, turns
 
 @export var radius_m := RADIUS_M
 @export var live_sim := false
@@ -37,6 +40,13 @@ func _ready() -> void:
 		for k in 6:
 			_person(centre + Vector2.from_angle(k * 1.1) * (8.0 + k * 3.0), Color(0.36, 0.38, 0.45))
 	rig.origin = centre
+	day_night.origin = centre
+	day_night.world = driver.world if driver != null else null
+	day_night.sun = sun
+	day_night.city = city_data
+	day_night.radius = radius_m + 60.0
+	day_night.env = env
+	add_child(day_night)
 	rig.world = driver.world if driver != null else null
 	add_child(rig)
 
@@ -62,7 +72,7 @@ func _mat(col: Color) -> StandardMaterial3D:
 	return m
 
 func _environment() -> void:
-	var env := Environment.new()
+	env = Environment.new()
 	env.background_mode = Environment.BG_COLOR
 	env.background_color = GROUND
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
@@ -71,7 +81,7 @@ func _environment() -> void:
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
-	var sun := DirectionalLight3D.new()
+	sun = DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-55, -35, 0)   # afternoon sun from the south-west: walls read by shade, no shadows cast
 	sun.light_energy = 0.9
 	sun.shadow_enabled = false

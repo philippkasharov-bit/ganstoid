@@ -176,7 +176,8 @@ func _people(focus: Vector2) -> void:
 			_player_face = pose[1]
 		elif not _in_sight(pose[0]):
 			continue   # Zomboid: who you cannot see is not drawn
-		_place_person(n, pose[0], pose[1], npc.is_down, ps != null and ps.sneaking, _shirt(e, npc), SKIN[absi(String(id).hash()) % SKIN.size()])
+		var lit := DayNight3D.light_at(pose[0])   # R3D10: people are as dark as where they stand
+		_place_person(n, pose[0], pose[1], npc.is_down, ps != null and ps.sneaking, _shirt(e, npc) * lit, SKIN[absi(String(id).hash()) % SKIN.size()] * lit)
 		n += 1
 	shown_people = n
 	for layer in [_legs, _torso, _head]:
@@ -237,10 +238,10 @@ func _cars(focus: Vector2) -> void:
 		var paint := car.color.darkened(car.damage * 0.5)
 		if not _in_sight(car.position):   # R3D8: a car you cannot see stays as a dim grey shape
 			paint = Color(paint.get_luminance(), paint.get_luminance(), paint.get_luminance()).lerp(paint, 0.35) * Color(0.42, 0.42, 0.42)
-		_body.multimesh.set_instance_color(n, paint)
+		_body.multimesh.set_instance_color(n, paint * DayNight3D.light_at(car.position))
 		var back := turn * Vector3(-car.length_m * 0.08, 0, 0)   # cabin sits a little behind the middle
 		_cabin.multimesh.set_instance_transform(n, Transform3D(turn.scaled(Vector3(car.length_m * 0.5, 0.55, car.width_m * 0.9)), at + back + Vector3(0, 1.27, 0)))
-		_cabin.multimesh.set_instance_color(n, CABIN)
+		_cabin.multimesh.set_instance_color(n, CABIN * DayNight3D.light_at(car.position))
 		n += 1
 	shown_cars = n
 	_body.multimesh.visible_instance_count = n
