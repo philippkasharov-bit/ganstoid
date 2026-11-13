@@ -17,10 +17,12 @@ var camera := Camera3D.new()
 @export var live_sim := false
 var build_ms := 0.0
 var driver: Node
+var city_data: CityData
 var people3d: RenderSync3D
 
 func _ready() -> void:
 	var city := CityData.load_file()
+	city_data = city
 	centre = city.spawn
 	_environment()
 	var t0 := Time.get_ticks_msec()
@@ -44,6 +46,7 @@ func _run_sim() -> void:
 	people3d = RenderSync3D.new()
 	people3d.world = driver.world
 	people3d.origin = centre
+	people3d.footprints = Footprints.build(city_data, centre, radius_m + 40.0)
 	add_child(people3d)
 
 ## 2D map metres -> 3D (x east, y up, z south), centred on the block.

@@ -23,6 +23,7 @@ const CABIN := Color(0.32, 0.4, 0.48)
 
 var world: World
 var origin := Vector2.ZERO    # map point at 3D (0, 0, 0)
+var footprints: Footprints    # R3D5: set by the view, to open up the building you are in
 var shown_people := 0
 var shown_cars := 0
 
@@ -63,6 +64,18 @@ func _see_player() -> void:
 	var chest := Vector3(_player_at.x - origin.x, 1.0, _player_at.y - origin.y)
 	Cutaway.aim(chest, -cam.global_basis.z)
 	_ghost.position = chest
+	_open_room()
+
+## R3D5: standing inside a footprint: that building opens up round you.
+func _open_room() -> void:
+	var poly := footprints.at(_player_at) if footprints != null else PackedVector2Array()
+	if poly.is_empty():
+		Cutaway.room(Rect2(), false)
+		return
+	var box := Rect2(poly[0] - origin, Vector2.ZERO)
+	for p in poly:
+		box = box.expand(p - origin)
+	Cutaway.room(box, true)
 
 static func _silhouette() -> MeshInstance3D:
 	var box := BoxMesh.new()

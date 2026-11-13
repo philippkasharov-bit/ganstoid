@@ -4,6 +4,8 @@
 ## Dithering keeps everything opaque: no sorting and no cost for the merged
 ## city meshes, which cannot fade one building at a time. The ground and
 ## anything behind the player stay solid.
+## R3D5: inside a building, its roof and upper floors go, and the walls on
+## the camera's side drop to waist height, so you see the room you are in.
 class_name Cutaway
 extends RefCounted
 
@@ -17,6 +19,11 @@ uniform float radius = 7.0;
 uniform bool use_vertex = true;
 uniform vec3 tint : source_color = vec3(1.0);
 uniform float roughness = 0.95;
+uniform bool room_on = false;
+uniform vec2 room_min = vec2(0.0);
+uniform vec2 room_max = vec2(0.0);
+uniform float ceiling = 2.6;
+uniform float waist = 1.0;
 varying vec3 world_pos;
 
 void vertex() {
@@ -31,7 +38,20 @@ float bayer(vec2 p) {
 	return (float(m[y * 4 + x]) + 0.5) / 16.0;
 }
 
+bool cut_room() {
+	vec2 p = world_pos.xz;
+	if (!room_on || any(lessThan(p, room_min)) || any(greaterThan(p, room_max))) {
+		return false;
+	}
+	vec2 toward_camera = -normalize(view_dir.xz);
+	bool near_side = dot(p - (room_min + room_max) * 0.5, toward_camera) > 0.0;
+	return world_pos.y > ceiling || (near_side && world_pos.y > waist);
+}
+
 void fragment() {
+	if (cut_room()) {
+		discard;
+	}
 	vec3 d = world_pos - focus;
 	float along = dot(d, view_dir);
 	float off_line = length(d - along * view_dir);
@@ -68,6 +88,13 @@ static func aim(focus: Vector3, view_dir: Vector3) -> void:
 	for mat in _materials:
 		mat.set_shader_parameter("focus", focus)
 		mat.set_shader_parameter("view_dir", view_dir.normalized())
+
+## R3D5: the room you are in (its footprint's box in 3D x/z), or none.
+static func room(box: Rect2, on: bool) -> void:
+	for mat in _materials:
+		mat.set_shader_parameter("room_on", on)
+		mat.set_shader_parameter("room_min", box.position - Vector2.ONE * 0.4)
+		mat.set_shader_parameter("room_max", box.end + Vector2.ONE * 0.4)
 
 ## A fresh city drops the old materials.
 static func reset() -> void:
