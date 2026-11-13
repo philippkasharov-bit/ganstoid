@@ -11,12 +11,13 @@
 class_name Moodles
 extends VBoxContainer
 
-const TILE := 38.0
-const ICON := 26.0
+const TILE := 30.0   # MD2: Zomboid-small
+const ICON := 20.0
 const BAD := [Color("c98a7c"), Color("c0604f"), Color("a9372b"), Color("7e1b17")]
 const GOOD := [Color("8fbf7e"), Color("6fae5b"), Color("4f9440"), Color("357a2a")]
 const ICON_INK := Color(0.1, 0.09, 0.09, 0.9)
 const FLASH_S := 1.2
+const CLICK_TEXT := {"food": "eat the best food you carry", "drink": "drink", "medical": "bandage the worst wound", "sleep": "sleep", "bag": "open the bag"}
 const REFRESH_S := 0.25
 
 ## key: [icon file, field, level names (1..4), what it does, click]
@@ -28,6 +29,7 @@ const NEEDS := {
 	"stress": ["calm", "stress", ["Anxious", "Agitated", "Stressed", "Nervous Wreck"], "Stress spoils your aim and your talk.", ""],
 }
 const NEED_EDGES := [0.5, 0.7, 0.85, 0.95]
+const VALUE_NAMES := {"hunger": "Food %d%%", "thirst": "Water %d%%", "tired": "Energy %d%%", "injured": "Health %d%%", "stress": "Stress %d%%"}
 const HURT_EDGES := [0.15, 0.35, 0.6, 0.8]
 
 var _world: World
@@ -44,7 +46,8 @@ func setup(world: World) -> void:
 	add_child(_tip)
 	_tip.top_level = true
 
-## [icon, name shown, level 1-4, good?, description, click] for each moodle on now.
+## [icon, name shown, level 1-4, good?, description, click, value] for each
+## moodle on now; value is the number behind it ("Food 38%"), for the hover card.
 static func list(npc: NPCData, state: PlayerStateData) -> Array:
 	var out: Array = []
 	for key in NEEDS:
@@ -52,22 +55,22 @@ static func list(npc: NPCData, state: PlayerStateData) -> Array:
 		var lack: float = npc.stress if key == "stress" else 1.0 - float(npc.get(n[1]))
 		var lvl := level(lack, HURT_EDGES if key == "injured" else NEED_EDGES)
 		if lvl > 0:
-			out.append([n[0], n[2][lvl - 1], lvl, false, n[3], n[4]])
+			out.append([n[0], n[2][lvl - 1], lvl, false, n[3], n[4], VALUE_NAMES[key] % roundi((lack if key == "stress" else 1.0 - lack) * 100)])
 	if npc.hunger > 0.95:
-		out.append(["well_fed", "Well Fed", 1, true, "You ate well. Nothing to worry about for a while.", ""])
+		out.append(["well_fed", "Well Fed", 1, true, "You ate well. Nothing to worry about for a while.", "", "Food %d%%" % roundi(npc.hunger * 100)])
 	_problems(out, npc, state)
 	return out
 
 static func _problems(out: Array, npc: NPCData, state: PlayerStateData) -> void:
 	if npc.bleeding:
-		out.append(["bleeding", "Bleeding", 3, false, "You are losing blood. Bandage it now.", "medical"])
+		out.append(["bleeding", "Bleeding", 3, false, "You are losing blood. Bandage it now.", "medical", "Health %d%% and falling" % roundi(npc.health * 100)])
 	if state.law_tier > 0:
 		var lvl := clampi(state.law_tier, 1, 4)
-		out.append(["wanted", ["Watched", "Wanted", "Hunted", "Most Wanted"][lvl - 1], lvl, false, "The police are after you. Get out of sight and it cools.", ""])
+		out.append(["wanted", ["Watched", "Wanted", "Hunted", "Most Wanted"][lvl - 1], lvl, false, "The police are after you. Get out of sight and it cools.", "", "Heat %d / 4" % lvl])
 	if state.case_evidence >= CaseSystem.WARRANT_AT:
-		out.append(["warrant", "Warrant", 3, false, "There is a warrant out. Cops arrest on sight.", ""])
+		out.append(["warrant", "Warrant", 3, false, "There is a warrant out. Cops arrest on sight.", "", "Case %d" % roundi(state.case_evidence)])
 	if InventoryWindow.carried_kg(state) > ItemCatalog.CARRY_KG:
-		out.append(["heavy", "Heavy Load", 1, false, "You carry too much.", "bag"])
+		out.append(["heavy", "Heavy Load", 1, false, "You carry too much.", "bag", "%.1f / %.0f kg" % [InventoryWindow.carried_kg(state), ItemCatalog.CARRY_KG]])
 
 ## 0 none, 1..4 by how far past each edge `lack` is.
 static func level(lack: float, edges: Array) -> int:
@@ -127,7 +130,10 @@ func _tile(m: Array) -> Button:
 	art.position = ((Vector2(TILE, TILE - 2) - Vector2(ICON, ICON)) * 0.5).round()   # centred above the 2px base
 	art.modulate = ICON_INK
 	b.add_child(art)
-	b.mouse_entered.connect(func() -> void: _tip.show_at(b.global_position + Vector2(-230, 0), m[1], [[m[4], UiTheme.TEXT]]))
+	var lines: Array = [[m[6], BAD[3].lightened(0.4) if not m[3] else GOOD[1]], [m[4], UiTheme.TEXT]]
+	if m[5] != "":
+		lines.append(["Click: " + CLICK_TEXT.get(m[5], m[5]), UiTheme.DIM])
+	b.mouse_entered.connect(func() -> void: _tip.show_at(b.global_position, m[1], lines))   # no room on the right: it flips to the left of the column
 	b.mouse_exited.connect(_tip.hide_tip)
 	b.pressed.connect(func() -> void: _act(m[5]))
 	return b

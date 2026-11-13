@@ -60,4 +60,6 @@ static func train(world: World, state: PlayerStateData, skill: StringName, xp: f
 	var up := gain(state, skill, xp * GameRules.xp(world))   # O1
 	if up > 0:
 		state.last_message = "%s up: level %d." % [String(skill).capitalize(), up]
+		state.message_tone = 1
+		state.message_alert = false
 		state.message_serial += 1

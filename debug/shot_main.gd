@@ -72,8 +72,20 @@ func _run(main: Node, args: Dictionary) -> void:
 		sh.inventory = {&"bat": 1, &"knife": 1, &"pistol": 1, &"bandage": 4, &"burrito": 2, &"water": 1}
 		sh.weapon = &"pistol"
 		sh.ammo = 11
+		var mh: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
+		mh.hunger = 0.38
+		mh.thirst = 0.2
+		mh.bleeding = true
 		for i in 15:
 			await process_frame
+		sh.last_message = "Melee up: level 3."   # HT1 look: a line over the head
+		sh.message_tone = 1
+		sh.message_serial += 1
+		for i in 20:
+			await process_frame
+		for n in main.get_node("HudLayer").get_children():
+			if n is Moodles and n.get_child_count() > 1:
+				n.get_child(1).mouse_entered.emit()
 	if args.has("bag"):   # UI5 look: the bag open with a mixed load, hovering the pistol line
 		var st: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
 		st.inventory = {&"water": 2, &"soda": 1, &"chips": 2, &"burrito": 1, &"bandage": 7, &"bat": 1, &"knife": 1, &"pistol": 1, &"weed": 14}

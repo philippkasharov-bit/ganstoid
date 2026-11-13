@@ -1,5 +1,6 @@
-## UI2: street lines and results as a short pop-up at the bottom centre
-## (replaces the text tacked onto the old HUD). Read-only.
+## UI2/HT1: big news (arrested, raided, a new rank or trait) as a short
+## pop-up at the bottom centre; everyday lines float over your head instead
+## (HaloText). Read-only.
 class_name Toast
 extends PanelContainer
 
@@ -24,6 +25,8 @@ func _process(delta: float) -> void:
 	var state: PlayerStateData = player.get_component(ComponentNames.PLAYER_STATE)
 	if state.message_serial != _seen:
 		_seen = state.message_serial
+		if not state.message_alert:
+			return
 		_label.text = state.last_message
 		_left = SECONDS
 		reset_size()
@@ -31,4 +34,4 @@ func _process(delta: float) -> void:
 	visible = _left > 0.0
 	modulate.a = clampf(_left / 0.4, 0.0, 1.0)   # fades out over the last moment
 	var view := get_viewport_rect().size
-	position = Vector2((view.x - size.x) * 0.5, view.y - size.y - 40.0)
+	position = Vector2((view.x - size.x) * 0.5, view.y - size.y - 72.0)   # above the hotbar

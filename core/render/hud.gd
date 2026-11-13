@@ -84,7 +84,10 @@ func _ready() -> void:
 	var progress := ActionProgress.new()   # TA1: bar over the head
 	get_parent().add_child.call_deferred(progress)
 	progress.setup(_world)
-	var toast := Toast.new()          # UI2: pop-up lines
+	var halo := HaloText.new()         # HT1: short lines float over your head
+	get_parent().add_child.call_deferred(halo)
+	halo.setup(_world)
+	var toast := Toast.new()          # UI2: pop-up lines, big news only (HT1)
 	get_parent().add_child.call_deferred(toast)
 	toast.setup(_world)
 	position = Vector2(68, 124)

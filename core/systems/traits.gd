@@ -32,6 +32,7 @@ static func deed(world: World, state: PlayerStateData, kind: StringName) -> Stri
 		if want > tier:
 			state.traits[id] = want
 			state.last_message = "%s%s: %s. But %s." % ["GOLD " if want == 2 else "", t[3], t[4], t[5]]
+			state.message_alert = true
 			state.message_serial += 1
 			return id
 	return &""

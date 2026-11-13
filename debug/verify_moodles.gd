@@ -10,6 +10,7 @@ func _initialize() -> void:
 	npc.hunger = 0.4
 	var shown := Moodles.list(npc, state)
 	ok = ok and shown.size() == 1 and shown[0][1] == "Peckish" and shown[0][2] == 1 and not shown[0][3]
+	ok = ok and shown[0][6] == "Food 40%"   # MD2: the number behind it, for the hover card
 	npc.hunger = 0.02
 	ok = ok and Moodles.list(npc, state)[0][1] == "Starving"
 	npc.hunger = 0.99

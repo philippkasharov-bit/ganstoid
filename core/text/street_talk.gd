@@ -131,11 +131,16 @@ const LINES := {
 	"arrested": ["Cuffed. Back on the block with nothin'.", "Five-oh got you. Heat's off, so's the deal.", "Booked and kicked loose. Watch your back."],
 }
 
+## HT1: lines that are big news get the pop-up; everything else floats over
+## your head for a moment, Zomboid's halo text.
+const ALERTS := ["arrested", "arrested_seized", "grow_house_raided"]
+
 ## Posts the line for an action result, if that result has a voice.
 static func say(world: World, player_state: PlayerStateData, result: Dictionary) -> void:
 	var key := _key_for(result)
 	if key != "":
 		say_key(world, player_state, key, _amount_for(result))
+		player_state.message_tone = 1 if result.get("ok", false) else -1
 		if result.has("tip"):
 			player_state.last_message = player_state.last_message.replace("<tip>", result["tip"])
 
@@ -143,6 +148,8 @@ static func say_key(world: World, player_state: PlayerStateData, key: String, am
 	var options: Array = LINES[key]
 	var line: String = options[world.runtime_rng.randi() % options.size()]
 	player_state.last_message = line.replace("{n}", str(amount))
+	player_state.message_tone = 0
+	player_state.message_alert = ALERTS.has(key)
 	player_state.message_serial += 1
 
 static func _key_for(result: Dictionary) -> String:
