@@ -55,3 +55,6 @@ extends Resource
 @export var door_kicked: bool = false
 @export var windows_broken: int = 0
 @export var windows_boarded: bool = false
+## LT1: what is inside: container kind -> {"items": {id: n}, "filled": bool, "emptied_tick": int}.
+## Filled on first opening; "stash" is your own, never rolled.
+@export var containers: Dictionary = {}

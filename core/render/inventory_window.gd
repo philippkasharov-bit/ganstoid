@@ -79,7 +79,7 @@ func _wire_grid() -> void:
 	_grid.use_pile.connect(func(i: int) -> void: _state().ui_use = _grid.piles[i]["id"])
 	_grid.menu_pile.connect(func(i: int, at: Vector2) -> void: _open_menu(_grid.piles[i]["id"], at))
 	_grid.moved.connect(func(i: int, cell: Vector2i, turned: bool) -> void: BagGrid.move(_state(), i, cell, turned))
-	_grid.moved_out.connect(func(i: int) -> void: _state().ui_move = {"op": "drop", "id": _grid.piles[i]["id"], "n": int(_grid.piles[i]["n"])})
+	_grid.moved_out.connect(func(i: int) -> void: _state().ui_move = {"op": "store" if _at_own_place() else "drop", "id": _grid.piles[i]["id"], "n": int(_grid.piles[i]["n"])})
 	_near.use_pile.connect(func(i: int) -> void: _take(i, 999))
 	_near.moved_out.connect(func(i: int) -> void: _take(i, 999))
 	_near.menu_pile.connect(_open_near_menu)
@@ -169,6 +169,9 @@ func _on_menu_pick(index: int) -> void:
 
 func _show_tip(id: StringName, at: Vector2) -> void:
 	var it := ItemCatalog.item(id)
+	if id == &"cash":
+		_tip.show_at(at, "Cash", [["Money, not a bag item", UiTheme.GOOD]], "Take it and it goes in your pocket (dirty).")
+		return
 	if it.is_empty():
 		_tip.show_at(at, _name(id), [["Street goods", KIND_COLOURS["goods"]]], "Sell it to a dealer.")
 		return
@@ -193,14 +196,23 @@ func _vicinity_pane() -> VBoxContainer:
 	pane.add_child(_near)
 	return pane
 
-## "Ground" / "Trunk" / "Ground + trunk": where the Nearby items are.
+## LT1: inside your own place, what you drag out of the bag goes in your stash.
+func _at_own_place() -> bool:
+	var st := _state()
+	var e: Entity = _world.entities.get(st.inside_id) if st.inside_id != &"" else null
+	var npc: NPCData = _world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
+	return e != null and Containers.is_yours(npc, e.get_component(ComponentNames.BUILDING))
+
+## Where the Nearby items are: "Kitchen cupboards + 2 more", "Ground", "Trunk + glovebox".
 static func _near_heading(near: Array) -> String:
-	var kinds := {}
+	var names: Array = []
 	for src in near:
-		kinds[src["kind"]] = true
-	if kinds.has("ground") and kinds.has("trunk"):
-		return "Ground + trunk"
-	return "Trunk" if kinds.has("trunk") else "Ground"
+		var n: String = Containers.title(src["cont"]) if src["kind"] == "container" else String(src["kind"]).capitalize()
+		if not names.has(n):
+			names.append(n)
+	if names.is_empty():
+		return "Nearby"
+	return names[0] if names.size() == 1 else "%s + %d more" % [names[0], names.size() - 1]
 
 func _take(i: int, n: int) -> void:
 	_state().ui_move = {"op": "take", "src": _near.piles[i]["src"], "n": n}

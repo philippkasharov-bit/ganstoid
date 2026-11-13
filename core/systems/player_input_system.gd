@@ -156,6 +156,7 @@ func process_entities(entities: Dictionary, delta: float, tick: int) -> void:
 		var wired := VehicleSystem.advance_hotwire(_world, npc, state)
 		if not wired.is_empty():
 			StreetTalk.say(_world, state, wired)
+		Vicinity.update_inside(_world, npc, state)   # LT1
 		var busy := _move_input() != Vector2.ZERO or Input.is_action_just_pressed(ATTACK_ACTION)
 		StreetTalk.say(_world, state, TimedAction.advance(_world, npc, state, busy))   # TA1
 		if Input.is_action_just_pressed(TAG_ACTION) and state.vehicle_id == &"" and TerritorySystem.data(_world) != null:
@@ -445,6 +446,8 @@ func _do_move(npc: NPCData, state: PlayerStateData, move: Dictionary) -> Diction
 			return Vicinity.drop(npc, state, move["id"], move["n"])
 		"stash":
 			return Vicinity.stash(_world, npc, state, move["id"], move["n"])
+		"store":
+			return Vicinity.store(_world, npc, state, move["id"], move["n"])
 		"take":
 			return Vicinity.take(_world, state, move["src"], move["n"])
 	return {}

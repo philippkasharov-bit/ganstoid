@@ -45,6 +45,9 @@ extends Resource
 @export var ground: Array = []
 ## HP1: the player's body parts: part -> {hp, wound, bleeding, bandaged}.
 @export var body: Dictionary = {}
+## LT1: the building you are inside (after a break-in, or your own place); its
+## containers show in Nearby until you walk away.
+@export var inside_id: StringName = &""
 
 ## Phase 2 batch 8 (locked): the player's standing with each gang (keyed
 ## by GangData.id) and with each unaffiliated "solo" dealer (keyed by

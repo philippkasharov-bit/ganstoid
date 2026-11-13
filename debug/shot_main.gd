@@ -41,6 +41,21 @@ func _run(main: Node, args: Dictionary) -> void:
 			near[2].windows_boarded = true
 		for i in 70:
 			await process_frame
+	if args.has("inside"):   # LT1 look: just broke into the nearest house, bag open on its drawers
+		var me2: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
+		var st2: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
+		var best: BuildingData = null
+		for e in driver.world.entities.values():
+			var b: BuildingData = e.get_component(ComponentNames.BUILDING)
+			if b != null and b.building_type == GanstoidEnums.BuildingType.RESIDENCE and b.id != me2.home_building_id and (best == null or b.position.distance_to(me2.position) < best.position.distance_to(me2.position)):
+				best = b
+		me2.position = best.position
+		driver.world.reindex_position(me2.id)
+		st2.inside_id = best.id
+		st2.inventory = {&"water": 1, &"bandage": 2}
+		st2.inventory_open = true
+		for i in 10:
+			await process_frame
 	if args.has("menu"):   # UI1 look: the E menu open
 		var st: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
 		st.menu_title = "Crime"

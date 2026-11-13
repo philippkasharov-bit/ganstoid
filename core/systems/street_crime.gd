@@ -16,8 +16,6 @@ const BRAVE_SHARE := 0.12
 const WAYS_IN := {
 	"pick": [14.0, 1.0, true], "kick": [4.0, 1.6, false], "window": [2.5, 1.9, false], "walk": [1.5, 0.8, false],
 }
-const LOOT_MIN := 15
-const LOOT_MAX := 140
 const RESTOCK_DAYS := 3.0
 const HOUSE_ITEMS: Array[StringName] = [&"chips", &"water", &"bandage", &"knife", &"soda"]
 
@@ -88,17 +86,11 @@ static func advance_burglary(world: World, me: NPCData, state: PlayerStateData) 
 	var house_id := state.burglary_id
 	state.burglary_id = &""
 	house.looted_tick = world.tick
-	var cash := world.runtime_rng.randi_range(LOOT_MIN, LOOT_MAX)
-	Wallet.earn_dirty(world, cash)
-	var item: StringName = HOUSE_ITEMS[world.runtime_rng.randi() % HOUSE_ITEMS.size()]
-	if BagGrid.room_for(state, item) > 0:   # INV1: a full bag leaves the item behind; the cash still comes
-		state.inventory[item] = state.inventory.get(item, 0) + 1
-		BagGrid.sync(state)
-	else:
-		item = &""
+	state.inside_id = house_id   # LT1: you are in: the cupboards and drawers show in Nearby (I)
+	state.inventory_open = true
 	Skills.train(world, state, &"theft", 8.0)
 	_someone_home(world, house_id, me.position)
-	return {"ok": true, "effect": "burgled", "amount": cash, "item": item}
+	return {"ok": true, "effect": "burgled"}
 
 ## Whoever lives there and is in sees you up close: a sure report.
 static func _someone_home(world: World, house_id: StringName, at: Vector2) -> void:
