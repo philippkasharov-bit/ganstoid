@@ -70,6 +70,7 @@ func _run(main: Node, args: Dictionary) -> void:
 		var me0: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
 		st.ground = [{"id": &"coffee", "n": 2, "pos": me0.position + Vector2(1.2, 0.5)}, {"id": &"bandage", "n": 3, "pos": me0.position + Vector2(-1.0, 0.8)}]
 		BodyParts.ensure(st)
+		st.skills = {&"melee": 140.0, &"theft": 30.0, &"driving": 410.0}
 		st.body["r_forearm"] = {"hp": 0.4, "wound": "laceration", "bleeding": true, "bandaged": false, "bandage_age": 0.0, "infection": 0.0}
 		st.body["l_shin"] = {"hp": 0.25, "wound": "fracture", "bleeding": false, "bandaged": false, "bandage_age": 0.0, "infection": 0.0}
 		st.body["torso_upper"] = {"hp": 0.7, "wound": "bullet wound", "bleeding": false, "bandaged": true, "bandage_age": 1.5, "infection": 0.0}
@@ -80,6 +81,11 @@ func _run(main: Node, args: Dictionary) -> void:
 				n.open_tab(CharacterWindow.TAB_HEALTH)
 				n.position = Vector2(500, 60)
 				n._health._select("r_forearm")
+				if args.has("skills"):   # SK2 look: the Skills tab with melee's card
+					n._tabs.pick(1)
+					n._skills.refresh(st)
+					await process_frame
+					n._skills.get_child(3).mouse_entered.emit()
 		st.timed = {"item": &"burrito", "start": driver.world.tick - 60, "done": driver.world.tick + 120}
 		var me: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
 		me.hunger = 0.25
@@ -87,7 +93,6 @@ func _run(main: Node, args: Dictionary) -> void:
 		me.fatigue = 0.4
 		me.health = 0.6
 		me.bleeding = true
-		st.skills = {&"melee": 140.0, &"theft": 30.0, &"driving": 410.0}
 		st.inventory_open = true
 		for i in 3:
 			await process_frame

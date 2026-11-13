@@ -13,6 +13,21 @@ const NAMES: Array[StringName] = [&"shooting", &"melee", &"theft", &"driving", &
 const MAX_LEVEL := 10
 const XP_PER_LEVEL_SQ := 25.0      # level n needs 25 * n^2 XP (10 needs 2500)
 const EDGE_PER_LEVEL := 0.05
+## SK2: Zomboid groups its skills under headings; ours, with what a level
+## gives and how XP comes in (the Skills tab's hover card).
+const GROUPS := [["Combat", [&"shooting", &"melee"]], ["Crime", [&"theft", &"hustle"]], ["Vehicles", [&"driving"]]]
+const PER_LEVEL := {&"shooting": "tighter spread", &"melee": "harder blows", &"theft": "faster hotwires, surer pickpockets",
+	&"driving": "quicker off the line", &"hustle": "better deal prices"}
+const XP_FROM := {&"shooting": "Shots fired and hits", &"melee": "Blows that land", &"theft": "Each hotwire, lockpick or pickpocket",
+	&"driving": "Distance driven", &"hustle": "Each deal"}
+
+## [level, xp into this level, xp this level needs] (needs 0 at max).
+static func progress(xp: float) -> Array:
+	var lvl := mini(MAX_LEVEL, int(sqrt(xp / XP_PER_LEVEL_SQ)))
+	if lvl >= MAX_LEVEL:
+		return [MAX_LEVEL, 0.0, 0.0]
+	var lo := XP_PER_LEVEL_SQ * lvl * lvl
+	return [lvl, xp - lo, XP_PER_LEVEL_SQ * (lvl + 1) * (lvl + 1) - lo]
 
 static func level(state: PlayerStateData, skill: StringName) -> int:
 	var xp: float = state.skills.get(skill, 0.0)
