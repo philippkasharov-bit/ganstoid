@@ -13,7 +13,7 @@ func _initialize() -> void:
 	var night12 := CrimeSystem.can_see(world, Vector2.ZERO, Vector2(12, 0))
 	var night6 := CrimeSystem.can_see(world, Vector2.ZERO, Vector2(6, 0))
 	StreetLights.active = StreetLights.new()
-	StreetLights.active.add(Vector2(12, 0))
+	StreetLights.active.add(Vector3(12, 0, StreetLights.LAMP_R))
 	var lamp12 := CrimeSystem.can_see(world, Vector2.ZERO, Vector2(12, 0))
 	var dark_beside := CrimeSystem.can_see(world, Vector2(30, 0), Vector2(30, 7))   # a dark gap: 7 m is too far
 	StreetLights.active = null
