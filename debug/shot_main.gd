@@ -76,8 +76,16 @@ func _run(main: Node, args: Dictionary) -> void:
 		mm.hunger = 0.45
 		for i in 20:
 			await process_frame
+		var ms2: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
+		ms2.inventory = {&"knife": 1, &"pistol": 1, &"bandage": 2}
+		ms2.ammo = 12
+		for i in 10:
+			await process_frame
 		CombatSystem._hurt(driver.world, mm, {"damage": 0.2})
-		for i in 6:
+		mm.cash += 250                                   # A4: counts up in green
+		ms2.weapon = &"pistol"                           # A8: the frame pops
+		Skills.train(driver.world, ms2, &"melee", 30.0)  # A7: "Melee 1" in gold
+		for i in 5:
 			await process_frame
 	if args.has("pause"):   # PM1 look: the Esc menu with the controls shown
 		for n in main.get_node("HudLayer").get_children():

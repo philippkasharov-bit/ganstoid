@@ -15,6 +15,12 @@ var _state: PlayerStateData
 var _left := 0.0
 var _hovered := -1
 var _tip := UiTooltip.new()
+var _press_i := -1        # A6: the slot just used presses in
+var _press_t := 9.0
+var _weapon: StringName = &""   # A8: the weapon in hand last frame
+var _swap_t := 9.0
+const PRESS_S := 0.18
+const POP_S := 0.3
 
 func setup(world: World) -> void:
 	_world = world
@@ -24,6 +30,11 @@ func setup(world: World) -> void:
 	visible = false
 
 func _process(delta: float) -> void:
+	_press_t += delta
+	_swap_t += delta
+	_watch_keys()
+	if _press_t < PRESS_S or _swap_t < POP_S:
+		queue_redraw()
 	_left -= delta
 	if _world == null or _left > 0.0:
 		return
@@ -41,6 +52,20 @@ func _process(delta: float) -> void:
 	position = Vector2(roundf((screen.x - size.x) * 0.5), screen.y - SLOT - UiTheme.MARGIN)
 	queue_redraw()
 
+## A6/A8: notices a slot key, and a weapon change, the moment they happen.
+func _watch_keys() -> void:
+	if _state == null or not visible:
+		return
+	if _state.menu_options.is_empty() and _state.store_id == &"" and not _state.inventory_open:
+		for k in mini(_slots.size(), PlayerInputSystem.SLOT_ACTIONS.size()):
+			if Input.is_action_just_pressed(PlayerInputSystem.SLOT_ACTIONS[k]):
+				_press_i = k
+				_press_t = 0.0
+	if _state.weapon != _weapon:
+		if _weapon != &"":
+			_swap_t = 0.0
+		_weapon = _state.weapon
+
 func _rect(i: int) -> Rect2:
 	return Rect2(Vector2(i * (SLOT + GAP), 0), Vector2(SLOT, SLOT))
 
@@ -50,7 +75,11 @@ func _draw() -> void:
 	for i in _slots.size():
 		var s: Dictionary = _slots[i]
 		var r := _rect(i)
+		if i == _press_i and _press_t < PRESS_S:   # A6: pressed in, then back
+			r = r.grow(-3.0 * sin(PI * _press_t / PRESS_S))
 		var held := Hotbar.in_hand(_state, s)
+		if held and _swap_t < POP_S:   # A8: the new weapon's frame pops
+			draw_rect(r.grow(6.0 * (1.0 - _swap_t / POP_S)), Color(UiTheme.ACCENT, 1.0 - _swap_t / POP_S), false, 2.0)
 		draw_rect(r, UiTheme.BG)
 		draw_rect(r, UiTheme.ACCENT if held else (Color(1, 1, 1, 0.3) if i == _hovered else Color(1, 1, 1, 0.12)), false, 2.0 if held else 1.0)
 		var kind: String = ItemCatalog.item(s["id"]).get("kind", "goods")
@@ -87,6 +116,8 @@ func _gui_input(event: InputEvent) -> void:
 			_tip.hide_tip()
 	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT and hit >= 0:
 		_state.ui_hotbar = hit
+		_press_i = hit
+		_press_t = 0.0
 		accept_event()
 
 func _notification(what: int) -> void:

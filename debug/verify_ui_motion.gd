@@ -44,5 +44,19 @@ func _initialize() -> void:
 	world.register_entity(e)
 	CombatSystem._hurt(world, me, {"damage": 0.1})
 	ok = ok and st.hurt_serial == 1 and BodyParts.NAMES.has(st.hurt_part)
+	# A5: a pick-up flies from Nearby to the bag, a drop the other way.
+	var holder := Control.new()
+	root.add_child(holder)
+	ItemFlight.between(holder, {&"water": 1}, {&"water": 2, &"chips": 0}, {&"water": Vector2(10, 10)}, {}, {}, {&"water": Vector2(200, 50)})
+	ok = ok and holder.get_child_count() == 1 and holder.get_child(0) is ItemFlight
+	# A7: a level gained shines the box just earned.
+	var sk := SkillsPanel.new()
+	root.add_child(sk)
+	var ps := PlayerStateData.new()
+	ps.skills = {&"melee": 30.0}
+	sk.refresh(ps)
+	ps.skills = {&"melee": 120.0}
+	sk.refresh(ps)
+	ok = ok and sk._shine.has(&"melee")
 	print("UI_MOTION_VERIFY: ", "PASS" if ok else "FAIL")
 	quit()

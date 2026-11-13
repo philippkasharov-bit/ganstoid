@@ -11,6 +11,19 @@ const NAME_W := 76.0
 
 var _tip := UiTooltip.new()
 var _key := ""
+var _levels := {}   # A7: skill -> level last shown, to shine a box just earned
+var _shine := {}    # skill -> when its new box started to shine
+var _clock := 0.0
+const SHINE_S := 1.2
+
+func _process(delta: float) -> void:
+	_clock += delta
+	if not _shine.is_empty():
+		for row in get_children():
+			if row.has_meta("skill") and _shine.has(row.get_meta("skill")):
+				row.queue_redraw()
+				for c in row.get_child(0).get_children():
+					c.queue_redraw()
 
 func _init() -> void:
 	add_theme_constant_override("separation", 2)
@@ -29,6 +42,10 @@ func refresh(state: PlayerStateData) -> void:
 	for g in Skills.GROUPS:
 		add_child(_heading(g[0]))
 		for s in g[1]:
+			var lvl: int = Skills.progress(float(state.skills.get(s, 0.0)))[0]
+			if _levels.has(s) and lvl > int(_levels[s]):
+				_shine[s] = _clock
+			_levels[s] = lvl
 			add_child(_row(s, float(state.skills.get(s, 0.0))))
 
 func hide_tip() -> void:
@@ -66,8 +83,9 @@ func _row(skill: StringName, xp: float) -> Control:
 	row.add_child(title)
 	for i in Skills.MAX_LEVEL:
 		var fill: float = 1.0 if i < p[0] else (p[1] / p[2] if i == p[0] and p[2] > 0.0 else 0.0)
-		row.add_child(_box(fill))
+		row.add_child(_box(fill, skill if i == p[0] - 1 else &""))
 	panel.add_child(row)
+	panel.set_meta("skill", skill)
 	panel.mouse_entered.connect(func() -> void:
 		panel.add_theme_stylebox_override("panel", lit)
 		_tip.show_at(panel.global_position + Vector2(panel.size.x, 0), String(skill).capitalize(), card(skill, xp), "Train: " + Skills.XP_FROM[skill]))
@@ -85,7 +103,7 @@ static func card(skill: StringName, xp: float) -> Array:
 	lines.append(["+%d%% %s" % [edge, Skills.PER_LEVEL[skill]] if edge > 0 else "No edge yet: %d%% %s per level" % [roundi(Skills.EDGE_PER_LEVEL * 100), Skills.PER_LEVEL[skill]], UiTheme.GOOD if edge > 0 else UiTheme.DIM])
 	return lines
 
-func _box(fill: float) -> Control:
+func _box(fill: float, newest: StringName) -> Control:
 	var c := Control.new()
 	c.custom_minimum_size = BOX
 	c.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -93,5 +111,13 @@ func _box(fill: float) -> Control:
 		c.draw_rect(Rect2(Vector2.ZERO, BOX), UiTheme.BG_HEADER)
 		if fill > 0.0:
 			c.draw_rect(Rect2(Vector2.ZERO, Vector2(BOX.x * fill, BOX.y)), UiTheme.ACCENT if fill >= 1.0 else UiTheme.ACCENT.darkened(0.25))
-		c.draw_rect(Rect2(Vector2.ZERO, BOX), Color(1, 1, 1, 0.12), false, 1.0))
+		c.draw_rect(Rect2(Vector2.ZERO, BOX), Color(1, 1, 1, 0.12), false, 1.0)
+		if newest != &"" and _shine.has(newest):   # A7: a white glint sweeps the box just earned
+			var t: float = (_clock - float(_shine[newest])) / SHINE_S
+			if t < 1.0:
+				var x := BOX.x * (t * 2.0 - 0.5)
+				c.draw_rect(Rect2(Vector2(clampf(x, 0.0, BOX.x), 0), Vector2(clampf(4.0, 0.0, BOX.x - clampf(x, 0.0, BOX.x)), BOX.y)), Color(1, 1, 1, 0.8 * (1.0 - t)))
+				c.draw_rect(Rect2(Vector2.ZERO, BOX), Color(1, 1, 1, 0.5 * (1.0 - t)), false, 1.5)
+			else:
+				_shine.erase(newest))
 	return c

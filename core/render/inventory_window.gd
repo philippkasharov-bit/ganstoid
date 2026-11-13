@@ -37,6 +37,8 @@ var _near_now: Array = []      # what is in it right now
 var _weight_bar := Control.new()
 var _kg := 0.0
 var _menu_src := {}
+var _had := {}           # A5: the bag last frame, to see what came in or went out
+var _shown_kg := -1.0    # A5: the weight bar slides to the new weight
 const NEAR_COLS := 4
 const CONT_BTN := Vector2(30, 30)
 
@@ -94,7 +96,10 @@ func _wire_grid() -> void:
 		view.hover_pile.connect(func(i: int, at: Vector2) -> void: _show_tip(view.piles[i]["id"], at))
 		view.hover_end.connect(_tip.hide_tip)
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	if absf(_shown_kg - _kg) > 0.001:   # A5: the bar slides, it does not jump
+		_shown_kg = _kg if _shown_kg < 0.0 else move_toward(_shown_kg, _kg, maxf(0.2, absf(_kg - _shown_kg) * 8.0) * delta)
+		_weight_bar.queue_redraw()
 	var state := _state()
 	var now := state != null and state.inventory_open and state.store_id == &""
 	visible = now
@@ -107,8 +112,14 @@ func _process(_delta: float) -> void:
 	var key := "%s|%s|%d|%s|%s" % [state.inventory, state.weapon, state.ammo, near, _near_key]
 	if key != _key:
 		_key = key
+		var near_before := ItemFlight.centres(_near)
+		var bag_before := ItemFlight.centres(_grid)
+		var had: Dictionary = _had.duplicate()
 		_rebuild(state)
 		_show_near(near)
+		if visible:
+			ItemFlight.between(self, had, state.inventory, near_before, bag_before, ItemFlight.centres(_near), ItemFlight.centres(_grid))
+		_had = state.inventory.duplicate()
 
 func _rebuild(state: PlayerStateData) -> void:
 	BagGrid.sync(state)
@@ -136,7 +147,7 @@ func _weight_header() -> Control:
 	box.add_child(row)
 	_weight_bar.custom_minimum_size = Vector2(0, 4)
 	_weight_bar.draw.connect(func() -> void:
-		var f := _kg / ItemCatalog.CARRY_KG
+		var f := _shown_kg / ItemCatalog.CARRY_KG
 		_weight_bar.draw_rect(Rect2(Vector2.ZERO, _weight_bar.size), Color(1, 1, 1, 0.08))
 		_weight_bar.draw_rect(Rect2(Vector2.ZERO, Vector2(_weight_bar.size.x * minf(f, 1.0), 4)), UiTheme.BAD if f > 1.0 else UiTheme.ACCENT))
 	box.add_child(_weight_bar)

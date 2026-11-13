@@ -12,6 +12,10 @@ var _world: World
 var _grid := GridContainer.new()
 var _left := 0.0
 var _key := ""
+var _cash_label: Label        # A4: the cash value, counted toward the real number
+var _shown_cash := -1.0
+var _shown_dirty := 0.0
+const COUNT_PER_S := 6.0      # closes the gap this many times a second (fast at first, then settles)
 
 func setup(world: World) -> void:
 	_world = world
@@ -24,6 +28,7 @@ func setup(world: World) -> void:
 	visible = false
 
 func _process(delta: float) -> void:
+	_count_cash(delta)
 	_left -= delta
 	if _world == null or _left > 0.0:
 		return
@@ -34,7 +39,7 @@ func _process(delta: float) -> void:
 	if not visible:
 		return
 	var rows := _rows(player.get_component(ComponentNames.NPC), player.get_component(ComponentNames.PLAYER_STATE))
-	var key := str(rows)
+	var key := str(rows.slice(1)) + str(rows[0][0])   # A4: cash moves on its own, without a rebuild
 	if key != _key:
 		_key = key
 		_show(rows)
@@ -57,9 +62,29 @@ func _show(rows: Array) -> void:
 	for c in _grid.get_children():
 		_grid.remove_child(c)
 		c.queue_free()
+	_cash_label = null
 	for r in rows:
 		_grid.add_child(UiTheme.label(r[0], UiTheme.FONT_SMALL, UiTheme.DIM))
-		_grid.add_child(UiTheme.label(r[1], UiTheme.FONT_SMALL, UiTheme.TEXT))
+		var v := UiTheme.label(r[1], UiTheme.FONT_SMALL, UiTheme.TEXT)
+		_grid.add_child(v)
+		if r[0] == "Cash":
+			_cash_label = v
+
+## A4: the cash number runs up (green) or down (red) to the new amount.
+func _count_cash(delta: float) -> void:
+	var player: Entity = _world.entities.get(PlayerFactory.PLAYER_ENTITY_ID) if _world != null else null
+	if player == null or _cash_label == null:
+		return
+	var real := float(player.get_component(ComponentNames.NPC).cash)
+	var dirty := float(player.get_component(ComponentNames.PLAYER_STATE).dirty_cash)
+	if _shown_cash < 0.0:
+		_shown_cash = real
+		_shown_dirty = dirty
+	var gap := real - _shown_cash
+	_shown_cash = real if absf(gap) < 0.5 else _shown_cash + gap * minf(1.0, COUNT_PER_S * delta) + signf(gap) * 0.5
+	_shown_dirty = move_toward(_shown_dirty, dirty, maxf(1.0, absf(dirty - _shown_dirty) * COUNT_PER_S * delta))
+	_cash_label.text = "$%d  (dirty $%d)" % [roundi(_shown_cash), roundi(_shown_dirty)]
+	_cash_label.add_theme_color_override("font_color", UiTheme.TEXT if absf(gap) < 0.5 else (UiTheme.GOOD if gap > 0.0 else UiTheme.BAD))
 
 func _turf(npc: NPCData) -> String:
 	var t := TerritorySystem.data(_world)

@@ -11,7 +11,7 @@ const LIFT_PX := 46.0     # starts above the action bar
 const LINE_PX := 15.0
 const MAX_W := 260.0
 const MAX_LINES := 3
-const TONES := {1: Color("8fdc7a"), -1: Color("f08a7a"), 0: Color.WHITE}
+const TONES := {1: Color("8fdc7a"), -1: Color("f08a7a"), 0: Color.WHITE, 2: UiTheme.ACCENT}   # 2: a level or rank gained, in gold
 
 var _world: World
 var _seen := 0
