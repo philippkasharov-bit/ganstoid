@@ -67,6 +67,13 @@ func _run(main: Node, args: Dictionary) -> void:
 		st.menu_serial += 1
 		await process_frame
 		await process_frame
+	if args.has("hotbar"):   # HB1 look: a loaded belt, pistol in hand
+		var sh: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
+		sh.inventory = {&"bat": 1, &"knife": 1, &"pistol": 1, &"bandage": 4, &"burrito": 2, &"water": 1}
+		sh.weapon = &"pistol"
+		sh.ammo = 11
+		for i in 15:
+			await process_frame
 	if args.has("bag"):   # UI5 look: the bag open with a mixed load, hovering the pistol line
 		var st: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
 		st.inventory = {&"water": 2, &"soda": 1, &"chips": 2, &"burrito": 1, &"bandage": 7, &"bat": 1, &"knife": 1, &"pistol": 1, &"weed": 14}

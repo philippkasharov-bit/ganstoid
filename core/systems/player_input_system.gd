@@ -171,6 +171,7 @@ func process_entities(entities: Dictionary, delta: float, tick: int) -> void:
 		_combat_input(npc, state, tick)
 		if _action_menu_input(npc, state) or _store_input(npc, state) or _inventory_input(npc, state):
 			continue   # a menu is open: the number keys belong to it
+		_hotbar_input(state)   # HB1: otherwise 1-9 are the hotbar
 		var input_dir := _move_input()
 		if input_dir != Vector2.ZERO:
 			var speed := RUN_SPEED if Input.is_physical_key_pressed(KEY_SHIFT) else MOVE_SPEED
@@ -496,6 +497,20 @@ func _do_move(npc: NPCData, state: PlayerStateData, move: Dictionary) -> Diction
 ## UI5: a bag line is eaten/drunk/applied, or a weapon is taken in hand.
 func _use_or_hold(npc: NPCData, state: PlayerStateData, item_id: StringName) -> void:
 	StreetTalk.say(_world, state, TimedAction.start(_world, state, item_id))   # TA1: takes a few seconds
+
+## HB1: a number key or a clicked slot: hold / put away the weapon, or use the item.
+func _hotbar_input(state: PlayerStateData) -> void:
+	var i := state.ui_hotbar
+	state.ui_hotbar = -1
+	for k in SLOT_ACTIONS.size():
+		if Input.is_action_just_pressed(SLOT_ACTIONS[k]):
+			i = k
+	var act := Hotbar.press(state, i)
+	if act.get("holster", false):
+		state.weapon = &"fists"
+		state.aiming = false
+	elif act.has("use"):
+		StreetTalk.say(_world, state, TimedAction.start(_world, state, act["use"]))
 
 ## Bandage takes the usual seconds and goes on that part; removing is instant.
 func _treat(state: PlayerStateData, t: Dictionary) -> void:

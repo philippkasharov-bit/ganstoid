@@ -1,7 +1,7 @@
 ## UI2/UI21: the always-on status card (top left), one plain style: a column
 ## of "label  value" rows, labels dim, values white, all the same size, no
 ## colour coding (bleeding and needs live in the right-hand column). Rows:
-## cash, rank, hand, turf (heat lives in the Wanted moodle only), plus case / job / asleep / at work / prison
+## cash, rank, turf (heat lives in the Wanted moodle, the hand in the hotbar), plus case / job / asleep / at work / prison
 ## while they apply. Read-only.
 class_name StatusCard
 extends PanelContainer
@@ -44,7 +44,6 @@ func _rows(npc: NPCData, state: PlayerStateData) -> Array:
 	if state.prison_until_tick > 0:
 		return [["Status", "In prison"], ["Days left", "%.1f" % (float(state.prison_until_tick - _world.tick) / SimClock.day_ticks)]]
 	var out: Array = [["Cash", "$%d  (dirty $%d)" % [npc.cash, state.dirty_cash]], ["Rank", RankSystem.name_of(state.rank)],
-		["Hand", String(state.weapon).capitalize() + (" (%d)" % state.ammo if state.weapon == &"pistol" else "")],
 		["Turf", _turf(npc)]]
 	if state.case_evidence > 0.0:
 		out.append(["Case", "%d%s" % [roundi(state.case_evidence), "  warrant" if state.case_evidence >= CaseSystem.WARRANT_AT else ""]])
