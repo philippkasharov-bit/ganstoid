@@ -16,15 +16,22 @@ const WOOD := Color("6b5a47")
 const WIRE := Color("2b2b2e")
 
 ## Trees and power lines within `radius` of `centre`, in the 3D view's space.
-static func build(city: CityData, real: CityReal, centre: Vector2, radius: float) -> Array[Node3D]:
+## OPT1: placed relative to `origin`; with `keep`, only what stands inside it (its chunk).
+static func build(city: CityData, real: CityReal, centre: Vector2, radius: float, origin: Vector2 = Vector2.INF, keep: Rect2 = Rect2()) -> Array[Node3D]:
+	if origin == Vector2.INF:
+		origin = centre
 	var spots := PackedVector2Array()
 	for t in real.trees:
 		if t.distance_to(centre) < radius:
 			spots.append(t)
 	spots.append_array(_yard_trees(city, real, centre, radius))
+	var kept := PackedVector2Array()
+	for t in spots:
+		if not keep.has_area() or keep.has_point(t):
+			kept.append(t)
 	var out: Array[Node3D] = []
-	out.append_array(_trees(spots, centre))
-	out.append_array(_power(city, centre, radius))
+	out.append_array(_trees(kept, origin))
+	out.append_array(_power(city, centre, radius, origin, keep))
 	return out
 
 ## One tree in the yard of many houses: a lot corner pulled in, clear of every house.
@@ -57,8 +64,8 @@ static func _trees(spots: PackedVector2Array, centre: Vector2) -> Array[Node3D]:
 	crown.height = 3.6
 	crown.radial_segments = 8
 	crown.rings = 4
-	var trunks := _multi(trunk, Cutaway.material(TRUNK, false, 1.0), spots.size())
-	var crowns := _multi(crown, Cutaway.material(LEAVES[1], false, 1.0, 0.0, 0.6), spots.size())
+	var trunks := _multi(trunk, Cutaway.shared("tree_trunk", TRUNK, false, 1.0), spots.size())
+	var crowns := _multi(crown, Cutaway.shared("tree_crown", LEAVES[1], false, 1.0, 0.0, 0.6), spots.size())
 	for i in spots.size():
 		var p := Vector3(spots[i].x - centre.x, 0, spots[i].y - centre.y)
 		var size := 0.75 + float(absi(int(spots[i].x * 11.0)) % 50) / 100.0
@@ -68,7 +75,7 @@ static func _trees(spots: PackedVector2Array, centre: Vector2) -> Array[Node3D]:
 	return [trunks, crowns]
 
 ## Wooden poles down one side of residential streets, three wires pole to pole.
-static func _power(city: CityData, centre: Vector2, radius: float) -> Array[Node3D]:
+static func _power(city: CityData, centre: Vector2, radius: float, origin: Vector2, keep: Rect2) -> Array[Node3D]:
 	var poles: Array = []   # [point, along-road direction]
 	var wires: Array = []   # [a, b]
 	for r in city.roads:
@@ -83,13 +90,14 @@ static func _power(city: CityData, centre: Vector2, radius: float) -> Array[Node
 			var length := seg.length()
 			while run < length and length > 0.0:
 				var at := pts[i] + seg * (run / length) + seg.normalized().orthogonal() * off
-				poles.append([at, seg.normalized()])
-				if last != Vector2.INF and last.distance_to(at) < POLE_EVERY * 1.6:
-					wires.append([last, at])
+				if not keep.has_area() or keep.has_point(at):
+					poles.append([at, seg.normalized()])
+					if last != Vector2.INF and last.distance_to(at) < POLE_EVERY * 1.6:
+						wires.append([last, at])
 				last = at
 				run += POLE_EVERY
 			run -= length
-	return _poles_and_wires(poles, wires, centre)
+	return _poles_and_wires(poles, wires, origin)
 
 static func _poles_and_wires(poles: Array, wires: Array, centre: Vector2) -> Array[Node3D]:
 	var pole := CylinderMesh.new()
@@ -99,9 +107,9 @@ static func _poles_and_wires(poles: Array, wires: Array, centre: Vector2) -> Arr
 	pole.radial_segments = 6
 	var bar := BoxMesh.new()
 	bar.size = Vector3(1.0, 1.0, 1.0)
-	var posts := _multi(pole, Cutaway.material(WOOD, false, 1.0), poles.size())
-	var arms := _multi(bar, Cutaway.material(WOOD, false, 1.0), poles.size())
-	var lines := _multi(bar, Cutaway.material(WIRE, false, 1.0), wires.size() * 3)
+	var posts := _multi(pole, Cutaway.shared("pole", WOOD, false, 1.0), poles.size())
+	var arms := _multi(bar, Cutaway.shared("pole", WOOD, false, 1.0), poles.size())
+	var lines := _multi(bar, Cutaway.shared("wire", WIRE, false, 1.0), wires.size() * 3)
 	for i in poles.size():
 		var p: Vector2 = poles[i][0]
 		var across: Vector2 = (poles[i][1] as Vector2).orthogonal()

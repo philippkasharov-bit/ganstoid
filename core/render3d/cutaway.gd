@@ -202,3 +202,13 @@ static func room(box: Rect2, on: bool) -> void:
 ## A fresh city drops the old materials.
 static func reset() -> void:
 	_materials.clear()
+	_shared.clear()
+
+static var _shared: Dictionary = {}
+
+## OPT1: one material per look, shared by every streamed chunk (a new one per
+## chunk would pile up and each would be updated every frame).
+static func shared(key: String, colour: Color = Color.WHITE, use_vertex: bool = true, roughness: float = 0.95, glows: float = 0.0, breeze: float = 0.0) -> ShaderMaterial:
+	if not _shared.has(key):
+		_shared[key] = material(colour, use_vertex, roughness, glows, breeze)
+	return _shared[key]

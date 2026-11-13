@@ -3,8 +3,10 @@
 ## sidewalks, roads, every building's walls, roof, windows and door) coloured
 ## per vertex (buildings styled by BuildingMesh3D), so thousands of buildings
 ## cost a few dozen draw calls and the
-## camera culls the squares it cannot see. Palms are two MultiMeshes for the
-## whole district. Reads CityData only; the simulation never sees this.
+## camera culls the squares it cannot see. OPT1: CityStream3D builds one
+## chunk at a time (`only`), from that chunk's slice of the data; geometry an
+## item puts in a neighbour's square is dropped (the neighbour draws it).
+## Reads CityData only; the simulation never sees this.
 ## Map (x, y) -> 3D (x, height, y), relative to `origin`.
 class_name CityMesh3D
 extends RefCounted
@@ -18,14 +20,18 @@ const AREA_COL := {"park": Color("a9c48f"), "hills": Color("d6dcc4"), "mountains
 const SIDEWALK := Color("cbc7be")
 const CENTRE_LINE := Color("d8b23e")
 
+const ALL := Vector2i(-1000000, -1000000)
+
 var origin := Vector2.ZERO
+var only := ALL    # OPT1: the one chunk being built (ALL: every chunk)
 var _tools := {}   # chunk Vector2i -> SurfaceTool
+var _sink: SurfaceTool   # geometry for other chunks lands here and is thrown away
 
 ## Every chunk mesh plus the palms, as nodes ready to add under a Node3D.
-static func build(city: CityData, centre: Vector2, radius: float) -> Array[Node3D]:
-	Cutaway.reset()
+static func build(city: CityData, centre: Vector2, radius: float, at_origin: Vector2 = Vector2.INF, chunk: Vector2i = ALL, keep: Rect2 = Rect2(), real: CityReal = null) -> Array[Node3D]:
 	var b := CityMesh3D.new()
-	b.origin = centre
+	b.origin = centre if at_origin == Vector2.INF else at_origin
+	b.only = chunk
 	var r2 := radius * radius
 	for area in city.areas:
 		if _near(area["poly"], centre, r2):
@@ -35,14 +41,15 @@ static func build(city: CityData, centre: Vector2, radius: float) -> Array[Node3
 			b._road(road)
 	for i in city.buildings.size():
 		if _near(city.buildings[i]["poly"], centre, r2):
-			b._building(city.buildings[i], i + 1)   # R3D7: its tag is its index + 1 (0: not a building)
-	var real := CityReal.load_files()
+			b._building(city.buildings[i], city.buildings[i].get("tag", i + 1))   # R3D7: its tag is its city index + 1 (0: not a building)
+	if real == null:
+		real = CityReal.load_files()
 	CityDetail3D.add(b, city, real, centre, radius)   # D2: yards, lots, pools, walls, fences, crossings, hydrants
 	var out: Array[Node3D] = b._commit()
-	out.append_array(CityProps3D.build(city, real, centre, radius))   # D2: shade trees, power lines
+	out.append_array(CityProps3D.build(city, real, centre, radius, b.origin, keep))   # D2: shade trees, power lines
 	var wells := PackedVector2Array()
 	for w in city.tree_wells:
-		if w.distance_squared_to(centre) < r2:
+		if w.distance_squared_to(centre) < r2 and (not keep.has_area() or keep.has_point(w)):
 			wells.append(w)
 	out.append_array(b._palms(wells))
 	return out
@@ -58,6 +65,11 @@ func _v(p: Vector2, h: float = 0.0) -> Vector3:
 
 func _tool(at: Vector2) -> SurfaceTool:
 	var k := Vector2i(((at - origin) / CHUNK_M).floor())
+	if only != ALL and k != only:
+		if _sink == null:
+			_sink = SurfaceTool.new()
+			_sink.begin(Mesh.PRIMITIVE_TRIANGLES)
+		return _sink
 	if not _tools.has(k):
 		var st := SurfaceTool.new()
 		st.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -125,7 +137,7 @@ func _building(b: Dictionary, tag: int) -> void:
 	BuildingMesh3D.add(_tool(poly[0]), b, _v, tag)
 
 func _commit() -> Array[Node3D]:
-	var mat := Cutaway.material()   # R3D4: see-through where it hides the player
+	var mat := Cutaway.shared("city")   # R3D4: see-through where it hides the player
 	var out: Array[Node3D] = []
 	for k in _tools:
 		var mi := MeshInstance3D.new()
@@ -154,7 +166,7 @@ func _palms(wells: PackedVector2Array) -> Array[Node3D]:
 			mm.set_instance_transform(i, Transform3D(turn, _v(wells[i], part[2])))
 		var mmi := MultiMeshInstance3D.new()
 		mmi.multimesh = mm
-		mmi.material_override = Cutaway.material(part[1], false, 1.0, 0.0, 1.0)   # D2: palms sway
+		mmi.material_override = Cutaway.shared("palm_%s" % part[2], part[1], false, 1.0, 0.0, 1.0)   # D2: palms sway
 		out.append(mmi)
 	return out
 

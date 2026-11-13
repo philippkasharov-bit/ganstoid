@@ -32,11 +32,17 @@ var radius := 300.0             # lamps placed this far round origin
 var _lights: StreetLights
 
 func _ready() -> void:
-	_lights = StreetLights.build(city, origin, radius)   # the same layout the sim sees by
-	add_child(_posts(_lights.lamps))
+	if _lights == null:
+		_lights = StreetLights.build(city, origin, radius)   # the same layout the sim sees by (posts: CityStream3D)
+
+## OPT1: the lamp layout, for the stream to stand posts in each chunk.
+func layout() -> StreetLights:
+	if _lights == null:
+		_lights = StreetLights.build(city, origin, radius)
+	return _lights
 
 ## Posts as tall as their pool is wide, each with a head that glows at night.
-func _posts(at: PackedVector3Array) -> Node3D:
+static func posts(at: PackedVector3Array, origin: Vector2) -> Node3D:
 	var pole := CylinderMesh.new()
 	pole.top_radius = 0.08
 	pole.bottom_radius = 0.09
@@ -45,8 +51,8 @@ func _posts(at: PackedVector3Array) -> Node3D:
 	var head := BoxMesh.new()
 	head.size = Vector3(0.7, 0.18, 0.35)
 	var both := Node3D.new()
-	var posts := _multi(pole, Cutaway.material(Color("4a4d52"), false, 0.8))
-	var heads := _multi(head, Cutaway.material(Color("ffe2a8"), false, 0.6, 1.4))   # cut with its pole; glows at night
+	var posts := _multi(pole, Cutaway.shared("lamp_post", Color("4a4d52"), false, 0.8))
+	var heads := _multi(head, Cutaway.shared("lamp_head", Color("ffe2a8"), false, 0.6, 1.4))   # cut with its pole; glows at night
 	for mi in [posts, heads]:
 		mi.multimesh.instance_count = at.size()
 		both.add_child(mi)

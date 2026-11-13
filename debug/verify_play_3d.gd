@@ -43,11 +43,25 @@ func _initialize() -> void:
 	await _tap(KEY_F9)
 	var flipped := not _view.on
 	await _tap(KEY_F9)
-	print("walked %.1f m, %.1f m with the bag open; camera on you %s; U map in 2D %s, back to 3D %s; F9 %s" % [moved, with_bag, on_player, map_2d, back_3d, flipped and _view.on])
-	ok = ok and on_player and map_2d and back_3d and flipped and _view.on
+	var streamed := await _stream_follows()
+	print("walked %.1f m, %.1f m with the bag open; camera on you %s; U map in 2D %s, back to 3D %s; F9 %s; city built where you go %s" % [moved, with_bag, on_player, map_2d, back_3d, flipped and _view.on, streamed])
+	ok = ok and on_player and map_2d and back_3d and flipped and _view.on and streamed
 	print("PLAY_3D_VERIFY: %s" % ("PASS" if ok else "FAIL - the 3D game does not play right"))
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(SaveGame.PATH))
 	quit(0 if ok else 1)
+
+## OPT1: put the player 600 m away: the chunk under them gets built, the old ones go.
+func _stream_follows() -> bool:
+	var home := _me.position
+	_me.position = home + Vector2(600, 0)
+	_w.reindex_position(_me.id)
+	for i in 240:
+		await process_frame
+		if _view.stream._loaded.has(_view.stream.index.key_of(_me.position)) and not _view.stream._loaded.has(_view.stream.index.key_of(home)):
+			_me.position = home
+			return true
+	_me.position = home
+	return false
 
 func _walk(key: Key, frames: int) -> float:
 	var from := _me.position

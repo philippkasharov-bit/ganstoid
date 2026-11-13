@@ -20,7 +20,10 @@ var rig := CameraRig3D.new()
 var day_night := DayNight3D.new()
 var people3d := RenderSync3D.new()
 var aim := AimView3D.new()
-var furniture := StreetFurniture3D.new()   # signals, stop signs, bus stops
+var furniture := StreetFurniture3D.new()
+var stream := CityStream3D.new()   # OPT1: builds the city round you, drops it behind you
+var _plane: MeshInstance3D
+const CITY_M := 9000.0   # signals, stop signs, bus stops
 var env: Environment
 var sun: DirectionalLight3D
 var build_ms := 0.0
@@ -39,15 +42,20 @@ func setup(w: World, city: CityData, at: Vector2) -> void:
 	world = w
 	city_data = city
 	centre = at
+	Cutaway.reset()
 	_environment()
-	var t0 := Time.get_ticks_msec()
-	for n in CityMesh3D.build(city, centre, radius_m):
-		add_child(n)
-	build_ms = Time.get_ticks_msec() - t0
 	_ground()
+	day_night.origin = centre
+	day_night.city = city
+	day_night.radius = CITY_M   # lamps everywhere the stream can go
+	var t0 := Time.get_ticks_msec()
+	stream.setup(city, centre, day_night.layout())   # OPT1: only the city round you is built
+	add_child(stream)
+	stream.prime(_player_at(at))
+	build_ms = Time.get_ticks_msec() - t0
 	people3d.world = world
 	people3d.origin = centre
-	people3d.footprints = Footprints.build(city, centre, radius_m + 40.0)
+	people3d.footprints = Footprints.build(city, centre, CITY_M)
 	add_child(people3d)
 	aim.world = world
 	aim.origin = centre
@@ -55,11 +63,8 @@ func setup(w: World, city: CityData, at: Vector2) -> void:
 	furniture.world = world
 	furniture.origin = centre
 	add_child(furniture)
-	day_night.origin = centre
 	day_night.world = world
 	day_night.sun = sun
-	day_night.city = city
-	day_night.radius = radius_m + 60.0
 	day_night.env = env
 	add_child(day_night)
 	rig.origin = centre
@@ -71,7 +76,7 @@ func setup(w: World, city: CityData, at: Vector2) -> void:
 func show_3d(yes: bool) -> void:
 	on = yes
 	visible = yes
-	for n in [rig, people3d, aim, day_night, furniture]:
+	for n in [rig, people3d, aim, day_night, furniture, stream]:
 		n.process_mode = Node.PROCESS_MODE_INHERIT if yes else Node.PROCESS_MODE_DISABLED
 	rig.camera.current = yes
 	ScreenMap.use_3d(rig.camera if yes else null, centre)
@@ -87,6 +92,7 @@ func show_3d(yes: bool) -> void:
 ## U in 3D opens the map view (2D map with the turf / money overlay); when
 ## the overlay is cycled off again, back to 3D.
 func _process(_delta: float) -> void:
+	_follow()
 	var overlay := get_parent().get_node_or_null("TurfOverlay")
 	if overlay == null:
 		return
@@ -121,10 +127,23 @@ func _environment() -> void:
 	sun.shadow_enabled = false
 	add_child(sun)
 
+## OPT1: the stream and the ground go where the player is.
+func _follow() -> void:
+	var at := people3d.player_shown
+	if at == Vector2.INF:
+		return
+	stream.focus = at
+	_plane.position = Vector3(roundf(at.x - centre.x), -0.01, roundf(at.y - centre.y))
+
+func _player_at(fallback: Vector2) -> Vector2:
+	var p: Entity = world.entities.get(PlayerFactory.PLAYER_ENTITY_ID) if world != null else null
+	return (p.get_component(ComponentNames.NPC) as NPCData).position if p != null else fallback
+
 func _ground() -> void:
 	var plane := MeshInstance3D.new()
+	_plane = plane
 	var pm := PlaneMesh.new()
-	pm.size = Vector2.ONE * radius_m * 2.5
+	pm.size = Vector2.ONE * (CityStream3D.UNLOAD_M * 2.5)   # follows you: only as big as what is built
 	plane.mesh = pm
 	plane.position.y = -0.01
 	plane.material_override = Cutaway.material(GROUND, false, 1.0)   # darkens outside your view too
