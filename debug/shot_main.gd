@@ -29,7 +29,7 @@ func _run(main: Node, args: Dictionary) -> void:
 		var st: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
 		st.menu_title = "Crime"
 		st.menu_options = PackedStringArray(["Mug them (knife out)", "Pickpocket", "Rob the place", "Break in", "Spray your tag"])
-		st.menu_notes = PackedStringArray(["2 watching", "2 watching", "unseen", "unseen", "2 watching"])
+		st.menu_notes = PackedStringArray(["", "", "", "", ""])
 		await process_frame
 		await process_frame
 	if args.has("bag"):   # UI5 look: the bag open with a mixed load, hovering the pistol line

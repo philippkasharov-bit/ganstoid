@@ -1,7 +1,6 @@
 ## UIF3: shapes the E menu like Zomboid's right-click menu. Every option gets a
-## category (Shop & deals, Talk, Crime, Crew, Property, Car) and a short note
-## on the right: what it costs, or for crimes how many people could see it
-## ("3 watching" / "unseen"), since only witnesses bring the law. With more
+## category (Shop & deals, Talk, Crime, Crew, Property, Car) and, where one
+## helps, a short note on the right (crew size when recruiting). With more
 ## than a few options the menu opens on the categories and each one opens
 ## its own list.
 class_name ActionMenuModel
@@ -21,17 +20,15 @@ static func category(label: String) -> String:
 			return pair[1]
 	return "Shop & deals"
 
-## The note shown on the right of an option.
-static func note(world: World, at: Vector2, label: String, state: PlayerStateData) -> String:
-	var cat := category(label)
-	if cat == "Crime":
-		var eyes := eyes_on(world, at)
-		return "unseen" if eyes == 0 else "%d watching" % eyes
+## The note shown on the right of an option. (Who can see you lives in its
+## own HUD piece, the eye; the menu stays about the actions.)
+static func note(_world: World, _at: Vector2, label: String, state: PlayerStateData) -> String:
 	if label.begins_with("Recruit"):
 		return "crew %d/%d" % [state.crew_ids.size(), CrewSystem.MAX_CREW]
 	return ""
 
-## Civilians who could see a crime at `at` now and would call it in
+## UIF4: civilians who could see a crime at `at` now and would call it in
+## (shown by the eye in the HUD, DetectionEye)
 ## (the same rule CrimeSystem uses: in light range, no wall between).
 static func eyes_on(world: World, at: Vector2) -> int:
 	var n := 0

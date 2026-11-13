@@ -54,6 +54,9 @@ func _ready() -> void:
 	get_parent().add_child.call_deferred(skills)
 	var right := get_viewport().get_visible_rect().size.x
 	skills.setup(_world, Vector2(right - 320, 60))   # UIF2: docked right, like Zomboid
+	var eye := DetectionEye.new()   # UIF4: who can see you, its own HUD piece
+	get_parent().add_child.call_deferred(eye)
+	eye.setup(_world)
 	var health := HealthWindow.new()   # HP1: H
 	get_parent().add_child.call_deferred(health)
 	health.setup(_world, Vector2(right - 400, 330))
