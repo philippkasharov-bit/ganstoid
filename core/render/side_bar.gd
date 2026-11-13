@@ -75,9 +75,7 @@ func _open_windows() -> Dictionary:
 		if n is InventoryWindow and n.visible:
 			out["Bag"] = true
 		elif n is CharacterWindow and n.visible:
-			out["Character"] = true
-		elif n is HealthWindow and n.visible:
-			out["Health"] = true
+			out["Health" if n.showing_health() else "Character"] = true   # CI1: one window, two buttons
 		elif n is CrewRoster and n.visible:
 			out["Crew"] = true
 	return out

@@ -1,14 +1,13 @@
-## HP1-HP3: the health window (H), Project Zomboid's Health panel. Left: the
-## body figure, each of the 17 parts filled by how bad it is. Right: the
-## injury list in the same colours, and under it the card of the part you
-## picked (click a part or a line): condition, wound, bleeding, bandage,
-## infection, how long it takes to heal and what it does to you, with its
-## treatment buttons. Right-click a part or a line for the same treatments
-## as a menu, Zomboid's way. The one write is state.ui_treat.
-class_name HealthWindow
-extends UiWindow
+## HP1-HP3/CI1: the Health tab of the Character Info window, Project
+## Zomboid's Health panel. Left: the body figure, each of the 17 parts filled
+## by how bad it is. Right: the injury list in the same colours, and under it
+## the card of the part you picked (click a part or a line): condition,
+## wound, bleeding, bandage, infection, how long it takes to heal and what it
+## does to you, with its treatment buttons. Right-click a part or a line for
+## the same treatments as a menu, Zomboid's way. The one write is state.ui_treat.
+class_name HealthPanel
+extends VBoxContainer
 
-const ACTION := &"health_window"
 const STATUS := [[0.9, "Healthy"], [0.7, "Hurt"], [0.45, "Injured"], [0.2, "Severely injured"], [0.0, "Critical"]]
 const CARD_W := 210.0
 
@@ -22,13 +21,13 @@ var _menu_ops: Array = []
 var _selected := ""
 var _key := ""
 
-func setup(world: World, at: Vector2) -> void:
+func setup(world: World) -> void:
 	_world = world
-	setup_window("health", "Health", at, Vector2(400, 0))
-	body.add_child(_overall)
+	add_theme_constant_override("separation", UiTheme.SPACE)
+	add_child(_overall)
 	var split := HBoxContainer.new()
 	split.add_theme_constant_override("separation", 12)
-	body.add_child(split)
+	add_child(split)
 	split.add_child(_doll)
 	var right := VBoxContainer.new()
 	right.custom_minimum_size.x = CARD_W
@@ -44,28 +43,18 @@ func setup(world: World, at: Vector2) -> void:
 	_menu.picked.connect(_on_menu)
 	_doll.part_clicked.connect(_select)
 	_doll.part_menu.connect(_open_menu)
-	_bind_key()
-	visible = false
 
-func _bind_key() -> void:
-	if InputMap.has_action(ACTION):
-		return
-	InputMap.add_action(ACTION)
-	var ev := InputEventKey.new()
-	ev.physical_keycode = KEY_H
-	InputMap.action_add_event(ACTION, ev)
+## Esc closes the treatment menu first. True if it did.
+func close_menu() -> bool:
+	if not _menu.visible:
+		return false
+	_menu.visible = false
+	return true
 
-func _process(_delta: float) -> void:
-	if Input.is_action_just_pressed(ACTION):
-		visible = not visible
-	elif visible and Input.is_action_just_pressed("ui_cancel"):
-		if _menu.visible:
-			_menu.visible = false
-		else:
-			close_window()
+## Called by the window while this tab shows.
+func refresh() -> void:
 	var p: Entity = _world.entities.get(PlayerFactory.PLAYER_ENTITY_ID) if _world != null else null
-	if not visible or p == null:
-		_menu.visible = false
+	if p == null:
 		return
 	var state: PlayerStateData = p.get_component(ComponentNames.PLAYER_STATE)
 	var npc: NPCData = p.get_component(ComponentNames.NPC)

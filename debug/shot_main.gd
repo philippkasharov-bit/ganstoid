@@ -76,10 +76,10 @@ func _run(main: Node, args: Dictionary) -> void:
 		st.body["l_hand"] = {"hp": 0.6, "wound": "laceration", "bleeding": false, "bandaged": false, "bandage_age": 0.0, "infection": 1.0}
 		st.body["head"] = {"hp": 0.88, "wound": "bruise", "bleeding": false, "bandaged": false, "bandage_age": 0.0, "infection": 0.0}
 		for n in main.get_node("HudLayer").get_children():
-			if n is HealthWindow:
-				n.visible = true
+			if n is CharacterWindow:
+				n.open_tab(CharacterWindow.TAB_HEALTH)
 				n.position = Vector2(500, 60)
-				n._select("r_forearm")
+				n._health._select("r_forearm")
 		st.timed = {"item": &"burrito", "start": driver.world.tick - 60, "done": driver.world.tick + 120}
 		var me: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
 		me.hunger = 0.25
@@ -88,9 +88,6 @@ func _run(main: Node, args: Dictionary) -> void:
 		me.health = 0.6
 		me.bleeding = true
 		st.skills = {&"melee": 140.0, &"theft": 30.0, &"driving": 410.0}
-		for n in main.get_node("HudLayer").get_children():
-			if n is CharacterWindow:
-				n.visible = true
 		st.inventory_open = true
 		for i in 3:
 			await process_frame

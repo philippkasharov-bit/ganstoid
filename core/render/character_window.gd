@@ -1,16 +1,22 @@
-## UI6/UI19: the character window (K), Zomboid-style tabs: Info (rank, fame,
-## traits, crew, businesses) and Skills (ten level boxes per skill, the next
-## box filling as XP comes in). Read-only.
+## UI6/UI19/CI1: the Character Info window, Project Zomboid's: one window,
+## tabs Info (rank, fame, traits, crew, businesses), Skills (ten level boxes
+## per skill, the next box filling as XP comes in) and Health (the body panel).
+## K opens it on Info, H (or the side bar's heart) on Health; the same key
+## again closes it. Only the Health tab writes (its treatments).
 class_name CharacterWindow
 extends UiWindow
 
 const ACTION := &"skills_window"
+const HEALTH_ACTION := &"health_window"
+const TAB_INFO := 0
+const TAB_HEALTH := 2
 const BOX := Vector2(11, 9)
 
 var _world: World
 var _rows := VBoxContainer.new()
 var _info := VBoxContainer.new()
 var _tabs := UiTabs.new()
+var _health := HealthPanel.new()
 var _key := ""
 
 func setup(world: World, at: Vector2) -> void:
@@ -21,21 +27,48 @@ func setup(world: World, at: Vector2) -> void:
 	body.add_child(_tabs)
 	_tabs.add_tab("Info", _info)
 	_tabs.add_tab("Skills", _rows)
-	_tabs.pick(0)
-	if not InputMap.has_action(ACTION):
-		InputMap.add_action(ACTION)
-		var ev := InputEventKey.new()
-		ev.physical_keycode = KEY_K
-		InputMap.action_add_event(ACTION, ev)
+	_health.setup(world)
+	_tabs.add_tab("Health", _health)
+	_tabs.changed.connect(func(_i: int) -> void:   # fit each tab (Health is the wide one) and stay on screen
+		reset_size()
+		_keep_on_screen.call_deferred())
+	_tabs.pick(TAB_INFO)
+	_bind(ACTION, KEY_K)
+	_bind(HEALTH_ACTION, KEY_H)
 	visible = false
+
+static func _bind(action: StringName, key: Key) -> void:
+	if InputMap.has_action(action):
+		return
+	InputMap.add_action(action)
+	var ev := InputEventKey.new()
+	ev.physical_keycode = key
+	InputMap.action_add_event(action, ev)
+
+## K / H: open on that tab, or close if it is already showing.
+func open_tab(tab: int) -> void:
+	var on_health := _tabs.current == TAB_HEALTH
+	if visible and (tab == TAB_HEALTH) == on_health:
+		close_window()
+		return
+	visible = true
+	_tabs.pick(tab)
+
+func showing_health() -> bool:
+	return visible and _tabs.current == TAB_HEALTH
 
 func _process(_delta: float) -> void:
 	if Input.is_action_just_pressed(ACTION):
-		visible = not visible
-	elif visible and Input.is_action_just_pressed("ui_cancel"):
+		open_tab(TAB_INFO)
+	elif Input.is_action_just_pressed(HEALTH_ACTION):
+		open_tab(TAB_HEALTH)
+	elif visible and Input.is_action_just_pressed("ui_cancel") and not _health.close_menu():
 		close_window()
 	if not visible or _world == null:
+		_health.close_menu()
 		return
+	if _tabs.current == TAB_HEALTH:
+		_health.refresh()
 	var p: Entity = _world.entities.get(PlayerFactory.PLAYER_ENTITY_ID)
 	if p == null:
 		return

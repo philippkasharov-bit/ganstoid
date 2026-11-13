@@ -39,8 +39,8 @@ func _initialize() -> void:
 	st2.body["l_shin"] = _part(0.6, "laceration")
 	var drain := BodyParts.heal(st2, 2.5)
 	ok = ok and BodyParts.dirty(st2.body["r_forearm"]) and float(st2.body["l_shin"]["infection"]) >= 1.0 and drain > 0.0
-	ok = ok and HealthWindow.injury_line("l_shin", st2.body["l_shin"]).contains("infected")
-	ok = ok and HealthWindow.injury_line("r_forearm", st2.body["r_forearm"]).contains("dirty bandage")
+	ok = ok and HealthPanel.injury_line("l_shin", st2.body["l_shin"]).contains("infected")
+	ok = ok and HealthPanel.injury_line("r_forearm", st2.body["r_forearm"]).contains("dirty bandage")
 	# Limbs: a broken thigh limps, a hurt hand spoils aim; breaks heal slowest.
 	var st3 := PlayerStateData.new()
 	BodyParts.ensure(st3)
@@ -50,23 +50,23 @@ func _initialize() -> void:
 	ok = ok and BodyParts.aim_mult(st3) > 1.2
 	BodyParts.heal(st3, 3.0)
 	ok = ok and st3.body["r_hand"]["wound"] == "" and st3.body["l_thigh"]["wound"] == "fracture"
-	ok = ok and HealthWindow.injury_line("l_thigh", st3.body["l_thigh"]).begins_with("Left thigh: fracture")
-	ok = ok and HealthWindow.injury_line("head", st3.body["head"]) == ""
-	ok = ok and HealthWindow.status_word(0.95) == "Healthy" and HealthWindow.status_word(0.1) == "Critical"
+	ok = ok and HealthPanel.injury_line("l_thigh", st3.body["l_thigh"]).begins_with("Left thigh: fracture")
+	ok = ok and HealthPanel.injury_line("head", st3.body["head"]) == ""
+	ok = ok and HealthPanel.status_word(0.95) == "Healthy" and HealthPanel.status_word(0.1) == "Critical"
 	ok = ok and BodyDoll.SHAPES.size() == 17 and BodyDoll.part_at(Vector2(75, 24)) == "head"
 	# HP3: treating one chosen part from the health window.
 	var st4 := PlayerStateData.new()
 	BodyParts.ensure(st4)
 	st4.body["l_forearm"] = _part(0.5, "laceration", true)
 	st4.inventory = {&"bandage": 2}
-	var tr := HealthWindow.treatments(st4, "l_forearm")
+	var tr := HealthPanel.treatments(st4, "l_forearm")
 	ok = ok and tr.size() == 1 and tr[0]["op"] == "bandage" and tr[0]["enabled"]
 	ok = ok and BodyParts.heal_days(st4.body["l_forearm"]) < 0.0   # bleeding: not healing
 	ok = ok and BodyParts.bandage_part(st4, npc, "l_forearm") and not st4.body["l_forearm"]["bleeding"]
 	ok = ok and BodyParts.heal_days(st4.body["l_forearm"]) > 0.0 and BodyParts.effect("l_forearm", st4.body["l_forearm"]) != ""
-	ok = ok and HealthWindow.treatments(st4, "l_forearm").map(func(o: Dictionary) -> String: return o["op"]) == ["remove"]
+	ok = ok and HealthPanel.treatments(st4, "l_forearm").map(func(o: Dictionary) -> String: return o["op"]) == ["remove"]
 	ok = ok and BodyParts.remove_bandage(st4, "l_forearm") and not st4.body["l_forearm"]["bandaged"]
 	ok = ok and not BodyParts.bandage_part(st4, npc, "head")   # nothing to dress
-	ok = ok and HealthWindow.card_rows("l_forearm", st4.body["l_forearm"])[1][1] == "Laceration"
+	ok = ok and HealthPanel.card_rows("l_forearm", st4.body["l_forearm"])[1][1] == "Laceration"
 	print("BODY_PARTS_VERIFY: ", "PASS" if ok else "FAIL")
 	quit()
