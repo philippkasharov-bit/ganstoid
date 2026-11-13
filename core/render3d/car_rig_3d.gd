@@ -21,6 +21,10 @@ var _lamps := PersonRig3D._layer(Vector3(1, 1, 1), 0)
 var _ticks: Dictionary = {}   # car id -> [was pos, was heading, now pos, now heading, wheel turn]
 
 func _init(count: int = 600) -> void:
+	for pair in [[_body, "car_body"], [_cabin, "car_cabin"]]:   # M1: Blender models, unit box, stretched per car
+		var m := PersonRig3D.model_mesh(pair[1])
+		if m != null:
+			pair[0].multimesh.mesh = m
 	for l in [_body, _cabin, _wheels, _lamps]:
 		l.multimesh.instance_count = count * (4 if l == _wheels or l == _lamps else 1)
 		add_child(l)
@@ -45,7 +49,7 @@ func place(i: int, id: StringName, car: VehicleData, paint: Color, shade: float,
 	var w := car.width_m
 	_body.multimesh.set_instance_transform(i, Transform3D(turn.scaled_local(Vector3(l, 0.62, w)), at + Vector3(0, 0.68, 0)))
 	_body.multimesh.set_instance_color(i, paint * shade)
-	_cabin.multimesh.set_instance_transform(i, Transform3D(turn.scaled_local(Vector3(l * 0.5, 0.5, w * 0.88)), at + turn * Vector3(-l * 0.08, 0, 0) + Vector3(0, 1.24, 0)))
+	_cabin.multimesh.set_instance_transform(i, Transform3D(turn.scaled_local(Vector3(l * 0.48, 0.48, w * 0.86)), at + turn * Vector3(-l * 0.06, 0, 0) + Vector3(0, 1.22, 0)))
 	_cabin.multimesh.set_instance_color(i, CABIN * shade)
 	var spin: float = pose[2]
 	for k in 4:

@@ -5,6 +5,8 @@
 ## not at all, settling back smoothly), the body bobs with each step,
 ## crouching lowers everyone's parts, and someone down lies flat. D3: arms
 ## come up to aim (both forward) and the right arm throws a punch or swing.
+## M1: the parts are Blender models (art/models, tools/models), shoes, hands
+## and belt shaded in; hair on top in its own colour. Boxes if a model is missing.
 class_name PersonRig3D
 extends Node3D
 
@@ -13,7 +15,7 @@ const WALK_SWING := 0.5        # radians at a walk
 const RUN_SWING := 0.85
 const RUN_SPEED := 2.6         # m/s from which the swing is a run
 const SETTLE := 10.0           # how fast the swing eases in and out
-const LEGS := Color(0.16, 0.17, 0.22)
+const PANTS := [Color(0.16, 0.17, 0.22), Color("2f4a6d"), Color("3b3b3e"), Color("6b5d48"), Color("1f2a3a"), Color("4a4f57")]   # jeans, khakis, black
 ## part: [size, pivot (x forward, y up, z side), hang below the pivot]
 const PARTS := {
 	"leg_l": [Vector3(0.2, 0.85, 0.18), Vector3(0, 0.85, -0.12), 0.425],
@@ -22,7 +24,10 @@ const PARTS := {
 	"arm_r": [Vector3(0.13, 0.62, 0.13), Vector3(0, 1.5, 0.33), 0.31],
 	"torso": [Vector3(0.3, 0.68, 0.52), Vector3(0, 1.2, 0), 0.0],
 	"head": [Vector3(0.28, 0.28, 0.28), Vector3(0, 1.72, 0), 0.0],
+	"hair": [Vector3(0.28, 0.12, 0.28), Vector3(0, 1.72, 0), 0.0],
 }
+const MODELS := {"leg_l": "leg", "leg_r": "leg", "arm_l": "arm", "arm_r": "arm", "torso": "torso", "head": "head", "hair": "hair"}
+const HAIR := [Color("1c1611"), Color("2e2118"), Color("4a3221"), Color("13110f"), Color("6b6158"), Color("3a2a1e")]
 
 var origin := Vector2.ZERO
 var _layers := {}
@@ -30,7 +35,7 @@ var _gait := {}   # id -> [last point, phase, swing]
 
 func _init(count: int = 1500) -> void:
 	for part in PARTS:
-		_layers[part] = _layer(PARTS[part][0], count)
+		_layers[part] = _layer(PARTS[part][0], count, MODELS[part])
 		add_child(_layers[part])
 
 func set_count(n: int) -> void:
@@ -63,8 +68,10 @@ func place(i: int, at: Vector2, face: float, phase: float, swing: float, down: b
 	var bob := absf(sin(phase)) * swing * 0.08   # up on each step
 	var s := sin(phase) * swing
 	var raise := PI * 0.5   # an arm straight out in front
-	var swings := {"leg_l": s, "leg_r": -s, "arm_l": lerpf(-s * 0.8, raise * 0.9, aim), "arm_r": lerpf(lerpf(s * 0.8, raise, aim), raise * 1.15, strike), "torso": 0.0, "head": 0.0}
-	var cols := {"leg_l": LEGS, "leg_r": LEGS, "arm_l": shirt, "arm_r": shirt, "torso": shirt, "head": skin}
+	var swings := {"leg_l": s, "leg_r": -s, "arm_l": lerpf(-s * 0.8, raise * 0.9, aim), "arm_r": lerpf(lerpf(s * 0.8, raise, aim), raise * 1.15, strike), "torso": 0.0, "head": 0.0, "hair": 0.0}
+	var pants: Color = PANTS[absi(int(shirt.r * 97.0 + skin.g * 31.0)) % PANTS.size()]
+	var hair: Color = HAIR[absi(int(skin.r * 53.0 + shirt.b * 71.0)) % HAIR.size()]
+	var cols := {"leg_l": pants, "leg_r": pants, "arm_l": shirt, "arm_r": shirt, "torso": shirt, "head": skin, "hair": hair}
 	for part in PARTS:
 		var spec: Array = PARTS[part]
 		var pivot: Vector3 = spec[1] * Vector3(1, squat, 1) + Vector3(0, bob, 0)
@@ -74,20 +81,31 @@ func place(i: int, at: Vector2, face: float, phase: float, swing: float, down: b
 		mm.set_instance_transform(i, Transform3D(body, base) * local)
 		mm.set_instance_color(i, cols[part])
 
-static func _layer(size: Vector3, count: int) -> MultiMeshInstance3D:
-	var box := BoxMesh.new()
-	box.size = size
+static func _layer(size: Vector3, count: int, model: String = "") -> MultiMeshInstance3D:
+	var mesh: Mesh = model_mesh(model)
+	if mesh == null:
+		var box := BoxMesh.new()
+		box.size = size
+		mesh = box
 	var mat := StandardMaterial3D.new()
-	mat.vertex_color_use_as_albedo = true
+	mat.vertex_color_use_as_albedo = true   # the model's shading x this person's colour
 	mat.roughness = 0.95
-	box.material = mat
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.use_colors = true
-	mm.mesh = box
+	mm.mesh = mesh
 	mm.instance_count = count
 	mm.visible_instance_count = 0
 	var mi := MultiMeshInstance3D.new()
 	mi.multimesh = mm
+	mi.material_override = mat
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	return mi
+
+## M1: a model from art/models (made in Blender), or null.
+static func model_mesh(name: String) -> Mesh:
+	var path := "res://art/models/%s.obj" % name
+	if name == "" or not ResourceLoader.exists(path):
+		return null
+	var res: Resource = load(path)
+	return res as Mesh
