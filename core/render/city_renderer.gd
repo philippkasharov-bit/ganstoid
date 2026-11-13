@@ -115,7 +115,8 @@ func _build() -> void:
 	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: CityGround.crossings(ci, crossings[r], night), tiles, MID_ZOOM)
 	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: _draw_band_details(ci, ramps[r], wells[r]), tiles, FINE_ZOOM)
 	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: CityGround.details(ci, barriers[r], points[r], night), tiles, FINE_ZOOM)
-	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: _draw_buildings(ci, blds[r]), tiles)
+	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: _draw_buildings(ci, blds[r]), tiles, 0.0, MID_ZOOM)
+	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: _draw_buildings(ci, blds[r], true), tiles, MID_ZOOM)   # DW1: with doors and windows up close
 	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: _draw_building_details(ci, blds[r]), tiles, MID_ZOOM)
 	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: CityGround.trees(ci, trees[r], night), tiles, MID_ZOOM)
 	_add_layer(func(ci: CanvasItem, r: Rect2) -> void: FreewayPainter.paint(ci, roads[r].filter(func(x: Dictionary) -> bool: return OVER_BUILDINGS.has(x["tier"])), WIDTH, night, false), tiles, 0.0, MID_ZOOM)
@@ -258,7 +259,7 @@ const LIFT_PER_M := 0.22          # screen metres up per metre of height
 const LIFT_MAX_M := 22.0
 const STOREY_M_DRAW := 3.2
 
-func _draw_buildings(ci: CanvasItem, blds: Array) -> void:
+func _draw_buildings(ci: CanvasItem, blds: Array, openings := false) -> void:
 	var cols: Dictionary = BUILDING_NIGHT if night else BUILDING_DAY
 	var items: Array = []
 	for b in blds:
@@ -278,6 +279,7 @@ func _draw_buildings(ci: CanvasItem, blds: Array) -> void:
 		var roof_col: Color = cols.get(b["kind"], cols["building"]).lightened(minf(0.18, levels * 0.012))
 		var lift := Vector2(0.0, -minf(LIFT_MAX_M, levels * STOREY_M_DRAW * LIFT_PER_M))
 		var wall_col := roof_col.darkened(0.28)
+		var door_wall := _nearest_edge(poly, b["door"]) if openings and b.has("door") else -1
 		for i in poly.size():   # walls facing the camera (their outward side points down-screen)
 			var a := poly[i]
 			var c := poly[(i + 1) % poly.size()]
@@ -291,7 +293,26 @@ func _draw_buildings(ci: CanvasItem, blds: Array) -> void:
 			if absf(e.x) < 0.02 * e.length():
 				continue   # a wall seen edge-on
 			ci.draw_primitive(PackedVector2Array([a, c, c + lift, a + lift]), PackedColorArray([shade, shade, shade, shade]), PackedVector2Array())   # a quad, no triangulation
+			if openings:
+				var door_t := _door_t(a, c, b["door"]) if i == door_wall else -1.0
+				BuildingOpenings.draw_wall(ci, a, c, lift, levels, door_t, night, String(b["id"]).hash() + i)
 		ci.draw_colored_polygon(_moved(poly, lift), roof_col)
+
+## DW1: the wall a building's door sits on (closest edge to the door point).
+static func _nearest_edge(poly: PackedVector2Array, door: Vector2) -> int:
+	var best := -1
+	var best_d := INF
+	for i in poly.size():
+		var d := Geometry2D.get_closest_point_to_segment(door, poly[i], poly[(i + 1) % poly.size()]).distance_to(door)
+		if d < best_d:
+			best_d = d
+			best = i
+	return best
+
+## Where along wall a->c (0..1) the door sits.
+static func _door_t(a: Vector2, c: Vector2, door: Vector2) -> float:
+	var e := c - a
+	return clampf((door - a).dot(e) / e.length_squared(), 0.0, 1.0)
 
 static func _is_ccw(poly: PackedVector2Array) -> bool:
 	var area := 0.0

@@ -19,6 +19,7 @@ const REFRESH_SECONDS := 0.25
 var _message_time_left := 0.0
 var _title_art: TextureRect
 var _show_fps := false
+var _loaded := false
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if event.pressed and not event.echo and event.keycode == KEY_F3:
@@ -86,7 +87,8 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if _world == null:
 		return
-	var loading := SimNav.active == null or not SimNav.active.is_ready()
+	var loading := not _loaded and (SimNav.active == null or not SimNav.active.is_ready())
+	_loaded = _loaded or not loading   # the title art is for the first load only; later nav rebuilds (night) stay invisible
 	_title_art.visible = loading
 	if loading:
 		text = "Loading the streets of the city..."

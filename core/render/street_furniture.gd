@@ -51,8 +51,9 @@ func _draw() -> void:
 		draw_colored_polygon(PackedVector2Array([c - d * 1.8 - n * 0.6, c + d * 1.8 - n * 0.6, c + d * 1.8 + n * 0.6, c - d * 1.8 + n * 0.6]), Color("2a5d9f"))
 		draw_circle(b["c"] - d * 2.6, 0.3, Color("2a5d9f"))
 
+## A stop sign. A triangle fan, not a polygon: at city coordinates (thousands
+## of metres) the polygon triangulator fails on a shape under a metre across.
 func _octagon(c: Vector2, r: float, col: Color) -> void:
-	var pts := PackedVector2Array()
 	for i in 8:
-		pts.append(c + Vector2.from_angle(PI / 8.0 + i * PI / 4.0) * r)
-	draw_colored_polygon(pts, col)
+		var a0 := PI / 8.0 + i * PI / 4.0
+		draw_primitive(PackedVector2Array([c, c + Vector2.from_angle(a0) * r, c + Vector2.from_angle(a0 + PI / 4.0) * r]), PackedColorArray([col, col, col]), PackedVector2Array())

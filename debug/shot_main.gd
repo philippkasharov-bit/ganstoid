@@ -17,6 +17,8 @@ func _run(main: Node, args: Dictionary) -> void:
 	var driver: Node = main.get_node("WorldDriver")
 	while SimNav.active == null or not SimNav.active.is_ready():
 		await process_frame
+	for i in 3:
+		await process_frame   # let the HUD see the streets loaded once
 	if args.has("hour"):
 		driver.world.tick = SimClock.hours(float(args["hour"]))
 	for i in int(float(args.get("sim", "20")) * SimClock.TICKS_PER_SECOND):
