@@ -385,7 +385,8 @@ func _show_list(npc: NPCData, state: PlayerStateData, title: String, options: Ar
 	for option in options.slice(0, SLOT_ACTIONS.size()):
 		labels.append(option[0])
 		_menu_runs.append(option[1])
-		side.append(ActionMenuModel.note(_world, npc.position, option[0], state) if notes else "")
+		var own_note: String = option[2] if option.size() > 2 else ""   # E5: an option can bring its own note
+		side.append(own_note if own_note != "" else (ActionMenuModel.note(_world, npc.position, option[0], state) if notes else ""))
 	state.menu_options = labels
 	state.menu_notes = side
 	state.menu_title = title
@@ -455,14 +456,15 @@ func _options(npc: NPCData, state: PlayerStateData) -> Array:
 		out.append(["Ask for a gang job", func() -> Dictionary: return CrimeSystem.do_gang_job(_world, turf)])
 	var biz := _find_nearest_robbable_building(pos)
 	if biz != &"":
-		out.append(["Rob the place", func() -> Dictionary: return CrimeSystem.rob_building(_world, biz)])
+		out.append(["Rob the place", func() -> Dictionary: return CrimeSystem.rob_building(_world, biz),
+			EconomyRead.building(_world.entities[biz].get_component(ComponentNames.BUILDING))])   # E5: what casing it tells you
 	var house := _find_nearest_house(pos)
 	if house != &"" and house != npc.home_building_id:
 		var hb: BuildingData = _world.entities[house].get_component(ComponentNames.BUILDING)
 		StreetCrime.fix_up(_world, hb)
 		for way in StreetCrime.ways_in(hb):   # DW2: Zomboid's ways in
 			var how: String = way[0]
-			out.append([way[1], func() -> Dictionary: return StreetCrime.start_burglary(_world, npc, state, house, how)])
+			out.append([way[1], func() -> Dictionary: return StreetCrime.start_burglary(_world, npc, state, house, how), EconomyRead.building(hb)])
 	var bld := _find_nearest_building(pos)
 	if bld != &"":
 		var owned: BuildingData = _world.entities[bld].get_component(ComponentNames.BUILDING)

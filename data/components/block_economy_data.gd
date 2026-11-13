@@ -10,7 +10,15 @@ const ENTITY_ID := &"block_economy"
 
 ## Vector2i cell -> {"wealth": 0..1, "budget": $, "police": 0..1, "black": 0..1}
 @export var blocks: Dictionary = {}
-@export var last_day: Dictionary = {}   # E2: yesterday's ledger {inflow, outflow, sales, wages, tax}
+@export var last_day: Dictionary = {}
+@export var news: Array = []            # E5: [{tick, text, at}], newest last, for the news feed (capped)
+const NEWS_KEEP := 40
+
+## E5: something happened on the street worth talking about.
+func report(tick: int, text: String, at: Vector2) -> void:
+	news.append({"tick": tick, "text": text, "at": at})
+	while news.size() > NEWS_KEEP:
+		news.pop_front()   # E2: yesterday's ledger {inflow, outflow, sales, wages, tax}
 
 static func of(world: World) -> BlockEconomyData:
 	var e: Entity = world.entities.get(ENTITY_ID)

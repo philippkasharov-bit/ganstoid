@@ -24,6 +24,21 @@ const STAFF_CAP := 4
 const HIRE_REACH_M := 600.0
 const WEALTH_DRIFT := 0.05
 
+const NEWS_HEARD_M := 300.0   # this close, you hear about it as it happens
+
+## E5: logs it for the news feed; close by, you hear it (a line over your head).
+static func _news(world: World, text: String, at: Vector2) -> void:
+	var data := BlockEconomyData.of(world)
+	if data != null:
+		data.report(world.tick, text, at)
+	var p: Entity = world.entities.get(PlayerFactory.PLAYER_ENTITY_ID)
+	if p != null and p.get_component(ComponentNames.NPC).position.distance_to(at) <= NEWS_HEARD_M:
+		var st: PlayerStateData = p.get_component(ComponentNames.PLAYER_STATE)
+		st.last_message = text
+		st.message_tone = 0
+		st.message_alert = false
+		st.message_serial += 1
+
 ## One day of consequences. `underpaid`: business ids that could not pay all wages;
 ## `behind`: home ids that could not pay all their rent.
 static func day(world: World, data: BlockEconomyData, led: Dictionary, staff: Dictionary, homes: Dictionary, underpaid: Dictionary, behind: Dictionary) -> void:
@@ -32,7 +47,7 @@ static func day(world: World, data: BlockEconomyData, led: Dictionary, staff: Di
 		if b.building_type != GanstoidEnums.BuildingType.LEGIT_BUSINESS or b.status >= 2:
 			continue
 		b.hits *= HIT_DECAY
-		_security(b, led)
+		_security(world, b, led)
 		changed = _health(world, b, staff.get(b.id, []), underpaid.has(b.id)) or changed
 	changed = _evictions(world, homes, behind) or changed
 	changed = _hiring(world, data, staff) or changed
@@ -41,7 +56,7 @@ static func day(world: World, data: BlockEconomyData, led: Dictionary, staff: Di
 		EconomyFlow.reindex()
 
 ## Robbed again and again: they spend money on keeping the next one out.
-static func _security(b: BuildingData, led: Dictionary) -> void:
+static func _security(world: World, b: BuildingData, led: Dictionary) -> void:
 	if b.hits < BUY_SECURITY_AT or b.security >= SECURITY_COST.size():
 		return
 	var cost: int = SECURITY_COST[b.security]
@@ -50,6 +65,7 @@ static func _security(b: BuildingData, led: Dictionary) -> void:
 		led["outflow"] += cost   # the guard company and the camera shop are outside the district
 		b.security += 1
 		b.hits = 0.0
+		_news(world, "The %s put in %s after the break-ins." % [b.trade, ["a camera", "a guard", "an armed guard"][b.security - 1]], b.position)
 
 ## Bad days pile up: cut staff, then close. Good days pull it back.
 static func _health(world: World, b: BuildingData, people: Array, short: bool) -> bool:
@@ -57,6 +73,7 @@ static func _health(world: World, b: BuildingData, people: Array, short: bool) -
 	b.bad_days = b.bad_days + 1 if strained else maxi(0, b.bad_days - 1)
 	if b.bad_days >= CLOSE_DAYS:
 		b.status = 2
+		_news(world, "The %s shut down for good.%s" % [b.trade, " %d out of work." % people.size() if not people.is_empty() else ""], b.position)
 		for n in people:
 			_lay_off(n)
 		return not people.is_empty()
@@ -98,6 +115,7 @@ static func _evictions(world: World, homes: Dictionary, behind: Dictionary) -> b
 			world.reindex_position(n.id)
 		home.bad_days = 0
 		any = true
+		_news(world, "A family got put out on the street, %d of them." % people.size() if people.size() > 1 else "Someone got put out on the street.", home.position)
 	return any
 
 ## A shop with money to spare takes on someone out of work who lives nearby.

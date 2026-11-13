@@ -87,6 +87,24 @@ func _run(main: Node, args: Dictionary) -> void:
 		Skills.train(driver.world, ms2, &"melee", 30.0)  # A7: "Melee 1" in gold
 		for i in 5:
 			await process_frame
+	if args.has("money"):   # E5 look: the money map, a few shops gone under, the menu reading a place
+		for n in main.get_children():
+			if "mode" in n and n.has_method("_draw_money"):
+				n.mode = 2
+				n.visible = true
+				n.z_index = 20
+				n.queue_redraw()
+		var shut := 0
+		for b in BusinessSystem.all_buildings(driver.world):
+			if b.building_type == GanstoidEnums.BuildingType.LEGIT_BUSINESS and shut < 12 and b.position.distance_to(driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC).position) < 500.0:
+				b.status = 2
+				shut += 1
+		var sm: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
+		sm.menu_title = "Crime"
+		sm.menu_options = PackedStringArray(["Rob the place", "Pick the lock", "Smash a window", "Mug them (knife out)"])
+		sm.menu_notes = PackedStringArray(["busy · camera", "nearly broke · hit lately", "nearly broke · hit lately", ""])
+		for i in 4:
+			await process_frame
 	if args.has("pause"):   # PM1 look: the Esc menu with the controls shown
 		for n in main.get_node("HudLayer").get_children():
 			if n is PauseMenu:

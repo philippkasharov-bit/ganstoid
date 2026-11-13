@@ -10,7 +10,7 @@ const BUTTONS := [
 	["Character", "K", &"skills_window", "skills"],
 	["Health", "H", &"health_window", "medkit"],
 	["Crew", "Tab", &"ui_focus_next", "crew"],
-	["Turf", "U", &"turf_map", "turf"],
+	["Turf / money map", "U", &"turf_map", "turf"],
 ]
 const SIZE := Vector2(40, 40)
 

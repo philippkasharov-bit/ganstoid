@@ -96,7 +96,7 @@ func show_panel(title: String, rows: Array, hints: Array) -> void:
 		_rows.add_child(_clickable(line, numbered) if r[0] != "" else line)
 		if r[0] != "":
 			numbered += 1
-
+	reset_size.call_deferred()   # E5: fit longer notes; a panel never cuts its own text
 func _set_hints(hints: Array) -> void:
 	var key := str(hints)
 	if key == _footer_key:
@@ -120,6 +120,7 @@ func _clickable(line: HBoxContainer, index: int) -> Button:
 	for part in line.get_children():
 		part.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	b.add_child(line)
+	b.custom_minimum_size.x = line.get_combined_minimum_size().x   # E5: a Button does not size itself to its children
 	b.pressed.connect(func() -> void: row_picked.emit(index))
 	b.mouse_entered.connect(func() -> void: row_hovered.emit(index))
 	if index == lit_row:   # flat buttons draw no "normal" box, so the lit one is not flat

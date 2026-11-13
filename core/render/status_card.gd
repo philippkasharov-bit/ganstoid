@@ -49,7 +49,7 @@ func _rows(npc: NPCData, state: PlayerStateData) -> Array:
 	if state.prison_until_tick > 0:
 		return [["Status", "In prison"], ["Days left", "%.1f" % (float(state.prison_until_tick - _world.tick) / SimClock.day_ticks)]]
 	var out: Array = [["Cash", "$%d  (dirty $%d)" % [npc.cash, state.dirty_cash]], ["Rank", RankSystem.name_of(state.rank)],
-		["Turf", _turf(npc)]]
+		["Turf", _turf(npc)], ["Block", EconomyRead.block(BlockEconomyData.block_at(_world, npc.position))]]   # E5
 	if state.case_evidence > 0.0:
 		out.append(["Case", "%d%s" % [roundi(state.case_evidence), "  warrant" if state.case_evidence >= CaseSystem.WARRANT_AT else ""]])
 	if not state.job.is_empty():
