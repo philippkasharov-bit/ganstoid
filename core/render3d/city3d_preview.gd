@@ -1,8 +1,10 @@
 ## R3D0/R3D1: a look test for the 3D city: the real map around the spawn,
 ## built by CityMesh3D (chunked meshes, doors set in their walls, palms) and
 ## seen through Zomboid's fixed isometric camera (orthographic, 45 degrees
-## round, 30 down). People are box figures. No shadows (standing rule). Not
-## wired into the game yet: it only reads CityData.
+## round, 30 down). People are box figures. No shadows (standing rule).
+## R3D3: with live_sim the real simulation runs under it (a WorldDriver) and
+## RenderSync3D stands its people and cars in the city. Not the game's main
+## view yet.
 extends Node3D
 
 const RADIUS_M := 110.0
@@ -12,7 +14,10 @@ var centre := Vector2.ZERO
 var camera := Camera3D.new()
 
 @export var radius_m := RADIUS_M
+@export var live_sim := false
 var build_ms := 0.0
+var driver: Node
+var people3d: RenderSync3D
 
 func _ready() -> void:
 	var city := CityData.load_file()
@@ -23,10 +28,23 @@ func _ready() -> void:
 		add_child(n)
 	build_ms = Time.get_ticks_msec() - t0
 	_ground()
-	_person(centre, Color(0.1, 0.85, 0.3))
-	for k in 6:
-		_person(centre + Vector2.from_angle(k * 1.1) * (8.0 + k * 3.0), Color(0.36, 0.38, 0.45))
+	if live_sim:
+		_run_sim()
+	else:
+		_person(centre, Color(0.1, 0.85, 0.3))
+		for k in 6:
+			_person(centre + Vector2.from_angle(k * 1.1) * (8.0 + k * 3.0), Color(0.36, 0.38, 0.45))
 	_camera()
+
+## R3D3: the real sim (no new-game panel) with its people drawn in 3D.
+func _run_sim() -> void:
+	Engine.set_meta("skip_new_game", true)
+	driver = load("res://core/world_driver.gd").new()
+	add_child(driver)
+	people3d = RenderSync3D.new()
+	people3d.world = driver.world
+	people3d.origin = centre
+	add_child(people3d)
 
 ## 2D map metres -> 3D (x east, y up, z south), centred on the block.
 func _v(p: Vector2, h: float = 0.0) -> Vector3:
