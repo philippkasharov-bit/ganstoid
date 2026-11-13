@@ -11,7 +11,7 @@ const RADIUS_M := 110.0
 const GROUND := Color("e9e1cf")
 
 var centre := Vector2.ZERO
-var camera := Camera3D.new()
+var rig := CameraRig3D.new()   # R3D6: follows the player, zooms, turns
 
 @export var radius_m := RADIUS_M
 @export var live_sim := false
@@ -36,7 +36,9 @@ func _ready() -> void:
 		_person(centre, Color(0.1, 0.85, 0.3))
 		for k in 6:
 			_person(centre + Vector2.from_angle(k * 1.1) * (8.0 + k * 3.0), Color(0.36, 0.38, 0.45))
-	_camera()
+	rig.origin = centre
+	rig.world = driver.world if driver != null else null
+	add_child(rig)
 
 ## R3D3: the real sim (no new-game panel) with its people drawn in 3D.
 func _run_sim() -> void:
@@ -99,14 +101,3 @@ func _person(at: Vector2, col: Color) -> void:
 	_box(at, Vector3(0.45, 0.85, 0.3), 0.0, Color(0.16, 0.17, 0.22))
 	_box(at, Vector3(0.55, 0.7, 0.32), 0.85, col)
 	_box(at, Vector3(0.3, 0.3, 0.3), 1.55, col.lightened(0.35))
-
-## Zomboid's camera: orthographic, turned 45 degrees, looking 30 degrees down.
-func _camera() -> void:
-	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
-	camera.size = 70.0
-	camera.rotation_degrees = Vector3(-30, 45, 0)
-	camera.near = 1.0
-	camera.far = 4000.0
-	camera.position = camera.transform.basis.z * 1500.0   # far back along the view line: nothing on screen is ever behind it
-	add_child(camera)
-	camera.current = true

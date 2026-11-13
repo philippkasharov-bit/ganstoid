@@ -1,4 +1,4 @@
-## R3D screenshot: the 3D look test. godot --path . -s debug/shot_3d.gd -- --out=<png> [--size=<ortho m>] [--radius=<m>] [--sim=<seconds of sim to run first>] [--behind (R3D4: stand the player behind the nearest tall building)] [--inside (R3D5: in the nearest house)]
+## R3D screenshot: the 3D look test. godot --path . -s debug/shot_3d.gd -- --out=<png> [--size=<ortho m>] [--radius=<m>] [--sim=<seconds of sim to run first>] [--behind (R3D4: stand the player behind the nearest tall building)] [--inside (R3D5: in the nearest house)] [--turn=<quarters>]
 extends SceneTree
 
 func _initialize() -> void:
@@ -24,15 +24,21 @@ func _initialize() -> void:
 			me.position = _in_house(me.position)
 		if args.has("behind"):
 			me.position = _behind_building(me.position)
-		preview.camera.position += Vector3(me.position.x - preview.centre.x, 0, me.position.y - preview.centre.y)   # look at the player
+		preview.rig.look_at_map(me.position)
 	for i in 8:
 		await process_frame
 	var t0 := Time.get_ticks_usec()
 	for i in 60:
 		await process_frame
 	print("R3D: built in %d ms, %d chunk meshes, %.1f ms a frame" % [preview.build_ms, preview.get_children().filter(func(n: Node) -> bool: return n.name.begins_with("Chunk")).size(), (Time.get_ticks_usec() - t0) / 60000.0])
+	if args.has("turn"):   # R3D6: the view turned by quarters
+		preview.rig.turn(int(args["turn"]))
+		for i in 40:
+			await process_frame
 	if args.has("size"):
-		preview.camera.size = float(args["size"])
+		preview.rig.target_size = float(args["size"])
+		for i in 40:
+			await process_frame
 		await process_frame
 		await process_frame
 	root.get_viewport().get_texture().get_image().save_png(args.get("out", "/tmp/3d.png"))
