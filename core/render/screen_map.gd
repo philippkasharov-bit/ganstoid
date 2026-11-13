@@ -39,3 +39,9 @@ static func move_turn() -> float:
 		return 0.0
 	var f := -camera3d.global_basis.z
 	return Vector2(f.x, f.z).angle() + PI * 0.5
+
+## Screen pixels per map metre at the ground (the zoom), in either view.
+static func px_per_m(vp: Viewport) -> float:
+	if not is_3d():
+		return vp.get_canvas_transform().get_scale().x
+	return vp.get_visible_rect().size.y / camera3d.size

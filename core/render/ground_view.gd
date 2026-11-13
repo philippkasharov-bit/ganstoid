@@ -1,5 +1,6 @@
 ## INV4: piles you dropped, drawn where they lie: the item's picture on a dark
-## disc, the count beside it when more than one. Screen-space over the map.
+## disc, the count beside it when more than one. Screen-space over the map
+## (2D or 3D, through ScreenMap).
 class_name GroundView
 extends Control
 
@@ -12,9 +13,6 @@ func setup(world: World) -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 func _process(_delta: float) -> void:
-	visible = not ScreenMap.is_3d()   # R3D13: drawn on the 2D map only for now
-	if not visible:
-		return
 	queue_redraw()
 
 func _draw() -> void:
@@ -23,9 +21,8 @@ func _draw() -> void:
 		return
 	var state: PlayerStateData = p.get_component(ComponentNames.PLAYER_STATE)
 	var view := get_viewport_rect().grow(SIZE)
-	var xf := get_viewport().get_canvas_transform()
 	for pile in state.ground:
-		var at: Vector2 = xf * pile["pos"]
+		var at: Vector2 = ScreenMap.to_screen(get_viewport(), pile["pos"], 0.1)   # R3D13: either view
 		if not view.has_point(at):
 			continue
 		draw_circle(at, SIZE * 0.7, Color(0, 0, 0, 0.55))

@@ -19,9 +19,6 @@ func setup(world: World) -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 func _process(delta: float) -> void:
-	visible = not ScreenMap.is_3d()   # R3D13: drawn on the 2D map only for now
-	if not visible:
-		return
 	_left -= delta
 	if _world != null and _left <= 0.0:
 		_left = REFRESH_S
@@ -33,12 +30,11 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 func _draw() -> void:
-	var xf := get_viewport().get_canvas_transform()
-	var k := clampf(xf.get_scale().x / 12.0, 0.8, 2.2)
+	var k := clampf(ScreenMap.px_per_m(get_viewport()) / 12.0, 0.8, 2.2)   # R3D13: either view
 	var view := get_viewport_rect().grow(SIZE * 2.0 * k)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	for b in _marked:
-		var at: Vector2 = xf * b.position
+		var at: Vector2 = ScreenMap.to_screen(get_viewport(), b.position, 1.0)
 		if not view.has_point(at):
 			continue
 		draw_set_transform(at, 0.0, Vector2.ONE * k)   # draw the mark around (0,0), scaled
