@@ -35,6 +35,9 @@ const DOOR_H := 2.1
 const HIP_MAX_AREA := 400.0
 const HULL_FILL := 0.82   # a footprint this close to its hull takes a hipped roof
 const EAVES := 1.06
+const AC_SHARE := {"apartments": 14, "house": 4}   # G1: percent of upper windows with an AC unit
+const CHIMNEY_SHARE := 0.35
+const PARAPET_M := 0.25
 
 ## Adds building `b` to SurfaceTool `st`. `v` maps a map point + height to 3D;
 ## `tag` (city index + 1) lets the Cutaway cut it whole.
@@ -54,7 +57,7 @@ static func add(st: SurfaceTool, b: Dictionary, v: Callable, tag: int = 0) -> vo
 	var style := {"win_w": rng.randf_range(0.8, 1.6), "win_h": rng.randf_range(1.0, 1.5), "gap": rng.randf_range(2.4, 4.2),
 		"shop": (kind == "commercial") and rng.randf() < 0.8, "rollup": kind in ["industrial", "garage"] and rng.randf() < 0.6,
 		"awning": AWNINGS[rng.randi() % AWNINGS.size()], "storey": storey,
-		"tag": tag, "glow": GLOW.get(kind, 0.3), "seed": rng.randi()}
+		"tag": tag, "glow": GLOW.get(kind, 0.3), "seed": rng.randi(), "ac": AC_SHARE.get(kind, 0)}
 	st.set_uv(Vector2(0, tag))   # R3D7: the Cutaway cuts this building whole by its tag
 	var ccw := _ccw(poly)
 	var span := InteriorSolid.door_span(poly, b.get("door", Vector2.INF))   # R3D14: the same door the sim lets you through
@@ -105,19 +108,34 @@ static func _roof(st: SurfaceTool, v: Callable, poly: PackedVector2Array, h: flo
 			st.set_normal(n if n.y > 0.0 else -n)   # real slope normal: each face catches the sun differently
 			for p in tri:
 				st.add_vertex(p)
+			BuildingDetail3D.fascia(st, v, a, c, h)   # G1: the board under the eaves
+		if rng.randf() < CHIMNEY_SHARE:
+			BuildingDetail3D.chimney(st, v, apex + (hull[0] - apex) * 0.45, h, top + 0.5)
 		return
 	var flat_col: Color = ROOF_FLAT[rng.randi() % ROOF_FLAT.size()]
 	flat(st, v, poly, h, SurfaceDetail.mark(flat_col, SurfaceDetail.GRAVEL))
-	for i in poly.size():   # parapet: a low lip round the edge
-		var a := poly[i]
-		var c := poly[(i + 1) % poly.size()]
-		quad(st, [v.call(a, h), v.call(c, h), v.call(c, h + 0.5), v.call(a, h + 0.5)], Vector3.UP, flat_col.darkened(0.15))
+	_parapet(st, v, poly, h, flat_col)
 	var units := mini(int(area / 120.0), 4)
 	var mid := _centroid(poly)
 	for k in units:   # AC units and roof sheds
 		var at := mid + Vector2(rng.randf_range(-1, 1), rng.randf_range(-1, 1)) * sqrt(area) * 0.25
 		if Geometry2D.is_point_in_polygon(at, poly):
 			_box(st, v, at, Vector2(rng.randf_range(1.0, 2.6), rng.randf_range(1.0, 2.0)), h, rng.randf_range(0.8, 1.6), Color("b9bcbf").darkened(rng.randf() * 0.2))
+
+## G1: a parapet with thickness: outer face, inner face and a pale coping cap.
+static func _parapet(st: SurfaceTool, v: Callable, poly: PackedVector2Array, h: float, col: Color) -> void:
+	var ccw := _ccw(poly)
+	for i in poly.size():
+		var a := poly[i]
+		var c := poly[(i + 1) % poly.size()]
+		var e := c - a
+		if e.length() < 0.05:
+			continue
+		var inward := (Vector2(-e.y, e.x) if ccw else Vector2(e.y, -e.x)).normalized() * PARAPET_M
+		var out := Vector3(-inward.x, 0, -inward.y).normalized()
+		quad(st, [v.call(a, h), v.call(c, h), v.call(c, h + 0.6), v.call(a, h + 0.6)], out, col.darkened(0.15))
+		quad(st, [v.call(a + inward, h), v.call(c + inward, h), v.call(c + inward, h + 0.6), v.call(a + inward, h + 0.6)], -out, col.darkened(0.25))
+		quad(st, [v.call(a, h + 0.6), v.call(c, h + 0.6), v.call(c + inward, h + 0.6), v.call(a + inward, h + 0.6)], Vector3.UP, Color("d8d4cb"))
 
 static func _box(st: SurfaceTool, v: Callable, at: Vector2, size: Vector2, h: float, tall: float, col: Color) -> void:
 	var s := size * 0.5
@@ -147,6 +165,7 @@ static func _openings(st: SurfaceTool, v: Callable, a: Vector2, c: Vector2, out:
 		quad(st, [v.call(a + dir * 0.5 + proud, 0.4), v.call(c - dir * 0.5 + proud, 0.4), v.call(c - dir * 0.5 + proud, 2.6), v.call(a + dir * 0.5 + proud, 2.6)], n, SHOP_GLASS)
 		st.set_uv(Vector2(0.0, s["tag"]))
 		quad(st, [v.call(a + proud, 2.8), v.call(c + proud, 2.8), v.call(c + out * 1.3, 2.4), v.call(a + out * 1.3, 2.4)], Vector3.UP, s["awning"])
+		BuildingDetail3D.sign_band(st, v, a, c, out, int(s["seed"]))   # G1: the shop's sign over the awning
 	elif front:
 		var mid := a.lerp(c, door_t) + proud
 		var w: float = 3.0 if s["rollup"] else DOOR_W
@@ -155,6 +174,15 @@ static func _openings(st: SurfaceTool, v: Callable, a: Vector2, c: Vector2, out:
 		quad(st, [v.call(mid - half * 1.15, 0.0), v.call(mid + half * 1.15, 0.0), v.call(mid + half * 1.15, tall + 0.15), v.call(mid - half * 1.15, tall + 0.15)], n, FRAME)
 		var inner := mid + proud * 0.5
 		quad(st, [v.call(inner - half, 0.0), v.call(inner + half, 0.0), v.call(inner + half, tall), v.call(inner - half, tall)], n, ROLLUP if s["rollup"] else DOOR)
+		if not s["rollup"]:
+			BuildingDetail3D.stoop(st, v, mid - proud, half * 1.15, out)   # G1: a step up to the door
+	_windows(st, v, a, c, out, levels, door_t, s)
+
+## Each storey's windows along the wall a..c (none behind a shop front or by the door).
+static func _windows(st: SurfaceTool, v: Callable, a: Vector2, c: Vector2, out: Vector2, levels: int, door_t: float, s: Dictionary) -> void:
+	var length := a.distance_to(c)
+	var dir := (c - a) / length
+	var front := door_t >= 0.0
 	var count := int(length / float(s["gap"]))
 	for lv in levels:
 		if lv == 0 and front and s["shop"]:
@@ -163,13 +191,13 @@ static func _openings(st: SurfaceTool, v: Callable, a: Vector2, c: Vector2, out:
 			var t := (k + 0.5) / count
 			if lv == 0 and front and absf(t - door_t) * length < 2.2:
 				continue
-			var p := a.lerp(c, t) + proud
+			var p := a.lerp(c, t)
 			var w2 := dir * float(s["win_w"]) * 0.5
 			var y := lv * float(s["storey"]) + 1.0
 			var lit := float(absi(hash([s["seed"], a, k, lv])) % 100) < float(s["glow"]) * 100.0   # R3D10: someone home
-			st.set_uv(Vector2(0.8 if lit else 0.0, s["tag"]))
-			quad(st, [v.call(p - w2, y), v.call(p + w2, y), v.call(p + w2, y + s["win_h"]), v.call(p - w2, y + s["win_h"])], n, GLASS)
-			st.set_uv(Vector2(0.0, s["tag"]))
+			BuildingDetail3D.window(st, v, p, w2, out, y, s["win_h"], GLASS, 0.8 if lit else 0.0, s["tag"])   # G1: frame, sill, mullion
+			if lv > 0 and absi(hash([s["seed"], k, lv, 7])) % 100 < int(s["ac"]):
+				BuildingDetail3D.ac_unit(st, v, p, dir, out, y)
 
 static func _open(poly: PackedVector2Array) -> PackedVector2Array:
 	return poly.slice(0, poly.size() - 1) if poly.size() > 3 and poly[0] == poly[poly.size() - 1] else poly
