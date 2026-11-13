@@ -19,6 +19,7 @@ var city: CityData
 var seed_used := 0
 var loaded_from_save := false
 var choosing := false          # O1: new game: waiting for difficulty and style
+var paused := false            # PM1: the Esc menu is up: the world stands still
 var _saved_hour := 0
 var _dead_handled := false
 
@@ -62,7 +63,7 @@ func choose(difficulty: int, style: int) -> void:
 	choosing = false
 
 func _physics_process(delta: float) -> void:
-	if SimNav.active == null or not SimNav.active.is_ready() or choosing:
+	if SimNav.active == null or not SimNav.active.is_ready() or choosing or paused:
 		return   # routes still loading, or the new-game choice not made: nobody moves yet
 	var steps := NeedsSystem.SLEEP_SPEED if _asleep() else 1   # G2: sleep is the only fast-forward
 	for i in steps:

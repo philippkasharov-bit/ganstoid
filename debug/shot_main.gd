@@ -67,6 +67,23 @@ func _run(main: Node, args: Dictionary) -> void:
 		st.menu_serial += 1
 		await process_frame
 		await process_frame
+	if args.has("pause"):   # PM1 look: the Esc menu with the controls shown
+		for n in main.get_node("HudLayer").get_children():
+			if n is PauseMenu:
+				n._open()
+				n._toggle_controls(true)
+		for i in 4:
+			await process_frame
+	if args.has("sleep"):   # SL1 look: Z when tired: how long?
+		var sp: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
+		sp.fatigue = 0.2
+		Input.action_press(PlayerInputSystem.SLEEP_ACTION)
+		await physics_frame
+		await physics_frame
+		Input.action_release(PlayerInputSystem.SLEEP_ACTION)
+		root.get_viewport().warp_mouse(Vector2(560, 260))
+		for i in 4:
+			await process_frame
 	if args.has("store"):   # TR1 look: a store counter open with a basket
 		var ss: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
 		var ms: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)

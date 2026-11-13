@@ -35,6 +35,20 @@ func _initialize() -> void:
 	print("sleep: %s, woke after %.1f game hours, rest %.2f" % [slept.get("effect"), hours, me.fatigue])
 	if not _check(slept.get("effect") == "sleep_home" and hours > 5.0 and hours < 7.0, "your own bed rests you in hours, then you wake"):
 		return
+	# SL1: sleeping for a chosen number of hours wakes you when they are up
+	me.fatigue = 0.1
+	var est := NeedsSystem.hours_to_rested(world, me)
+	world.tick = 1000
+	NeedsSystem.sleep_for(world, me, state, 2.0)
+	ticks = 0
+	while state.sleeping and ticks < day:
+		needs.process_entities(players, 1.0 / SimClock.TICKS_PER_SECOND, world.tick)
+		world.tick += 1
+		ticks += 1
+	var chosen := ticks * 24.0 / day
+	print("rested in about %.1f h; a 2-hour nap woke after %.2f h, rest %.2f" % [est, chosen, me.fatigue])
+	if not _check(est > 6.0 and absf(chosen - 2.0) < 0.05 and me.fatigue < 0.99 and state.sleep_until_tick == 0, "a chosen nap ends on time"):
+		return
 	me.fatigue = 0.3
 	NeedsSystem.toggle_sleep(world, me, state)
 	me.health -= 0.2   # someone hits you in your sleep

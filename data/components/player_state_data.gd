@@ -95,6 +95,7 @@ extends Resource
 @export var last_shot_tick: int = -1000000         # C6: cops treat a recent shooter as armed
 ## G2 needs / G3 wounds.
 @export var sleeping: bool = false
+@export var sleep_until_tick: int = 0          # SL1: wake at this tick (0: when rested)
 @export var sleeping_home: bool = false
 @export var health_at_sleep: float = 1.0
 ## V1: the car you are in (driving), and a hotwire in progress.

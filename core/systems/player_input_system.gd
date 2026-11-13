@@ -145,7 +145,7 @@ func process_entities(entities: Dictionary, delta: float, tick: int) -> void:
 				StreetTalk.say_key(_world, state, "shift_done", int(SHIFT_PAY_PER_HOUR * SHIFT_HOURS * GameRules.money(_world)))
 			continue   # O1: at work; the hours pass fast
 		if Input.is_action_just_pressed(SLEEP_ACTION):
-			StreetTalk.say(_world, state, NeedsSystem.toggle_sleep(_world, npc, state))
+			_sleep_key(npc, state)
 		if state.sleeping:
 			continue   # asleep: nothing else until you wake
 		if Input.is_action_just_pressed(CAR_ACTION):
@@ -347,6 +347,21 @@ func _open_menu(npc: NPCData, state: PlayerStateData, options: Array) -> void:
 		_cat_runs.append(open_cat)
 		rows.append([labels[index], open_cat])
 	_show_list(npc, state, "What now?", rows, false)
+
+## SL1: Z asleep wakes you; awake and tired opens Zomboid's "how long?" choice
+## (in the action menu, so mouse, 1-9 and Esc work the same).
+func _sleep_key(npc: NPCData, state: PlayerStateData) -> void:
+	if state.sleeping or npc.fatigue > 0.7:
+		StreetTalk.say(_world, state, NeedsSystem.toggle_sleep(_world, npc, state))
+		return
+	var rested := NeedsSystem.hours_to_rested(_world, npc)
+	var options: Array = [["Until rested (about %dh)" % ceili(rested), func() -> Dictionary: return NeedsSystem.sleep_for(_world, npc, state, 0.0)]]
+	for h in [1, 2, 4, 8]:
+		if h < rested:
+			options.append(["%d hour%s" % [h, "" if h == 1 else "s"], func() -> Dictionary: return NeedsSystem.sleep_for(_world, npc, state, h)])
+	_open_menu(npc, state, options)
+	state.menu_title = "Sleep how long?"
+	_menu_top = []   # Esc closes; there is nothing to step back to
 
 ## WM1: a quick right-click (not a held aim), released over the world, not a window.
 func _rmb_tap() -> bool:

@@ -84,6 +84,9 @@ func _ready() -> void:
 	var progress := ActionProgress.new()   # TA1: bar over the head
 	get_parent().add_child.call_deferred(progress)
 	progress.setup(_world)
+	var pause := PauseMenu.new()       # PM1: Esc with nothing open
+	get_parent().add_child.call_deferred(pause)
+	pause.setup_pause(_world, get_node(world_driver_path))
 	var halo := HaloText.new()         # HT1: short lines float over your head
 	get_parent().add_child.call_deferred(halo)
 	halo.setup(_world)

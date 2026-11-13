@@ -28,7 +28,7 @@ func _init(world: World = null) -> void:
 	tick_rate = GanstoidEnums.TickRate.HOT
 	required_component = ComponentNames.PLAYER_STATE
 
-func process_entities(entities: Dictionary, delta: float, _tick: int) -> void:
+func process_entities(entities: Dictionary, delta: float, tick: int) -> void:
 	var days := delta / float(SimClock.day_ticks) * SimClock.TICKS_PER_SECOND
 	var w: World = _world_ref.get_ref() if _world_ref != null else null
 	var needs_days := days * GameRules.needs(w)   # O1: play style
@@ -37,6 +37,8 @@ func process_entities(entities: Dictionary, delta: float, _tick: int) -> void:
 		var state: PlayerStateData = player.get_component(ComponentNames.PLAYER_STATE)
 		if not me.is_down and state.prison_until_tick <= 0:   # CP1: inside you are fed
 			_drain(me, state, needs_days)
+			if state.sleeping and state.sleep_until_tick > 0 and tick >= state.sleep_until_tick:
+				wake(state)   # SL1: the hours you chose are up
 
 func _drain(me: NPCData, state: PlayerStateData, days: float) -> void:
 	me.hunger = maxf(0.0, me.hunger - HUNGER_PER_DAY * days)
@@ -75,6 +77,20 @@ static func toggle_sleep(world: World, me: NPCData, state: PlayerStateData) -> D
 
 static func wake(state: PlayerStateData) -> void:
 	state.sleeping = false
+	state.sleep_until_tick = 0
+
+## SL1: Zomboid asks how long. 0 hours = until rested (or until hunger,
+## thirst or a wound wakes you, as before).
+static func sleep_for(world: World, me: NPCData, state: PlayerStateData, hours: float) -> Dictionary:
+	var out := toggle_sleep(world, me, state)
+	if out.get("ok", false) and state.sleeping and hours > 0.0:
+		state.sleep_until_tick = world.tick + SimClock.hours(hours)
+	return out
+
+## Game hours of sleep until fully rested here (for the picker's first line).
+static func hours_to_rested(world: World, me: NPCData) -> float:
+	var rate := REST_PER_DAY_HOME if _at_home(world, me) else REST_PER_DAY_ROUGH
+	return (1.0 - me.fatigue) / rate * 24.0
 
 static func _at_home(world: World, me: NPCData) -> bool:
 	var home: Entity = world.entities.get(me.home_building_id)
