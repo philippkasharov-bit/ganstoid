@@ -161,10 +161,10 @@ func _turf_line(npc: NPCData) -> String:
 	var t := TerritorySystem.data(_world)
 	if t == null:
 		return ""
-	var c := TerritoryData.cell_of(npc.position)
+	var c := TerritoryData.turf_of(npc.position)
 	var owner := TerritorySystem.controller(t, c)
 	var who := "nobody's" if owner == &"" else ("YOURS" if owner == TerritorySystem.PLAYER else _gang_name(owner))
-	return "Turf: %s block (you %d)   blocks held %d   (T: tag, U: turf map)" % [who, roundi(TerritorySystem.get_influence(t, c, TerritorySystem.PLAYER)), TerritorySystem.cells_held(t, TerritorySystem.PLAYER)]
+	return "Turf: %s street (you %d)   streets held %d   (T: tag, U: turf map)" % [who, roundi(TerritorySystem.get_influence(t, c, TerritorySystem.PLAYER)), TerritorySystem.cells_held(t, TerritorySystem.PLAYER)]
 
 static func _need(v: float) -> String:
 	if v < NeedsSystem.LOW:

@@ -64,9 +64,10 @@ def main(city_path, out_path):
         blocks.append({"id": i, "poly": [[round(x, 1), round(y, 1)] for x, y in list(f.exterior.coords)[:-1]],
                        "c": [round(c.x, 1), round(c.y, 1)], "hood": hood[0], "name": _name(f, tree, named)})
     _neighbours(blocks)
+    streets = _streets(city, blocks)
     hoods = [{"name": h, "district": d} for d, hs in SEEDS.items() for h, _, _ in hs]
-    json.dump({"format": "ganstoid.hoods", "version": 1, "districts": list(SEEDS.keys()), "hoods": hoods, "blocks": blocks}, open(out_path, "w"))
-    print("blocks", len(blocks), "hoods", len(hoods))
+    json.dump({"format": "ganstoid.hoods", "version": 2, "districts": list(SEEDS.keys()), "hoods": hoods, "blocks": blocks, "streets": streets}, open(out_path, "w"))
+    print("blocks", len(blocks), "hoods", len(hoods), "streets", len(streets))
 
 def _east_of_river(river, x, y):
     """The LA River splits the map: a hood never reaches across it."""
@@ -106,6 +107,74 @@ def _neighbours(blocks):
     tree = STRtree(polys)
     for i, p in enumerate(polys):
         blocks[i]["next"] = [int(j) for j in tree.query(p) if j != i and polys[j].intersects(p)]
+
+STREET_TIERS = {"art", "res", "hill"}
+STRETCH_M = 320.0     # a street longer than this inside one hood is split into capture points
+MIN_STRETCH_M = 45.0
+
+def _streets(city, blocks):
+    """Capture points: each named street's run through a hood, cut into
+    stretches of at most STRETCH_M. Every block belongs to the stretch it
+    fronts most; stretches next to each other (sharing a corner or a block)
+    are neighbours."""
+    from shapely.geometry import MultiLineString
+    from shapely.ops import linemerge, substring
+    by_hood = {}
+    for b in blocks:
+        by_hood.setdefault(b["hood"], []).append(Polygon(b["poly"]))
+    areas = {h: unary_union(ps).buffer(14.0) for h, ps in by_hood.items()}
+    lines = {}
+    for r in city["roads"]:
+        if r["tier"] in STREET_TIERS and r.get("name") and len(r["pts"]) > 1:
+            lines.setdefault(_plain(r["name"]), []).append(LineString(r["pts"]))
+    out = []
+    for name, ls in lines.items():
+        u = unary_union(ls)
+        merged = linemerge(u) if u.geom_type == "MultiLineString" else u
+        for hood, area in areas.items():
+            part = merged.intersection(area)
+            for piece in getattr(part, "geoms", [part]):
+                if piece.geom_type != "LineString" or piece.length < MIN_STRETCH_M:
+                    continue
+                cuts = max(1, round(piece.length / STRETCH_M))
+                for k in range(cuts):
+                    seg = substring(piece, piece.length * k / cuts, piece.length * (k + 1) / cuts)
+                    mid = seg.interpolate(0.5, normalized=True)
+                    out.append({"id": len(out), "name": name, "hood": hood, "c": [round(mid.x, 1), round(mid.y, 1)],
+                                "pts": [[round(x, 1), round(y, 1)] for x, y in seg.coords], "len": round(seg.length)})
+    _front(blocks, out)
+    _street_neighbours(out, blocks)
+    return out
+
+def _front(blocks, streets):
+    """Each block joins the stretch (in its own hood) that runs along most of its edge."""
+    geoms = [LineString(s["pts"]) for s in streets]
+    tree = STRtree(geoms)
+    for b in blocks:
+        ring = Polygon(b["poly"]).exterior.buffer(12.0)
+        best, best_len = -1, 0.0
+        for i in tree.query(ring):
+            if streets[i]["hood"] != b["hood"]:
+                continue
+            l = geoms[i].intersection(ring).length
+            if l > best_len:
+                best, best_len = int(i), l
+        if best < 0:   # backstreets only: the nearest stretch in the hood
+            c = Polygon(b["poly"]).centroid
+            near = [i for i, s in enumerate(streets) if s["hood"] == b["hood"]]
+            best = min(near, key=lambda i: geoms[i].distance(c)) if near else -1
+        b["street"] = best
+
+def _street_neighbours(streets, blocks):
+    geoms = [LineString(s["pts"]).buffer(16.0) for s in streets]
+    tree = STRtree(geoms)
+    for i, g in enumerate(geoms):
+        streets[i]["next"] = sorted({int(j) for j in tree.query(g) if j != i and geoms[j].intersects(g)})
+    for b in blocks:   # stretches fronting neighbouring blocks touch too
+        for n in b["next"]:
+            a, c = b["street"], blocks[n]["street"]
+            if a >= 0 and c >= 0 and a != c and c not in streets[a]["next"]:
+                streets[a]["next"].append(c)
 
 if __name__ == "__main__":
     main(sys.argv[1], sys.argv[2])

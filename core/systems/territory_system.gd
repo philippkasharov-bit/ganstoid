@@ -61,7 +61,7 @@ static func seed(world: World) -> void:
 	for g in world.get_entities_with_component(ComponentNames.GANG).values():
 		var gang: GangData = g.get_component(ComponentNames.GANG)
 		for b_id in gang.territory_building_ids:
-			var c := TerritoryData.cell_of(world.entities[b_id].get_component(ComponentNames.BUILDING).position)
+			var c := TerritoryData.turf_of(world.entities[b_id].get_component(ComponentNames.BUILDING).position)
 			set_influence(t, c, gang.id, maxf(70.0, get_influence(t, c, gang.id)))
 			for n in TerritoryData.neighbours(c):   # T1: their block, and the blocks round it
 				set_influence(t, n, gang.id, maxf(35.0, get_influence(t, n, gang.id)))
@@ -116,7 +116,7 @@ static func cells_held(t: TerritoryData, gang: StringName) -> int:
 ## T: spray your tag here. Raises your hold on the cell, dents everyone else's.
 static func tag(world: World, me: NPCData) -> Dictionary:
 	var t := data(world)
-	var c := TerritoryData.cell_of(me.position)
+	var c := TerritoryData.turf_of(me.position)
 	for g in t.cells.get(c, {}).keys():
 		if g != PLAYER:
 			add_influence(t, c, g, -TAG_HIT_OTHERS)
@@ -133,7 +133,7 @@ func on_assaulted(event_name: StringName, payload: Dictionary) -> void:
 	var t := data(_world)
 	if npc == null or npc.gang_id == &"" or t == null:
 		return
-	var c := TerritoryData.cell_of(npc.position)
+	var c := TerritoryData.turf_of(npc.position)
 	add_influence(t, c, npc.gang_id, -BEATING_LOSS)
 	add_influence(t, c, PLAYER, BEATING_GAIN)
 
@@ -155,12 +155,12 @@ func _hourly(t: TerritoryData) -> void:
 	for g in _world.get_entities_with_component(ComponentNames.GANG).values():
 		var gang: GangData = g.get_component(ComponentNames.GANG)
 		for b_id in gang.territory_building_ids:
-			homes[[TerritoryData.cell_of(_world.entities[b_id].get_component(ComponentNames.BUILDING).position), gang.id]] = true
+			homes[[TerritoryData.turf_of(_world.entities[b_id].get_component(ComponentNames.BUILDING).position), gang.id]] = true
 		for m in gang.member_npc_ids:
 			var me: Entity = _world.entities.get(m)
 			var n: NPCData = me.get_component(ComponentNames.NPC) if me != null else null
 			if n != null and not n.is_down:
-				add_influence(t, TerritoryData.cell_of(n.position), gang.id, GANG_MEMBER_PER_HOUR)
+				add_influence(t, TerritoryData.turf_of(n.position), gang.id, GANG_MEMBER_PER_HOUR)
 	for c in t.cells:
 		for g in t.cells[c].keys():
 			var floor_v := HOME_FLOOR if homes.has([c, g]) else 0.0
@@ -216,7 +216,7 @@ func _retaliate(t: TerritoryData) -> void:
 		for crew_id in state.crew_ids:
 			var e: Entity = _world.entities.get(crew_id)
 			var n: NPCData = e.get_component(ComponentNames.NPC) if e != null else null
-			if n != null and not n.is_down and get_influence(t, TerritoryData.cell_of(n.position), g) >= PROVOKE:
+			if n != null and not n.is_down and get_influence(t, TerritoryData.turf_of(n.position), g) >= PROVOKE:
 				n.health = maxf(0.0, n.health - 0.5)
 				n.bleeding = true
 				_world.event_bus.emit(GanstoidEvents.WOUNDED, {"id": crew_id})
@@ -224,7 +224,7 @@ func _retaliate(t: TerritoryData) -> void:
 				break
 		for b in _world.get_entities_with_component(ComponentNames.BUILDING).values():
 			var bd: BuildingData = b.get_component(ComponentNames.BUILDING)
-			if BusinessSystem.owned_by_player(bd) and bd.cash_on_hand > 0 and get_influence(t, TerritoryData.cell_of(bd.position), g) >= PROVOKE:
+			if BusinessSystem.owned_by_player(bd) and bd.cash_on_hand > 0 and get_influence(t, TerritoryData.turf_of(bd.position), g) >= PROVOKE:
 				bd.cash_on_hand = 0
 				bd.has_been_hit = true
 				StreetTalk.say_key(_world, state, "shop_hit")
@@ -250,11 +250,11 @@ func _player_sources(t: TerritoryData) -> void:
 			var e: Entity = _world.entities.get(crew_id)
 			var n: NPCData = e.get_component(ComponentNames.NPC) if e != null else null
 			if n != null and not n.is_down and n.crew_role in [GanstoidEnums.CrewRole.LOOKOUT, GanstoidEnums.CrewRole.DEALER, GanstoidEnums.CrewRole.MUSCLE]:
-				add_influence(t, TerritoryData.cell_of(n.position), PLAYER, PLAYER_CREW_PER_HOUR)
+				add_influence(t, TerritoryData.turf_of(n.position), PLAYER, PLAYER_CREW_PER_HOUR)
 	for b in _world.get_entities_with_component(ComponentNames.BUILDING).values():
 		var bd: BuildingData = b.get_component(ComponentNames.BUILDING)
 		if BusinessSystem.owned_by_player(bd):
-			add_influence(t, TerritoryData.cell_of(bd.position), PLAYER, PLAYER_SHOP_PER_HOUR)
+			add_influence(t, TerritoryData.turf_of(bd.position), PLAYER, PLAYER_SHOP_PER_HOUR)
 
 ## Each morning: street tax from every cell you hold (dirty money).
 func _tax(t: TerritoryData, player: Entity, tick: int) -> void:

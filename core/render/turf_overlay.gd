@@ -25,7 +25,7 @@ var mode := 0   # 0 hidden, 1 turf, 2 money
 var opened_frame := -1   # R3D13: the 3D view opened the map with this press: do not count it twice
 
 func _process(delta: float) -> void:
-	if Input.is_action_just_pressed(&"turf_map") and Engine.get_process_frames() != opened_frame:
+	if Input.is_action_just_pressed(&"turf_map") and Engine.get_process_frames() != opened_frame and not ScreenMap.is_3d():
 		mode = (mode + 1) % 3
 		visible = mode != 0
 		z_index = 20 if mode == 2 else 2   # the money map sits over the roofs
@@ -54,7 +54,12 @@ func _draw() -> void:
 			continue
 		var col: Color = TerritorySystem.GANG_COLORS.get(top, Color.GRAY)
 		col.a = 0.35 if owner != &"" else 0.06 + top_v / 100.0 * 0.2
-		var shape := _shape(c)   # T1: the street block itself
+		if Hoods.is_street(c) and Hoods.data() != null:   # T2: a street: its blocks shaded, the street itself drawn bold
+			for poly in Hoods.data().blocks_of(c):
+				draw_colored_polygon(poly, col)
+			draw_polyline(Hoods.data().street(c).get("pts", PackedVector2Array()), Color(col, 0.95), 5.0 if owner != &"" else 2.5)
+			continue
+		var shape := _shape(c)   # T1: a block, or the old grid square
 		draw_colored_polygon(shape, col)
 		if owner != &"":
 			draw_polyline(shape + PackedVector2Array([shape[0]]), Color(col, 0.9), 2.0)

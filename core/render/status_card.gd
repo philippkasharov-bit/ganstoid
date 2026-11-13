@@ -89,19 +89,19 @@ func _count_cash(delta: float) -> void:
 ## T1: the hood and district you are in ("Pico Gardens · Boyle Heights").
 static func _hood(npc: NPCData) -> String:
 	var h := Hoods.data()
-	var k := TerritoryData.cell_of(npc.position)
-	if h == null or not Hoods.is_block(k):
+	var k := TerritoryData.turf_of(npc.position)
+	if h == null or not (Hoods.is_block(k) or Hoods.is_street(k)):
 		return "-"
 	return "%s · %s" % [h.hood_of(k), h.district_of(k)]
 
-## T1: the block you stand on and who holds it ("Daly & Main · nobody's").
+## T2: the street you are on (the capture point) and who holds it ("Boyle · nobody's").
 func _turf(npc: NPCData) -> String:
 	var t := TerritorySystem.data(_world)
 	if t == null:
 		return "-"
-	var c := TerritoryData.cell_of(npc.position)
+	var c := TerritoryData.turf_of(npc.position)
 	var owner := TerritorySystem.controller(t, c)
-	var block: String = Hoods.data().name_of(c) if Hoods.data() != null and Hoods.is_block(c) else "This block"
+	var block: String = Hoods.data().name_of(c) if Hoods.data() != null and (Hoods.is_block(c) or Hoods.is_street(c)) else "This block"   # T2: the street you are on
 	if owner == &"":
 		return "%s · nobody's" % block
 	if owner == TerritorySystem.PLAYER:
