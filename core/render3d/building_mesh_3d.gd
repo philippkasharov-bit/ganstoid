@@ -35,8 +35,9 @@ const HIP_MAX_AREA := 400.0
 const HULL_FILL := 0.82   # a footprint this close to its hull takes a hipped roof
 const EAVES := 1.06
 
-## Adds building `b` to SurfaceTool `st`. `v` maps a map point + height to 3D.
-static func add(st: SurfaceTool, b: Dictionary, v: Callable) -> void:
+## Adds building `b` to SurfaceTool `st`. `v` maps a map point + height to 3D;
+## `tag` (city index + 1) lets the Cutaway cut it whole.
+static func add(st: SurfaceTool, b: Dictionary, v: Callable, tag: int = 0) -> void:
 	var poly := _open(b["poly"])
 	if poly.size() < 3 or Geometry2D.triangulate_polygon(poly).is_empty():
 		return
@@ -51,6 +52,7 @@ static func add(st: SurfaceTool, b: Dictionary, v: Callable) -> void:
 	var style := {"win_w": rng.randf_range(0.8, 1.6), "win_h": rng.randf_range(1.0, 1.5), "gap": rng.randf_range(2.4, 4.2),
 		"shop": (kind == "commercial") and rng.randf() < 0.8, "rollup": kind in ["industrial", "garage"] and rng.randf() < 0.6,
 		"awning": AWNINGS[rng.randi() % AWNINGS.size()], "storey": storey}
+	st.set_uv(Vector2(0, tag))   # R3D7: the Cutaway cuts this building whole by its tag
 	var ccw := _ccw(poly)
 	var door_edge := _door_edge(poly, b.get("door", Vector2.INF))
 	for i in poly.size():
@@ -66,6 +68,7 @@ static func add(st: SurfaceTool, b: Dictionary, v: Callable) -> void:
 		var door_t := _door_t(a, c, b["door"]) if i == door_edge else -1.0
 		_openings(st, v, a, c, out, levels, door_t, style)
 	_roof(st, v, poly, h, kind, levels, rng)
+	st.set_uv(Vector2.ZERO)   # what follows (roads, the next lot) is not this building
 
 static func quad(st: SurfaceTool, q: Array, n: Vector3, col: Color) -> void:
 	st.set_color(col)

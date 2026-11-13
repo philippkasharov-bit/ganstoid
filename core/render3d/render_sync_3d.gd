@@ -60,9 +60,13 @@ func _see_player() -> void:
 	_ghost.visible = _player_at != Vector2.INF and cam != null
 	if not _ghost.visible:
 		Cutaway.aim(Vector3(0, -1000, 0), Vector3.DOWN)
+		Cutaway.cut(PackedInt32Array())
 		return
 	var chest := Vector3(_player_at.x - origin.x, 1.0, _player_at.y - origin.y)
-	Cutaway.aim(chest, -cam.global_basis.z)
+	var view := -cam.global_basis.z
+	Cutaway.aim(chest, view)
+	if footprints != null:
+		Cutaway.cut(footprints.covering(_player_at, Vector2(view.x, view.z)))
 	_ghost.position = chest
 	_open_room()
 

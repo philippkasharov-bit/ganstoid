@@ -24,6 +24,10 @@ func _initialize() -> void:
 			me.position = _in_house(me.position)
 		if args.has("behind"):
 			me.position = _behind_building(me.position)
+			for i in 20:   # step back out of any neighbour we landed in
+				if preview.people3d.footprints.at(me.position).is_empty():
+					break
+				me.position += Vector2(1, 1).normalized() * 0.5
 		preview.rig.look_at_map(me.position)
 	for i in 8:
 		await process_frame

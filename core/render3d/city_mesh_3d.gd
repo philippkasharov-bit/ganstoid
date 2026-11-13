@@ -33,9 +33,9 @@ static func build(city: CityData, centre: Vector2, radius: float) -> Array[Node3
 	for road in city.roads:
 		if _near(road["pts"], centre, r2):
 			b._road(road)
-	for bld in city.buildings:
-		if _near(bld["poly"], centre, r2):
-			b._building(bld)
+	for i in city.buildings.size():
+		if _near(city.buildings[i]["poly"], centre, r2):
+			b._building(city.buildings[i], i + 1)   # R3D7: its tag is its index + 1 (0: not a building)
 	var out: Array[Node3D] = b._commit()
 	var wells := PackedVector2Array()
 	for w in city.tree_wells:
@@ -58,6 +58,7 @@ func _tool(at: Vector2) -> SurfaceTool:
 	if not _tools.has(k):
 		var st := SurfaceTool.new()
 		st.begin(Mesh.PRIMITIVE_TRIANGLES)
+		st.set_uv(Vector2.ZERO)    # R3D7: UV.y carries each building's tag for the Cutaway; 0 = not a building
 		_tools[k] = st
 	return _tools[k]
 
@@ -116,9 +117,9 @@ static func _ccw(poly: PackedVector2Array) -> bool:
 	return area > 0.0
 
 ## A building, styled by BuildingMesh3D (R3D2: each one rolls its own look).
-func _building(b: Dictionary) -> void:
+func _building(b: Dictionary, tag: int) -> void:
 	var poly: PackedVector2Array = b["poly"]
-	BuildingMesh3D.add(_tool(poly[0]), b, _v)
+	BuildingMesh3D.add(_tool(poly[0]), b, _v, tag)
 
 func _commit() -> Array[Node3D]:
 	var mat := Cutaway.material()   # R3D4: see-through where it hides the player
