@@ -118,5 +118,7 @@ var ui_pick: int = -1                           # UIF1: a menu row clicked with 
 var ui_move: Dictionary = {}                    # INV4: a bag<->vicinity move the UI asked for (not saved)
 var ui_use: StringName = &""                     # UI5: item clicked in the bag, used next tick (not saved)
 var menu_options: PackedStringArray = []        # UI1: the open E menu (not saved)
+var menu_notes: PackedStringArray = []          # UIF3: the note beside each row (cost, "3 watching")
+var menu_title: String = ""                     # UIF3: "What now?" or the open category
 var store_id: StringName = &""                  # G1: counter whose menu is open (not saved)
 var last_attack: Dictionary = {}                # the latest blow or shot, for AimView to draw

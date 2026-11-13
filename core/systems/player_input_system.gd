@@ -265,6 +265,7 @@ func _drive(npc: NPCData, state: PlayerStateData, delta: float) -> void:
 ## sell, pickpocket, mug, recruit, rob, break in, take the car...); 1-9 picks,
 ## E or Esc closes. Replaces the old one-key-per-action scheme (Esc to sell).
 var _menu_runs: Array[Callable] = []
+var _menu_top: Array = []   # UIF3: the whole option list, for stepping back out of a category
 
 func _action_menu_input(npc: NPCData, state: PlayerStateData) -> bool:
 	if state.store_id != &"" or state.inventory_open:
@@ -273,36 +274,58 @@ func _action_menu_input(npc: NPCData, state: PlayerStateData) -> bool:
 		if not state.menu_options.is_empty():
 			state.menu_options = []
 			return true
-		_menu_runs.clear()
-		var labels: PackedStringArray = []
-		for option in _options(npc, state):
-			labels.append(option[0])
-			_menu_runs.append(option[1])
-		state.menu_options = labels
-		if labels.is_empty():
+		_open_menu(npc, state, _options(npc, state))
+		if state.menu_options.is_empty():
 			StreetTalk.say_key(_world, state, "nothing_here")
 		return true
 	if state.menu_options.is_empty():
 		return false
 	if Input.is_action_just_pressed("ui_cancel"):
-		state.menu_options = []
+		if state.menu_title != "What now?" and not _menu_top.is_empty():
+			_open_menu(npc, state, _menu_top)   # UIF3: Esc in a category steps back to the categories
+		else:
+			state.menu_options = []
 		return true
 	for i in mini(_menu_runs.size(), SLOT_ACTIONS.size()):
 		if Input.is_action_just_pressed(SLOT_ACTIONS[i]) or _picked(state, i):
 			state.ui_pick = -1
 			state.menu_options = []
 			var result: Variant = _menu_runs[i].call()
+			if result is Dictionary and result.get("submenu", false):
+				return true   # UIF3: a category opened its own list
 			if result is Dictionary and not result.is_empty():
 				_report(state, result)
 			if not state.job_offers.is_empty():   # JB1: the fixer's offers become the next menu
-				_menu_runs.clear()
-				var labels: PackedStringArray = []
-				for option in _options(npc, state):
-					labels.append(option[0])
-					_menu_runs.append(option[1])
-				state.menu_options = labels
+				_open_menu(npc, state, _options(npc, state))
 			return true
 	return true
+
+## UIF3: a short list opens flat; a long one opens on its categories.
+func _open_menu(npc: NPCData, state: PlayerStateData, options: Array) -> void:
+	_menu_top = options
+	if options.size() <= ActionMenuModel.FLAT_UP_TO or not state.job_offers.is_empty():
+		_show_list(npc, state, "What now?", options)
+		return
+	var groups := ActionMenuModel.group(options)
+	var rows: Array = []
+	for cat in groups:
+		var picked: Array = groups[cat]
+		rows.append(["%s  ›" % cat, func() -> Dictionary:
+			_show_list(npc, state, cat, picked)
+			return {"submenu": true}])
+	_show_list(npc, state, "What now?", rows, false)
+
+func _show_list(npc: NPCData, state: PlayerStateData, title: String, options: Array, notes := true) -> void:
+	_menu_runs.clear()
+	var labels: PackedStringArray = []
+	var side: PackedStringArray = []
+	for option in options.slice(0, SLOT_ACTIONS.size()):
+		labels.append(option[0])
+		_menu_runs.append(option[1])
+		side.append(ActionMenuModel.note(_world, npc.position, option[0], state) if notes else "")
+	state.menu_options = labels
+	state.menu_notes = side
+	state.menu_title = title
 
 ## What you can do where you stand, in the order it reads best.
 func _options(npc: NPCData, state: PlayerStateData) -> Array:
@@ -383,7 +406,7 @@ func _options(npc: NPCData, state: PlayerStateData) -> Array:
 		out.append(["Get in the car", func() -> Dictionary: return VehicleSystem.use_door(_world, npc, state)])
 	if TerritorySystem.data(_world) != null:
 		out.append(["Spray your tag", func() -> Dictionary: return TerritorySystem.tag(_world, npc)])
-	return out.slice(0, SLOT_ACTIONS.size())
+	return out
 
 ## G2: I opens what you carry; 1-9 eat, drink or apply that line.
 func _inventory_input(npc: NPCData, state: PlayerStateData) -> bool:

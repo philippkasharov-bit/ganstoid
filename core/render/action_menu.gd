@@ -12,5 +12,5 @@ func refresh() -> void:
 		position = (get_viewport().get_mouse_position() + Vector2(12, 12)).clamp(Vector2.ZERO, screen - Vector2(260, 200))
 	var rows: Array = []
 	for i in state.menu_options.size():
-		rows.append([str(i + 1), state.menu_options[i], ""])
-	show_panel("What now?", rows, "Click or 1-9    E / Esc close")
+		rows.append([str(i + 1), state.menu_options[i], state.menu_notes[i] if i < state.menu_notes.size() else ""])
+	show_panel(state.menu_title if state.menu_title != "" else "What now?", rows, "Click or 1-9    Esc back / close")
