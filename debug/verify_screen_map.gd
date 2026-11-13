@@ -9,6 +9,7 @@ func _initialize() -> void:
 	var rig := CameraRig3D.new()
 	rig.origin = Vector2(5000, 3000)
 	root.add_child(rig)
+	ScreenMap.use_3d(rig.camera, rig.origin)
 	await process_frame
 	for quarters in [0, 1]:
 		rig.turn(quarters)

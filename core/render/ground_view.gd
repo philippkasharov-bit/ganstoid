@@ -12,6 +12,9 @@ func setup(world: World) -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 func _process(_delta: float) -> void:
+	visible = not ScreenMap.is_3d()   # R3D13: drawn on the 2D map only for now
+	if not visible:
+		return
 	queue_redraw()
 
 func _draw() -> void:

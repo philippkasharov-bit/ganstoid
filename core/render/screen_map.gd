@@ -14,7 +14,7 @@ static func use_3d(camera: Camera3D, map_origin: Vector2) -> void:
 	origin = map_origin
 
 static func is_3d() -> bool:
-	return camera3d != null and is_instance_valid(camera3d) and camera3d.is_inside_tree()
+	return camera3d != null and is_instance_valid(camera3d) and camera3d.is_inside_tree() and camera3d.current
 
 ## The map point under a screen position (the ground, in 3D).
 static func to_map(vp: Viewport, screen: Vector2) -> Vector2:
