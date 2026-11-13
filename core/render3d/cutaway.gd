@@ -125,7 +125,8 @@ void fragment() {
 	vec3 grey = vec3(dot(col, vec3(0.3, 0.59, 0.11)));
 	float pool = lamp();
 	float bright = mix(1.0, max(moon, pool), night);   // at night you see what is lit
-	ALBEDO = mix(mix(grey, col, 0.35) * unseen, col, lit) * bright;
+	float dim = mix(0.68, unseen, night);   // by day the unseen world is only a little dimmer (Zomboid)
+	ALBEDO = mix(mix(grey, col, mix(0.6, 0.35, night)) * dim, col, lit) * bright;
 	EMISSION = night * (vec3(1.0, 0.8, 0.5) * pool * 0.6 * col + vec3(1.0, 0.82, 0.5) * glow * 0.9 + tint * self_glow);
 	ROUGHNESS = roughness;
 }

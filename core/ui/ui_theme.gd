@@ -80,13 +80,30 @@ static func button_box(state: String) -> StyleBoxFlat:
 		style.set_border_width_all(2)
 	return style
 
+static var _images := {}
+
+## A picture by path, or null when the file is missing. Falls back to reading
+## the file itself when Godot has not imported it (a fresh copy run without
+## the editor), so icons and title art never turn into letters.
+static func image(path: String) -> Texture2D:
+	if _images.has(path):
+		return _images[path]
+	var tex: Texture2D = null
+	if ResourceLoader.exists(path):
+		tex = load(path)
+	elif FileAccess.file_exists(path):
+		var img := Image.load_from_file(path)
+		tex = ImageTexture.create_from_image(img) if img != null and not img.is_empty() else null
+	_images[path] = tex
+	return tex
+
 ## A tiled art box from art/ui/street/<name>.png, or null when it is missing.
 static func texture_box(name: String, tint: Color, margin: int, tile: bool = false) -> StyleBoxTexture:
-	var path := STREET + name + ".png"
-	if not ResourceLoader.exists(path):
+	var tex := image(STREET + name + ".png")
+	if tex == null:
 		return null
 	var style := StyleBoxTexture.new()
-	style.texture = load(path)
+	style.texture = tex
 	style.modulate_color = tint
 	if tile:
 		style.axis_stretch_horizontal = StyleBoxTexture.AXIS_STRETCH_MODE_TILE_FIT
@@ -109,17 +126,25 @@ static func font(kind: String) -> Font:
 	if not _fonts.has(kind):
 		var file: String = {"marker": "PermanentMarker", "bungee": "Bungee", "lcd": "VT323", "paper": "SpecialElite"}[kind]
 		var path := "res://fonts/%s-Regular.ttf" % file
-		_fonts[kind] = load(path) if ResourceLoader.exists(path) else ThemeDB.fallback_font
+		_fonts[kind] = load(path) if ResourceLoader.exists(path) else _font_file(path)
 	return _fonts[kind]
+
+## A font straight from its file when it is not imported; the default if missing.
+static func _font_file(path: String) -> Font:
+	if not FileAccess.file_exists(path):
+		return ThemeDB.fallback_font
+	var f := FontFile.new()
+	f.load_dynamic_font(path)
+	return f
 
 ## A piece of art from art/ui/street/<name>.png as a fixed-size decoration
 ## (tape, sticker, doodle), or null when the file is missing.
 static func decal(name: String, height: float, angle_deg: float) -> TextureRect:
-	var path := STREET + name + ".png"
-	if not ResourceLoader.exists(path):
+	var tex := image(STREET + name + ".png")
+	if tex == null:
 		return null
 	var t := TextureRect.new()
-	t.texture = load(path)
+	t.texture = tex
 	t.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	t.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	var tex_size: Vector2 = t.texture.get_size()

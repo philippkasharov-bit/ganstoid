@@ -36,6 +36,7 @@ var _eased: Dictionary = {}   # person id -> [shown position, facing]
 var _ghost := _silhouette()
 var _player_at := Vector2.INF
 var _player_face := 0.0
+var _riding := false
 var player_shown := Vector2.INF   # Z-feel: where the player is drawn this frame (the camera locks on it)
 var _tick_was := Vector2.ZERO
 var _tick_now := Vector2.INF
@@ -65,6 +66,7 @@ func _process(delta: float) -> void:
 func sync() -> void:
 	var focus := _focus()
 	_player_at = Vector2.INF
+	_riding = false
 	_people(focus)
 	_cars(focus)
 	_see_player()
@@ -83,6 +85,7 @@ func _see_player() -> void:
 	if footprints != null:
 		Cutaway.cut(footprints.covering(_player_at, Vector2(view.x, view.z)))
 	_ghost.position = chest
+	_ghost.visible = not _riding   # no see-through figure over the car
 	Cutaway.facing(_player_face)
 	_seen_from = _player_at
 	_seen_face = _player_face
@@ -191,7 +194,9 @@ func _people(focus: Vector2) -> void:
 			continue
 		var ps: PlayerStateData = e.get_component(ComponentNames.PLAYER_STATE)
 		if ps != null and ps.vehicle_id != &"":
-			continue   # riding: the car is what you see
+			_player_at = _player_between(npc.position)   # riding: the car is what you see; the view still follows you
+			_riding = true
+			continue
 		var pose := _ease(id, npc, ps)
 		if ps != null and not npc.is_down:
 			_player_at = pose[0]

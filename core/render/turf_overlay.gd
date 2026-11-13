@@ -22,9 +22,10 @@ func _ready() -> void:
 		InputMap.action_add_event(&"turf_map", ev)
 
 var mode := 0   # 0 hidden, 1 turf, 2 money
+var opened_frame := -1   # R3D13: the 3D view opened the map with this press: do not count it twice
 
 func _process(delta: float) -> void:
-	if Input.is_action_just_pressed(&"turf_map"):
+	if Input.is_action_just_pressed(&"turf_map") and Engine.get_process_frames() != opened_frame:
 		mode = (mode + 1) % 3
 		visible = mode != 0
 		z_index = 20 if mode == 2 else 2   # the money map sits over the roofs

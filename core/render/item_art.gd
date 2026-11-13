@@ -40,7 +40,7 @@ static func _draw_fitted(ci: CanvasItem, tex: Texture2D, rect: Rect2, turned: bo
 static func _texture(id: StringName) -> Texture2D:
 	if not _cache.has(id):
 		var path := ART_DIR + String(id) + ".png"
-		_cache[id] = load(path) if ResourceLoader.exists(path) else null
+		_cache[id] = UiTheme.image(path)
 	return _cache[id]
 
 ## A rough outline per item, built along the item's long axis `a` and its

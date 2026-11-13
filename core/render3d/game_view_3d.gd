@@ -20,10 +20,12 @@ var rig := CameraRig3D.new()
 var day_night := DayNight3D.new()
 var people3d := RenderSync3D.new()
 var aim := AimView3D.new()
+var furniture := StreetFurniture3D.new()   # signals, stop signs, bus stops
 var env: Environment
 var sun: DirectionalLight3D
 var build_ms := 0.0
 var on := true
+var _map_view := false   # 2D shown only for the turf / money map
 
 func _ready() -> void:
 	if world_driver_path.is_empty():
@@ -50,6 +52,9 @@ func setup(w: World, city: CityData, at: Vector2) -> void:
 	aim.world = world
 	aim.origin = centre
 	add_child(aim)
+	furniture.world = world
+	furniture.origin = centre
+	add_child(furniture)
 	day_night.origin = centre
 	day_night.world = world
 	day_night.sun = sun
@@ -66,7 +71,8 @@ func setup(w: World, city: CityData, at: Vector2) -> void:
 func show_3d(yes: bool) -> void:
 	on = yes
 	visible = yes
-	process_mode = Node.PROCESS_MODE_INHERIT if yes else Node.PROCESS_MODE_DISABLED
+	for n in [rig, people3d, aim, day_night, furniture]:
+		n.process_mode = Node.PROCESS_MODE_INHERIT if yes else Node.PROCESS_MODE_DISABLED
 	rig.camera.current = yes
 	ScreenMap.use_3d(rig.camera if yes else null, centre)
 	for name in MAP_2D:
@@ -77,6 +83,23 @@ func show_3d(yes: bool) -> void:
 	var cam2d := get_parent().get_node_or_null("Camera2D") as Camera2D
 	if cam2d != null and not yes:
 		cam2d.make_current()
+
+## U in 3D opens the map view (2D map with the turf / money overlay); when
+## the overlay is cycled off again, back to 3D.
+func _process(_delta: float) -> void:
+	var overlay := get_parent().get_node_or_null("TurfOverlay")
+	if overlay == null:
+		return
+	if on and Input.is_action_just_pressed(&"turf_map"):
+		_map_view = true
+		show_3d(false)
+		overlay.mode = 1   # the turf map, opened by this press
+		overlay.visible = true
+		overlay.opened_frame = Engine.get_process_frames()
+		overlay.queue_redraw()
+	elif _map_view and not on and overlay.mode == 0:
+		_map_view = false
+		show_3d(true)
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if event.pressed and not event.echo and event.physical_keycode == KEY_F9:

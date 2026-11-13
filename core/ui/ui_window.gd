@@ -125,8 +125,7 @@ func _add_decor(id: String) -> void:
 	resized.connect(layer.queue_redraw)
 
 static func _art(name: String) -> Texture2D:
-	var path := UiTheme.STREET + name + ".png"
-	return load(path) if ResourceLoader.exists(path) else null
+	return UiTheme.image(UiTheme.STREET + name + ".png")
 
 func _draw_decor(layer: Node2D) -> void:
 	var corners := [Vector2.ZERO, Vector2(size.x, 0), size]

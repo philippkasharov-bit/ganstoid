@@ -81,13 +81,14 @@ func _process(_delta: float) -> void:
 	Cutaway.light(night, list)
 
 func _sky(hour: float) -> void:
-	var low := 1.0 - absf(hour - 12.5) / 6.5   # 1 at midday, 0 at sunrise/sunset
+	var golden := maxf(1.0 - absf(hour - 6.5) / 1.2, 1.0 - absf(hour - 19.0) / 1.2)   # warm only round sunrise and sunset
 	if sun != null:
-		sun.light_color = SUN_LOW.lerp(SUN_DAY, clampf(low * 2.0, 0.0, 1.0))
+		sun.light_color = SUN_DAY.lerp(SUN_LOW, clampf(golden, 0.0, 1.0))
 		sun.light_energy = lerpf(0.9, 0.55, night)   # the shader does the dark; the sun only cools
 	if env != null:
 		env.background_color = SKY_DAY.lerp(SKY_NIGHT, night)
 		env.ambient_light_color = Color(0.85, 0.85, 0.9).lerp(Color(0.55, 0.62, 0.85), night)
+		env.ambient_light_energy = lerpf(0.75, 0.55, night)   # day: shaded walls stay readable
 	if sun != null:
 		sun.light_color = sun.light_color.lerp(Color(0.6, 0.68, 0.95), night)   # moonlight blue
 

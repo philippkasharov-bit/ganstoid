@@ -227,10 +227,10 @@ func _flash() -> void:
 ## art/ui/needs/<name>.png, then art/ui/icons/<name>.png, else the letter.
 static func icon_or_glyph(name: String, glyph: String, px: float) -> Control:
 	for dir in ["needs", "icons"]:
-		var path := "res://art/ui/%s/%s.png" % [dir, name]
-		if ResourceLoader.exists(path):
+		var art := UiTheme.image("res://art/ui/%s/%s.png" % [dir, name])
+		if art != null:
 			var tex := TextureRect.new()
-			tex.texture = load(path)
+			tex.texture = art
 			tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 			tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 			tex.custom_minimum_size = Vector2(px, px)

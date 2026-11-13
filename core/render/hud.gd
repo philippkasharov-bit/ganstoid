@@ -67,8 +67,7 @@ func _ready() -> void:
 	get_parent().add_child.call_deferred(bar)
 	bar.setup(_world)
 	_title_art = TextureRect.new()    # UI16: the title art while the streets load
-	if ResourceLoader.exists(UiTheme.STREET + "title.jpg"):
-		_title_art.texture = load(UiTheme.STREET + "title.jpg")
+	_title_art.texture = UiTheme.image(UiTheme.STREET + "title.jpg")
 	_title_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_title_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	_title_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
