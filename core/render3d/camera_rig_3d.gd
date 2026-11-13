@@ -31,6 +31,7 @@ func _ready() -> void:
 	add_child(camera)
 	camera.current = true
 	_apply_turn()
+	ScreenMap.use_3d(camera, origin)   # R3D12: mouse and WASD go through this camera
 
 func _process(delta: float) -> void:
 	var k := minf(1.0, delta * EASE)

@@ -74,7 +74,7 @@ func _draw() -> void:
 	if _lines.is_empty():
 		return
 	var npc: NPCData = _world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
-	var head := get_viewport().get_canvas_transform() * npc.position + Vector2(0, -LIFT_PX)
+	var head := ScreenMap.to_screen(get_viewport(), npc.position, 2.0) + Vector2(0, -LIFT_PX)   # R3D12: over the head in either view
 	var font := ThemeDB.fallback_font
 	var n := _lines.size()
 	for i in n:

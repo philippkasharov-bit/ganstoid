@@ -840,4 +840,4 @@ static func _move_input() -> Vector2:
 	if Input.is_physical_key_pressed(KEY_A): d.x -= 1.0
 	if Input.is_physical_key_pressed(KEY_S): d.y += 1.0
 	if Input.is_physical_key_pressed(KEY_W): d.y -= 1.0
-	return d.limit_length(1.0) if d.length() > 0.0 else d
+	return (d.limit_length(1.0) if d.length() > 0.0 else d).rotated(ScreenMap.move_turn())   # R3D12: W is up the screen in 3D

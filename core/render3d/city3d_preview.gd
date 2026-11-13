@@ -60,6 +60,10 @@ func _run_sim() -> void:
 	people3d.origin = centre
 	people3d.footprints = Footprints.build(city_data, centre, radius_m + 40.0)
 	add_child(people3d)
+	var aim := AimView3D.new()   # R3D12: the mouse aims and clicks in 3D
+	aim.world = driver.world
+	aim.origin = centre
+	add_child(aim)
 
 ## 2D map metres -> 3D (x east, y up, z south), centred on the block.
 func _v(p: Vector2, h: float = 0.0) -> Vector3:
