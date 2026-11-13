@@ -105,6 +105,10 @@ float grain(int id) {
 		uv = vec2(dot(world_pos.xz, along), -world_pos.y);
 	}
 	float d = texture(detail, vec3(uv / tile_m[id], float(id))).r;
+	if (id == 5 || id == 6 || id == 8 || id == 9) {   // gravel, asphalt, grass, dirt: a second, turned and larger copy breaks the repeat
+		vec2 turned = mat2(vec2(0.8, 0.6), vec2(-0.6, 0.8)) * uv;
+		d = 0.5 + (d + texture(detail, vec3(turned / (tile_m[id] * 2.37), float(id))).r - 1.0) * 0.75;
+	}
 	return 1.0 + (d - 0.5) * 2.0 * strength[id];
 }
 

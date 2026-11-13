@@ -13,7 +13,7 @@ enum { STUCCO, BRICK, BLOCK, CLAY, SHINGLE, GRAVEL, ASPHALT, SIDEWALK, GRASS, DI
 const NONE := 15   # alpha 1.0: a plain colour
 const NAMES := ["stucco", "brick", "block", "clay", "shingle", "gravel", "asphalt", "sidewalk", "grass", "dirt", "wood", "tile"]
 const TILE_M := [2.0, 2.0, 3.0, 3.0, 3.0, 4.0, 4.0, 3.0, 2.0, 3.0, 2.0, 2.0]   # metres one texture covers
-const STRENGTH := [0.55, 0.8, 0.7, 0.8, 0.7, 0.6, 0.7, 0.5, 0.6, 0.6, 0.8, 0.8]   # how much of the texture shows
+const STRENGTH := [0.55, 0.8, 0.7, 0.8, 0.7, 0.45, 0.5, 0.5, 0.45, 0.6, 0.8, 0.7]   # how much of the texture shows
 const DIR := "res://art/textures/"
 const SIZE := 512
 
