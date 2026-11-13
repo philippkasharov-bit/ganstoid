@@ -1,7 +1,8 @@
 ## R3D1: the whole district in 3D, built once and fast to draw. The map is
 ## cut into CHUNK_M squares; each square becomes ONE mesh (ground areas,
 ## sidewalks, roads, every building's walls, roof, windows and door) coloured
-## per vertex, so thousands of buildings cost a few dozen draw calls and the
+## per vertex (buildings styled by BuildingMesh3D), so thousands of buildings
+## cost a few dozen draw calls and the
 ## camera culls the squares it cannot see. Palms are two MultiMeshes for the
 ## whole district. Reads CityData only; the simulation never sees this.
 ## Map (x, y) -> 3D (x, height, y), relative to `origin`.
@@ -9,22 +10,13 @@ class_name CityMesh3D
 extends RefCounted
 
 const CHUNK_M := 160.0
-const STOREY_M := 3.2
 const ROAD_W := {"fwy": 26.0, "ramp": 6.0, "art": 14.0, "res": 6.0, "alley": 3.0, "path": 2.5, "svc": 7.0, "hill": 5.0, "trail": 2.5, "aisle": 7.3, "drive": 3.7}
 const ROAD_COL := {"fwy": Color("75746f"), "ramp": Color("7b7a75"), "art": Color("6f6e6a"), "res": Color("7d7a74"), "alley": Color("8c887f"),
 	"path": Color("cfcbc1"), "svc": Color("85837d"), "hill": Color("8f8570"), "trail": Color("9b8357"), "aisle": Color("85837d"), "drive": Color("b8b4aa")}
 const AREA_COL := {"park": Color("a9c48f"), "hills": Color("d6dcc4"), "mountains": Color("b9c6a8"), "airfield": Color("dcd8cc"),
 	"foothill": Color("e3dac6"), "industrial": Color("d3cfd8"), "downtown": Color("d8cbb0"), "commercial": Color("e1d4ba"), "river": Color("9fb3bf")}
-const WALLS := {"house": Color("d9c7a8"), "apartments": Color("cdb48f"), "commercial": Color("c9b9a4"), "industrial": Color("b4b8bc"),
-	"garage": Color("d8d2c4"), "civic": Color("c7a98f"), "building": Color("cfc3ad")}
-const ROOF := Color("8a7f72")
 const SIDEWALK := Color("cbc7be")
-const GLASS := Color("3b4a5c")
-const DOOR := Color("3a2a1e")
-const DOOR_FRAME := Color("e8e2d4")
 const CENTRE_LINE := Color("d8b23e")
-const DOOR_W := 1.1
-const DOOR_H := 2.1
 
 var origin := Vector2.ZERO
 var _tools := {}   # chunk Vector2i -> SurfaceTool
@@ -122,76 +114,10 @@ static func _ccw(poly: PackedVector2Array) -> bool:
 		area += poly[i].x * poly[(i + 1) % poly.size()].y - poly[(i + 1) % poly.size()].x * poly[i].y
 	return area > 0.0
 
-## A building: walls, a roof, windows per storey, and its door set in the wall it faces.
+## A building, styled by BuildingMesh3D (R3D2: each one rolls its own look).
 func _building(b: Dictionary) -> void:
-	var poly := _open(b["poly"])
-	if poly.size() < 3 or Geometry2D.triangulate_polygon(poly).is_empty():
-		return
-	var levels: int = maxi(1, int(b.get("levels", 1)))
-	var h := levels * STOREY_M
-	var col: Color = WALLS.get(b["kind"], WALLS["building"]).lightened(absi(String(b["id"]).hash() % 7) * 0.012)
-	var st := _tool(poly[0])
-	var ccw := _ccw(poly)
-	var door_edge := _door_edge(poly, b.get("door", Vector2.INF))
-	for i in poly.size():
-		var a := poly[i]
-		var c := poly[(i + 1) % poly.size()]
-		var e := c - a
-		if e.length() < 0.05:
-			continue
-		var out := (Vector2(e.y, -e.x) if ccw else Vector2(-e.y, e.x)).normalized()
-		var n := Vector3(out.x, 0, out.y)
-		_quad(st, [_v(a), _v(c), _v(c, h), _v(a, h)], n, col)
-		var door_t := _door_t(a, c, b["door"]) if i == door_edge else -1.0
-		_openings(st, a, c, out, levels, door_t)
-	_flat_poly(poly, h, col.darkened(0.25).lerp(ROOF, 0.4))
-
-## Windows every ~3 m per storey, set just proud of the wall; on the ground
-## floor of the door's wall the window nearest the door gives way to the door.
-func _openings(st: SurfaceTool, a: Vector2, c: Vector2, out: Vector2, levels: int, door_t: float) -> void:
-	var length := a.distance_to(c)
-	var dir := (c - a) / length
-	var n := Vector3(out.x, 0, out.y)
-	var proud := out * 0.04
-	if door_t >= 0.0:
-		var mid := a.lerp(c, door_t) + proud
-		var half := dir * DOOR_W * 0.5
-		_quad(st, [_v(mid - half * 1.25, 0.0), _v(mid + half * 1.25, 0.0), _v(mid + half * 1.25, DOOR_H + 0.15), _v(mid - half * 1.25, DOOR_H + 0.15)], n, DOOR_FRAME)
-		var inner := mid + proud * 0.5
-		_quad(st, [_v(inner - half, 0.0), _v(inner + half, 0.0), _v(inner + half, DOOR_H), _v(inner - half, DOOR_H)], n, DOOR)
-	var count := int(length / 3.0)
-	for lv in levels:
-		for k in count:
-			var t := (k + 0.5) / count
-			if lv == 0 and door_t >= 0.0 and absf(t - door_t) * length < 1.6:
-				continue
-			var p := a.lerp(c, t) + proud
-			var w := dir * 0.55
-			var y := lv * STOREY_M + 1.0
-			_quad(st, [_v(p - w, y), _v(p + w, y), _v(p + w, y + 1.2), _v(p - w, y + 1.2)], n, GLASS)
-
-## The wall closest to the door point (the door sits just outside it).
-static func _door_edge(poly: PackedVector2Array, door: Vector2) -> int:
-	if door == Vector2.INF:
-		return -1
-	var best := -1
-	var best_d := INF
-	for i in poly.size():
-		var p := Geometry2D.get_closest_point_to_segment(door, poly[i], poly[(i + 1) % poly.size()])
-		var d := p.distance_squared_to(door)
-		if d < best_d:
-			best_d = d
-			best = i
-	return best
-
-## Where along wall a->c the door sits (0..1), kept a door's width from the corners.
-static func _door_t(a: Vector2, c: Vector2, door: Vector2) -> float:
-	var length := a.distance_to(c)
-	if length < DOOR_W * 1.6:
-		return -1.0
-	var t := clampf((door - a).dot(c - a) / (length * length), 0.0, 1.0)
-	var margin := DOOR_W / length
-	return clampf(t, margin, 1.0 - margin)
+	var poly: PackedVector2Array = b["poly"]
+	BuildingMesh3D.add(_tool(poly[0]), b, _v)
 
 func _commit() -> Array[Node3D]:
 	var mat := StandardMaterial3D.new()
