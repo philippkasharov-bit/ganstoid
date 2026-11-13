@@ -13,7 +13,7 @@ const REACH_M := 60.0
 const SIGHT_RISE := 0.577      # tan 30: the sight line climbs this per metre toward the camera
 const MAX_CUT := 16            # the shader's list
 
-var _grid: Dictionary = {}   # Vector2i -> Array of [poly, tag, height]
+var _grid: Dictionary = {}   # Vector2i -> Array of [poly, tag, height, building dict]
 
 static func build(city: CityData, centre: Vector2, radius: float) -> Footprints:
 	var f := Footprints.new()
@@ -22,7 +22,7 @@ static func build(city: CityData, centre: Vector2, radius: float) -> Footprints:
 		var poly: PackedVector2Array = b["poly"]
 		if poly.is_empty() or poly[0].distance_to(centre) > radius:
 			continue
-		var entry := [poly, i + 1, maxi(1, int(b.get("levels", 1))) * STOREY_M + 1.5]
+		var entry := [poly, i + 1, maxi(1, int(b.get("levels", 1))) * STOREY_M + 1.5, b]
 		var box := _box(poly)
 		for x in range(floori(box.position.x / CELL_M), floori(box.end.x / CELL_M) + 1):
 			for y in range(floori(box.position.y / CELL_M), floori(box.end.y / CELL_M) + 1):
@@ -37,10 +37,15 @@ static func _box(poly: PackedVector2Array) -> Rect2:
 
 ## The footprint containing `p`, or an empty polygon outdoors.
 func at(p: Vector2) -> PackedVector2Array:
+	var b := building_at(p)
+	return b["poly"] if not b.is_empty() else PackedVector2Array()
+
+## R3D9: the building (CityData dict) whose footprint contains `p`, or {}.
+func building_at(p: Vector2) -> Dictionary:
 	for entry in _grid.get(Vector2i(floori(p.x / CELL_M), floori(p.y / CELL_M)), []):
 		if Geometry2D.is_point_in_polygon(p, entry[0]):
-			return entry[0]
-	return PackedVector2Array()
+			return entry[3]
+	return {}
 
 ## Tags of the buildings hiding `you` from a camera looking along `view` (map x/y).
 func covering(you: Vector2, view: Vector2) -> PackedInt32Array:

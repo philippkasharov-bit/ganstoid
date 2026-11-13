@@ -38,7 +38,10 @@ var _player_at := Vector2.INF
 var _player_face := 0.0
 var _seen_from := Vector2.INF   # R3D8: last frame's eye and facing: people out of sight are not drawn
 var _seen_face := 0.0
-var _room := Rect2()            # map rect of the room you are in (empty outdoors)
+var _room := Rect2()
+var _inside: MeshInstance3D     # R3D9: rooms and furniture of the building you are in
+var _inside_id := ""
+var _inside_mat: ShaderMaterial            # map rect of the room you are in (empty outdoors)
 const CONE_COS := 0.34          # matches the Cutaway shader
 const NEAR_M := 3.5
 var _delta := 0.016
@@ -92,16 +95,30 @@ func _in_sight(p: Vector2) -> bool:
 
 ## R3D5: standing inside a footprint: that building opens up round you.
 func _open_room() -> void:
-	var poly := footprints.at(_player_at) if footprints != null else PackedVector2Array()
+	var b := footprints.building_at(_player_at) if footprints != null else {}
 	_room = Rect2()
-	if poly.is_empty():
+	_show_inside(b)
+	if b.is_empty():
 		Cutaway.room(Rect2(), false)
 		return
-	_room = Footprints._box(poly)
-	var box := Rect2(poly[0] - origin, Vector2.ZERO)
-	for p in poly:
-		box = box.expand(p - origin)
-	Cutaway.room(box, true)
+	_room = Footprints._box(b["poly"])
+	Cutaway.room(Rect2(_room.position - origin, _room.size), true)
+
+## R3D9: the inside of the building you are in, built as you enter, dropped as you leave.
+func _show_inside(b: Dictionary) -> void:
+	var id: String = String(b.get("id", ""))
+	if id == _inside_id:
+		return
+	_inside_id = id
+	if _inside != null:
+		_inside.queue_free()
+		_inside = null
+	if b.is_empty():
+		return
+	if _inside_mat == null:
+		_inside_mat = Cutaway.material()
+	_inside = InteriorMesh3D.build(b, origin, _inside_mat)
+	add_child(_inside)
 
 static func _silhouette() -> MeshInstance3D:
 	var box := BoxMesh.new()
