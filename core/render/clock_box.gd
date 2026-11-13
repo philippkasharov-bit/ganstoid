@@ -9,7 +9,6 @@ var _day := UiTheme.label("", UiTheme.FONT_SMALL, UiTheme.DIM)
 func setup(world: World) -> void:
 	_world = world
 	add_theme_stylebox_override("panel", UiTheme.window_box())
-	_time.add_theme_font_override("font", UiTheme.font("bungee"))
 	_time.add_theme_font_size_override("font_size", 12)
 	_time.add_theme_color_override("font_color", UiTheme.TEXT)   # UI21: same white as the status card
 	var box := VBoxContainer.new()

@@ -20,7 +20,6 @@ func show_at(screen_pos: Vector2, title: String, lines: Array, note: String = ""
 		_box.remove_child(c)   # now, not at frame end, so the size below fits the new lines
 		c.queue_free()
 	var head := UiTheme.label(title, UiTheme.FONT_BODY, UiTheme.ACCENT)
-	head.add_theme_font_override("font", UiTheme.font("marker"))
 	_box.add_child(head)
 	for line in lines:
 		_box.add_child(UiTheme.label(line[0], UiTheme.FONT_SMALL, line[1]))

@@ -20,11 +20,11 @@ func refresh() -> void:
 	if _difficulty < 0:
 		for i in 3:
 			rows.append([str(i + 1), "%s — %s" % [GameRules.DIFFICULTIES[i], GameRules.DIFFICULTY_TEXT[i]], ""])
-		show_panel("New life · how hard?", rows, "1-3 choose")
+		show_panel("New life · how hard?", rows, "Click or 1-3")
 	else:
 		for i in 3:
 			rows.append([str(i + 1), "%s — %s" % [GameRules.STYLES[i], GameRules.STYLE_TEXT[i]], ""])
-		show_panel("New life · how do you want to play?", rows, "1-3 choose    (%s)" % GameRules.DIFFICULTIES[_difficulty])
+		show_panel("New life · how do you want to play?", rows, "Click or 1-3    (%s)" % GameRules.DIFFICULTIES[_difficulty])
 
 func _unhandled_input(event: InputEvent) -> void:
 	if _driver == null or not _driver.choosing or not (event is InputEventKey) or not event.pressed:
@@ -32,8 +32,16 @@ func _unhandled_input(event: InputEvent) -> void:
 	var k: int = event.physical_keycode - KEY_1
 	if k < 0 or k > 2:
 		return
+	_choose(k)
+	get_viewport().set_input_as_handled()
+
+## UIF1: a key or a click picks the row.
+func _on_row(index: int) -> void:
+	if _driver != null and _driver.choosing:
+		_choose(index)
+
+func _choose(k: int) -> void:
 	if _difficulty < 0:
 		_difficulty = k
 	else:
 		_driver.choose(_difficulty, k)
-	get_viewport().set_input_as_handled()

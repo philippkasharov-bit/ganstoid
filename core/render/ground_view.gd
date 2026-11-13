@@ -29,4 +29,4 @@ func _draw() -> void:
 		var kind: String = ItemCatalog.item(pile["id"]).get("kind", "goods")
 		ItemArt.draw(self, pile["id"], Rect2(at - Vector2(SIZE, SIZE) * 0.5, Vector2(SIZE, SIZE)), InventoryWindow.KIND_COLOURS.get(kind, Color.WHITE), false)
 		if int(pile["n"]) > 1:
-			draw_string(UiTheme.font("bungee"), at + Vector2(SIZE * 0.6, SIZE * 0.6), "x%d" % int(pile["n"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, UiTheme.ACCENT)
+			draw_string(ThemeDB.fallback_font, at + Vector2(SIZE * 0.6, SIZE * 0.6), "x%d" % int(pile["n"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, UiTheme.ACCENT)

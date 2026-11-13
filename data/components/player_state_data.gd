@@ -112,6 +112,7 @@ var job_offers: Array = []                      # JB1: offers on screen (not sav
 @export var burglary_done_tick: int = 0
 var inventory_open: bool = false                # G2: I shows what you carry (not saved)
 var timed: Dictionary = {}                      # TA1: the timed action under way {item, start, done} (not saved)
+var ui_pick: int = -1                           # UIF1: a menu row clicked with the mouse (not saved)
 var ui_move: Dictionary = {}                    # INV4: a bag<->vicinity move the UI asked for (not saved)
 var ui_use: StringName = &""                     # UI5: item clicked in the bag, used next tick (not saved)
 var menu_options: PackedStringArray = []        # UI1: the open E menu (not saved)

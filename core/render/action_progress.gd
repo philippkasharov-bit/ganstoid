@@ -30,6 +30,6 @@ func _draw() -> void:
 	var bar := Rect2(at - Vector2(W * 0.5, 0), Vector2(W, H))
 	draw_rect(bar.grow(1.5), Color(0, 0, 0, 0.75))
 	draw_rect(Rect2(bar.position, Vector2(W * info["f"], H)), UiTheme.ACCENT)
-	var font := UiTheme.font("marker")
+	var font := ThemeDB.fallback_font   # UIF1: one plain font
 	draw_string_outline(font, at + Vector2(-W * 0.5, -4), info["text"], HORIZONTAL_ALIGNMENT_CENTER, W, 11, 3, Color.BLACK)
 	draw_string(font, at + Vector2(-W * 0.5, -4), info["text"], HORIZONTAL_ALIGNMENT_CENTER, W, 11, Color.WHITE)

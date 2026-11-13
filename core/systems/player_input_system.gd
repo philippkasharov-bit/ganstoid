@@ -238,9 +238,14 @@ func _store_input(npc: NPCData, state: PlayerStateData) -> bool:
 		return true
 	var stock := ItemCatalog.stock(ShopSystem.counter_kind(_world, state.store_id))
 	for i in mini(stock.size(), SLOT_ACTIONS.size()):
-		if Input.is_action_just_pressed(SLOT_ACTIONS[i]):
+		if Input.is_action_just_pressed(SLOT_ACTIONS[i]) or _picked(state, i):
 			StreetTalk.say(_world, state, ShopSystem.buy(_world, npc, state, state.store_id, stock[i]))
+	state.ui_pick = -1
 	return true
+
+## UIF1: was row `i` clicked in the open menu?
+static func _picked(state: PlayerStateData, i: int) -> bool:
+	return state.ui_pick == i
 
 ## V1: WASD drive; the player rides along.
 func _drive(npc: NPCData, state: PlayerStateData, delta: float) -> void:
@@ -283,7 +288,8 @@ func _action_menu_input(npc: NPCData, state: PlayerStateData) -> bool:
 		state.menu_options = []
 		return true
 	for i in mini(_menu_runs.size(), SLOT_ACTIONS.size()):
-		if Input.is_action_just_pressed(SLOT_ACTIONS[i]):
+		if Input.is_action_just_pressed(SLOT_ACTIONS[i]) or _picked(state, i):
+			state.ui_pick = -1
 			state.menu_options = []
 			var result: Variant = _menu_runs[i].call()
 			if result is Dictionary and not result.is_empty():

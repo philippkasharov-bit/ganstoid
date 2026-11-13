@@ -18,7 +18,11 @@ var _refresh_in := 0.0
 const REFRESH_SECONDS := 0.25
 var _message_time_left := 0.0
 var _title_art: TextureRect
+var _show_fps := false
 
+func _unhandled_key_input(event: InputEvent) -> void:
+	if event.pressed and not event.echo and event.keycode == KEY_F3:
+		_show_fps = not _show_fps
 func _ready() -> void:
 	_world = get_node(world_driver_path).world
 	position = Vector2(12, 8)
@@ -115,11 +119,14 @@ func _process(delta: float) -> void:
 		return
 	# UI2: the status card and toasts carry the game state; this line only
 	# keeps what has no home yet (a deal in progress) and a small fps readout.
-	text = "%d fps" % Engine.get_frames_per_second()
+	var parts: PackedStringArray = []
+	if _show_fps:   # UIF1: F3 toggles the fps readout
+		parts.append("%d fps" % Engine.get_frames_per_second())
 	if not state.pending_deal.is_empty():
-		text += "   ·   Dealing... %ds" % ceili(state.pending_deal["ticks_left"] / 60.0)
+		parts.append("Dealing... %ds" % ceili(state.pending_deal["ticks_left"] / 60.0))
 	if state.hotwire_id != &"" or state.burglary_id != &"":
-		text += "   ·   Working... stay put"
+		parts.append("Working... stay put")
+	text = "   ·   ".join(parts)
 
 func _clock() -> String:
 	var hours := SimClock.day_fraction(_world.tick) * 24.0

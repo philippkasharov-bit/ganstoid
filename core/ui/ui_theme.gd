@@ -107,7 +107,6 @@ static func decal(name: String, height: float, angle_deg: float) -> TextureRect:
 
 static func title_label(text: String) -> Label:
 	var l := label(text, FONT_TITLE, ACCENT)
-	l.add_theme_font_override("font", font("marker"))
 	return l
 
 static func label(text: String, size: int = FONT_BODY, color: Color = TEXT) -> Label:

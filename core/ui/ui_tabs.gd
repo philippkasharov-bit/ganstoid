@@ -21,7 +21,6 @@ func add_tab(title: String, page: Control) -> void:
 	b.text = title
 	b.focus_mode = Control.FOCUS_NONE
 	b.custom_minimum_size = Vector2(64, 20)
-	b.add_theme_font_override("font", UiTheme.font("marker"))
 	b.add_theme_font_size_override("font_size", UiTheme.FONT_BODY)
 	var index := _pages.size()
 	b.pressed.connect(func() -> void: pick(index))

@@ -14,7 +14,10 @@ const BUTTONS := [
 const SIZE := Vector2(40, 40)
 
 
-func setup(_world: World) -> void:
+var _world: World
+
+func setup(world: World) -> void:
+	_world = world
 	add_theme_constant_override("separation", 3)
 	position = Vector2(6, 110)
 	for b in BUTTONS:
@@ -49,3 +52,7 @@ func _send(action: StringName) -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 	Input.action_release(action)
+
+## UIF1: hidden until a life has begun (the difficulty choice comes first).
+func _process(_delta: float) -> void:
+	visible = _world != null and GameRules.of(_world) != null

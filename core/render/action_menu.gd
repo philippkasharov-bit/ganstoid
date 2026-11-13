@@ -7,7 +7,10 @@ func refresh() -> void:
 	if state == null or state.menu_options.is_empty():
 		visible = false
 		return
+	if not visible:   # UIF1: opens at the mouse, like Zomboid's right-click menu
+		var screen := get_viewport_rect().size
+		position = (get_viewport().get_mouse_position() + Vector2(12, 12)).clamp(Vector2.ZERO, screen - Vector2(260, 200))
 	var rows: Array = []
 	for i in state.menu_options.size():
 		rows.append([str(i + 1), state.menu_options[i], ""])
-	show_panel("What now?", rows, "1-9 choose    E / Esc close")
+	show_panel("What now?", rows, "Click or 1-9    E / Esc close")

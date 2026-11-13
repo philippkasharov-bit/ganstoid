@@ -53,7 +53,6 @@ func _rebuild_info(state: PlayerStateData) -> void:
 		c.queue_free()
 	var npc: NPCData = _world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
 	var rank := UiTheme.label(RankSystem.name_of(state.rank), UiTheme.FONT_TITLE, UiTheme.ACCENT)
-	rank.add_theme_font_override("font", UiTheme.font("marker"))
 	_info.add_child(rank)
 	for line in [["Next rank", "%d pts" % RankSystem.to_next(_world, npc, state)], ["Fame", str(roundi(state.fame))],
 			["Cash", "$%d" % npc.cash], ["Crew", "%d/%d" % [state.crew_ids.size(), CrewSystem.MAX_CREW]],
@@ -71,7 +70,6 @@ static func _stat_row(name: String, value: String) -> HBoxContainer:
 	var n := UiTheme.label(name, UiTheme.FONT_SMALL, UiTheme.DIM)
 	n.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var v := UiTheme.label(value, UiTheme.FONT_SMALL, UiTheme.TEXT)
-	v.add_theme_font_override("font", UiTheme.font("bungee"))
 	row.add_child(n)
 	row.add_child(v)
 	return row
@@ -88,7 +86,6 @@ func _skill_row(name: String, xp: float) -> HBoxContainer:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 2)
 	var title := UiTheme.label(name)
-	title.add_theme_font_override("font", UiTheme.font("marker"))
 	title.custom_minimum_size.x = 70
 	row.add_child(title)
 	var lvl := mini(Skills.MAX_LEVEL, int(sqrt(xp / Skills.XP_PER_LEVEL_SQ)))

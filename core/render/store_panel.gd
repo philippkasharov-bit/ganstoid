@@ -19,4 +19,4 @@ func refresh() -> void:
 		var it := ItemCatalog.item(stock[i])
 		var have: int = state.ammo if it["kind"] == "ammo" else state.inventory.get(stock[i], 0)
 		rows.append([str(i + 1), it["name"] + ("  (have %d)" % have if have > 0 else ""), "$%d" % it["price"]])
-	show_panel("%s  ·  %s" % [title, when], rows, "1-9 buy    E / Esc leave")
+	show_panel("%s  ·  %s" % [title, when], rows, "Click or 1-9 to buy    E / Esc leave")

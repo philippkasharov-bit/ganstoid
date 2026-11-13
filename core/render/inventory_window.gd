@@ -18,6 +18,7 @@ const VERBS := {"food": "Eat", "drink": "Drink", "medical": "Apply", "weapon": "
 
 var _world: World
 var _hands := UiTheme.label("", UiTheme.FONT_SMALL)
+var _hand_slot := BagGridView.new()   # UIF1: a real slot, Tarkov/DayZ-style
 var _grid := BagGridView.new()
 var _loose := UiTheme.label("", UiTheme.FONT_SMALL, UiTheme.BAD)
 var _weight_text := UiTheme.label("", UiTheme.FONT_SMALL, UiTheme.DIM)
@@ -36,13 +37,19 @@ func setup(world: World, at: Vector2) -> void:
 		var state := _state()
 		if state != null:
 			state.inventory_open = false)
-	_hands.add_theme_font_override("font", UiTheme.font("marker"))
 	var split := HBoxContainer.new()   # INV4: DayZ layout, vicinity left, your bag right
 	split.add_theme_constant_override("separation", 8)
 	body.add_child(split)
 	split.add_child(_vicinity_pane())
 	var mine := VBoxContainer.new()
-	mine.add_child(_hands)
+	var hand_row := HBoxContainer.new()
+	hand_row.add_theme_constant_override("separation", 8)
+	_hand_slot.resize_grid(2, 1)
+	_hand_slot.tooltip_text = "In your hand. Drag a weapon here to hold it."
+	hand_row.add_child(_hand_slot)
+	_hands.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	hand_row.add_child(_hands)
+	mine.add_child(hand_row)
 	mine.add_child(_grid)
 	split.add_child(mine)
 	_loose.autowrap_mode = TextServer.AUTOWRAP_WORD
@@ -59,6 +66,10 @@ func _wire_grid() -> void:
 		popup.top_level = true
 	_menu.picked.connect(_on_menu_pick)
 	_grid.other = _near
+	_grid.hand = _hand_slot
+	_grid.moved_to_hand.connect(func(i: int) -> void:
+		if ItemCatalog.item(_grid.piles[i]["id"]).get("kind", "") == "weapon":
+			_state().ui_use = _grid.piles[i]["id"])
 	_near.other = _grid
 	_grid.use_pile.connect(func(i: int) -> void: _state().ui_use = _grid.piles[i]["id"])
 	_grid.menu_pile.connect(func(i: int, at: Vector2) -> void: _open_menu(_grid.piles[i]["id"], at))
@@ -89,12 +100,21 @@ func _process(_delta: float) -> void:
 func _rebuild(state: PlayerStateData) -> void:
 	BagGrid.sync(state)
 	_grid.show_piles(state.bag)
-	_hands.text = "In hand:  %s%s" % [String(state.weapon).capitalize(), "   ·   %d rounds" % state.ammo if state.ammo > 0 else ""]
+	_hands.text = "%s%s" % [String(state.weapon).capitalize(), "\n%d rounds" % state.ammo if state.ammo > 0 else ""]
+	var held := _held_item(state)
+	_hand_slot.show_piles([] if held == &"" else [{"id": held, "x": 0, "y": 0, "r": false, "n": 1}])
 	var loose := BagGrid.loose(state)
 	_loose.visible = not loose.is_empty()
 	_loose.text = "No room: " + ", ".join(loose.keys().map(func(id: StringName) -> String: return "%s x%d" % [_name(id), loose[id]]))
 	var kg := carried_kg(state)
 	_weight_text.text = "%.1f kg   ·   %d of %d cells used" % [kg, BagGrid.occupancy(state.bag).size(), BagGrid.COLS * BagGrid.ROWS]
+
+## The item that matches the weapon in hand (pistol in hand -> the pistol item).
+static func _held_item(state: PlayerStateData) -> StringName:
+	for id in state.inventory:
+		if ItemCatalog.item(id).get("weapon", &"") == state.weapon:
+			return id
+	return &""
 
 static func carried_kg(state: PlayerStateData) -> float:
 	var kg := 0.0
@@ -158,7 +178,6 @@ func _show_tip(id: StringName, at: Vector2) -> void:
 func _vicinity_pane() -> VBoxContainer:
 	var pane := VBoxContainer.new()
 	var title := UiTheme.label("Nearby", UiTheme.FONT_SMALL, UiTheme.DIM)
-	title.add_theme_font_override("font", UiTheme.font("marker"))
 	pane.add_child(title)
 	_near.resize_grid(NEAR_COLS, BagGrid.ROWS)
 	pane.add_child(_near)

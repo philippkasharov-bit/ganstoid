@@ -47,7 +47,6 @@ func _build_header(title: String) -> PanelContainer:
 	close.text = "x"
 	close.flat = true
 	close.focus_mode = Control.FOCUS_NONE
-	close.add_theme_font_override("font", UiTheme.font("marker"))
 	close.add_theme_color_override("font_color", UiTheme.DIM)
 	close.add_theme_color_override("font_hover_color", UiTheme.BAD)
 	close.tooltip_text = "Close"

@@ -14,6 +14,7 @@ signal hover_pile(index: int, at: Vector2)
 signal hover_end
 signal moved(index: int, cell: Vector2i, turned: bool)   # inside this grid
 signal moved_out(index: int)                             # dropped on `other`
+signal moved_to_hand(index: int)                         # dropped on `hand`
 
 const CELL := 32.0
 const COUNT_H := 10.0
@@ -25,6 +26,7 @@ var piles: Array = []          # [{id, x, y, r, n}]
 var cols := BagGrid.COLS
 var rows := BagGrid.ROWS
 var other: BagGridView         # the grid a pile can be dropped across to
+var hand: Control              # UIF1: the hand slot; dropping a weapon there equips it
 var _drag := -1
 var _drag_turned := false
 var _grab := Vector2.ZERO
@@ -73,7 +75,7 @@ func _draw_pile(p: Dictionary, r: Rect2, lit: bool) -> void:
 		art.size.y -= COUNT_H
 		var strip := Rect2(inner.position.x, inner.end.y - COUNT_H, inner.size.x, COUNT_H)
 		draw_rect(strip, Color(0, 0, 0, 0.6))
-		draw_string(UiTheme.font("bungee"), strip.position + Vector2(0, COUNT_H - 2), "%d" % int(p["n"]), HORIZONTAL_ALIGNMENT_CENTER, strip.size.x, 8, UiTheme.TEXT)
+		draw_string(ThemeDB.fallback_font, strip.position + Vector2(0, COUNT_H - 2), "%d" % int(p["n"]), HORIZONTAL_ALIGNMENT_CENTER, strip.size.x, 8, UiTheme.TEXT)
 	ItemArt.draw(self, p["id"], art, col, p["r"])
 
 ## The pile under the mouse while dragging, plus a ghost where it would land.
@@ -133,7 +135,9 @@ func _on_button(e: InputEventMouseButton) -> void:
 func _release() -> void:
 	var index := _drag
 	_drag = -1
-	if _over_other():
+	if hand != null and hand.get_global_rect().has_point(get_global_mouse_position()):
+		moved_to_hand.emit(index)
+	elif _over_other():
 		moved_out.emit(index)
 		other.queue_redraw()
 	else:
@@ -143,8 +147,9 @@ func _on_motion(e: InputEventMouseMotion) -> void:
 	var hit := -1 if _drag >= 0 else pile_at(e.position)
 	if hit != _hovered:
 		_hovered = hit
-		if hit >= 0:
-			hover_pile.emit(hit, get_global_mouse_position())
+		if hit >= 0:   # UIF1: the card sits beside the pile, not over its neighbours
+			var r := _pile_rect(piles[hit])
+			hover_pile.emit(hit, global_position + Vector2(r.end.x, r.position.y) - Vector2(8, 16))
 		else:
 			hover_end.emit()
 	queue_redraw()
