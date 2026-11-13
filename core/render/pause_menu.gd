@@ -78,7 +78,7 @@ func _save_and_quit() -> void:
 	get_tree().quit()
 
 func _can_pause() -> bool:
-	return _driver != null and not _driver.choosing and SimNav.active != null and SimNav.active.is_ready()
+	return _driver != null and not _driver.choosing and SimNav.active != null and SimNav.active.usable()
 
 ## True when no window, menu or counter is up (then Esc means pause).
 func _nothing_open() -> bool:

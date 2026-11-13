@@ -21,6 +21,11 @@ const MAX_LANE_M := 0.35   # under the 0.4 m the navmesh keeps from every wall
 const UNREACHED_M := 2.0   # a route ending further than this from its goal did not get there
 
 static var active: SimNav = null
+const FIRST_RADIUS_M := 350.0   # Z-load: what must be ready before the game starts
+var _usable := false
+var _expanded := false
+var _centre := Vector2.ZERO
+var _full_radius := 0.0
 
 var navs := {}            # layer -> CityNav
 var collision: CityCollision
@@ -31,8 +36,11 @@ var _plans := {}          # mover_id -> {goal: Vector2, layer: String, pts: Pack
 static func install(city: CityData, centre: Vector2, radius: float) -> SimNav:
 	uninstall()
 	var nav := SimNav.new()
-	nav.navs = {"full": CityNav.new(centre, radius + 200.0, "full"),
-		"public": CityNav.new(centre, radius + 200.0, "public", 3.0)}   # civilians avoid alleys (night raises this later)
+	var first := minf(radius + 200.0, FIRST_RADIUS_M)   # Z-load: the streets round you first, the rest after
+	nav.navs = {"full": CityNav.new(centre, first, "full"),
+		"public": CityNav.new(centre, first, "public", 3.0)}   # civilians avoid alleys (night raises this later)
+	nav._centre = centre
+	nav._full_radius = radius + 200.0
 	nav.collision = CityCollision.new(city)
 	active = nav
 	return nav
@@ -45,11 +53,37 @@ static func uninstall() -> void:
 	active = null
 
 ## Both navmeshes synced (Godot syncs them in the background after install/refocus).
+## Everything asked for is loaded and synced (the whole district).
 func is_ready() -> bool:
+	if not _navs_ready():
+		return false
+	if not _expanded:
+		_expand()
+		return _navs_ready()
+	return true
+
+## Z-load: true from the first time the streets round you are ready, for
+## good. Later rebuilds (the rest of the district loading, alley costs at
+## night) sync in the background while the old map keeps answering, so the
+## game never stops for them.
+func usable() -> bool:
+	if not _usable and _navs_ready():
+		_usable = true
+		if not _expanded:
+			_expand()
+	return _usable
+
+func _navs_ready() -> bool:
 	for n in navs.values():
 		if not n.is_ready():
 			return false
 	return true
+
+func _expand() -> void:
+	_expanded = true
+	for n in navs.values():
+		n.radius = _full_radius
+		n.focus(_centre)
 
 ## Nearest walkable point on `layer` (wander targets must be reachable).
 func snap(p: Vector2, layer: String) -> Vector2:

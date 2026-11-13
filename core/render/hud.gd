@@ -102,7 +102,7 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if _world == null:
 		return
-	var loading := not _loaded and (SimNav.active == null or not SimNav.active.is_ready())
+	var loading := not _loaded and (SimNav.active == null or not SimNav.active.usable())
 	_loaded = _loaded or not loading   # the title art is for the first load only; later nav rebuilds (night) stay invisible
 	_title_art.visible = loading
 	if loading:

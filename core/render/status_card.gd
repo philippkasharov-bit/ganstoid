@@ -34,7 +34,7 @@ func _process(delta: float) -> void:
 		return
 	_left = REFRESH_S
 	var player: Entity = _world.entities.get(PlayerFactory.PLAYER_ENTITY_ID)
-	var ready := SimNav.active != null and SimNav.active.is_ready()
+	var ready := SimNav.active != null and SimNav.active.usable()
 	visible = player != null and ready and not player.get_component(ComponentNames.NPC).is_down and GameRules.of(_world) != null   # O1: hidden until the new-game choice
 	if not visible:
 		return

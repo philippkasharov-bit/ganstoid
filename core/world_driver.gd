@@ -68,7 +68,7 @@ func choose(difficulty: int, style: int) -> void:
 	choosing = false
 
 func _physics_process(delta: float) -> void:
-	if SimNav.active == null or not SimNav.active.is_ready() or choosing or paused:
+	if SimNav.active == null or not SimNav.active.usable() or choosing or paused:
 		return   # routes still loading, or the new-game choice not made: nobody moves yet
 	_check_speed()
 	var steps := NeedsSystem.SLEEP_SPEED if _asleep() else speed   # G2 sleep / Z2 time controls

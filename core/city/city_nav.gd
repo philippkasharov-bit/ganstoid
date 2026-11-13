@@ -98,8 +98,8 @@ func is_ready() -> bool:
 		return false
 	for f in _loaded:
 		var t: Rect2 = _tiles[f]
-		if NavigationServer2D.map_get_closest_point(map, t.get_center()).distance_to(t.get_center()) > t.size.x * 0.75:
-			return false
+		if not t.grow(1.0).has_point(NavigationServer2D.map_get_closest_point(map, t.get_center())):
+			return false   # Z-load: the answer must come from this tile, not a neighbour loaded earlier
 	_ready_latched = true
 	# Synced: put the map to sleep. An active map costs ~1 ms of every physics
 	# frame even when nothing changes; a sleeping one still answers path and
