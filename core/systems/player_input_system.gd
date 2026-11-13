@@ -426,6 +426,9 @@ func _inventory_input(npc: NPCData, state: PlayerStateData) -> bool:
 	if state.ui_use != &"":   # UI5/UI8: a bag line or a moodle was clicked
 		_use_or_hold(npc, state, state.ui_use)
 		state.ui_use = &""
+	if not state.ui_treat.is_empty():   # HP3: right-click treatment on a body part
+		_treat(state, state.ui_treat)
+		state.ui_treat = {}
 	if Input.is_action_just_pressed(INVENTORY_ACTION):
 		state.inventory_open = not state.inventory_open
 		return true
@@ -455,6 +458,17 @@ func _do_move(npc: NPCData, state: PlayerStateData, move: Dictionary) -> Diction
 ## UI5: a bag line is eaten/drunk/applied, or a weapon is taken in hand.
 func _use_or_hold(npc: NPCData, state: PlayerStateData, item_id: StringName) -> void:
 	StreetTalk.say(_world, state, TimedAction.start(_world, state, item_id))   # TA1: takes a few seconds
+
+## Bandage takes the usual seconds and goes on that part; removing is instant.
+func _treat(state: PlayerStateData, t: Dictionary) -> void:
+	if t["op"] == "remove":
+		BodyParts.remove_bandage(state, t["part"])
+		return
+	var item := Moodles.best_item(state, "medical")
+	if item == &"":
+		StreetTalk.say(_world, state, {"ok": false, "reason": "dont_have"})
+		return
+	StreetTalk.say(_world, state, TimedAction.start(_world, state, item, t["part"]))
 
 ## What you carry, in catalogue order (the inventory menu's lines).
 static func carried(state: PlayerStateData) -> Array[StringName]:

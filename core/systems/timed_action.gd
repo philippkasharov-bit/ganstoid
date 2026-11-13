@@ -10,14 +10,14 @@ extends RefCounted
 const SECONDS := {"food": 3.0, "drink": 2.0, "medical": 4.0, "weapon": 0.8}
 
 ## Starts using `item_id`. Returns a result for StreetTalk, or {} when it just began.
-static func start(world: World, state: PlayerStateData, item_id: StringName) -> Dictionary:
+static func start(world: World, state: PlayerStateData, item_id: StringName, part: String = "") -> Dictionary:
 	var it := ItemCatalog.item(item_id)
 	if it.is_empty() or state.inventory.get(item_id, 0) <= 0:
 		return {"ok": false, "reason": "dont_have"}
 	if not SECONDS.has(it["kind"]):
 		return {"ok": false, "reason": "cant_use"}
 	var ticks := SimClock.real_seconds(SECONDS[it["kind"]])
-	state.timed = {"item": item_id, "start": world.tick, "done": world.tick + ticks}
+	state.timed = {"item": item_id, "start": world.tick, "done": world.tick + ticks, "part": part}
 	return {}
 
 ## Call every player tick. `busy` = the player moved or swung this tick.
@@ -25,6 +25,7 @@ static func advance(world: World, npc: NPCData, state: PlayerStateData, busy: bo
 	if state.timed.is_empty():
 		return {}
 	var item: StringName = state.timed["item"]
+	var part: String = state.timed.get("part", "")
 	if busy:
 		state.timed = {}
 		return {"ok": false, "reason": "interrupted"}
@@ -37,7 +38,7 @@ static func advance(world: World, npc: NPCData, state: PlayerStateData, busy: bo
 			return {"ok": false, "reason": "dont_have"}
 		state.weapon = it["weapon"]
 		return {"ok": true, "effect": "weapon_" + String(state.weapon)}
-	var out := NeedsSystem.use_item(npc, state, item)
+	var out := NeedsSystem.use_item(npc, state, item, part)
 	BagGrid.sync(state)
 	return out
 

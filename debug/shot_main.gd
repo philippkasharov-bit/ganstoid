@@ -79,6 +79,7 @@ func _run(main: Node, args: Dictionary) -> void:
 			if n is HealthWindow:
 				n.visible = true
 				n.position = Vector2(500, 60)
+				n._select("r_forearm")
 		st.timed = {"item": &"burrito", "start": driver.world.tick - 60, "done": driver.world.tick + 120}
 		var me: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
 		me.hunger = 0.25

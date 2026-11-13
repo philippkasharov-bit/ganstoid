@@ -109,6 +109,50 @@ static func bandage(state: PlayerStateData, npc: NPCData) -> bool:
 	npc.bleeding = is_bleeding(state)
 	return best != ""
 
+## HP3: a bandage on one chosen part (the health window's right-click).
+static func bandage_part(state: PlayerStateData, npc: NPCData, part: String) -> bool:
+	ensure(state)
+	if not needs_dressing(state.body[part]):
+		return false
+	var b: Dictionary = state.body[part]
+	b["bleeding"] = false
+	b["bandaged"] = true
+	b["bandage_age"] = 0.0
+	b["infection"] = minf(float(b["infection"]), 0.99)
+	npc.bleeding = is_bleeding(state)
+	return true
+
+## Takes a bandage off (to swap a dirty one, or free a healed part).
+static func remove_bandage(state: PlayerStateData, part: String) -> bool:
+	ensure(state)
+	var b: Dictionary = state.body[part]
+	if not b["bandaged"]:
+		return false
+	b["bandaged"] = false
+	b["bandage_age"] = 0.0
+	return true
+
+## An open wound with no bandage, or a dirty one: a fresh dressing helps.
+static func needs_dressing(b: Dictionary) -> bool:
+	return WOUNDS.get(b["wound"], [0, false])[1] and (not b["bandaged"] or _dirty(b))
+
+## Game days until the part is whole again, or -1 while it is not healing.
+static func heal_days(b: Dictionary) -> float:
+	if b["bleeding"] or float(b.get("infection", 0.0)) >= 1.0:
+		return -1.0
+	var rate := HEAL_PER_DAY * (0.3 if b["wound"] == "fracture" else (1.5 if b["bandaged"] and not _dirty(b) else 1.0))
+	return maxf(0.0, 0.95 - float(b["hp"])) / rate
+
+## What the injury does to you, or "" when nothing.
+static func effect(part: String, b: Dictionary) -> String:
+	if severity(b) == 0:
+		return ""
+	if LEGS.has(part):
+		return "Slows you down" if b["wound"] != "fracture" else "You limp: much slower"
+	if ARMS.has(part):
+		return "Spoils your aim" if b["wound"] != "fracture" else "Aim badly spoiled"
+	return "Drains health while bleeding" if WOUNDS.get(b["wound"], [0, false])[1] else ""
+
 static func _dirty(b: Dictionary) -> bool:
 	return b["bandaged"] and float(b["bandage_age"]) >= DIRTY_AFTER_DAYS
 

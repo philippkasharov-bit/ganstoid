@@ -99,7 +99,7 @@ static func spread_factor(me: NPCData) -> float:
 	return f
 
 ## Eats, drinks or applies one carried item. Returns {ok, effect|reason}.
-static func use_item(me: NPCData, state: PlayerStateData, item_id: StringName) -> Dictionary:
+static func use_item(me: NPCData, state: PlayerStateData, item_id: StringName, part: String = "") -> Dictionary:
 	var it := ItemCatalog.item(item_id)
 	if it.is_empty() or state.inventory.get(item_id, 0) <= 0:
 		return {"ok": false, "reason": "dont_have"}
@@ -111,7 +111,9 @@ static func use_item(me: NPCData, state: PlayerStateData, item_id: StringName) -
 	if it.has("heal"):
 		me.health = minf(1.0, me.health + it["heal"])
 		me.bleeding = false
-		if not state.body.is_empty():   # HP1: the bandage goes on the worst wound
+		if part != "":   # HP3: put on the part picked in the health window
+			BodyParts.bandage_part(state, me, part)
+		elif not state.body.is_empty():   # HP1: the bandage goes on the worst wound
 			BodyParts.bandage(state, me)
 	state.inventory[item_id] -= 1
 	if state.inventory[item_id] <= 0:
