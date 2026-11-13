@@ -42,7 +42,6 @@ func _draw() -> void:
 	var t := TerritorySystem.data(_world)
 	if t == null:
 		return
-	var size := Vector2.ONE * TerritoryData.CELL_M
 	for c in t.cells:
 		var owner := TerritorySystem.controller(t, c)
 		var top: StringName = owner
@@ -55,10 +54,30 @@ func _draw() -> void:
 			continue
 		var col: Color = TerritorySystem.GANG_COLORS.get(top, Color.GRAY)
 		col.a = 0.35 if owner != &"" else 0.06 + top_v / 100.0 * 0.2
-		var r := Rect2(Vector2(c) * TerritoryData.CELL_M, size)
-		draw_rect(r, col)
+		var shape := _shape(c)   # T1: the street block itself
+		draw_colored_polygon(shape, col)
 		if owner != &"":
-			draw_rect(r, Color(col, 0.9), false, 2.0)
+			draw_polyline(shape + PackedVector2Array([shape[0]]), Color(col, 0.9), 2.0)
+	_hood_names()
+
+## T1: a block's outline on the map, or the old grid square off the blocks.
+static func _shape(c: Vector2i) -> PackedVector2Array:
+	var b: Dictionary = Hoods.data().block(c) if Hoods.data() != null else {}
+	if not b.is_empty():
+		return b["poly"]
+	var r := Rect2(Vector2(c) * TerritoryData.CELL_M, Vector2.ONE * TerritoryData.CELL_M)
+	return PackedVector2Array([r.position, Vector2(r.end.x, r.position.y), r.end, Vector2(r.position.x, r.end.y)])
+
+## T1: every hood's name over it, its district under it.
+func _hood_names() -> void:
+	var h := Hoods.data()
+	if h == null:
+		return
+	var px := 1.0 / maxf(get_viewport_transform().get_scale().x, 0.001)
+	for name in h.hood_centres():
+		var at: Vector2 = h.hood_centres()[name]
+		draw_string(ThemeDB.fallback_font, at, name.to_upper(), HORIZONTAL_ALIGNMENT_CENTER, -1, int(16 * px), Color(1, 1, 1, 0.85))
+		draw_string(ThemeDB.fallback_font, at + Vector2(0, 14 * px), h.districts.get(name, ""), HORIZONTAL_ALIGNMENT_CENTER, -1, int(11 * px), Color(1, 1, 1, 0.6))
 
 const POOR := Color("c0392b")
 const MIDDLE := Color("d4ac0d")
@@ -69,12 +88,12 @@ func _draw_money() -> void:
 	var data := BlockEconomyData.of(_world)
 	if data == null:
 		return
-	var size := Vector2.ONE * TerritoryData.CELL_M
 	for c in data.blocks:
 		var w: float = data.blocks[c]["wealth"]
 		var col := POOR.lerp(MIDDLE, w * 2.0) if w < 0.5 else MIDDLE.lerp(RICH, (w - 0.5) * 2.0)
-		draw_rect(Rect2(Vector2(c) * TerritoryData.CELL_M, size), Color(col, 0.42))
-		draw_rect(Rect2(Vector2(c) * TerritoryData.CELL_M, size), Color(col, 0.6), false, 1.0)
+		var shape := _shape(c)
+		draw_colored_polygon(shape, Color(col, 0.42))
+		draw_polyline(shape + PackedVector2Array([shape[0]]), Color(col, 0.6), 1.0)
 	for b in BusinessSystem.all_buildings(_world):
 		if b.building_type == GanstoidEnums.BuildingType.LEGIT_BUSINESS and b.status >= 2:
 			var p := b.position

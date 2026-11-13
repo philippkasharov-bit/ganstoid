@@ -49,7 +49,7 @@ func _rows(npc: NPCData, state: PlayerStateData) -> Array:
 	if state.prison_until_tick > 0:
 		return [["Status", "In prison"], ["Days left", "%.1f" % (float(state.prison_until_tick - _world.tick) / SimClock.day_ticks)]]
 	var out: Array = [["Cash", "$%d  (dirty $%d)" % [npc.cash, state.dirty_cash]], ["Rank", RankSystem.name_of(state.rank)],
-		["Turf", _turf(npc)], ["Block", EconomyRead.block(BlockEconomyData.block_at(_world, npc.position))]]   # E5
+		["Hood", _hood(npc)], ["Turf", _turf(npc)], ["Block", EconomyRead.block(BlockEconomyData.block_at(_world, npc.position))]]   # E5
 	if state.case_evidence > 0.0:
 		out.append(["Case", "%d%s" % [roundi(state.case_evidence), "  warrant" if state.case_evidence >= CaseSystem.WARRANT_AT else ""]])
 	if not state.job.is_empty():
@@ -86,14 +86,25 @@ func _count_cash(delta: float) -> void:
 	_cash_label.text = "$%d  (dirty $%d)" % [roundi(_shown_cash), roundi(_shown_dirty)]
 	_cash_label.add_theme_color_override("font_color", UiTheme.TEXT if absf(gap) < 0.5 else (UiTheme.GOOD if gap > 0.0 else UiTheme.BAD))
 
+## T1: the hood and district you are in ("Pico Gardens · Boyle Heights").
+static func _hood(npc: NPCData) -> String:
+	var h := Hoods.data()
+	var k := TerritoryData.cell_of(npc.position)
+	if h == null or not Hoods.is_block(k):
+		return "-"
+	return "%s · %s" % [h.hood_of(k), h.district_of(k)]
+
+## T1: the block you stand on and who holds it ("Daly & Main · nobody's").
 func _turf(npc: NPCData) -> String:
 	var t := TerritorySystem.data(_world)
 	if t == null:
 		return "-"
-	var owner := TerritorySystem.controller(t, TerritoryData.cell_of(npc.position))
+	var c := TerritoryData.cell_of(npc.position)
+	var owner := TerritorySystem.controller(t, c)
+	var block: String = Hoods.data().name_of(c) if Hoods.data() != null and Hoods.is_block(c) else "This block"
 	if owner == &"":
-		return "Nobody's block"
+		return "%s · nobody's" % block
 	if owner == TerritorySystem.PLAYER:
-		return "Your block"
+		return "%s · yours" % block
 	var e: Entity = _world.entities.get(owner)
-	return (e.get_component(ComponentNames.GANG).display_name if e != null else String(owner)) + " turf"
+	return "%s · %s" % [block, e.get_component(ComponentNames.GANG).display_name if e != null else String(owner)]

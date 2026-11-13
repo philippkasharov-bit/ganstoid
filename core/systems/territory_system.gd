@@ -62,10 +62,9 @@ static func seed(world: World) -> void:
 		var gang: GangData = g.get_component(ComponentNames.GANG)
 		for b_id in gang.territory_building_ids:
 			var c := TerritoryData.cell_of(world.entities[b_id].get_component(ComponentNames.BUILDING).position)
-			for dx in range(-1, 2):
-				for dy in range(-1, 2):
-					var v := 70.0 if dx == 0 and dy == 0 else 35.0
-					set_influence(t, c + Vector2i(dx, dy), gang.id, maxf(v, get_influence(t, c + Vector2i(dx, dy), gang.id)))
+			set_influence(t, c, gang.id, maxf(70.0, get_influence(t, c, gang.id)))
+			for n in TerritoryData.neighbours(c):   # T1: their block, and the blocks round it
+				set_influence(t, n, gang.id, maxf(35.0, get_influence(t, n, gang.id)))
 		_recruit_members(world, gang)
 
 static func _recruit_members(world: World, gang: GangData) -> void:
@@ -178,8 +177,8 @@ func _spread(t: TerritoryData) -> void:
 		var g := controller(t, c)
 		if g == &"" or g == PLAYER:
 			continue
-		for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
-			adds.append([c + d, g])
+		for n in TerritoryData.neighbours(c):   # T1: into the next blocks over
+			adds.append([n, g])
 	for a in adds:
 		add_influence(t, a[0], a[1], SPREAD_PER_HOUR)
 
