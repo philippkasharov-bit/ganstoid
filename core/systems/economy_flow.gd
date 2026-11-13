@@ -8,7 +8,9 @@
 ##      money, they pay part. Pay tops up the worker's wallet; the rest goes
 ##      home to the household's cash (a homeless worker keeps it all).
 ##   4. Businesses pay restock and rent (it leaves) and tax on the day's sales
-##      to their block's budget; the till is banked down to a small float.
+##      to their block's budget, by bank. E3: the till is banked down to a
+##      small float at the start of the day, so overnight and all next day it
+##      holds the float plus the day's takings: what a robbery really gets.
 ##   5. Households move spare cash to savings, or take some back out.
 ##   6. Each block's budget pays its police; their funding follows the budget.
 ## Workers pay income tax and shops pay sales tax to their block's budget.
@@ -37,6 +39,7 @@ static var _cache_for := 0
 static var _homes: Dictionary = {}       # home id -> Array[NPCData] living there
 static var _staff: Dictionary = {}       # business id -> Array[NPCData] working there
 static var _near: Dictionary = {}        # home id -> Array[BuildingData] shops near it
+static var _all_shops: Array = []        # every legit business
 
 ## Runs one day. Returns the day's ledger {inflow, outflow, sales, wages, tax}.
 static func run_day(world: World) -> Dictionary:
@@ -44,6 +47,7 @@ static func run_day(world: World) -> Dictionary:
 	var data := BlockEconomyData.of(world)
 	var led := {"inflow": 0, "outflow": 0, "sales": 0, "wages": 0, "tax": 0}
 	var sold := {}   # business id -> today's sales
+	_bank_tills()   # E3: yesterday's takings go to the bank; today's stay in the till overnight (that is what a robbery gets)
 	_households_spend(world, data, led, sold)
 	_outside_buyers(world, led, sold)
 	_payday(world, data, led)
@@ -96,6 +100,7 @@ static func _index(world: World) -> void:
 				_staff[n.work_building_id] = []
 			_staff[n.work_building_id].append(n)
 	var shops: Array = BusinessSystem.all_buildings(world).filter(func(b: BuildingData) -> bool: return b.building_type == GanstoidEnums.BuildingType.LEGIT_BUSINESS)
+	_all_shops = shops
 	for home_id in _homes:
 		var at: Vector2 = world.entities[home_id].get_component(ComponentNames.BUILDING).position
 		var near: Array = shops.filter(func(b: BuildingData) -> bool: return b.position.distance_squared_to(at) <= SHOP_REACH_M * SHOP_REACH_M)
@@ -143,13 +148,20 @@ static func _outside_buyers(world: World, led: Dictionary, sold: Dictionary) -> 
 			sold[b.id] = int(sold.get(b.id, 0)) + amount
 			led["inflow"] += amount
 
-## Takes up to `amount` from the till, then the bank. Returns what was paid.
+## Takes up to `amount` from the bank, then the till (E3: bills are paid by
+## bank; the day's cash stays in the till). Returns what was paid.
 static func _pay_from_business(b: BuildingData, amount: int) -> int:
-	var till := mini(amount, b.cash_on_hand)
-	b.cash_on_hand -= till
-	var bank := mini(amount - till, b.bank)
+	var bank := mini(amount, b.bank)
 	b.bank -= bank
+	var till := mini(amount - bank, b.cash_on_hand)
+	b.cash_on_hand -= till
 	return till + bank
+
+static func _bank_tills() -> void:
+	for b in _all_shops:
+		if b.cash_on_hand > TILL_FLOAT:
+			b.bank += b.cash_on_hand - TILL_FLOAT
+			b.cash_on_hand = TILL_FLOAT
 
 ## Income tax goes to the block the worker lives on (or, homeless, where they sleep).
 static func _to_budget(data: BlockEconomyData, world: World, n: NPCData, tax: int, led: Dictionary) -> void:
@@ -193,9 +205,6 @@ static func _business_costs(world: World, data: BlockEconomyData, led: Dictionar
 			data.blocks[TerritoryData.cell_of(b.position)]["budget"] += tax
 		else:
 			led["outflow"] += tax
-		if b.cash_on_hand > TILL_FLOAT:   # banked overnight: a robbery takes the float and today's takings, not the savings
-			b.bank += b.cash_on_hand - TILL_FLOAT
-			b.cash_on_hand = TILL_FLOAT
 		b.last_sales = sales
 
 static func _household_savings(world: World, data: BlockEconomyData) -> void:

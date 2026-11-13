@@ -30,12 +30,39 @@ static func _ensure(world: World, building: BuildingData, kind: String) -> void:
 	var c: Dictionary = building.containers[kind]
 	if kind == STASH:
 		return
+	c["items"].erase(&"cash")   # E3: money is the building's own (cash_on_hand), never rolled; old saves had some here
 	var restocked: bool = world.tick - int(c["emptied_tick"]) >= int(LootTables.RESTOCK_DAYS * SimClock.day_ticks)
 	if not c["filled"] or (c["items"].is_empty() and restocked):
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash(String(building.id) + kind + str(world.tick / SimClock.day_ticks))
-		c["items"] = LootTables.roll(kind, rng)
+		var roll := LootTables.roll(kind, rng)
+		if c["filled"] and not _pay_restock(building, LootTables.value(roll)):
+			return   # E3: they could not afford to stock it again; it stays empty
+		c["items"] = roll
 		c["filled"] = true
+
+## E3: the people there buy what fills the drawers again (from the cash at
+## home or the till, then savings). False when they cannot afford it.
+static func _pay_restock(building: BuildingData, cost: int) -> bool:
+	if building.cash_on_hand + building.bank < cost:
+		return false
+	var from_cash := mini(cost, building.cash_on_hand)
+	building.cash_on_hand -= from_cash
+	building.bank -= cost - from_cash
+	return true
+
+## E3: the money a building's cash drawer or register shows (its real cash).
+static func cash_shown(building: BuildingData, kind: String) -> int:
+	return building.cash_on_hand if LootTables.CASH_IN.has(kind) else 0
+
+## E3: takes up to n of the building's real cash; returns how much came out.
+static func take_cash(world: World, building: BuildingData, n: int) -> int:
+	var got := mini(n, building.cash_on_hand)
+	building.cash_on_hand -= got
+	building.touched = true
+	if got > 0 and building.building_type == GanstoidEnums.BuildingType.LEGIT_BUSINESS:
+		building.has_been_hit = true
+	return got
 
 ## Takes up to n of id from a building container; returns how many came out.
 static func take(world: World, building: BuildingData, kind: String, id: StringName, n: int) -> int:

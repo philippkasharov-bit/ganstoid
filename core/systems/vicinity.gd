@@ -30,6 +30,9 @@ static func near(world: World, npc: NPCData, state: PlayerStateData) -> Array:
 			var items: Dictionary = inside.containers[kind]["items"]
 			for id in items:
 				out.append({"kind": "container", "building": inside.id, "cont": kind, "id": id, "n": int(items[id])})
+			var cash := Containers.cash_shown(inside, kind)   # E3: their real money, not a rolled number
+			if cash > 0 and not Containers.is_yours(npc, inside):
+				out.append({"kind": "container", "building": inside.id, "cont": kind, "id": &"cash", "n": cash})
 	return out
 
 ## LT1: you are inside a place while you stay at its door: after a break-in,
@@ -119,6 +122,8 @@ static func take(world: World, state: PlayerStateData, src: Dictionary, n: int) 
 
 ## Takes from a building container or glovebox; returns how many came out.
 static func _take_from(world: World, src: Dictionary, n: int) -> int:
+	if src["kind"] == "container" and src["id"] == &"cash":   # E3: out of the household's or shop's own cash
+		return Containers.take_cash(world, _building(world, src["building"]), n)
 	if src["kind"] == "container":
 		return Containers.take(world, _building(world, src["building"]), src["cont"], src["id"], n)
 	if src["kind"] == "glovebox":
