@@ -45,6 +45,7 @@ uniform float moon = 0.28;
 uniform float sight[360];             // R3D11: how far you can see each degree round you (SightMap)
 uniform bool sight_on = false;
 uniform float self_glow = 0.0;        // lamp heads: lit at night
+uniform float sway = 0.0;             // D2: palms and trees in the breeze
 varying float glow;                   // a lit window / shop front (UV.x)
 varying vec3 world_pos;
 varying flat int tag;  // the building this vertex belongs to (0: road, ground, palm)
@@ -52,6 +53,12 @@ varying vec2 palm;     // a palm's foot in 3D x/z
 
 void vertex() {
 	world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	if (sway > 0.0) {   // D2: tree tops move in the breeze, more the higher they are
+		float h = max(world_pos.y - 3.0, 0.0);
+		vec3 wind = vec3(sin(TIME * 1.1 + world_pos.x * 0.13), 0.0, cos(TIME * 0.9 + world_pos.z * 0.11)) * sway * h * 0.035;
+		VERTEX += (inverse(MODEL_MATRIX) * vec4(wind, 0.0)).xyz;
+		world_pos += wind;
+	}
 	tag = use_vertex ? int(UV.y + 0.5) : 0;   // flat meshes (ground, palms) have their own UVs
 	glow = use_vertex ? UV.x : 0.0;
 	palm = vec2(MODEL_MATRIX[3].x, MODEL_MATRIX[3].z);
@@ -136,7 +143,7 @@ static var _shader: Shader
 static var _materials: Array[ShaderMaterial] = []
 
 ## A city material that takes part in the cutaway: vertex colours, or one flat colour.
-static func material(colour: Color = Color.WHITE, use_vertex: bool = true, roughness: float = 0.95, glows: float = 0.0) -> ShaderMaterial:
+static func material(colour: Color = Color.WHITE, use_vertex: bool = true, roughness: float = 0.95, glows: float = 0.0, breeze: float = 0.0) -> ShaderMaterial:
 	if _shader == null:
 		_shader = Shader.new()
 		_shader.code = SHADER
@@ -146,6 +153,7 @@ static func material(colour: Color = Color.WHITE, use_vertex: bool = true, rough
 	mat.set_shader_parameter("tint", colour)
 	mat.set_shader_parameter("roughness", roughness)
 	mat.set_shader_parameter("self_glow", glows)
+	mat.set_shader_parameter("sway", breeze)
 	_materials.append(mat)
 	return mat
 

@@ -20,7 +20,15 @@ var trees := PackedVector2Array()
 var points: Array[Dictionary] = []
 var crossings: Array[Dictionary] = []
 
+static var _loaded: CityReal
+
+## The surveyed city, read once and shared (the view, the lights and the sim all ask).
 static func load_files() -> CityReal:
+	if _loaded == null:
+		_loaded = _read_all()
+	return _loaded
+
+static func _read_all() -> CityReal:
 	var real := CityReal.new()
 	var raw: Dictionary = _read(REAL_PATH, "ganstoid.real")
 	for s in raw.get("surfaces", []):

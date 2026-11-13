@@ -36,7 +36,10 @@ static func build(city: CityData, centre: Vector2, radius: float) -> Array[Node3
 	for i in city.buildings.size():
 		if _near(city.buildings[i]["poly"], centre, r2):
 			b._building(city.buildings[i], i + 1)   # R3D7: its tag is its index + 1 (0: not a building)
+	var real := CityReal.load_files()
+	CityDetail3D.add(b, real, centre, radius)   # D2: yards, lots, pools, walls, fences, crossings, hydrants
 	var out: Array[Node3D] = b._commit()
+	out.append_array(CityProps3D.build(city, real, centre, radius))   # D2: shade trees, power lines
 	var wells := PackedVector2Array()
 	for w in city.tree_wells:
 		if w.distance_squared_to(centre) < r2:
@@ -151,7 +154,7 @@ func _palms(wells: PackedVector2Array) -> Array[Node3D]:
 			mm.set_instance_transform(i, Transform3D(turn, _v(wells[i], part[2])))
 		var mmi := MultiMeshInstance3D.new()
 		mmi.multimesh = mm
-		mmi.material_override = Cutaway.material(part[1], false, 1.0)
+		mmi.material_override = Cutaway.material(part[1], false, 1.0, 0.0, 1.0)   # D2: palms sway
 		out.append(mmi)
 	return out
 
