@@ -45,7 +45,7 @@ func _initialize() -> void:
 	(world.find_system(WitnessCallSystem) as WitnessCallSystem).flush()
 	var again := StreetCrime.start_burglary(world, me, state, &"house")
 	print("burglary: %s, done after %.1f s: %s $%s + %s; owner home reported: %s; again at once: %s" % [start.get("effect"), t / 60.0, got.get("effect"), got.get("amount"), got.get("item"), _reports > 0, again.get("reason")])
-	if not _check(got.get("effect") == "burgled" and absf(t / 60.0 - StreetCrime.BREAK_IN_S) < 0.1 and _reports > 0 and again.get("reason") == "already_cleaned_out", "a break-in takes its time, pays, gets reported by whoever is home, and the house is empty after"):
+	if not _check(got.get("effect") == "burgled" and absf(t / 60.0 - StreetCrime.WAYS_IN["pick"][0]) < 0.1 and _reports > 0 and again.get("reason") == "already_cleaned_out", "a break-in takes its time, pays, gets reported by whoever is home, and the house is empty after"):
 		return
 	print("STREET_CRIME_VERIFY: PASS")
 	quit()

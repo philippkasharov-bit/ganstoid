@@ -27,6 +27,20 @@ func _run(main: Node, args: Dictionary) -> void:
 		main.get_node("Camera2D").zoom = Vector2.ONE * float(args["zoom"])
 	for i in 4:
 		await process_frame
+	if args.has("openings"):   # DW2 look: the nearest buildings broken into / boarded
+		var me1: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
+		var near: Array = []
+		for e in driver.world.entities.values():
+			var b: BuildingData = e.get_component(ComponentNames.BUILDING)
+			if b != null and b.position.distance_to(me1.position) < 60.0:
+				near.append(b)
+		near.sort_custom(func(a: BuildingData, c: BuildingData) -> bool: return a.position.distance_to(me1.position) < c.position.distance_to(me1.position))
+		if near.size() >= 3:
+			near[0].door_kicked = true
+			near[1].windows_broken = 2
+			near[2].windows_boarded = true
+		for i in 70:
+			await process_frame
 	if args.has("menu"):   # UI1 look: the E menu open
 		var st: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
 		st.menu_title = "Crime"

@@ -49,3 +49,9 @@ extends Resource
 @export var business_kind: StringName = &""
 @export var product: StringName = &"weed"   # DR1: what your safehouse makes (ProductionSystem.RECIPES)
 @export var looted_tick: int = -1000000   # X2: last burgled (houses restock in a few days)
+## DW2: doors and windows. A kicked-in door or a smashed window stays that way
+## until the place is fixed up (RESTOCK_DAYS after the break-in); boarded
+## windows (your own place) cannot be smashed.
+@export var door_kicked: bool = false
+@export var windows_broken: int = 0
+@export var windows_boarded: bool = false

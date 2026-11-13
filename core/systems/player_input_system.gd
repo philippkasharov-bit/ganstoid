@@ -45,6 +45,7 @@ const ATTACK_ACTION := &"attack"
 const AIM_ACTION := &"aim"
 const SWITCH_WEAPON_ACTION := &"switch_weapon"
 const SHIFT_HOURS := 4          # O1: honest work at any open counter
+const BOARD_UP_COST := 40   # DW2
 const SHIFT_PAY_PER_HOUR := 15
 const AIM_SPEED := SimUnits.WALK * 0.6   # weapon up: a careful step, no running
 ## G1: E opens the counter you stand at (shop, workshop, dealer); 1-9 buy.
@@ -395,10 +396,18 @@ func _options(npc: NPCData, state: PlayerStateData) -> Array:
 		out.append(["Rob the place", func() -> Dictionary: return CrimeSystem.rob_building(_world, biz)])
 	var house := _find_nearest_house(pos)
 	if house != &"" and house != npc.home_building_id:
-		out.append(["Break in", func() -> Dictionary: return StreetCrime.start_burglary(_world, npc, state, house)])
+		var hb: BuildingData = _world.entities[house].get_component(ComponentNames.BUILDING)
+		StreetCrime.fix_up(_world, hb)
+		for way in StreetCrime.ways_in(hb):   # DW2: Zomboid's ways in
+			var how: String = way[0]
+			out.append([way[1], func() -> Dictionary: return StreetCrime.start_burglary(_world, npc, state, house, how)])
 	var bld := _find_nearest_building(pos)
 	if bld != &"":
-		out.append(["Buy this property", func() -> Dictionary: return _buy_building(bld)])
+		var owned: BuildingData = _world.entities[bld].get_component(ComponentNames.BUILDING)
+		if owned.owner_npc_id == PlayerFactory.PLAYER_ENTITY_ID and not owned.windows_boarded:
+			out.append(["Board up the windows ($%d)" % BOARD_UP_COST, func() -> Dictionary: return _board_up(npc, owned)])
+		elif owned.owner_npc_id != PlayerFactory.PLAYER_ENTITY_ID:
+			out.append(["Buy this property", func() -> Dictionary: return _buy_building(bld)])
 	var traffic := TrafficSystem.traffic_car_near(_world, pos)
 	if traffic != null:
 		out.append(["Pull the driver out (carjack)", func() -> Dictionary: return TrafficSystem.carjack(_world, npc, state, traffic)])
@@ -683,6 +692,15 @@ func _find_nearest_building(position: Vector2) -> StringName:
 	return best_id
 
 ## Batch 25: B on a safehouse buys a grow house; on anything else, a shop.
+## DW2: boards on your own windows: nobody smashes their way in.
+func _board_up(npc: NPCData, building: BuildingData) -> Dictionary:
+	if npc.cash < BOARD_UP_COST:
+		return {"ok": false, "reason": "cant_afford"}
+	npc.cash -= BOARD_UP_COST
+	building.windows_boarded = true
+	building.windows_broken = 0
+	return {"ok": true, "effect": "boarded_up"}
+
 func _buy_building(building_id: StringName) -> Dictionary:
 	var building: BuildingData = _world.entities[building_id].get_component(ComponentNames.BUILDING)
 	if building.building_type == GanstoidEnums.BuildingType.SAFEHOUSE:

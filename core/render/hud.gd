@@ -72,6 +72,10 @@ func _ready() -> void:
 	_title_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_title_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	get_parent().add_child.call_deferred(_title_art)
+	var openings := OpeningsView.new()   # DW2: broken doors, smashed and boarded windows
+	get_parent().add_child.call_deferred(openings)
+	openings.setup(_world)
+	get_parent().move_child.call_deferred(openings, 0)
 	var ground := GroundView.new()          # INV4: dropped piles on the map
 	get_parent().add_child.call_deferred(ground)
 	ground.setup(_world)

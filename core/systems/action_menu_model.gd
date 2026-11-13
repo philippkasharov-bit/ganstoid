@@ -14,7 +14,8 @@ static func category(label: String) -> String:
 	var l := label.to_lower()
 	for pair in [["crew", "Crew"], ["recruit", "Crew"], ["talk", "Talk"], ["threaten", "Talk"], ["pay them", "Talk"],
 			["bribe", "Talk"], ["lawyer", "Talk"], ["mug", "Crime"], ["pickpocket", "Crime"], ["rob ", "Crime"],
-			["break in", "Crime"], ["carjack", "Crime"], ["spray", "Crime"], ["gang job", "Crime"], ["get in the car", "Car"],
+			["break in", "Crime"], ["pick the lock", "Crime"], ["kick the door", "Crime"], ["smash a window", "Crime"], ["go in", "Crime"],
+			["board up", "Property"], ["carjack", "Crime"], ["spray", "Crime"], ["gang job", "Crime"], ["get in the car", "Car"],
 			["property", "Property"], ["product", "Property"], ["makes", "Property"]]:
 		if l.contains(pair[0]):
 			return pair[1]
