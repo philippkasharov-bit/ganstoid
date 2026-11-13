@@ -46,7 +46,7 @@ func _process(delta: float) -> void:
 	_text.add_theme_color_override("font_color", colour)
 	_icon.modulate = colour
 	reset_size()
-	position = Vector2((get_viewport_rect().size.x - size.x) * 0.5, 6)
+	position = Vector2((get_viewport_rect().size.x - size.x) * 0.5, UiTheme.MARGIN)
 
 ## Officers with you in sight.
 static func cops_seeing(world: World, at: Vector2) -> int:

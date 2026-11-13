@@ -18,7 +18,7 @@ signal moved_to_hand(index: int)                         # dropped on `hand`
 
 const CELL := 32.0
 const COUNT_H := 10.0
-const LINE := Color(1, 1, 1, 0.09)
+const LINE := Color(1, 1, 1, 0.05)
 const OK_GHOST := Color(0.36, 0.78, 0.35, 0.35)
 const BAD_GHOST := Color(0.86, 0.3, 0.28, 0.35)
 
@@ -49,7 +49,7 @@ func show_piles(list: Array) -> void:
 	queue_redraw()
 
 func _draw() -> void:
-	draw_rect(Rect2(Vector2.ZERO, size), Color(0, 0, 0, 0.25))
+	draw_rect(Rect2(Vector2.ZERO, size), Color(0, 0, 0, 0.3))
 	for x in cols + 1:
 		draw_line(Vector2(x * CELL, 0), Vector2(x * CELL, rows * CELL), LINE)
 	for y in rows + 1:
@@ -68,8 +68,9 @@ func _draw_pile(p: Dictionary, r: Rect2, lit: bool) -> void:
 	var kind: String = ItemCatalog.item(p["id"]).get("kind", "goods")
 	var col: Color = InventoryWindow.KIND_COLOURS.get(kind, UiTheme.DIM)
 	var inner := r.grow(-1.5)
-	draw_rect(inner, Color(0.02, 0.02, 0.03, 0.55) if not lit else Color(col, 0.22))
-	draw_rect(inner, Color(col, 0.75), false, 1.0)
+	draw_rect(inner, Color(col, 0.13 if not lit else 0.24))   # UI25: a soft tint by kind; an outline only on hover
+	if lit:
+		draw_rect(inner, UiTheme.ACCENT, false, 1.0)
 	var art := inner.grow(-3)   # UI22: nothing printed over the picture
 	if int(p["n"]) > 1:
 		art.size.y -= COUNT_H

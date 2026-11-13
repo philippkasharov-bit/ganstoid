@@ -16,13 +16,13 @@ const SIZE := Vector2(40, 40)
 
 
 var _world: World
-var _idle_box := UiTheme.window_box()
-var _active_box := UiTheme.box(UiTheme.BG, UiTheme.ACCENT, 2)
+var _idle_box := UiTheme.button_box("idle")
+var _active_box := UiTheme.button_box("on")
 
 func setup(world: World) -> void:
 	_world = world
 	add_theme_constant_override("separation", 3)
-	position = Vector2(6, 110)
+	position = Vector2(UiTheme.MARGIN, 124)
 	for b in BUTTONS:
 		add_child(_button(b[0], b[1], b[2], b[3]))
 
@@ -44,8 +44,8 @@ func _button(label: String, key: String, action: StringName, icon: String) -> Bu
 	b.add_theme_color_override("font_color", UiTheme.TEXT)
 	b.add_theme_color_override("font_hover_color", UiTheme.ACCENT)
 	b.add_theme_stylebox_override("normal", _idle_box)
-	b.add_theme_stylebox_override("hover", UiTheme.box(UiTheme.BG_HEADER, UiTheme.ACCENT))
-	b.add_theme_stylebox_override("pressed", UiTheme.box(UiTheme.BG_ROW_SELECT, UiTheme.ACCENT))
+	b.add_theme_stylebox_override("hover", UiTheme.button_box("hover"))
+	b.add_theme_stylebox_override("pressed", UiTheme.button_box("on"))
 	b.tooltip_text = "%s (%s)" % [label, key]
 	b.pressed.connect(func() -> void: _send(action))
 	return b

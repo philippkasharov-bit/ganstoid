@@ -22,11 +22,17 @@ const BAD := Color(0.86, 0.32, 0.28)
 const FONT_SMALL := 11
 const FONT_BODY := 12
 const FONT_TITLE := 13
-const HEADER_H := 20
+const HEADER_H := 24
+## UI25: one spacing scale (4 / 8 / 12) and one margin for everything on screen.
+const GAP := 4
+const SPACE := 8
+const MARGIN := 12
+const RADIUS := 4
+const LINE := Color(1, 1, 1, 0.08)
 const INK := Color(0.12, 0.11, 0.13)          # marker ink on the cassette label
 const STREET := "res://art/ui/street/"
-const PAD := 5
-const ROW_H := 18
+const PAD := 8
+const ROW_H := 20
 
 static func box(bg: Color, border: Color = FRAME, width: int = 1) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
@@ -41,19 +47,37 @@ const PIPING := Color(0.91, 0.89, 0.82, 0.9)
 const DROP := Color("5b2a8c")            # hard, offset, no blur: printed-flyer shadow
 
 static func window_box(margin: int = 2) -> StyleBox:
-	var style := box(Color(0.075, 0.075, 0.085, 0.95), Color(1, 1, 1, 0.14), 1)   # UI20: flat, Tarkov-plain
-	style.set_corner_radius_all(2)
+	var style := box(Color(0.06, 0.065, 0.075, 0.94), Color(1, 1, 1, 0.1), 1)   # UI25: flat, soft shadow, small radius
+	style.set_corner_radius_all(RADIUS)
 	style.set_content_margin_all(margin)
+	style.shadow_color = Color(0, 0, 0, 0.45)
+	style.shadow_size = 10
+	style.shadow_offset = Vector2(0, 3)
 	return style
 
 ## The cassette label: cream with red and blue stripes, title in marker.
 static func header_box() -> StyleBox:
-	var style := box(Color(0.12, 0.12, 0.135, 1.0), Color.TRANSPARENT, 0)   # UI20: a plain title strip
-	style.border_width_bottom = 2
-	style.border_color = ACCENT
+	var style := box(Color(1, 1, 1, 0.03), Color.TRANSPARENT, 0)   # UI25: a quiet title strip, hairline under it
+	style.border_width_bottom = 1
+	style.border_color = LINE
+	style.corner_radius_top_left = RADIUS
+	style.corner_radius_top_right = RADIUS
 	style.set_content_margin_all(0)
 	style.content_margin_left = PAD + 2
-	style.content_margin_right = 2
+	style.content_margin_right = GAP
+	return style
+
+## UI25: an icon button face: idle, hover (lighter), on (gold edge).
+static func button_box(state: String) -> StyleBoxFlat:
+	var style := box(Color(0.06, 0.065, 0.075, 0.94), Color(1, 1, 1, 0.1), 1)
+	style.set_corner_radius_all(RADIUS)
+	style.set_content_margin_all(GAP)
+	if state == "hover":
+		style.bg_color = Color(0.12, 0.125, 0.14, 0.96)
+		style.border_color = Color(1, 1, 1, 0.22)
+	elif state == "on":
+		style.border_color = ACCENT
+		style.set_border_width_all(2)
 	return style
 
 ## A tiled art box from art/ui/street/<name>.png, or null when it is missing.
@@ -106,7 +130,7 @@ static func decal(name: String, height: float, angle_deg: float) -> TextureRect:
 	return t
 
 static func title_label(text: String) -> Label:
-	var l := label(text, FONT_TITLE, ACCENT)
+	var l := label(text, FONT_TITLE, TEXT)   # UI25: white titles; gold is kept for what is selected or yours
 	return l
 
 static func label(text: String, size: int = FONT_BODY, color: Color = TEXT) -> Label:

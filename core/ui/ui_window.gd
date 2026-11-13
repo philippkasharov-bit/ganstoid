@@ -27,9 +27,10 @@ func setup_window(id: String, title: String, at: Vector2, min_size: Vector2) -> 
 	var pad := MarginContainer.new()
 	for side in ["left", "right", "top", "bottom"]:
 		pad.add_theme_constant_override("margin_" + side, UiTheme.PAD)
-	body.add_theme_constant_override("separation", 4)
+	body.add_theme_constant_override("separation", UiTheme.SPACE)
 	pad.add_child(body)
 	column.add_child(pad)
+	visibility_changed.connect(_animate_open)
 	# UI20: no tape or stickers; _add_decor stays for a skin that wants them
 
 func _build_header(title: String) -> PanelContainer:
@@ -43,17 +44,37 @@ func _build_header(title: String) -> PanelContainer:
 	_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	row.add_child(_title)
-	var close := Button.new()
-	close.text = "x"
-	close.flat = true
-	close.focus_mode = Control.FOCUS_NONE
-	close.add_theme_color_override("font_color", UiTheme.DIM)
-	close.add_theme_color_override("font_hover_color", UiTheme.BAD)
-	close.tooltip_text = "Close"
-	close.pressed.connect(close_window)
-	row.add_child(close)
+	row.add_child(_close_button())
 	header.gui_input.connect(_on_header_input)
 	return header
+
+## UI25: a drawn X (no letter), dim until hovered, red on hover.
+func _close_button() -> Button:
+	var close := Button.new()
+	close.flat = true
+	close.focus_mode = Control.FOCUS_NONE
+	close.custom_minimum_size = Vector2(UiTheme.HEADER_H, UiTheme.HEADER_H)
+	close.tooltip_text = "Close (Esc)"
+	close.pressed.connect(close_window)
+	close.draw.connect(func() -> void:
+		var c := close.size * 0.5
+		var col := UiTheme.BAD if close.is_hovered() else UiTheme.DIM
+		close.draw_line(c - Vector2(4, 4), c + Vector2(4, 4), col, 1.5, true)
+		close.draw_line(c + Vector2(-4, 4), c + Vector2(4, -4), col, 1.5, true))
+	close.mouse_entered.connect(close.queue_redraw)
+	close.mouse_exited.connect(close.queue_redraw)
+	return close
+
+## UI25: windows fade and settle in (120 ms), like a real game's panels.
+func _animate_open() -> void:
+	if not visible or not is_inside_tree():
+		return
+	pivot_offset = size * 0.5
+	modulate.a = 0.0
+	scale = Vector2.ONE * 0.97
+	var t := create_tween().set_parallel(true).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	t.tween_property(self, "modulate:a", 1.0, 0.12)
+	t.tween_property(self, "scale", Vector2.ONE, 0.12)
 
 func set_title(title: String) -> void:
 	_title.text = title.to_upper()

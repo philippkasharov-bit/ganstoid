@@ -35,13 +35,13 @@ func _ready() -> void:
 	roster.setup(_world)
 	var store := StorePanel.new()   # G1: E at a counter
 	get_parent().add_child.call_deferred(store)
-	store.setup(_world, Vector2(54, 110))
+	store.setup(_world, Vector2(68, 124))
 	var bag := InventoryWindow.new()  # UI5: I
 	get_parent().add_child.call_deferred(bag)
-	bag.setup(_world, Vector2(54, 110))
+	bag.setup(_world, Vector2(68, 124))
 	var menu := ActionMenu.new()      # UI1: E
 	get_parent().add_child.call_deferred(menu)
-	menu.setup(_world, Vector2(54, 110))
+	menu.setup(_world, Vector2(68, 124))
 	var card := StatusCard.new()      # UI2: bars and status
 	get_parent().add_child.call_deferred(card)
 	card.setup(_world)
@@ -54,13 +54,13 @@ func _ready() -> void:
 	var skills := CharacterWindow.new()
 	get_parent().add_child.call_deferred(skills)
 	var right := get_viewport().get_visible_rect().size.x
-	skills.setup(_world, Vector2(right - 320, 60))   # UIF2: docked right, like Zomboid
+	skills.setup(_world, Vector2(right - 340, 66))   # UIF2: docked right, like Zomboid
 	var eye := DetectionEye.new()   # UIF4: who can see you, its own HUD piece
 	get_parent().add_child.call_deferred(eye)
 	eye.setup(_world)
 	var health := HealthWindow.new()   # HP1: H
 	get_parent().add_child.call_deferred(health)
-	health.setup(_world, Vector2(right - 400, 330))
+	health.setup(_world, Vector2(right - 400, 340))
 	var bar := SideBar.new()
 	get_parent().add_child.call_deferred(bar)
 	bar.setup(_world)
@@ -86,7 +86,7 @@ func _ready() -> void:
 	var toast := Toast.new()          # UI2: pop-up lines
 	get_parent().add_child.call_deferred(toast)
 	toast.setup(_world)
-	position = Vector2(54, 110)
+	position = Vector2(68, 124)
 
 func _process(delta: float) -> void:
 	if _world == null:

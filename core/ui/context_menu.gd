@@ -10,7 +10,7 @@ var _list := VBoxContainer.new()
 
 func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	add_theme_stylebox_override("panel", UiTheme.box(UiTheme.BG))
+	add_theme_stylebox_override("panel", UiTheme.window_box(UiTheme.GAP))
 	_list.add_theme_constant_override("separation", 0)
 	add_child(_list)
 	visible = false

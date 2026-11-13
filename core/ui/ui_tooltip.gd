@@ -9,7 +9,7 @@ var _box := VBoxContainer.new()
 
 func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_theme_stylebox_override("panel", UiTheme.box(UiTheme.BG_HEADER))   # UI20: plain dark card
+	add_theme_stylebox_override("panel", UiTheme.window_box(UiTheme.SPACE))   # UI25: the same card as every panel
 	_box.add_theme_constant_override("separation", 2)
 	add_child(_box)
 	visible = false

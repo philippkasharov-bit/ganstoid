@@ -15,7 +15,7 @@ var _key := ""
 
 func setup(world: World) -> void:
 	_world = world
-	position = Vector2(6, 6)
+	position = Vector2(UiTheme.MARGIN, UiTheme.MARGIN)   # UI25: one margin all round
 	add_theme_stylebox_override("panel", UiPanel.card_style())
 	_grid.columns = 2
 	_grid.add_theme_constant_override("h_separation", 14)

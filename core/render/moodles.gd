@@ -84,7 +84,7 @@ func _process(delta: float) -> void:
 	if _left > 0.0:
 		return
 	_left = REFRESH_S
-	position = Vector2(get_viewport_rect().size.x - TILE - 8, 64)
+	position = Vector2(get_viewport_rect().size.x - TILE - UiTheme.MARGIN, 66)
 	var p: Entity = _world.entities.get(PlayerFactory.PLAYER_ENTITY_ID)
 	visible = p != null and GameRules.of(_world) != null
 	if not visible:
