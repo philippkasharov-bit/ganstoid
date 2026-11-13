@@ -4,9 +4,12 @@
 class_name ItemCard
 extends RefCounted
 
-static func lines(id: StringName) -> Array:
+static func lines(id: StringName, state: PlayerStateData = null) -> Array:
 	var it := ItemCatalog.item(id)
 	var lines: Array = [[String(it["kind"]).capitalize(), InventoryWindow.KIND_COLOURS.get(it["kind"], UiTheme.TEXT)]]
+	if it.has("weapon") and state != null and WeaponWear.WEAR.has(id):   # B6: Zomboid's condition bar
+		var c := WeaponWear.condition(state, id)
+		lines.append(["bar", "Condition", c, UiTheme.GOOD if c >= 0.6 else (UiTheme.ACCENT if c >= 0.3 else UiTheme.BAD), "%d%%" % roundi(c * 100)])
 	if it.has("weapon"):
 		var w: Dictionary = CombatSystem.WEAPONS[it["weapon"]]
 		lines.append(["bar", "Damage", w["damage"] / 0.6, UiTheme.BAD, str(roundi(w["damage"] * 100))])

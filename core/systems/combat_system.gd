@@ -22,6 +22,7 @@ const WEAPONS := {
 const ORDER: Array[StringName] = [&"fists", &"knife", &"bat", &"pistol"]
 const NPC_SPREAD_DEG := 9.0     # C6: cops and gang members fire from the hip, under stress
 const THREAT_S := 10.0
+const UNJAM_S := 0.8           # B6: racking the slide on a jam
 const KO_S := 90.0             # G3: out cold this long (real seconds)          # C6: a raised or recently fired gun keeps you a threat this long
 
 ## Next weapon you actually carry (Q); fists are always there.
@@ -38,13 +39,20 @@ static func attack(world: World, me: NPCData, state: PlayerStateData, tick: int,
 	var w: Dictionary = WEAPONS[state.weapon]
 	if not w["melee"] and state.ammo <= 0:
 		return {"ok": false, "reason": "no_ammo", "weapon": state.weapon}
+	if not w["melee"] and state.jammed:   # B6: rack the slide: this pull clears it
+		state.jammed = false
+		state.attack_ready_tick = tick + int(UNJAM_S * SimClock.TICKS_PER_SECOND)
+		return {"ok": false, "reason": "unjammed", "weapon": state.weapon}
+	if not w["melee"] and WeaponWear.jams(state, rng):
+		state.jammed = true
+		return {"ok": false, "reason": "jammed", "weapon": state.weapon}
 	state.attack_ready_tick = tick + int(w["cooldown_s"] * SimClock.TICKS_PER_SECOND)
 	var dir := (state.aim_point - me.position).normalized()
 	if dir == Vector2.ZERO:
 		dir = Vector2.RIGHT
 	if w["melee"]:
 		w = w.duplicate()
-		w["damage"] *= Skills.more(state, &"melee") * Traits.edge(state, &"brawler", 1.2) * Stamina.damage_mult(state)   # ST1: winded blows are weaker
+		w["damage"] *= Skills.more(state, &"melee") * Traits.edge(state, &"brawler", 1.2) * Stamina.damage_mult(state) * WeaponWear.damage_mult(state)   # ST1 winded, B6 worn
 	var result := _swing(world, me, dir, w) if w["melee"] else _shoot(world, me, state, dir, w, rng)
 	_train(world, state, w, result)
 	if result.get("downed", false):
@@ -53,6 +61,8 @@ static func attack(world: World, me: NPCData, state: PlayerStateData, tick: int,
 		Traits.deed(world, state, &"knockouts")
 	result["ok"] = true
 	result["weapon"] = state.weapon
+	if WeaponWear.use(state, result.has("hit_id")) == "broke":   # B6
+		result["broke"] = true
 	if not w["melee"]:
 		state.last_shot_tick = tick
 	_witness(world, me.position, w, result)

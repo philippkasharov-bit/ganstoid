@@ -209,7 +209,7 @@ func _show_tip(id: StringName, at: Vector2) -> void:
 	if it.is_empty():
 		_tip.show_at(at, _name(id), [["Street goods", KIND_COLOURS["goods"]]], "Sell it to a dealer.")
 		return
-	_tip.show_at(at, it["name"], ItemCard.lines(id))
+	_tip.show_at(at, it["name"], ItemCard.lines(id, _state()))
 
 ## INV6/INV7: the loot side: container buttons, then the picked one's grid.
 func _vicinity_pane() -> HBoxContainer:

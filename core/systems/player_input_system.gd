@@ -229,6 +229,10 @@ func _combat_input(npc: NPCData, state: PlayerStateData, tick: int) -> void:
 			state.last_attack = result
 			if melee:
 				Stamina.swing(state)   # ST1: every swing costs breath
+		if result.get("broke", false):
+			StreetTalk.say_key(_world, state, "weapon_broke")   # B6
+		elif result.get("reason", "") in ["jammed", "unjammed"]:
+			StreetTalk.say(_world, state, result)
 		elif result.get("reason", "") == "no_ammo" and Input.is_action_just_pressed(ATTACK_ACTION):
 			StreetTalk.say(_world, state, result)
 
@@ -414,6 +418,11 @@ func _options(npc: NPCData, state: PlayerStateData) -> Array:
 		out.append(["Shop here", func() -> Dictionary:
 			state.store_id = counter
 			return {}])
+		var fix := WeaponWear.held(state)
+		if ShopSystem.counter_kind(_world, counter) == "workshop" and fix != &"" and WeaponWear.repair_cost(state, fix) > 0:   # B6
+			var shop_b: BuildingData = _world.entities[counter].get_component(ComponentNames.BUILDING)
+			out.append(["Fix your %s ($%d)" % [ItemCatalog.item(fix)["name"].to_lower(), WeaponWear.repair_cost(state, fix)], func() -> Dictionary: return WeaponWear.repair(_world, npc, state, fix, shop_b),
+				"condition %d%%" % roundi(WeaponWear.condition(state, fix) * 100)])
 		if ShopSystem.counter_kind(_world, counter) != "dealer" and ShopSystem.is_open(_world, counter):
 			out.append(["Work a %d-hour shift ($%d/h, clean)" % [SHIFT_HOURS, SHIFT_PAY_PER_HOUR], func() -> Dictionary:
 				state.work_until_tick = _world.tick + SimClock.hours(SHIFT_HOURS)
