@@ -137,6 +137,18 @@ var touched := true
 		if v != bank:
 			touched = true
 		bank = v
+## E1: the line of business: "liquor store", "diner", "auto body"... (Jobs.TRADES).
+@export var trade: StringName = &"":
+	set(v):
+		if v != trade:
+			touched = true
+		trade = v
+## E2: yesterday's sales (customers + outside buyers).
+@export var last_sales: int = 0:
+	set(v):
+		if v != last_sales:
+			touched = true
+		last_sales = v
 ## E1: 0 none, 1 a camera and a bat under the counter, 2 a guard or a gun, 3 armed guard.
 @export var security: int = 0:
 	set(v):

@@ -1,6 +1,6 @@
 ## Phase 2 locked mechanics spec, made real: per-good price drift from
-## demand/supply, and per-building cash-on-hand regeneration toward its
-## daily_revenue. The backend core other Phase 2+ features (drug deals,
+## demand/supply. (E2: tills no longer refill on their own; they fill from
+## sales in EconomyFlow.) The backend core other Phase 2+ features (drug deals,
 ## odd jobs, robbery feedback) plug into -- this system doesn't process
 ## any transaction itself, it just keeps the numbers a transaction would
 ## read/write moving realistically on their own.
@@ -23,13 +23,6 @@
 ## something the required_component=BUILDING filter already hands us.
 class_name EconomySystem
 extends SystemBase
-
-## Fraction of the gap to daily_revenue recovered each warm tick -- e.g.
-## 0.05 means a robbed business claws back 5% of what it's missing per
-## tick, so a full recovery takes a predictable, tunable number of ticks
-## rather than a fixed flat amount that over/undershoots on different
-## revenue bands.
-const CASH_REGEN_FRACTION := 0.05
 
 ## How far demand/supply move toward their 0.5 baseline each warm tick
 ## with no trades happening -- same decaying-scalar shape as
@@ -86,8 +79,6 @@ func process_entities(entities: Dictionary, _delta: float, _tick: int) -> void:
 		for entity in entities.values():
 			_buildings.append(entity.get_component(ComponentNames.BUILDING))
 	for building in _buildings:
-		if building.cash_on_hand < building.daily_revenue:
-			_regen_cash(building)
 		if building.crime_heat != 0.0:
 			_decay_crime_heat(building)
 	for item in _world.economy_items.values():
@@ -104,7 +95,7 @@ func _decay_relationships() -> void:
 			state.solo_standing[key] += (0.5 - state.solo_standing[key]) * RELATIONSHIP_DECAY
 		return  # exactly one match, by construction -- see the doc comment above
 
-## Batch 10 (locked): unlike _regen_cash, applies to every building
+## Batch 10 (locked): applies to every building
 ## regardless of daily_revenue -- a residence or illegal front with no
 ## legitimate revenue line can still be a hot corner, so crime_heat decays
 ## on all of them, not just revenue-earning ones.
@@ -112,14 +103,6 @@ func _decay_crime_heat(building: BuildingData) -> void:
 	building.crime_heat += (0.0 - building.crime_heat) * CRIME_HEAT_DECAY
 	if building.crime_heat < HEAT_FORGOTTEN:
 		building.crime_heat = 0.0   # an exponential decay never reaches zero by itself
-
-func _regen_cash(building: BuildingData) -> void:
-	if building.daily_revenue <= 0:
-		return  # residences/fronts/safehouses carry no legitimate revenue line (see CityRoles.REVENUE_BY_TYPE)
-	var gap := building.daily_revenue - building.cash_on_hand
-	if gap <= 0:
-		return  # already at or above its daily take -- nothing to regenerate
-	building.cash_on_hand += ceili(gap * CASH_REGEN_FRACTION)
 
 func _drift_price(item: EconomyItemData) -> void:
 	item.demand += (0.5 - item.demand) * DEMAND_SUPPLY_DECAY

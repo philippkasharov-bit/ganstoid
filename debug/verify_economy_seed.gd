@@ -46,5 +46,26 @@ func _initialize() -> void:
 	for c in data.blocks:
 		var bl: Dictionary = data.blocks[c]
 		ok = ok and bl["wealth"] > 0.0 and bl["wealth"] < 1.0 and is_equal_approx(bl["black"], 1.0 - bl["wealth"])
+	# E1: trades fit their blocks; the homeless are out of work on poor blocks.
+	var trades := {}
+	var poor_trades := 0
+	var poor_total := 0
+	for e in world.get_entities_with_component(ComponentNames.BUILDING).values():
+		var b: BuildingData = e.get_component(ComponentNames.BUILDING)
+		if b.building_type != GanstoidEnums.BuildingType.LEGIT_BUSINESS:
+			continue
+		ok = ok and Jobs.TRADES.has(b.trade) and Jobs.TRADES[b.trade][0] == b.business_kind
+		trades[b.trade] = true
+		if BlockEconomyData.block_at(world, b.position)["wealth"] < 0.25:
+			poor_total += 1
+			poor_trades += int(float(Jobs.TRADES[b.trade][1]) <= 0.5)
+	var homeless := 0
+	for e in world.get_entities_with_component(ComponentNames.NPC).values():
+		var n: NPCData = e.get_component(ComponentNames.NPC)
+		if n.home_building_id == &"" and n.camp != Vector2.ZERO:
+			homeless += 1
+			ok = ok and n.work_building_id == &"" and n.cash <= 12 and not n.indoors
+	print("trades %d kinds, poor-block businesses fitting %d/%d, homeless %d" % [trades.size(), poor_trades, poor_total, homeless])
+	ok = ok and trades.size() >= 8 and homeless > 0 and poor_trades == poor_total
 	print("ECONOMY_SEED_VERIFY: ", "PASS" if ok else "FAIL")
 	quit()

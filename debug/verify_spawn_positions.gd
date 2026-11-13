@@ -1,6 +1,7 @@
 ## Regression for the "wave from the corner" bug: every NPC must start the
 ## game at a real place in the city -- civilians and dealers at their home,
-## cops at their depot -- never stacked at the world origin.
+## cops at their depot, the homeless at their camp -- never stacked at the
+## world origin.
 extends SceneTree
 
 func _initialize() -> void:
@@ -16,6 +17,9 @@ func _initialize() -> void:
 			continue
 		if n.position == Vector2.ZERO:
 			at_origin += 1
+		if n.home_building_id == &"":   # E1: sleeps rough: starts at their camp
+			not_home += int(n.position != n.camp or n.camp == Vector2.ZERO)
+			continue
 		var home: BuildingData = world.entities[n.home_building_id].get_component(ComponentNames.BUILDING)
 		if n.position != home.position:
 			not_home += 1

@@ -1,6 +1,9 @@
 ## E1: a new game's money, laid out once. Every block gets how rich it is
 ## (from where it sits in the city, give or take), its public budget, police
-## funding and black-market strength. Every worker gets a job at their
+## funding and black-market strength. Every business gets a trade that fits
+## its block (pawn shops where it is poor, offices where it is rich). Out of
+## work people on poor blocks may have lost their home: they sleep rough on the
+## street near it, with next to nothing. Every worker gets a job at their
 ## workplace and a day's pay that fits the block. Every home gets savings and
 ## cash in the drawers from what its people earn; every business a bank
 ## balance and, on richer blocks, some security. Deterministic from the seed.
@@ -22,6 +25,8 @@ static func seed(world: World, seed: int, building_ids: Array[StringName]) -> vo
 	e.add_component(data)
 	world.register_entity(e)
 	_blocks(data, world, building_ids, seed)
+	_trades(world, data, building_ids, rng)
+	_homeless(world, data, rng)
 	_jobs(world, data, rng)
 	_homes(world, data, building_ids, rng)
 	_businesses(world, data, building_ids, rng)
@@ -42,6 +47,36 @@ static func _blocks(data: BlockEconomyData, world: World, building_ids: Array[St
 static func _wealth(data: BlockEconomyData, p: Vector2) -> float:
 	return float(data.blocks.get(TerritoryData.cell_of(p), {"wealth": 0.45})["wealth"])
 
+## Each business gets a line of trade that suits its block's wealth.
+static func _trades(world: World, data: BlockEconomyData, building_ids: Array[StringName], rng: RandomNumberGenerator) -> void:
+	for id in building_ids:
+		var b: BuildingData = world.entities[id].get_component(ComponentNames.BUILDING)
+		if b.building_type == GanstoidEnums.BuildingType.LEGIT_BUSINESS:
+			b.trade = Jobs.trade_for(b.business_kind, _wealth(data, b.position), rng)
+
+const HOMELESS_BELOW := 0.3       # only on blocks poorer than this
+const HOMELESS_CHANCE := 0.35     # of the out of work there
+const CAMP_M := Vector2(5.0, 12.0)
+const HOMELESS_CASH := Vector2i(0, 12)
+
+## E1: some of the out of work on poor blocks are on the street: no home, a camp spot nearby.
+static func _homeless(world: World, data: BlockEconomyData, rng: RandomNumberGenerator) -> void:
+	for ent in world.get_entities_with_component(ComponentNames.NPC).values():
+		var npc: NPCData = ent.get_component(ComponentNames.NPC)
+		if npc.work_building_id != &"" or npc.is_cop or npc.is_dealer or npc.is_fixer or npc.is_crew or npc.gang_id != &"":
+			continue
+		if ent.has_component(ComponentNames.PLAYER_STATE) or not world.entities.has(npc.home_building_id):
+			continue
+		var home: BuildingData = world.entities[npc.home_building_id].get_component(ComponentNames.BUILDING)
+		if _wealth(data, home.position) >= HOMELESS_BELOW or rng.randf() >= HOMELESS_CHANCE:
+			continue
+		npc.camp = home.position + Vector2.from_angle(rng.randf() * TAU) * rng.randf_range(CAMP_M.x, CAMP_M.y)
+		npc.position = npc.camp
+		world.reindex_position(npc.id)
+		npc.home_building_id = &""
+		npc.indoors = false
+		npc.cash = rng.randi_range(HOMELESS_CASH.x, HOMELESS_CASH.y)
+
 ## Workers get a job title and a day's pay at their workplace.
 static func _jobs(world: World, data: BlockEconomyData, rng: RandomNumberGenerator) -> void:
 	for ent in world.get_entities_with_component(ComponentNames.NPC).values():
@@ -49,7 +84,7 @@ static func _jobs(world: World, data: BlockEconomyData, rng: RandomNumberGenerat
 		if npc.work_building_id == &"" or not world.entities.has(npc.work_building_id):
 			continue
 		var work: BuildingData = world.entities[npc.work_building_id].get_component(ComponentNames.BUILDING)
-		var job := Jobs.pick(work.business_kind, rng)
+		var job := Jobs.pick(work.trade, rng)
 		npc.job = job[0]
 		npc.wage = Jobs.wage(job[1], _wealth(data, work.position))
 

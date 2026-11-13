@@ -22,7 +22,8 @@ extends Resource
 ## --- Economy ---
 @export var cash: int = 0
 @export var job: StringName = &""                # E1: "cashier", "mechanic"... (empty: out of work)
-@export var wage: int = 0                       # E1: a day's pay, paid by the workplace each payday
+@export var wage: int = 0
+@export var camp: Vector2 = Vector2.ZERO         # E1: where a homeless person sleeps rough (no home_building_id)                       # E1: a day's pay, paid by the workplace each payday
 
 ## --- Crew (only meaningful if recruited; player's crew only) ---
 ## Reserved since Phase 0; set by CrewSystem.recruit (batch 15). loyalty is

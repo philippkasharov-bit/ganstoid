@@ -31,8 +31,8 @@ func _initialize() -> void:
 	assert(weed.current_price < price_after_trade, "price should decay back down as demand/supply return toward baseline")
 	assert(absf(weed.demand - 0.5) < 0.05, "demand should have decayed back near baseline after 2000 ticks")
 
-	# Cash-on-hand regen: drain a legit business to zero, confirm it claws
-	# back toward daily_revenue on its own over time.
+	# E2: a robbed till does NOT refill by itself any more; it fills from the
+	# next day's sales (EconomyFlow), and only by what customers really spend.
 	var business_id := _find_legit_business(world)
 	assert(business_id != &"", "city should have at least one LEGIT_BUSINESS")
 	var business: BuildingData = world.entities[business_id].get_component(ComponentNames.BUILDING)
@@ -40,11 +40,12 @@ func _initialize() -> void:
 	print("business after robbery: cash_on_hand=%d daily_revenue=%d has_been_hit=%s" % [business.cash_on_hand, business.daily_revenue, business.has_been_hit])
 	assert(business.cash_on_hand == 0, "robbery should have drained cash_on_hand to 0")
 	assert(business.has_been_hit, "robbery should flag has_been_hit")
-
 	for i in 500:
 		world.step(1.0 / 60.0)
-	print("business after 500 ticks: cash_on_hand=%d / daily_revenue=%d" % [business.cash_on_hand, business.daily_revenue])
-	assert(business.cash_on_hand > 0, "cash_on_hand should have regenerated at least partially after 500 ticks")
+	assert(business.cash_on_hand == 0, "a robbed till stays empty until the next day's sales (no free money)")
+	EconomyFlow.run_day(world)
+	print("business after a day's trade: cash_on_hand=%d, sold %d" % [business.cash_on_hand, business.last_sales])
+	assert(business.last_sales > 0 and business.cash_on_hand > 0, "the next day's sales put money back in the till")
 
 	print("PHASE2_ECONOMY_VERIFY: PASS")
 	quit()

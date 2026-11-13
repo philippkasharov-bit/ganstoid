@@ -10,6 +10,7 @@ const ENTITY_ID := &"block_economy"
 
 ## Vector2i cell -> {"wealth": 0..1, "budget": $, "police": 0..1, "black": 0..1}
 @export var blocks: Dictionary = {}
+@export var last_day: Dictionary = {}   # E2: yesterday's ledger {inflow, outflow, sales, wages, tax}
 
 static func of(world: World) -> BlockEconomyData:
 	var e: Entity = world.entities.get(ENTITY_ID)

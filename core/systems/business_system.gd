@@ -62,13 +62,21 @@ static func owned_by_player(building: BuildingData) -> bool:
 static func price(building: BuildingData) -> int:
 	return building.daily_revenue * PRICE_DAYS
 
-## Empties every owned shop's till into the player's cash. Returns the total.
+## E2: a shop keeps this many days of its trade in the bank for wages and stock.
+const RESERVE_DAYS := 3
+
+## What an owned shop can hand you today: the till, and the bank above its reserve.
+static func spare(building: BuildingData) -> int:
+	return building.cash_on_hand + maxi(0, building.bank - building.daily_revenue * RESERVE_DAYS)
+
+## Empties every owned shop's till, and its bank above the reserve, into the
+## player's cash. Returns the total. (E2: the shop earns it from real sales.)
 static func collect_all(world: World) -> int:
 	var total := 0
-	for entity in world.get_entities_with_component(ComponentNames.BUILDING).values():
-		var building: BuildingData = entity.get_component(ComponentNames.BUILDING)
-		if owned_by_player(building) and building.cash_on_hand > 0:
-			total += building.cash_on_hand
+	for building in all_buildings(world):
+		if owned_by_player(building) and spare(building) > 0:
+			total += spare(building)
+			building.bank = mini(building.bank, building.daily_revenue * RESERVE_DAYS)
 			building.cash_on_hand = 0
 	Wallet.earn_clean(world, total)
 	return total

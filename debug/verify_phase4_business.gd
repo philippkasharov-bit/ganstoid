@@ -38,13 +38,17 @@ func _initialize() -> void:
 	world.reindex_position(PlayerFactory.PLAYER_ENTITY_ID)
 	assert(BusinessSystem.buy(world, home_id)["reason"] == "not_for_sale", "homes aren't businesses")
 
-	# Daily payout: till goes to you, then refills via EconomySystem regen.
+	# Daily payout: the till and the bank above the reserve go to you; E2: it
+	# fills again from the next day's real sales (EconomyFlow), not by itself.
 	shop.cash_on_hand = 77
+	shop.bank = shop.daily_revenue * BusinessSystem.RESERVE_DAYS + 10
 	var before := pnpc.cash
-	assert(BusinessSystem.collect_all(world) == 77 and pnpc.cash == before + 77 and shop.cash_on_hand == 0, "till paid out")
+	assert(BusinessSystem.collect_all(world) == 87 and pnpc.cash == before + 87 and shop.cash_on_hand == 0, "till and spare bank paid out")
+	before += 10   # so "before + 77" below is what you had right after the payout
+	shop.daily_revenue = 800   # a busy shop: its day's sales beat its wages and costs
 	for i in SimClock.day_ticks + 20:
 		world.step(1.0 / 60.0)
-	print("cash after a day: %d (was %d), daily_revenue=%d" % [pnpc.cash, before + 77, shop.daily_revenue])
+	print("cash after a day: %d (was %d), daily_revenue=%d, sold %d" % [pnpc.cash, before + 77, shop.daily_revenue, shop.last_sales])
 	assert(pnpc.cash > before + 77, "a game day later the shop paid again")
 
 	# Muscle never shakes down your own shop.

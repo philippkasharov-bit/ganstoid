@@ -25,6 +25,7 @@ static func register_all(world: World) -> void:
 	world.register_system(NeedsSystem.new(world))
 	world.register_system(WitnessCallSystem.new(world))
 	world.register_system(RankSystem.new(world))
+	world.register_system(EconomyFlowSystem.new(world))   # E2: the daily money loop
 	world.register_system(JobSystem.new(world))
 	world.register_system(TrafficSystem.new(world))
 	world.register_system(DriveSystem.new(world))
