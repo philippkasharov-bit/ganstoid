@@ -51,6 +51,7 @@ func _ready() -> void:
 	var moodles := Moodles.new()
 	get_parent().add_child.call_deferred(moodles)
 	moodles.setup(_world)
+	moodles.below = clock   # UI26: the column hangs under the clock, same right edge
 	var skills := CharacterWindow.new()
 	get_parent().add_child.call_deferred(skills)
 	var right := get_viewport().get_visible_rect().size.x
@@ -60,7 +61,7 @@ func _ready() -> void:
 	eye.setup(_world)
 	var health := HealthWindow.new()   # HP1: H
 	get_parent().add_child.call_deferred(health)
-	health.setup(_world, Vector2(right - 400, 340))
+	health.setup(_world, Vector2(right * 0.5 - 180, 80))   # UI26: opens mid-screen, fully visible
 	var bar := SideBar.new()
 	get_parent().add_child.call_deferred(bar)
 	bar.setup(_world)

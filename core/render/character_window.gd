@@ -22,7 +22,6 @@ func setup(world: World, at: Vector2) -> void:
 	_tabs.add_tab("Info", _info)
 	_tabs.add_tab("Skills", _rows)
 	_tabs.pick(0)
-	body.add_child(UiTheme.label("K / Esc close", UiTheme.FONT_SMALL, UiTheme.DIM))
 	if not InputMap.has_action(ACTION):
 		InputMap.add_action(ACTION)
 		var ev := InputEventKey.new()

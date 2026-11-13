@@ -69,12 +69,17 @@ func _close_button() -> Button:
 func _animate_open() -> void:
 	if not visible or not is_inside_tree():
 		return
+	_keep_on_screen.call_deferred()   # UI26: never opens half off a small screen
 	pivot_offset = size * 0.5
 	modulate.a = 0.0
 	scale = Vector2.ONE * 0.97
 	var t := create_tween().set_parallel(true).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	t.tween_property(self, "modulate:a", 1.0, 0.12)
 	t.tween_property(self, "scale", Vector2.ONE, 0.12)
+
+func _keep_on_screen() -> void:
+	var screen := get_viewport_rect().size
+	position = position.clamp(Vector2.ZERO, (screen - size).max(Vector2.ZERO))
 
 func set_title(title: String) -> void:
 	_title.text = title.to_upper()

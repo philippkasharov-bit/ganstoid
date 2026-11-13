@@ -15,7 +15,8 @@ const KEY_BG := Color(0.95, 0.72, 0.2, 0.18)
 var _world: World
 var _title := Label.new()
 var _rows := VBoxContainer.new()
-var _footer := Label.new()
+var _footer := MarginContainer.new()   # UI26: keycap prompts
+var _footer_key := ""
 
 func setup(world: World, at: Vector2) -> void:
 	_world = world
@@ -31,8 +32,7 @@ func setup(world: World, at: Vector2) -> void:
 	box.add_child(UiTheme.divider())
 	_rows.add_theme_constant_override("separation", 1)
 	box.add_child(_rows)
-	_footer.add_theme_font_size_override("font_size", 10)
-	_footer.add_theme_color_override("font_color", DIM)
+	_footer.add_theme_constant_override("margin_top", 2)
 	box.add_child(_footer)
 	row_picked.connect(_on_row)
 	visible = false
@@ -54,11 +54,12 @@ func _process(_delta: float) -> void:
 func refresh() -> void:
 	pass
 
-## rows: Array of [key text ("1", "" for none), label, right-hand text]
-func show_panel(title: String, rows: Array, footer: String) -> void:
+## rows: Array of [key text ("1", "" for none), label, right-hand text];
+## hints: [[key, what it does], ...] shown as keycaps under the rows.
+func show_panel(title: String, rows: Array, hints: Array) -> void:
 	visible = true
 	_title.text = title.to_upper()
-	_footer.text = footer
+	_set_hints(hints)
 	var key := str(rows.hash()) + title
 	if get_meta("key", "") == key:
 		return   # unchanged: do not rebuild the rows every frame
@@ -91,6 +92,17 @@ func show_panel(title: String, rows: Array, footer: String) -> void:
 		_rows.add_child(_clickable(line, numbered) if r[0] != "" else line)
 		if r[0] != "":
 			numbered += 1
+
+func _set_hints(hints: Array) -> void:
+	var key := str(hints)
+	if key == _footer_key:
+		return
+	_footer_key = key
+	for c in _footer.get_children():
+		c.queue_free()
+	_footer.visible = not hints.is_empty()
+	if _footer.visible:
+		_footer.add_child(UiTheme.key_hints(hints))
 
 ## UIF1: a numbered row is a flat button too, so the mouse works like 1-9.
 func _clickable(line: HBoxContainer, index: int) -> Button:

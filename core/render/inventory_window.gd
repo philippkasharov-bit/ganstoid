@@ -19,9 +19,7 @@ const VERBS := {"food": "Eat", "drink": "Drink", "medical": "Apply", "weapon": "
 var _world: World
 var _hands := UiTheme.label("", UiTheme.FONT_SMALL)
 var _hand_slot := BagGridView.new()
-var _hint: Label
-static var _opens := 0
-const HINT_OPENS := 3   # UIF2: the how-to line shows the first few times only   # UIF1: a real slot, Tarkov/DayZ-style
+var _hint: Control
 var _grid := BagGridView.new()
 var _loose := UiTheme.label("", UiTheme.FONT_SMALL, UiTheme.BAD)
 var _weight_text := UiTheme.label("", UiTheme.FONT_SMALL, UiTheme.DIM)
@@ -60,7 +58,8 @@ func setup(world: World, at: Vector2) -> void:
 	_loose.custom_minimum_size.x = _grid.custom_minimum_size.x + _near.custom_minimum_size.x
 	body.add_child(_loose)
 	body.add_child(_weight_text)
-	_hint = UiTheme.label("Drag · drag across to drop or take · R turn · double-click use · right-click", 10, UiTheme.DIM)
+	_hint = UiTheme.key_hints([["RMB", "actions"], ["Dbl-click", "use"], ["R", "rotate"]])   # UI27: one line, the rest is in the right-click menu
+	_hint.custom_minimum_size.x = _grid.custom_minimum_size.x + _near.custom_minimum_size.x
 	body.add_child(_hint)
 	_wire_grid()
 	visible = false
@@ -90,9 +89,6 @@ func _wire_grid() -> void:
 func _process(_delta: float) -> void:
 	var state := _state()
 	var now := state != null and state.inventory_open and state.store_id == &""
-	if now and not visible:
-		_opens += 1
-		_hint.visible = _opens <= HINT_OPENS
 	visible = now
 	if not visible:
 		_tip.hide_tip()

@@ -15,7 +15,7 @@ func _init() -> void:
 	visible = false
 
 ## lines: Array of [text, colour]
-func show_at(screen_pos: Vector2, title: String, lines: Array, note: String = "") -> void:
+func show_at(screen_pos: Vector2, title: String, lines: Array, note: String = "", hints: Array = []) -> void:
 	for c in _box.get_children():
 		_box.remove_child(c)   # now, not at frame end, so the size below fits the new lines
 		c.queue_free()
@@ -28,6 +28,11 @@ func show_at(screen_pos: Vector2, title: String, lines: Array, note: String = ""
 		n.autowrap_mode = TextServer.AUTOWRAP_WORD
 		n.custom_minimum_size.x = 170
 		_box.add_child(n)
+	if not hints.is_empty():   # UI26: what you can do with it, as keycaps
+		_box.add_child(UiTheme.divider())
+		var k := UiTheme.key_hints(hints)
+		k.custom_minimum_size.x = 170
+		_box.add_child(k)
 	visible = true
 	size = Vector2.ZERO
 	reset_size()

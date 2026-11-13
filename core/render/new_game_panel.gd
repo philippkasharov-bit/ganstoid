@@ -20,11 +20,11 @@ func refresh() -> void:
 	if _difficulty < 0:
 		for i in 3:
 			rows.append([str(i + 1), "%s — %s" % [GameRules.DIFFICULTIES[i], GameRules.DIFFICULTY_TEXT[i]], ""])
-		show_panel("New life · how hard?", rows, "Click or 1-3")
+		show_panel("New life · how hard?", rows, [])
 	else:
 		for i in 3:
 			rows.append([str(i + 1), "%s — %s" % [GameRules.STYLES[i], GameRules.STYLE_TEXT[i]], ""])
-		show_panel("New life · how do you want to play?", rows, "Click or 1-3    (%s)" % GameRules.DIFFICULTIES[_difficulty])
+		show_panel("New life · how do you want to play?", rows, [])
 
 func _unhandled_input(event: InputEvent) -> void:
 	if _driver == null or not _driver.choosing or not (event is InputEventKey) or not event.pressed:

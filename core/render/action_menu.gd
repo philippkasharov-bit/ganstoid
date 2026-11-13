@@ -13,4 +13,4 @@ func refresh() -> void:
 	var rows: Array = []
 	for i in state.menu_options.size():
 		rows.append([str(i + 1), state.menu_options[i], state.menu_notes[i] if i < state.menu_notes.size() else ""])
-	show_panel(state.menu_title if state.menu_title != "" else "What now?", rows, "Click or 1-9    Esc back / close")
+	show_panel(state.menu_title if state.menu_title != "" else "What now?", rows, [["Esc", "back"]])

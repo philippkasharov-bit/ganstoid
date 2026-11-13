@@ -3,8 +3,9 @@
 ## is well. Bad moodles sit on red, going from pale to deep red over four
 ## levels; good ones sit on green. The icon is drawn dark on the tile. Each
 ## level has its own name (Peckish, Hungry, Very Hungry, Starving), shown with
-## a line of what it does when you hover. A tile wobbles for a moment when it
-## appears or changes level. No numbers, no bars. A click still does the
+## a line of what it does when you hover. A tile flashes for a moment when it
+## appears or changes level (UI26: a flash, not a tilt, so the column stays
+## pixel-straight under the clock). No numbers, no bars. A click still does the
 ## obvious fix (eat, drink, bandage, sleep). Reads state; the one write is
 ## state.ui_use.
 class_name Moodles
@@ -15,7 +16,7 @@ const ICON := 26.0
 const BAD := [Color("c98a7c"), Color("c0604f"), Color("a9372b"), Color("7e1b17")]
 const GOOD := [Color("8fbf7e"), Color("6fae5b"), Color("4f9440"), Color("357a2a")]
 const ICON_INK := Color(0.1, 0.09, 0.09, 0.9)
-const WOBBLE_S := 1.2
+const FLASH_S := 1.2
 const REFRESH_S := 0.25
 
 ## key: [icon file, field, level names (1..4), what it does, click]
@@ -32,7 +33,8 @@ const HURT_EDGES := [0.15, 0.35, 0.6, 0.8]
 var _world: World
 var _left := 0.0
 var _key := ""
-var _seen := {}       # moodle family -> level last shown, to wobble on change
+var _seen := {}       # moodle family -> level last shown, to flash on change
+var below: Control    # the clock: the column starts under it
 var _clock := 0.0
 var _tip := UiTooltip.new()
 
@@ -79,12 +81,13 @@ func _process(delta: float) -> void:
 	if _world == null:
 		return
 	_clock += delta
-	_wobble()
+	_flash()
 	_left -= delta
 	if _left > 0.0:
 		return
 	_left = REFRESH_S
-	position = Vector2(get_viewport_rect().size.x - TILE - UiTheme.MARGIN, 66)
+	var top := below.position.y + below.size.y + UiTheme.SPACE if below != null and below.visible else 66.0
+	position = Vector2(get_viewport_rect().size.x - TILE - UiTheme.MARGIN, top).round()
 	var p: Entity = _world.entities.get(PlayerFactory.PLAYER_ENTITY_ID)
 	visible = p != null and GameRules.of(_world) != null
 	if not visible:
@@ -105,7 +108,7 @@ func _rebuild(shown: Array) -> void:
 		var family: String = m[0] + str(m[3])
 		var tile := _tile(m)
 		if _seen.get(family, -1) != m[2]:
-			tile.set_meta("wobble_until", _clock + WOBBLE_S)   # new or changed: wobble like Zomboid
+			tile.set_meta("flash_until", _clock + FLASH_S)   # new or changed: draw the eye like Zomboid
 		now[family] = m[2]
 		add_child(tile)
 	_seen = now
@@ -121,20 +124,20 @@ func _tile(m: Array) -> Button:
 	for look in ["normal", "hover", "pressed"]:
 		b.add_theme_stylebox_override(look, face)
 	var art := icon_or_glyph(m[0], m[1].left(1), ICON)
-	art.position = Vector2((TILE - ICON) * 0.5, (TILE - ICON) * 0.5 - 1)
+	art.position = ((Vector2(TILE, TILE - 2) - Vector2(ICON, ICON)) * 0.5).round()   # centred above the 2px base
 	art.modulate = ICON_INK
 	b.add_child(art)
-	b.pivot_offset = Vector2(TILE, TILE) * 0.5
 	b.mouse_entered.connect(func() -> void: _tip.show_at(b.global_position + Vector2(-230, 0), m[1], [[m[4], UiTheme.TEXT]]))
 	b.mouse_exited.connect(_tip.hide_tip)
 	b.pressed.connect(func() -> void: _act(m[5]))
 	return b
 
-func _wobble() -> void:
+func _flash() -> void:
 	for c in get_children():
 		if c is Button:
-			var left: float = c.get_meta("wobble_until", 0.0) - _clock
-			c.rotation = deg_to_rad(9.0 * sin(_clock * 22.0) * clampf(left / WOBBLE_S, 0.0, 1.0)) if left > 0.0 else 0.0
+			var left: float = c.get_meta("flash_until", 0.0) - _clock
+			var glow := 0.35 * absf(sin(_clock * 10.0)) * clampf(left / FLASH_S, 0.0, 1.0) if left > 0.0 else 0.0
+			c.self_modulate = Color(1.0 + glow, 1.0 + glow, 1.0 + glow)
 
 ## art/ui/needs/<name>.png, then art/ui/icons/<name>.png, else the letter.
 static func icon_or_glyph(name: String, glyph: String, px: float) -> Control:

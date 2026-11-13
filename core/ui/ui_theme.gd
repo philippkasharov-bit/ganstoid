@@ -139,3 +139,35 @@ static func label(text: String, size: int = FONT_BODY, color: Color = TEXT) -> L
 	l.add_theme_font_size_override("font_size", size)
 	l.add_theme_color_override("font_color", color)
 	return l
+
+## UI26: a row of input prompts, each a keycap then what it does:
+## key_hints([["LMB drag", "move"], ["RMB", "eat · equip · drop"]]). Wraps to
+## more lines when narrow. Every window footer uses this one look.
+static func key_hints(pairs: Array) -> Control:
+	var flow := HFlowContainer.new()
+	flow.add_theme_constant_override("h_separation", 10)
+	flow.add_theme_constant_override("v_separation", 3)
+	flow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for p in pairs:
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 4)
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(keycap(p[0]))
+		row.add_child(label(p[1], FONT_SMALL, DIM))
+		flow.add_child(row)
+	return flow
+
+## One key in a small light-edged box ("E", "RMB", "Esc").
+static func keycap(key: String) -> Control:
+	var cap := PanelContainer.new()
+	var face := box(Color(1, 1, 1, 0.08), Color(1, 1, 1, 0.28), 1)
+	face.set_corner_radius_all(3)
+	face.border_width_bottom = 2
+	face.content_margin_left = 4
+	face.content_margin_right = 4
+	face.content_margin_top = 0
+	face.content_margin_bottom = 0
+	cap.add_theme_stylebox_override("panel", face)
+	cap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cap.add_child(label(key, 10, TEXT))
+	return cap

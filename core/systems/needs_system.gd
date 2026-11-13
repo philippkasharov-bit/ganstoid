@@ -56,8 +56,8 @@ func _drain(me: NPCData, state: PlayerStateData, days: float) -> void:
 			me.is_down = true
 	elif me.hunger > 0.5 and me.thirst > 0.5 and not me.bleeding:
 		me.health = minf(1.0, me.health + HEAL_PER_DAY * days)
-		if not state.body.is_empty():
-			BodyParts.heal(state, days)   # HP1: wounds close as you heal
+	if not state.body.is_empty():   # HP2: wounds heal, bandages get dirty, open wounds fester
+		me.health = maxf(0.0, me.health - BodyParts.heal(state, days))
 	if state.sleeping and (me.fatigue >= 0.99 or me.health < state.health_at_sleep - 0.01 or me.hunger < 0.08 or me.thirst < 0.08):
 		wake(state)   # rested, hurt, or too hungry or thirsty to sleep on
 

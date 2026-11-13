@@ -70,14 +70,15 @@ func _run(main: Node, args: Dictionary) -> void:
 		var me0: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
 		st.ground = [{"id": &"coffee", "n": 2, "pos": me0.position + Vector2(1.2, 0.5)}, {"id": &"bandage", "n": 3, "pos": me0.position + Vector2(-1.0, 0.8)}]
 		BodyParts.ensure(st)
-		st.body["r_arm"] = {"hp": 0.4, "wound": "cut", "bleeding": true, "bandaged": false}
-		st.body["l_leg"] = {"hp": 0.25, "wound": "fracture", "bleeding": false, "bandaged": false}
-		st.body["torso"] = {"hp": 0.7, "wound": "bullet wound", "bleeding": false, "bandaged": true}
-		st.body["head"] = {"hp": 0.88, "wound": "bruise", "bleeding": false, "bandaged": false}
+		st.body["r_forearm"] = {"hp": 0.4, "wound": "laceration", "bleeding": true, "bandaged": false, "bandage_age": 0.0, "infection": 0.0}
+		st.body["l_shin"] = {"hp": 0.25, "wound": "fracture", "bleeding": false, "bandaged": false, "bandage_age": 0.0, "infection": 0.0}
+		st.body["torso_upper"] = {"hp": 0.7, "wound": "bullet wound", "bleeding": false, "bandaged": true, "bandage_age": 1.5, "infection": 0.0}
+		st.body["l_hand"] = {"hp": 0.6, "wound": "laceration", "bleeding": false, "bandaged": false, "bandage_age": 0.0, "infection": 1.0}
+		st.body["head"] = {"hp": 0.88, "wound": "bruise", "bleeding": false, "bandaged": false, "bandage_age": 0.0, "infection": 0.0}
 		for n in main.get_node("HudLayer").get_children():
 			if n is HealthWindow:
 				n.visible = true
-				n.position = Vector2(900, 110)
+				n.position = Vector2(500, 60)
 		st.timed = {"item": &"burrito", "start": driver.world.tick - 60, "done": driver.world.tick + 120}
 		var me: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
 		me.hunger = 0.25
