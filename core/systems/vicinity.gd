@@ -138,6 +138,41 @@ static func _remove_from_bag(state: PlayerStateData, id: StringName, n: int) -> 
 			state.weapon = &"fists"   # dropped what was in your hand
 	BagGrid.sync(state)
 
+## INV7: Zomboid's container buttons. Each source has a key: "ground",
+## "trunk", "glovebox", or "container:<kind>" for a cupboard, drawer, stash.
+static func key_of(src: Dictionary) -> String:
+	return "container:" + String(src["cont"]) if src["kind"] == "container" else String(src["kind"])
+
+## The containers within reach, each once, in the order they are found.
+static func sources(near: Array) -> Array:
+	var out: Array = []
+	for src in near:
+		var k := key_of(src)
+		if not out.has(k):
+			out.append(k)
+	return out
+
+## Only what is in one container.
+static func only(near: Array, key: String) -> Array:
+	return near.filter(func(src: Dictionary) -> bool: return key_of(src) == key)
+
+## Name of a container key ("Floor", "Trunk", "Kitchen cupboards").
+static func title_of(key: String) -> String:
+	if key.begins_with("container:"):
+		return Containers.title(key.substr(10))
+	return {"ground": "Floor", "trunk": "Trunk", "glovebox": "Glovebox"}.get(key, key.capitalize())
+
+## Zomboid's "Loot all": takes every pile of a container that fits. Ground
+## piles go last-first so the indices of the rest stay right.
+static func take_all(world: World, state: PlayerStateData, srcs: Array) -> Dictionary:
+	var sorted := srcs.duplicate()
+	sorted.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return int(a.get("index", 0)) > int(b.get("index", 0)))
+	var got := 0
+	for src in sorted:
+		if Vicinity.take(world, state, src, 999).get("ok", false):
+			got += 1
+	return {"ok": got > 0, "effect": "picked_up"} if got > 0 else {"ok": false, "reason": "no_room"}
+
 ## INV6: what is nearby laid out on a small grid for the Nearby panel: one pile
 ## per source, first free spot. Piles that do not fit are left off (rare).
 static func layout(near: Array, cols: int, rows: int) -> Array:

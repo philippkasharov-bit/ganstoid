@@ -453,6 +453,8 @@ func _do_move(npc: NPCData, state: PlayerStateData, move: Dictionary) -> Diction
 			return Vicinity.store(_world, npc, state, move["id"], move["n"])
 		"take":
 			return Vicinity.take(_world, state, move["src"], move["n"])
+		"take_all":
+			return Vicinity.take_all(_world, state, move["srcs"])
 	return {}
 
 ## UI5: a bag line is eaten/drunk/applied, or a weapon is taken in hand.

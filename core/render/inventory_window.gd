@@ -1,6 +1,7 @@
-## UI5/INV2/INV6: the bag (I), built from Tarkov, DayZ and Zomboid. Left: the
-## Nearby grid (DayZ vicinity: what lies on the ground or in an open trunk
-## next to you). Right: what is in your hand and your 8x6 bag grid. Every item
+## UI5/INV2/INV6/INV7: the bag (I), built from Tarkov, DayZ and Zomboid. Left:
+## Zomboid's loot side: a column of container buttons (floor, trunk, glovebox,
+## each cupboard) and the grid of the one picked, with "Take all". Right: your
+## side: weight against what you can carry, the hand slot, the 8x6 bag grid. Every item
 ## takes its real size. Drag to arrange, drag across to drop or pick up, R to
 ## turn, double-click to use (or take), right-click for Zomboid-style numbered
 ## actions, hover for the item card. Game changes go out as requests
@@ -22,15 +23,22 @@ var _hand_slot := BagGridView.new()
 var _hint: Control
 var _grid := BagGridView.new()
 var _loose := UiTheme.label("", UiTheme.FONT_SMALL, UiTheme.BAD)
-var _weight_text := UiTheme.label("", UiTheme.FONT_SMALL, UiTheme.DIM)
+var _weight_text := UiTheme.label("", UiTheme.FONT_SMALL, UiTheme.TEXT)
 var _tip := UiTooltip.new()
 var _menu := ContextMenu.new()
 var _menu_item: StringName = &""
 var _key := ""
 var _near := BagGridView.new()
 var _near_title: Label
+var _take_all := Button.new()
+var _cont_column := VBoxContainer.new()
+var _near_key := ""            # the container picked in the column
+var _near_now: Array = []      # what is in it right now
+var _weight_bar := Control.new()
+var _kg := 0.0
 var _menu_src := {}
 const NEAR_COLS := 4
+const CONT_BTN := Vector2(30, 30)
 
 func setup(world: World, at: Vector2) -> void:
 	_world = world
@@ -44,6 +52,7 @@ func setup(world: World, at: Vector2) -> void:
 	body.add_child(split)
 	split.add_child(_vicinity_pane())
 	var mine := VBoxContainer.new()
+	mine.add_child(_weight_header())
 	var hand_row := HBoxContainer.new()
 	hand_row.add_theme_constant_override("separation", 8)
 	_hand_slot.resize_grid(2, 1)
@@ -57,7 +66,6 @@ func setup(world: World, at: Vector2) -> void:
 	_loose.autowrap_mode = TextServer.AUTOWRAP_WORD
 	_loose.custom_minimum_size.x = _grid.custom_minimum_size.x + _near.custom_minimum_size.x
 	body.add_child(_loose)
-	body.add_child(_weight_text)
 	_hint = UiTheme.key_hints([["RMB", "actions"], ["Dbl-click", "use"], ["R", "rotate"]])   # UI27: one line, the rest is in the right-click menu
 	_hint.custom_minimum_size.x = _grid.custom_minimum_size.x + _near.custom_minimum_size.x
 	body.add_child(_hint)
@@ -96,12 +104,11 @@ func _process(_delta: float) -> void:
 		return
 	var npc: NPCData = _world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
 	var near := Vicinity.near(_world, npc, state)
-	var key := "%s|%s|%d|%s" % [state.inventory, state.weapon, state.ammo, near]
+	var key := "%s|%s|%d|%s|%s" % [state.inventory, state.weapon, state.ammo, near, _near_key]
 	if key != _key:
 		_key = key
 		_rebuild(state)
-		_near.show_piles(Vicinity.layout(near, NEAR_COLS, BagGrid.ROWS))
-		_near_title.text = _near_heading(near)
+		_show_near(near)
 
 func _rebuild(state: PlayerStateData) -> void:
 	BagGrid.sync(state)
@@ -112,8 +119,28 @@ func _rebuild(state: PlayerStateData) -> void:
 	var loose := BagGrid.loose(state)
 	_loose.visible = not loose.is_empty()
 	_loose.text = "No room: " + ", ".join(loose.keys().map(func(id: StringName) -> String: return "%s x%d" % [_name(id), loose[id]]))
-	var kg := carried_kg(state)
-	_weight_text.text = "%.1f kg   ·   %d of %d cells used" % [kg, BagGrid.occupancy(state.bag).size(), BagGrid.COLS * BagGrid.ROWS]
+	_kg = carried_kg(state)
+	_weight_text.text = "%.1f / %.0f kg" % [_kg, ItemCatalog.CARRY_KG]
+	_weight_text.add_theme_color_override("font_color", UiTheme.BAD if _kg > ItemCatalog.CARRY_KG else UiTheme.TEXT)
+	_weight_bar.queue_redraw()
+
+## Zomboid's weight line over your side: "5.1 / 12 kg" and a bar (red when over).
+func _weight_header() -> Control:
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 2)
+	var row := HBoxContainer.new()
+	var name_label := UiTheme.label("Your bag", UiTheme.FONT_SMALL, UiTheme.DIM)
+	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(name_label)
+	row.add_child(_weight_text)
+	box.add_child(row)
+	_weight_bar.custom_minimum_size = Vector2(0, 4)
+	_weight_bar.draw.connect(func() -> void:
+		var f := _kg / ItemCatalog.CARRY_KG
+		_weight_bar.draw_rect(Rect2(Vector2.ZERO, _weight_bar.size), Color(1, 1, 1, 0.08))
+		_weight_bar.draw_rect(Rect2(Vector2.ZERO, Vector2(_weight_bar.size.x * minf(f, 1.0), 4)), UiTheme.BAD if f > 1.0 else UiTheme.ACCENT))
+	box.add_child(_weight_bar)
+	return box
 
 ## The item that matches the weapon in hand (pistol in hand -> the pistol item).
 static func _held_item(state: PlayerStateData) -> StringName:
@@ -183,14 +210,64 @@ func _show_tip(id: StringName, at: Vector2) -> void:
 	lines.append(["%dx%d cells   ·   %.1f kg   ·   $%d" % [f.x, f.y, it.get("weight", 0.0), it["price"]], UiTheme.DIM])
 	_tip.show_at(at, it["name"], lines)
 
-## INV6: the Nearby grid (DayZ vicinity), same look as the bag.
-func _vicinity_pane() -> VBoxContainer:
-	var pane := VBoxContainer.new()
+## INV6/INV7: the loot side: container buttons, then the picked one's grid.
+func _vicinity_pane() -> HBoxContainer:
+	var pane := HBoxContainer.new()
+	pane.add_theme_constant_override("separation", UiTheme.GAP)
+	_cont_column.add_theme_constant_override("separation", UiTheme.GAP)
+	_cont_column.custom_minimum_size.x = CONT_BTN.x
+	pane.add_child(_cont_column)
+	var right := VBoxContainer.new()
+	var head := HBoxContainer.new()
 	_near_title = UiTheme.label("Nearby", UiTheme.FONT_SMALL, UiTheme.DIM)
-	pane.add_child(_near_title)
+	_near_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(_near_title)
+	_take_all.text = "Take all"
+	_take_all.focus_mode = Control.FOCUS_NONE
+	_take_all.add_theme_font_size_override("font_size", 10)
+	for look in ["normal", "hover", "pressed", "disabled"]:
+		_take_all.add_theme_stylebox_override(look, UiTheme.button_box(look))
+	_take_all.pressed.connect(func() -> void: _state().ui_move = {"op": "take_all", "srcs": _near_now})
+	head.add_child(_take_all)
+	right.add_child(head)
 	_near.resize_grid(NEAR_COLS, BagGrid.ROWS)
-	pane.add_child(_near)
+	right.add_child(_near)
+	pane.add_child(right)
 	return pane
+
+## Fills the column (one button per container) and the grid of the picked one.
+func _show_near(near: Array) -> void:
+	var keys := Vicinity.sources(near)
+	if not keys.has(_near_key):
+		_near_key = keys[0] if not keys.is_empty() else ""
+	for c in _cont_column.get_children():
+		_cont_column.remove_child(c)
+		c.queue_free()
+	for k in keys:
+		_cont_column.add_child(_cont_button(k, k == _near_key))
+	_near_now = Vicinity.only(near, _near_key)
+	_near.show_piles(Vicinity.layout(_near_now, NEAR_COLS, BagGrid.ROWS))
+	_near_title.text = Vicinity.title_of(_near_key) if _near_key != "" else "Nothing in reach"
+	_take_all.disabled = _near_now.is_empty()
+
+const CONT_ICONS := {"ground": "floor", "trunk": "trunk", "glovebox": "glovebox"}
+
+func _cont_button(key: String, on: bool) -> Button:
+	var b := Button.new()
+	b.focus_mode = Control.FOCUS_NONE
+	b.custom_minimum_size = CONT_BTN
+	b.tooltip_text = Vicinity.title_of(key)
+	for look in ["normal", "hover", "pressed"]:
+		b.add_theme_stylebox_override(look, UiTheme.button_box("on" if on else look))
+	var icon: String = CONT_ICONS.get(key, "stash" if key == "container:" + Containers.STASH else "drawer")
+	var art := Moodles.icon_or_glyph(icon, Vicinity.title_of(key).left(1), 20)
+	art.position = (CONT_BTN - Vector2(20, 20)) * 0.5
+	art.modulate = UiTheme.TEXT if on else UiTheme.DIM
+	b.add_child(art)
+	b.pressed.connect(func() -> void:
+		_near_key = key
+		_key = "")
+	return b
 
 ## LT1: inside your own place, what you drag out of the bag goes in your stash.
 func _at_own_place() -> bool:
@@ -198,17 +275,6 @@ func _at_own_place() -> bool:
 	var e: Entity = _world.entities.get(st.inside_id) if st.inside_id != &"" else null
 	var npc: NPCData = _world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
 	return e != null and Containers.is_yours(npc, e.get_component(ComponentNames.BUILDING))
-
-## Where the Nearby items are: "Kitchen cupboards + 2 more", "Ground", "Trunk + glovebox".
-static func _near_heading(near: Array) -> String:
-	var names: Array = []
-	for src in near:
-		var n: String = Containers.title(src["cont"]) if src["kind"] == "container" else String(src["kind"]).capitalize()
-		if not names.has(n):
-			names.append(n)
-	if names.is_empty():
-		return "Nearby"
-	return names[0] if names.size() == 1 else "%s + %d more" % [names[0], names.size() - 1]
 
 func _take(i: int, n: int) -> void:
 	_state().ui_move = {"op": "take", "src": _near.piles[i]["src"], "n": n}
