@@ -43,6 +43,7 @@ func setup(w: World, city: CityData, at: Vector2) -> void:
 	city_data = city
 	centre = at
 	Cutaway.reset()
+	Cutaway.shared("city")   # TX1: made here, not on a stream worker (its detail textures load once)
 	_environment()
 	_ground()
 	day_night.origin = centre

@@ -50,6 +50,7 @@ static func add(st: SurfaceTool, b: Dictionary, v: Callable, tag: int = 0) -> vo
 	var h := levels * storey
 	var pal: Array = PALETTES.get(kind, PALETTES["building"])
 	var col: Color = pal[rng.randi() % pal.size()].lightened(rng.randf_range(-0.04, 0.05))
+	col = SurfaceDetail.mark(col, _wall_of(kind, col))   # TX1: stucco, brick or block grain
 	var style := {"win_w": rng.randf_range(0.8, 1.6), "win_h": rng.randf_range(1.0, 1.5), "gap": rng.randf_range(2.4, 4.2),
 		"shop": (kind == "commercial") and rng.randf() < 0.8, "rollup": kind in ["industrial", "garage"] and rng.randf() < 0.6,
 		"awning": AWNINGS[rng.randi() % AWNINGS.size()], "storey": storey,
@@ -92,7 +93,7 @@ static func _roof(st: SurfaceTool, v: Callable, poly: PackedVector2Array, h: flo
 	var hull := _open(Geometry2D.convex_hull(poly))
 	if kind in ["house", "apartments"] and levels <= 2 and area < HIP_MAX_AREA and area > HULL_FILL * absf(_area(hull)):
 		var tiles: Array = ROOF_TILE if rng.randf() < 0.65 else ROOF_SHINGLE
-		var col: Color = tiles[rng.randi() % tiles.size()]
+		var col := SurfaceDetail.mark(tiles[rng.randi() % tiles.size()], SurfaceDetail.CLAY if tiles == ROOF_TILE else SurfaceDetail.SHINGLE)
 		var apex := _centroid(hull)
 		var top := h + clampf(sqrt(area) * 0.28, 1.2, 3.2)
 		for i in hull.size():   # on the hull, eaves a little proud: notches hide under the overhang
@@ -106,7 +107,7 @@ static func _roof(st: SurfaceTool, v: Callable, poly: PackedVector2Array, h: flo
 				st.add_vertex(p)
 		return
 	var flat_col: Color = ROOF_FLAT[rng.randi() % ROOF_FLAT.size()]
-	flat(st, v, poly, h, flat_col)
+	flat(st, v, poly, h, SurfaceDetail.mark(flat_col, SurfaceDetail.GRAVEL))
 	for i in poly.size():   # parapet: a low lip round the edge
 		var a := poly[i]
 		var c := poly[(i + 1) % poly.size()]
@@ -124,6 +125,14 @@ static func _box(st: SurfaceTool, v: Callable, at: Vector2, size: Vector2, h: fl
 	for i in 4:
 		quad(st, [v.call(c[i], h), v.call(c[(i + 1) % 4], h), v.call(c[(i + 1) % 4], h + tall), v.call(c[i], h + tall)], Vector3.UP, col.darkened(0.15))
 	quad(st, [v.call(c[0], h + tall), v.call(c[1], h + tall), v.call(c[2], h + tall), v.call(c[3], h + tall)], Vector3.UP, col)
+
+## TX1: what the walls are: houses stucco, red shop fronts brick, works and garages block.
+static func _wall_of(kind: String, col: Color) -> int:
+	if kind in ["industrial", "garage"]:
+		return SurfaceDetail.BLOCK
+	if kind == "commercial" and col.r - col.g > 0.2:
+		return SurfaceDetail.BRICK
+	return SurfaceDetail.STUCCO
 
 ## Windows by the building's own size and spacing; the door flush in its
 ## wall; on a shop's front a glass band and an awning, on a garage a roll-up.

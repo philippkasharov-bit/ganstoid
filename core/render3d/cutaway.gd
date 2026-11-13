@@ -13,6 +13,9 @@
 ## R3D11: walls block sight (SightMap): past the nearest wall it is dark.
 ## R3D5: inside a building, its roof and upper floors go, and the walls on
 ## the camera's side drop to waist height, so you see the room you are in.
+## TX1: surfaces marked with a material (SurfaceDetail) get a world-mapped
+## detail texture over their colour: top-down on ground and roofs, along the
+## wall on walls.
 class_name Cutaway
 extends RefCounted
 
@@ -46,6 +49,10 @@ uniform float sight[360];             // R3D11: how far you can see each degree 
 uniform bool sight_on = false;
 uniform float self_glow = 0.0;        // lamp heads: lit at night
 uniform float sway = 0.0;             // D2: palms and trees in the breeze
+uniform sampler2DArray detail : filter_linear_mipmap, repeat_enable;   // TX1: SurfaceDetail maps
+uniform float tile_m[12];
+uniform float strength[12];
+varying vec3 wnormal;
 varying float glow;                   // a lit window / shop front (UV.x)
 varying vec3 world_pos;
 varying flat int tag;  // the building this vertex belongs to (0: road, ground, palm)
@@ -53,6 +60,7 @@ varying vec2 palm;     // a palm's foot in 3D x/z
 
 void vertex() {
 	world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	wnormal = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
 	if (sway > 0.0) {   // D2: tree tops move in the breeze, more the higher they are
 		float h = max(world_pos.y - 3.0, 0.0);
 		vec3 wind = vec3(sin(TIME * 1.1 + world_pos.x * 0.13), 0.0, cos(TIME * 0.9 + world_pos.z * 0.11)) * sway * h * 0.035;
@@ -87,6 +95,17 @@ bool cut_room() {
 	vec2 toward_camera = -normalize(view_dir.xz);
 	bool near_side = dot(p - (room_min + room_max) * 0.5, toward_camera) > 0.0;
 	return world_pos.y > ceiling || (near_side && world_pos.y > waist);
+}
+
+// TX1: the material's grain here, 1.0 = no change (top-down on flats, along the wall on walls).
+float grain(int id) {
+	vec2 uv = world_pos.xz;
+	if (abs(wnormal.y) < 0.5) {
+		vec2 along = normalize(vec2(-wnormal.z, wnormal.x) + vec2(0.0001));
+		uv = vec2(dot(world_pos.xz, along), -world_pos.y);
+	}
+	float d = texture(detail, vec3(uv / tile_m[id], float(id))).r;
+	return 1.0 + (d - 0.5) * 2.0 * strength[id];
 }
 
 // Lamp pools and headlights here (0..1).
@@ -125,6 +144,10 @@ void fragment() {
 		discard;
 	}
 	vec3 col = use_vertex ? COLOR.rgb : tint;
+	int surface = use_vertex ? int(COLOR.a * 15.0 + 0.5) : 15;
+	if (surface < 12) {
+		col *= grain(surface);
+	}
 	if (cut && world_pos.y > cut_h - cap_m) {
 		col *= 0.45;   // the cap: the cut reads as a wall top, not a hole
 	}
@@ -155,6 +178,10 @@ static func material(colour: Color = Color.WHITE, use_vertex: bool = true, rough
 	mat.set_shader_parameter("roughness", roughness)
 	mat.set_shader_parameter("self_glow", glows)
 	mat.set_shader_parameter("sway", breeze)
+	if use_vertex:   # TX1: only vertex-coloured meshes carry a material
+		mat.set_shader_parameter("detail", SurfaceDetail.textures())
+		mat.set_shader_parameter("tile_m", PackedFloat32Array(SurfaceDetail.TILE_M))
+		mat.set_shader_parameter("strength", PackedFloat32Array(SurfaceDetail.STRENGTH))
 	_materials.append(mat)
 	return mat
 

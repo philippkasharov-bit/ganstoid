@@ -19,6 +19,7 @@ const AREA_COL := {"park": Color("a9c48f"), "hills": Color("d6dcc4"), "mountains
 	"foothill": Color("e3dac6"), "industrial": Color("d3cfd8"), "downtown": Color("d8cbb0"), "commercial": Color("e1d4ba"), "river": Color("9fb3bf")}
 const SIDEWALK := Color("cbc7be")
 const CENTRE_LINE := Color("d8b23e")
+const ROAD_SURFACE := {"path": SurfaceDetail.SIDEWALK, "drive": SurfaceDetail.SIDEWALK, "hill": SurfaceDetail.DIRT, "trail": SurfaceDetail.DIRT}   # TX1: the rest is asphalt
 
 const ALL := Vector2i(-1000000, -1000000)
 
@@ -69,6 +70,7 @@ func _tool(at: Vector2) -> SurfaceTool:
 		if _sink == null:
 			_sink = SurfaceTool.new()
 			_sink.begin(Mesh.PRIMITIVE_TRIANGLES)
+			_sink.set_uv(Vector2.ZERO)   # same vertex format as a chunk (without it, every UV set logs an error)
 		return _sink
 	if not _tools.has(k):
 		var st := SurfaceTool.new()
@@ -99,15 +101,16 @@ func _flat_poly(poly: PackedVector2Array, h: float, col: Color) -> void:
 
 func _area(area: Dictionary) -> void:
 	if AREA_COL.has(area["kind"]):
-		_flat_poly(_open(area["poly"]), 0.005, AREA_COL[area["kind"]])
+		var col: Color = AREA_COL[area["kind"]]
+		_flat_poly(_open(area["poly"]), 0.005, SurfaceDetail.mark(col, SurfaceDetail.GRASS) if area["kind"] == "park" else col)
 
 ## A road: its sidewalk band, the carriageway, and a centre line on arterials.
 func _road(r: Dictionary) -> void:
 	var w: float = r.get("w", ROAD_W.get(r["tier"], 6.0))
 	var walk: float = r.get("walk", 0.0)
 	if walk > 0.0:
-		_ribbon(r["pts"], w * 0.5 + walk, 0.02, SIDEWALK)
-	_ribbon(r["pts"], w * 0.5, 0.04, ROAD_COL.get(r["tier"], ROAD_COL["res"]))
+		_ribbon(r["pts"], w * 0.5 + walk, 0.02, SurfaceDetail.mark(SIDEWALK, SurfaceDetail.SIDEWALK))
+	_ribbon(r["pts"], w * 0.5, 0.04, SurfaceDetail.mark(ROAD_COL.get(r["tier"], ROAD_COL["res"]), ROAD_SURFACE.get(r["tier"], SurfaceDetail.ASPHALT)))
 	if r["tier"] == "art":
 		_ribbon(r["pts"], 0.1, 0.05, CENTRE_LINE)
 
