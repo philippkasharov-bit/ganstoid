@@ -20,6 +20,7 @@ var _menu := ContextMenu.new()
 var _menu_ops: Array = []
 var _selected := ""
 var _key := ""
+var _hurt_seen := -1
 
 func setup(world: World) -> void:
 	_world = world
@@ -59,6 +60,11 @@ func refresh() -> void:
 	var state: PlayerStateData = p.get_component(ComponentNames.PLAYER_STATE)
 	var npc: NPCData = p.get_component(ComponentNames.NPC)
 	BodyParts.ensure(state)
+	if state.hurt_serial != _hurt_seen:   # A3: show where the last hit landed
+		if _hurt_seen >= 0 and state.hurt_part != "":
+			_doll.blink(state.hurt_part)
+			_selected = state.hurt_part
+		_hurt_seen = state.hurt_serial
 	var key := "%s|%d|%s|%d" % [state.body, roundi(npc.health * 100), _selected, state.inventory.get(&"bandage", 0)]
 	if key != _key:
 		_key = key

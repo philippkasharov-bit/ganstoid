@@ -16,6 +16,9 @@ const TONES := {1: Color("8fdc7a"), -1: Color("f08a7a"), 0: Color.WHITE}
 var _world: World
 var _seen := 0
 var _lines: Array = []   # [{text, colour, age}], oldest first
+var _prev := {}          # A1: need values last frame, to say what eating or a bandage did
+const GAINS := {"hunger": "Food", "thirst": "Water", "fatigue": "Energy", "health": "Health"}
+const GAIN_MIN := 0.04   # a jump this big in one frame came from something you used
 
 func setup(world: World) -> void:
 	_world = world
@@ -26,6 +29,7 @@ func _process(delta: float) -> void:
 	if p == null:
 		return
 	var state: PlayerStateData = p.get_component(ComponentNames.PLAYER_STATE)
+	_gains(p.get_component(ComponentNames.NPC))
 	if state.message_serial != _seen:
 		_seen = state.message_serial
 		if not state.message_alert and state.last_message != "":
@@ -34,6 +38,15 @@ func _process(delta: float) -> void:
 		l["age"] += delta
 	_lines = _lines.filter(func(l: Dictionary) -> bool: return l["age"] < LIFE_S)
 	queue_redraw()
+
+## A1: "+Food 50%" in green the moment a need jumps up (you ate, drank, bandaged).
+func _gains(npc: NPCData) -> void:
+	for field in GAINS:
+		var now: float = npc.get(field)
+		var before: float = _prev.get(field, now)
+		if now - before >= GAIN_MIN:
+			push("+%s %d%%" % [GAINS[field], roundi((now - before) * 100)], 1)
+		_prev[field] = now
 
 func push(text: String, tone: int) -> void:
 	for part in split_lines(text):

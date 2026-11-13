@@ -137,7 +137,9 @@ static func _hurt(world: World, npc: NPCData, w: Dictionary) -> Dictionary:
 	if not blunt:
 		npc.bleeding = true
 	if npc.id == PlayerFactory.PLAYER_ENTITY_ID:   # HP1: where it landed and what it left
-		BodyParts.hit(world, world.entities[npc.id].get_component(ComponentNames.PLAYER_STATE), w)
+		var ps: PlayerStateData = world.entities[npc.id].get_component(ComponentNames.PLAYER_STATE)
+		ps.hurt_part = BodyParts.hit(world, ps, w)
+		ps.hurt_serial += 1   # A3: the screen edge flashes, the part blinks
 	var out := {"hit_id": npc.id, "end": npc.position}
 	if npc.health <= 0.0:
 		npc.is_down = true

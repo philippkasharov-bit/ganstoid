@@ -67,6 +67,18 @@ func _run(main: Node, args: Dictionary) -> void:
 		st.menu_serial += 1
 		await process_frame
 		await process_frame
+	if args.has("motion"):   # A1-A3 look: just ate (Hungry -> Peckish, +Food), then got hit
+		var mm: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
+		mm.hunger = 0.2
+		mm.thirst = 0.25
+		for i in 30:
+			await process_frame
+		mm.hunger = 0.45
+		for i in 20:
+			await process_frame
+		CombatSystem._hurt(driver.world, mm, {"damage": 0.2})
+		for i in 6:
+			await process_frame
 	if args.has("pause"):   # PM1 look: the Esc menu with the controls shown
 		for n in main.get_node("HudLayer").get_children():
 			if n is PauseMenu:

@@ -3,9 +3,9 @@
 ## is well. Bad moodles sit on red, going from pale to deep red over four
 ## levels; good ones sit on green. The icon is drawn dark on the tile. Each
 ## level has its own name (Peckish, Hungry, Very Hungry, Starving), shown with
-## a line of what it does when you hover. A tile flashes for a moment when it
-## appears or changes level (UI26: a flash, not a tilt, so the column stays
-## pixel-straight under the clock). No numbers, no bars. A click still does the
+## a line of what it does when you hover (with the number behind it). A tile
+## slides in, shakes when it gets worse, shows an arrow when it changes and
+## slides out when it clears (A1/A2). The column itself never moves. A click still does the
 ## obvious fix (eat, drink, bandage, sleep). Reads state; the one write is
 ## state.ui_use.
 class_name Moodles
@@ -16,7 +16,6 @@ const ICON := 20.0
 const BAD := [Color("c98a7c"), Color("c0604f"), Color("a9372b"), Color("7e1b17")]
 const GOOD := [Color("8fbf7e"), Color("6fae5b"), Color("4f9440"), Color("357a2a")]
 const ICON_INK := Color(0.1, 0.09, 0.09, 0.9)
-const FLASH_S := 1.2
 const CLICK_TEXT := {"food": "eat the best food you carry", "drink": "drink", "medical": "bandage the worst wound", "sleep": "sleep", "bag": "open the bag"}
 const REFRESH_S := 0.25
 
@@ -101,20 +100,60 @@ func _process(delta: float) -> void:
 		_key = key
 		_rebuild(shown)
 
+## A1/A2: every change shows what happened. A new moodle slides in from the
+## right; one that gets worse shakes and shows a red down arrow; one that gets
+## better shows a green up arrow; one that goes away slides out with its
+## arrow (up when a bad one clears). Tiles sit in a wrapper so the column
+## stays put while the face moves.
+const SLIDE_S := 0.35
+const ARROW_S := 1.6
+var _last_rows := {}   # moodle family -> its last row, for the slide-out
+var _anims := {}       # moodle family -> [anim, start], so a rebuild for another tile does not cut it short
+
 func _rebuild(shown: Array) -> void:
 	for c in get_children():
-		if c != _tip:
+		if c != _tip and not c.has_meta("ghost"):
 			remove_child(c)
 			c.queue_free()
 	var now := {}
+	var rows := {}
 	for m in shown:
 		var family: String = m[0] + str(m[3])
-		var tile := _tile(m)
-		if _seen.get(family, -1) != m[2]:
-			tile.set_meta("flash_until", _clock + FLASH_S)   # new or changed: draw the eye like Zomboid
+		var before: int = _seen.get(family, -1)
+		var anim := "in" if before < 0 else ("worse" if m[2] > before else ("better" if m[2] < before else ""))
+		var t0 := _clock
+		if anim == "" and _anims.has(family) and _clock - float(_anims[family][1]) < ARROW_S:
+			anim = _anims[family][0]   # still showing its arrow from a moment ago
+			t0 = _anims[family][1]
+		if anim != "":
+			_anims[family] = [anim, t0]
+		add_child(_wrap(m, anim, t0))
 		now[family] = m[2]
-		add_child(tile)
+		rows[family] = m
+	for family in _seen:
+		if not now.has(family) and _last_rows.has(family):
+			var ghost := _wrap(_last_rows[family], "out", _clock)
+			ghost.set_meta("ghost", true)
+			add_child(ghost)
 	_seen = now
+	_last_rows = rows
+
+func _wrap(m: Array, anim: String, t0: float) -> Control:
+	var w := Control.new()
+	w.custom_minimum_size = Vector2(TILE, TILE)
+	w.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var face := _tile(m)
+	face.size = Vector2(TILE, TILE)
+	w.add_child(face)
+	if anim != "":
+		w.set_meta("anim", anim)
+		w.set_meta("t0", t0)
+		var up: bool = anim == "better" or (anim == "out" and not m[3])
+		if anim != "in":
+			w.add_child(_arrow(up))
+		if anim == "in" and _clock - t0 < 0.01:
+			face.position.x = TILE * 1.3
+	return w
 
 func _tile(m: Array) -> Button:
 	var b := Button.new()
@@ -138,12 +177,46 @@ func _tile(m: Array) -> Button:
 	b.pressed.connect(func() -> void: _act(m[5]))
 	return b
 
+## The small arrow left of a tile: green up when it got better, red down when worse.
+func _arrow(up: bool) -> Control:
+	var a := Control.new()
+	a.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	a.position = Vector2(-12, TILE * 0.5)
+	a.draw.connect(func() -> void:
+		var col := UiTheme.GOOD if up else UiTheme.BAD
+		var d := -1.0 if up else 1.0   # an arrow 8 px wide, 12 px tall, with a dark edge so it reads on any ground
+		var head := PackedVector2Array([Vector2(0, 7 * d), Vector2(-5, 0), Vector2(5, 0)])
+		var shaft := Rect2(Vector2(-2, -6 if not up else 0), Vector2(4, 6))
+		a.draw_colored_polygon(head, Color(0, 0, 0, 0.6))
+		a.draw_rect(shaft.grow(1), Color(0, 0, 0, 0.6))
+		a.draw_rect(shaft, col)
+		a.draw_colored_polygon(PackedVector2Array([head[0] * 0.8, head[1] * 0.8, head[2] * 0.8]), col))
+	return a
+
 func _flash() -> void:
-	for c in get_children():
-		if c is Button:
-			var left: float = c.get_meta("flash_until", 0.0) - _clock
-			var glow := 0.35 * absf(sin(_clock * 10.0)) * clampf(left / FLASH_S, 0.0, 1.0) if left > 0.0 else 0.0
-			c.self_modulate = Color(1.0 + glow, 1.0 + glow, 1.0 + glow)
+	for w in get_children():
+		if not w.has_meta("anim"):
+			continue
+		var t: float = _clock - float(w.get_meta("t0"))
+		var face: Control = w.get_child(0)
+		match String(w.get_meta("anim")):
+			"in":
+				face.position.x = TILE * 1.3 * (1.0 - ease(clampf(t / SLIDE_S, 0.0, 1.0), 0.3))
+			"worse":
+				face.position.x = 3.0 * sin(t * 40.0) * clampf(1.0 - t / 0.5, 0.0, 1.0)
+			"out":
+				face.position.x = TILE * 1.3 * ease(clampf(t / 0.5, 0.0, 1.0), 2.0)
+				w.modulate.a = clampf(1.0 - t / 0.6, 0.0, 1.0)
+				if t > 0.6:
+					w.queue_free()
+		if w.get_child_count() > 1:
+			var arrow: Control = w.get_child(1)
+			arrow.visible = t < ARROW_S
+			arrow.position.y = TILE * 0.5 + 2.0 * sin(t * 8.0)
+			arrow.queue_redraw()
+		if t > ARROW_S and w.get_meta("anim") != "out":
+			face.position.x = 0.0
+			w.remove_meta("anim")
 
 ## art/ui/needs/<name>.png, then art/ui/icons/<name>.png, else the letter.
 static func icon_or_glyph(name: String, glyph: String, px: float) -> Control:

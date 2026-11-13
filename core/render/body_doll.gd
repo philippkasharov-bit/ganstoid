@@ -22,6 +22,18 @@ static var SHAPES := _shapes()
 var body: Dictionary = {}
 var selected := ""
 var _hovered := ""
+var _blink := ""        # A3: the part just hit, outlined in pulsing red for a moment
+var _blink_left := 0.0
+const BLINK_S := 2.0
+
+func blink(part: String) -> void:
+	_blink = part
+	_blink_left = BLINK_S
+
+func _process(delta: float) -> void:
+	if _blink_left > 0.0:
+		_blink_left -= delta
+		queue_redraw()
 
 func _init() -> void:
 	custom_minimum_size = Vector2(W, H)
@@ -85,6 +97,8 @@ func _draw() -> void:
 		draw_polyline(pts + PackedVector2Array([pts[0]]), edge, 2.0 if edge != OUTLINE else 1.0, true)
 		if b["bleeding"]:
 			_drop(_centre(pts))
+		if part == _blink and _blink_left > 0.0:
+			draw_polyline(pts + PackedVector2Array([pts[0]]), Color(1, 0.2, 0.15, absf(sin(_blink_left * 9.0))), 3.0, true)
 
 ## Strips across the part (yellowed when the dressing is dirty).
 func _bandage(pts: PackedVector2Array, is_dirty: bool) -> void:

@@ -87,6 +87,10 @@ func _ready() -> void:
 	var pause := PauseMenu.new()       # PM1: Esc with nothing open
 	get_parent().add_child.call_deferred(pause)
 	pause.setup_pause(_world, get_node(world_driver_path))
+	var flash := DamageFlash.new()     # A3: red screen edges when you are hit
+	get_parent().add_child.call_deferred(flash)
+	flash.setup(_world)
+	get_parent().move_child.call_deferred(flash, 0)   # under every HUD piece: it is the world that flashes
 	var halo := HaloText.new()         # HT1: short lines float over your head
 	get_parent().add_child.call_deferred(halo)
 	halo.setup(_world)
