@@ -38,7 +38,7 @@ uniform float cone_cos = 0.34;        // half the field of view (about 70 degree
 uniform float near_m = 3.5;           // always seen round you
 uniform float unseen = 0.42;          // how bright the unseen world is
 uniform float night = 0.0;            // 0 day .. 1 night
-uniform vec4 lights[64];              // x, z (3D), radius, strength
+uniform vec4 lights[96];              // x, z (3D), radius, strength
 uniform int light_count = 0;
 uniform float moon = 0.28;
 varying float glow;                   // a lit window / shop front (UV.x)
@@ -83,8 +83,7 @@ float lamp() {
 	float sum = 0.0;
 	for (int i = 0; i < light_count; i++) {
 		float d = distance(world_pos.xz, lights[i].xy);
-		float f = max(0.0, 1.0 - d / lights[i].z);
-		sum += f * f * lights[i].w;
+		sum += (1.0 - smoothstep(lights[i].z * 0.3, lights[i].z, d)) * lights[i].w;   // = StreetLights.pool
 	}
 	return min(sum, 1.0);
 }
@@ -118,7 +117,7 @@ void fragment() {
 	float pool = lamp();
 	float bright = mix(1.0, max(moon, pool), night);   // at night you see what is lit
 	ALBEDO = mix(mix(grey, col, 0.35) * unseen, col, lit) * bright;
-	EMISSION = night * (vec3(1.0, 0.78, 0.45) * pool * 0.45 * col + vec3(1.0, 0.82, 0.5) * glow * 0.9);
+	EMISSION = night * (vec3(1.0, 0.8, 0.5) * pool * 0.6 * col + vec3(1.0, 0.82, 0.5) * glow * 0.9);
 	ROUGHNESS = roughness;
 }
 """
@@ -148,11 +147,11 @@ static func aim(focus: Vector3, view_dir: Vector3) -> void:
 ## R3D10: how dark it is and the lights near you (x, z in 3D, radius, strength).
 static func light(dark: float, lights: PackedVector4Array) -> void:
 	var list := lights.duplicate()
-	list.resize(64)
+	list.resize(96)
 	for mat in _materials:
 		mat.set_shader_parameter("night", dark)
 		mat.set_shader_parameter("lights", list)
-		mat.set_shader_parameter("light_count", mini(lights.size(), 64))
+		mat.set_shader_parameter("light_count", mini(lights.size(), 96))
 
 ## R3D8: which way you face (map radians): the vision cone.
 static func facing(angle: float) -> void:

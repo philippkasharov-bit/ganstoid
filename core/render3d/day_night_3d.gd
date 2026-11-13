@@ -10,8 +10,8 @@ class_name DayNight3D
 extends Node
 
 const POST_H := 5.5
-const LAMP_REACH := 110.0       # lamps this near the player light the scene
-const MAX_LIGHTS := 64          # the shader's list
+const LAMP_REACH := 100.0       # lamps this near the player light the scene
+const MAX_LIGHTS := 96          # the shader's list
 const HEADLIGHT_AHEAD := 6.0
 const HEADLIGHT_R := 7.0
 const SKY_DAY := Color("e9e1cf")
@@ -30,26 +30,42 @@ var hour_override := -1.0       # checks and screenshots: a fixed hour
 var city: CityData              # streets to light (set by the view)
 var radius := 300.0             # lamps placed this far round origin
 var _lights: StreetLights
+var _head_mat := StandardMaterial3D.new()   # lamp heads: lit at night
 
 func _ready() -> void:
 	_lights = StreetLights.build(city, origin, radius)   # the same layout the sim sees by
 	add_child(_posts(_lights.lamps))
 
-func _posts(at: PackedVector2Array) -> MultiMeshInstance3D:
+## Posts as tall as their pool is wide, each with a head that glows at night.
+func _posts(at: PackedVector3Array) -> Node3D:
 	var pole := CylinderMesh.new()
 	pole.top_radius = 0.06
 	pole.bottom_radius = 0.09
-	pole.height = POST_H
+	pole.height = 1.0
 	pole.radial_segments = 5
+	var head := BoxMesh.new()
+	head.size = Vector3(0.7, 0.18, 0.35)
+	var both := Node3D.new()
+	var posts := _multi(pole, Cutaway.material(Color("4a4d52"), false, 0.8))
+	var heads := _multi(head, _head_mat)
+	for mi in [posts, heads]:
+		mi.multimesh.instance_count = at.size()
+		both.add_child(mi)
+	for i in at.size():
+		var tall := POST_H * at[i].z / 11.0
+		var foot := Vector3(at[i].x - origin.x, 0, at[i].y - origin.y)
+		posts.multimesh.set_instance_transform(i, Transform3D(Basis().scaled(Vector3(1, tall, 1)), foot + Vector3(0, tall * 0.5, 0)))
+		heads.multimesh.set_instance_transform(i, Transform3D(Basis(), foot + Vector3(0, tall, 0)))
+	return both
+
+static func _multi(mesh: Mesh, mat: Material) -> MultiMeshInstance3D:
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.mesh = pole
-	mm.instance_count = at.size()
-	for i in at.size():
-		mm.set_instance_transform(i, Transform3D(Basis(), Vector3(at[i].x - origin.x, POST_H * 0.5, at[i].y - origin.y)))
+	mm.mesh = mesh
 	var mi := MultiMeshInstance3D.new()
 	mi.multimesh = mm
-	mi.material_override = Cutaway.material(Color("4a4d52"), false, 0.8)
+	mi.material_override = mat
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	return mi
 
 func _process(_delta: float) -> void:
@@ -57,6 +73,9 @@ func _process(_delta: float) -> void:
 		return
 	var hour := hour_override if hour_override >= 0.0 else SimClock.day_fraction(world.tick) * 24.0
 	night = StreetLights.darkness(hour)
+	_head_mat.albedo_color = Color("6b6d70").lerp(Color("ffe2a8"), night)
+	_head_mat.emission_enabled = night > 0.0
+	_head_mat.emission = Color("ffd58a") * night * 1.6
 	_sky(hour)
 	var player: Entity = world.entities.get(PlayerFactory.PLAYER_ENTITY_ID) if world != null else null
 	_gather((player.get_component(ComponentNames.NPC) as NPCData).position if player != null else origin)
@@ -80,7 +99,7 @@ func _sky(hour: float) -> void:
 func _gather(p: Vector2) -> void:
 	var found: Array = []
 	for l in _lights.near(p, LAMP_REACH):
-		found.append(Vector3(l.x, l.y, StreetLights.LAMP_R))
+		found.append(l)
 	for id in (world.get_entities_with_component(ComponentNames.VEHICLE) if world != null else {}):
 		var car: VehicleData = world.entities[id].get_component(ComponentNames.VEHICLE)
 		if car.driver_id != &"" and car.position.distance_to(p) < LAMP_REACH:
