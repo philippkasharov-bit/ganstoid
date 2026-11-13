@@ -174,7 +174,7 @@ func process_entities(entities: Dictionary, delta: float, tick: int) -> void:
 			var speed := RUN_SPEED if Input.is_physical_key_pressed(KEY_SHIFT) else MOVE_SPEED
 			if state.aiming:
 				speed = AIM_SPEED
-			speed *= NeedsSystem.speed_factor(npc)
+			speed *= NeedsSystem.speed_factor(npc) * BodyParts.move_mult(state)   # HP1: hurt legs limp
 			var step := input_dir.normalized() * speed * CrewSystem.player_speed_multiplier(_world, state) * delta
 			npc.position = SimNav.active.slide(npc.position, step) if SimNav.active != null else npc.position + step   # walls are solid
 			_world.reindex_position(npc.id)

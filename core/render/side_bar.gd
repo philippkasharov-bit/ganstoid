@@ -8,6 +8,7 @@ extends VBoxContainer
 const BUTTONS := [
 	["Bag", "I", &"inventory", "bag"],
 	["Character", "K", &"skills_window", "skills"],
+	["Health", "H", &"health_window", "medkit"],
 	["Crew", "Tab", &"ui_focus_next", "crew"],
 	["Turf", "U", &"turf_map", "turf"],
 ]

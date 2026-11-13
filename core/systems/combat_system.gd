@@ -110,7 +110,7 @@ static func _swing(world: World, me: NPCData, dir: Vector2, w: Dictionary) -> Di
 static func _shoot(world: World, me: NPCData, state: PlayerStateData, dir: Vector2, w: Dictionary, rng: RandomNumberGenerator) -> Dictionary:
 	state.ammo -= 1
 	state.shots_fired += 1
-	var spread := deg_to_rad(w["spread_aim_deg"] if state.aiming else w["spread_hip_deg"]) * NeedsSystem.spread_factor(me) * Skills.less(state, &"shooting") * (1.15 if Traits.has(state, &"brawler") else 1.0)
+	var spread := deg_to_rad(w["spread_aim_deg"] if state.aiming else w["spread_hip_deg"]) * NeedsSystem.spread_factor(me) * BodyParts.aim_mult(state) * Skills.less(state, &"shooting") * (1.15 if Traits.has(state, &"brawler") else 1.0)
 	return _fire(world, me, dir.rotated(rng.randf_range(-spread, spread)), w)
 
 ## One round from `shooter` along `dir`: stops in the first standing body or wall.
@@ -136,6 +136,8 @@ static func _hurt(world: World, npc: NPCData, w: Dictionary) -> Dictionary:
 	var blunt: bool = w.get("blunt", false)
 	if not blunt:
 		npc.bleeding = true
+	if npc.id == PlayerFactory.PLAYER_ENTITY_ID:   # HP1: where it landed and what it left
+		BodyParts.hit(world, world.entities[npc.id].get_component(ComponentNames.PLAYER_STATE), w)
 	var out := {"hit_id": npc.id, "end": npc.position}
 	if npc.health <= 0.0:
 		npc.is_down = true

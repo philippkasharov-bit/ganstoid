@@ -53,6 +53,9 @@ func _ready() -> void:
 	var skills := CharacterWindow.new()
 	get_parent().add_child.call_deferred(skills)
 	skills.setup(_world, Vector2(600, 200))
+	var health := HealthWindow.new()   # HP1: H
+	get_parent().add_child.call_deferred(health)
+	health.setup(_world, Vector2(54, 110))
 	var bar := SideBar.new()
 	get_parent().add_child.call_deferred(bar)
 	bar.setup(_world)

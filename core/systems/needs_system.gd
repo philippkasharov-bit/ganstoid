@@ -56,6 +56,8 @@ func _drain(me: NPCData, state: PlayerStateData, days: float) -> void:
 			me.is_down = true
 	elif me.hunger > 0.5 and me.thirst > 0.5 and not me.bleeding:
 		me.health = minf(1.0, me.health + HEAL_PER_DAY * days)
+		if not state.body.is_empty():
+			BodyParts.heal(state, days)   # HP1: wounds close as you heal
 	if state.sleeping and (me.fatigue >= 0.99 or me.health < state.health_at_sleep - 0.01 or me.hunger < 0.08 or me.thirst < 0.08):
 		wake(state)   # rested, hurt, or too hungry or thirsty to sleep on
 
@@ -109,6 +111,8 @@ static func use_item(me: NPCData, state: PlayerStateData, item_id: StringName) -
 	if it.has("heal"):
 		me.health = minf(1.0, me.health + it["heal"])
 		me.bleeding = false
+		if not state.body.is_empty():   # HP1: the bandage goes on the worst wound
+			BodyParts.bandage(state, me)
 	state.inventory[item_id] -= 1
 	if state.inventory[item_id] <= 0:
 		state.inventory.erase(item_id)

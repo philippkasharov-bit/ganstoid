@@ -43,6 +43,8 @@ extends Resource
 @export var bag: Array = []
 ## INV4: piles you dropped on the street: [{id, n, pos}]. Saved with the game.
 @export var ground: Array = []
+## HP1: the player's body parts: part -> {hp, wound, bleeding, bandaged}.
+@export var body: Dictionary = {}
 
 ## Phase 2 batch 8 (locked): the player's standing with each gang (keyed
 ## by GangData.id) and with each unaffiliated "solo" dealer (keyed by
