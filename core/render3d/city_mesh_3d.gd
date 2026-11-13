@@ -23,6 +23,7 @@ var _tools := {}   # chunk Vector2i -> SurfaceTool
 
 ## Every chunk mesh plus the palms, as nodes ready to add under a Node3D.
 static func build(city: CityData, centre: Vector2, radius: float) -> Array[Node3D]:
+	Cutaway.reset()
 	var b := CityMesh3D.new()
 	b.origin = centre
 	var r2 := radius * radius
@@ -120,10 +121,7 @@ func _building(b: Dictionary) -> void:
 	BuildingMesh3D.add(_tool(poly[0]), b, _v)
 
 func _commit() -> Array[Node3D]:
-	var mat := StandardMaterial3D.new()
-	mat.vertex_color_use_as_albedo = true
-	mat.roughness = 0.95
-	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var mat := Cutaway.material()   # R3D4: see-through where it hides the player
 	var out: Array[Node3D] = []
 	for k in _tools:
 		var mi := MeshInstance3D.new()
@@ -152,11 +150,7 @@ func _palms(wells: PackedVector2Array) -> Array[Node3D]:
 			mm.set_instance_transform(i, Transform3D(turn, _v(wells[i], part[2])))
 		var mmi := MultiMeshInstance3D.new()
 		mmi.multimesh = mm
-		var mat := StandardMaterial3D.new()
-		mat.albedo_color = part[1]
-		mat.roughness = 1.0
-		mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-		mmi.material_override = mat
+		mmi.material_override = Cutaway.material(part[1], false, 1.0)
 		out.append(mmi)
 	return out
 

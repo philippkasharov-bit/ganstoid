@@ -1,4 +1,4 @@
-## R3D screenshot: the 3D look test. godot --path . -s debug/shot_3d.gd -- --out=<png> [--size=<ortho m>] [--radius=<m>] [--sim=<seconds of sim to run first>]
+## R3D screenshot: the 3D look test. godot --path . -s debug/shot_3d.gd -- --out=<png> [--size=<ortho m>] [--radius=<m>] [--sim=<seconds of sim to run first>] [--behind (R3D4: stand the player behind the nearest tall building)]
 extends SceneTree
 
 func _initialize() -> void:
@@ -20,6 +20,8 @@ func _initialize() -> void:
 		var me: NPCData = preview.driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
 		var outside: int = preview.driver.world.get_entities_with_component(ComponentNames.NPC).values().filter(func(e: Entity) -> bool: return not (e.get_component(ComponentNames.NPC) as NPCData).indoors).size()
 		print("R3D3: player %s (spawn %s) indoors=%s; %d people outdoors in the district" % [me.position, preview.centre, me.indoors, outside])
+		if args.has("behind"):
+			me.position = _behind_building(me.position)
 		preview.camera.position += Vector3(me.position.x - preview.centre.x, 0, me.position.y - preview.centre.y)   # look at the player
 	for i in 8:
 		await process_frame
@@ -33,3 +35,21 @@ func _initialize() -> void:
 		await process_frame
 	root.get_viewport().get_texture().get_image().save_png(args.get("out", "/tmp/3d.png"))
 	quit()
+
+## Just past the far (north-west, away from the camera) side of the nearest 2+ storey building.
+func _behind_building(near: Vector2) -> Vector2:
+	var away := Vector2(-1, -1).normalized()
+	var best: Dictionary = {}
+	var best_d := INF
+	for b in CityData.load_file().buildings:
+		var d := (b["poly"][0] as Vector2).distance_squared_to(near)
+		if int(b.get("levels", 1)) >= 2 and d < best_d:
+			best_d = d
+			best = b
+	var poly: PackedVector2Array = best["poly"]
+	var mid := Vector2.ZERO
+	var far := -INF
+	for p in poly:
+		mid += p / poly.size()
+		far = maxf(far, p.dot(away))
+	return mid + away * (far - mid.dot(away) + 1.2)

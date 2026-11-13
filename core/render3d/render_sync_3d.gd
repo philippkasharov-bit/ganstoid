@@ -6,6 +6,8 @@
 ## their sim position and face where they walk (the player faces the mouse);
 ## someone down lies flat. Shirts: role colours as in 2D (you, cops,
 ## dealers, fixers); everyone else picks a muted colour from their id.
+## R3D4: it aims the Cutaway hole at the player each frame, and a faint
+## silhouette of you shows through anything that still covers you.
 class_name RenderSync3D
 extends Node3D
 
@@ -30,10 +32,12 @@ var _head := _layer(Vector3(0.3, 0.3, 0.3), MAX_PEOPLE)
 var _body := _layer(Vector3.ONE, MAX_CARS)
 var _cabin := _layer(Vector3.ONE, MAX_CARS)
 var _eased: Dictionary = {}   # person id -> [shown position, facing]
+var _ghost := _silhouette()
+var _player_at := Vector2.INF
 var _delta := 0.016
 
 func _ready() -> void:
-	for layer in [_legs, _torso, _head, _body, _cabin]:
+	for layer in [_legs, _torso, _head, _body, _cabin, _ghost]:
 		add_child(layer)
 
 func _process(delta: float) -> void:
@@ -44,8 +48,37 @@ func _process(delta: float) -> void:
 ## One pass: place everyone near the focus. Public so checks can call it.
 func sync() -> void:
 	var focus := _focus()
+	_player_at = Vector2.INF
 	_people(focus)
 	_cars(focus)
+	_see_player()
+
+## R3D4: the cutaway hole and the see-through silhouette follow you.
+func _see_player() -> void:
+	var cam := get_viewport().get_camera_3d() if is_inside_tree() else null
+	_ghost.visible = _player_at != Vector2.INF and cam != null
+	if not _ghost.visible:
+		Cutaway.aim(Vector3(0, -1000, 0), Vector3.DOWN)
+		return
+	var chest := Vector3(_player_at.x - origin.x, 1.0, _player_at.y - origin.y)
+	Cutaway.aim(chest, -cam.global_basis.z)
+	_ghost.position = chest
+
+static func _silhouette() -> MeshInstance3D:
+	var box := BoxMesh.new()
+	box.size = Vector3(0.55, 1.85, 0.35)
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.no_depth_test = true   # drawn over whatever stands in front
+	mat.albedo_color = Color(EntityVisualFactory.PLAYER_COLOR, 0.28)
+	mat.render_priority = 1
+	box.material = mat
+	var mi := MeshInstance3D.new()
+	mi.mesh = box
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	mi.visible = false
+	return mi
 
 static func _layer(size: Vector3, count: int) -> MultiMeshInstance3D:
 	var box := BoxMesh.new()
@@ -82,6 +115,8 @@ func _people(focus: Vector2) -> void:
 		if ps != null and ps.vehicle_id != &"":
 			continue   # riding: the car is what you see
 		var pose := _ease(id, npc, ps)
+		if ps != null and not npc.is_down:
+			_player_at = pose[0]
 		_place_person(n, pose[0], pose[1], npc.is_down, ps != null and ps.sneaking, _shirt(e, npc), SKIN[absi(String(id).hash()) % SKIN.size()])
 		n += 1
 	shown_people = n
