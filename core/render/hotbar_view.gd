@@ -80,7 +80,9 @@ func _gui_input(event: InputEvent) -> void:
 		if hit >= 0:
 			var it := ItemCatalog.item(_slots[hit]["id"])
 			var verb: String = "Put away" if Hotbar.in_hand(_state, _slots[hit]) else ("Hold" if it["kind"] == "weapon" else InventoryWindow.VERBS.get(it["kind"], "Use"))
-			_tip.show_at(global_position + _rect(hit).position - Vector2(0, 60), it["name"], [["%s  [%d]" % [verb, hit + 1], UiTheme.DIM]])
+			var card := ItemCard.lines(_slots[hit]["id"])
+			card.append(["%s  [%d]" % [verb, hit + 1], UiTheme.ACCENT])
+			_tip.show_at(global_position + _rect(hit).position - Vector2(0, 150), it["name"], card)
 		else:
 			_tip.hide_tip()
 	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT and hit >= 0:

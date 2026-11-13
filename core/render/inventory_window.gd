@@ -198,17 +198,7 @@ func _show_tip(id: StringName, at: Vector2) -> void:
 	if it.is_empty():
 		_tip.show_at(at, _name(id), [["Street goods", KIND_COLOURS["goods"]]], "Sell it to a dealer.")
 		return
-	var lines: Array = [[String(it["kind"]).capitalize(), KIND_COLOURS.get(it["kind"], UiTheme.TEXT)]]
-	for stat in ["hunger", "thirst", "tired", "heal"]:
-		if it.has(stat):
-			lines.append(["%s +%d%%" % [{"hunger": "Food", "thirst": "Water", "tired": "Energy", "heal": "Health"}[stat], roundi(it[stat] * 100)], UiTheme.GOOD])
-	if it.has("weapon"):
-		lines.append(["Damage %d" % roundi(CombatSystem.WEAPONS[it["weapon"]].get("damage", 0.0) * 100), UiTheme.TEXT])
-	if it.has("rounds"):
-		lines.append(["%d rounds" % it["rounds"], UiTheme.TEXT])
-	var f := ItemCatalog.size_of(id)
-	lines.append(["%dx%d cells   ·   %.1f kg   ·   $%d" % [f.x, f.y, it.get("weight", 0.0), it["price"]], UiTheme.DIM])
-	_tip.show_at(at, it["name"], lines)
+	_tip.show_at(at, it["name"], ItemCard.lines(id))
 
 ## INV6/INV7: the loot side: container buttons, then the picked one's grid.
 func _vicinity_pane() -> HBoxContainer:
