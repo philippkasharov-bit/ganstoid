@@ -27,7 +27,7 @@ SOURCES = {
     "rgeGlmdxtc": "stucco", "gOI0JHXSXO": "brick", "nVjuT9XYQD": "block",
     "0egqpZMTfW": "clay", "huRwEd5vqL": "shingle", "6AHI2OniJO": "gravel",
     "If6gaXJtvE": "asphalt", "eIOr8egdqL": "grass", "jUXnUsuLD0": "dirt",
-    "s7oW7UTl8e": "wood", "N2F822W6D9": "tile",
+    "s7oW7UTl8e": "wood", "N2F822W6D9": "tile", "LwBYZGoswO": "carpet",
 }
 SLAB_M = 1.5             # sidewalk slab size; the map covers 3 m (SurfaceDetail.TILE_M)
 SIDEWALK_M = 3.0

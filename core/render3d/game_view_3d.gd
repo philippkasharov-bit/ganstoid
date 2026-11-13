@@ -7,7 +7,7 @@
 class_name GameView3D
 extends Node3D
 
-const GROUND := Color("e9e1cf")
+const GROUND := Color("cbc4a6")   # TX3: dry parkway dirt, not a pale void that the sun burns white
 const MAP_2D := ["CityLayer", "RenderSync", "StreetFurniture", "TurfOverlay", "AimView", "Camera2D"]
 
 @export var world_driver_path: NodePath
@@ -112,6 +112,9 @@ func _environment() -> void:
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color(0.85, 0.85, 0.9)
 	env.ambient_light_energy = 0.55
+	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC   # TX3: sunlit pale concrete rolls off instead of clipping to white
+	env.tonemap_exposure = 1.25
+	env.tonemap_white = 3.0
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
@@ -141,5 +144,5 @@ func _ground() -> void:
 	pm.size = Vector2.ONE * (CityStream3D.UNLOAD_M * 2.5)   # follows you: only as big as what is built
 	plane.mesh = pm
 	plane.position.y = -0.01
-	plane.material_override = Cutaway.material(GROUND, false, 1.0)   # darkens outside your view too
+	plane.material_override = Cutaway.made_of(Cutaway.material(GROUND, false, 1.0), SurfaceDetail.DIRT)   # darkens outside your view too
 	add_child(plane)

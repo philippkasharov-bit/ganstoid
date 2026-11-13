@@ -50,8 +50,9 @@ uniform bool sight_on = false;
 uniform float self_glow = 0.0;        // lamp heads: lit at night
 uniform float sway = 0.0;             // D2: palms and trees in the breeze
 uniform sampler2DArray detail : filter_linear_mipmap, repeat_enable;   // TX1: SurfaceDetail maps
-uniform float tile_m[12];
-uniform float strength[12];
+uniform float tile_m[15];
+uniform float strength[15];
+uniform int plain_surface = 15;       // TX3: a one-colour mesh's material (the ground)
 varying vec3 wnormal;
 varying float glow;                   // a lit window / shop front (UV.x)
 varying vec3 world_pos;
@@ -148,8 +149,8 @@ void fragment() {
 		discard;
 	}
 	vec3 col = use_vertex ? COLOR.rgb : tint;
-	int surface = use_vertex ? int(COLOR.a * 15.0 + 0.5) : 15;
-	if (surface < 12) {
+	int surface = use_vertex ? int(COLOR.a * 15.0 + 0.5) : plain_surface;
+	if (surface < 15) {
 		col *= grain(surface);
 	}
 	if (cut && world_pos.y > cut_h - cap_m) {
@@ -183,10 +184,20 @@ static func material(colour: Color = Color.WHITE, use_vertex: bool = true, rough
 	mat.set_shader_parameter("self_glow", glows)
 	mat.set_shader_parameter("sway", breeze)
 	if use_vertex:   # TX1: only vertex-coloured meshes carry a material
-		mat.set_shader_parameter("detail", SurfaceDetail.textures())
-		mat.set_shader_parameter("tile_m", PackedFloat32Array(SurfaceDetail.TILE_M))
-		mat.set_shader_parameter("strength", PackedFloat32Array(SurfaceDetail.STRENGTH))
+		made_of(mat, SurfaceDetail.NONE)
 	_materials.append(mat)
+	return mat
+
+## TX1/TX3: give `mat` the detail maps; a one-colour material is all `surface`.
+static func made_of(mat: ShaderMaterial, surface: int) -> ShaderMaterial:
+	mat.set_shader_parameter("detail", SurfaceDetail.textures())
+	var tiles := PackedFloat32Array(SurfaceDetail.TILE_M)
+	var strengths := PackedFloat32Array(SurfaceDetail.STRENGTH)
+	tiles.resize(SurfaceDetail.SLOTS)
+	strengths.resize(SurfaceDetail.SLOTS)
+	mat.set_shader_parameter("tile_m", tiles)
+	mat.set_shader_parameter("strength", strengths)
+	mat.set_shader_parameter("plain_surface", surface)
 	return mat
 
 ## Where you are and which way the camera looks: what is in front gets cut.

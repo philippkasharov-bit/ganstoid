@@ -13,7 +13,7 @@ const WALL_COL := Color("e9e2d3")
 const FLOORS := {"living": Color("9b7350"), "kitchen": Color("d9d4c8"), "bath": Color("cfe0e3"), "bed": Color("8c8f9c"),
 	"shop": Color("c8c3b8"), "stock": Color("a19a8c"), "work": Color("8f8f8a")}
 const FLOOR_OF := {"living": SurfaceDetail.WOOD, "kitchen": SurfaceDetail.TILE, "bath": SurfaceDetail.TILE, "shop": SurfaceDetail.TILE,
-	"stock": SurfaceDetail.SIDEWALK, "work": SurfaceDetail.SIDEWALK}   # TX1: bedrooms stay plain carpet
+	"stock": SurfaceDetail.SIDEWALK, "work": SurfaceDetail.SIDEWALK, "bed": SurfaceDetail.CARPET}   # TX1/TX3
 const COLOURS := {"sofa": Color("5b6b8a"), "tv": Color("2b2b2e"), "table": Color("7a5a3c"), "shelf": Color("6e5137"),
 	"fridge": Color("e8eaeb"), "stove": Color("cfd2d4"), "counter": Color("b9a27e"), "tub": Color("f4f4f2"), "toilet": Color("f4f4f2"),
 	"sink": Color("f4f4f2"), "bed": Color("a34b4b"), "drawers": Color("6e5137"), "wardrobe": Color("5f4630"), "crates": Color("9c7a4e"),
