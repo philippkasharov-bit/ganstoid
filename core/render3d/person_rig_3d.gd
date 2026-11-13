@@ -3,7 +3,8 @@
 ## calls. Legs and arms swing from hip and shoulder in step with how far the
 ## person actually moved (a walk swings gently, a run hard, standing still
 ## not at all, settling back smoothly), the body bobs with each step,
-## crouching lowers everyone's parts, and someone down lies flat.
+## crouching lowers everyone's parts, and someone down lies flat. D3: arms
+## come up to aim (both forward) and the right arm throws a punch or swing.
 class_name PersonRig3D
 extends Node3D
 
@@ -52,7 +53,7 @@ func forget(id: StringName) -> void:
 	_gait.erase(id)
 
 ## Person `i` at map point `at`, facing `face`; pose: phase, swing, down, crouched.
-func place(i: int, at: Vector2, face: float, phase: float, swing: float, down: bool, crouched: bool, shirt: Color, skin: Color) -> void:
+func place(i: int, at: Vector2, face: float, phase: float, swing: float, down: bool, crouched: bool, shirt: Color, skin: Color, aim: float = 0.0, strike: float = 0.0) -> void:
 	var body := Basis(Vector3.UP, -face)
 	var base := Vector3(at.x - origin.x, 0.0, at.y - origin.y)
 	if down:
@@ -61,7 +62,8 @@ func place(i: int, at: Vector2, face: float, phase: float, swing: float, down: b
 	var squat := 0.8 if crouched else 1.0
 	var bob := absf(sin(phase)) * swing * 0.08   # up on each step
 	var s := sin(phase) * swing
-	var swings := {"leg_l": s, "leg_r": -s, "arm_l": -s * 0.8, "arm_r": s * 0.8, "torso": 0.0, "head": 0.0}
+	var raise := PI * 0.5   # an arm straight out in front
+	var swings := {"leg_l": s, "leg_r": -s, "arm_l": lerpf(-s * 0.8, raise * 0.9, aim), "arm_r": lerpf(lerpf(s * 0.8, raise, aim), raise * 1.15, strike), "torso": 0.0, "head": 0.0}
 	var cols := {"leg_l": LEGS, "leg_r": LEGS, "arm_l": shirt, "arm_r": shirt, "torso": shirt, "head": skin}
 	for part in PARTS:
 		var spec: Array = PARTS[part]

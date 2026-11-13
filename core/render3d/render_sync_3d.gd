@@ -30,6 +30,10 @@ var _ghost := PersonLook3D.silhouette()
 var _player_at := Vector2.INF
 var _player_face := 0.0
 var _riding := false
+var _attack_seen: Dictionary = {}   # D3: the last attack already shown
+var _strike_left := 0.0
+var _aim_amount := 0.0
+const STRIKE_S := 0.22
 var player_shown := Vector2.INF   # Z-feel: where the player is drawn this frame (the camera locks on it)
 var _tick_was := Vector2.ZERO
 var _tick_now := Vector2.INF
@@ -181,7 +185,8 @@ func _people(focus: Vector2) -> void:
 			continue   # Zomboid: who you cannot see is not drawn
 		var lit := DayNight3D.light_at(pose[0])   # R3D10: people are as dark as where they stand
 		var step := _rig.gait(id, pose[0], _delta)
-		_rig.place(n, pose[0], pose[1], step[0], step[1], npc.is_down, ps != null and ps.sneaking, PersonLook3D.shirt(e, npc) * lit, PersonLook3D.skin(id) * lit)
+		var arms := _arms(ps)   # D3: aiming and striking
+		_rig.place(n, pose[0], pose[1], step[0], step[1], npc.is_down, ps != null and ps.sneaking, PersonLook3D.shirt(e, npc) * lit, PersonLook3D.skin(id) * lit, arms.x, arms.y)
 		n += 1
 	shown_people = n
 	_rig.set_count(n)
@@ -227,3 +232,14 @@ func _cars(focus: Vector2) -> void:
 		n += 1
 	shown_cars = n
 	_car_rig.set_count(n)
+
+## D3: the player's arms: up while aiming, the right one thrown on each attack (a quick out-and-back).
+func _arms(ps: PlayerStateData) -> Vector2:
+	if ps == null:
+		return Vector2.ZERO
+	if not is_same(ps.last_attack, _attack_seen) and not ps.last_attack.is_empty():
+		_attack_seen = ps.last_attack
+		_strike_left = STRIKE_S
+	_strike_left = maxf(0.0, _strike_left - _delta)
+	_aim_amount = lerpf(_aim_amount, 1.0 if ps.aiming else 0.0, minf(1.0, _delta * 12.0))
+	return Vector2(_aim_amount, sin(_strike_left / STRIKE_S * PI))
