@@ -22,6 +22,7 @@ static func generate_real_city_game(world: World, seed: int, city: CityData, cen
 	car_rng.seed = seed + 4
 	DriveSystem.assign_owners(world, car_rng)
 	_spawn_player_near(world, building_ids, centre)
+	EconomySeeder.seed(world, seed + 5, building_ids)   # E1: wages, savings, block wealth
 	for id in building_ids:   # PF1: as seeded: the save leaves them out until something changes them
 		world.entities[id].get_component(ComponentNames.BUILDING).touched = false
 

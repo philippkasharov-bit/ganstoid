@@ -12,3 +12,4 @@ const ECONOMY_ITEM := &"EconomyItemData"
 const ECONOMY_TRANSACTION := &"EconomyTransactionData"
 const PLAYER_STATE := &"PlayerStateData"
 const VEHICLE := &"VehicleData"
+const BLOCK_ECONOMY := &"BlockEconomyData"   # E1

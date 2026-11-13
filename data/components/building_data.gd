@@ -129,6 +129,26 @@ var touched := true
 		windows_boarded = v
 ## LT1: what is inside: container kind -> {"items": {id: n}, "filled": bool, "emptied_tick": int}.
 ## Filled on first opening; "stash" is your own, never rolled.
+## E1: money that is not in the till or the drawers. A business: its bank
+## balance (pays wages, rent, restock). A home: the household's savings.
+## cash_on_hand is the till for a business and the cash kept at home for a home.
+@export var bank: int = 0:
+	set(v):
+		if v != bank:
+			touched = true
+		bank = v
+## E1: 0 none, 1 a camera and a bat under the counter, 2 a guard or a gun, 3 armed guard.
+@export var security: int = 0:
+	set(v):
+		if v != security:
+			touched = true
+		security = v
+## E1: 0 open, 1 struggling (cut staff), 2 closed (bust or boarded up).
+@export var status: int = 0:
+	set(v):
+		if v != status:
+			touched = true
+		status = v
 @export var containers: Dictionary = {}:
 	set(v):
 		if v != containers:
