@@ -34,17 +34,15 @@ func _initialize() -> void:
 	await _walk(KEY_S, 20)
 	var on_player := _view.rig.position.distance_to(Vector3(_me.position.x - _view.centre.x, 0, _me.position.y - _view.centre.y)) < 1.5
 	await _tap(KEY_U)
-	var map_2d := not _view.on and not ScreenMap.is_3d()
+	var map_2d := _view.on and _view.turf_map.mode == 1 and _view.turf_map.visible   # T3: the turf map over the 3D city
 	for i in 2:
-		await _tap(KEY_U)   # money, then off: back to 3D
-	await process_frame
-	await process_frame
-	var back_3d := _view.on and ScreenMap.is_3d()
+		await _tap(KEY_U)   # money, then off
+	var back_3d := _view.on and _view.turf_map.mode == 0 and not _view.turf_map.visible
 	await _tap(KEY_F9)
 	var flipped := not _view.on
 	await _tap(KEY_F9)
 	var streamed := await _stream_follows()
-	print("walked %.1f m, %.1f m with the bag open; camera on you %s; U map in 2D %s, back to 3D %s; F9 %s; city built where you go %s" % [moved, with_bag, on_player, map_2d, back_3d, flipped and _view.on, streamed])
+	print("walked %.1f m, %.1f m with the bag open; camera on you %s; U turf map over 3D %s, off again %s; F9 %s; city built where you go %s" % [moved, with_bag, on_player, map_2d, back_3d, flipped and _view.on, streamed])
 	ok = ok and on_player and map_2d and back_3d and flipped and _view.on and streamed
 	print("PLAY_3D_VERIFY: %s" % ("PASS" if ok else "FAIL - the 3D game does not play right"))
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(SaveGame.PATH))

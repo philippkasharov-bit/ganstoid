@@ -21,14 +21,14 @@ var day_night := DayNight3D.new()
 var people3d := RenderSync3D.new()
 var aim := AimView3D.new()
 var furniture := StreetFurniture3D.new()
-var stream := CityStream3D.new()   # OPT1: builds the city round you, drops it behind you
+var stream := CityStream3D.new()
+var turf_map := TurfMap3D.new()   # T3: U in 3D   # OPT1: builds the city round you, drops it behind you
 var _plane: MeshInstance3D
 const CITY_M := 9000.0   # signals, stop signs, bus stops
 var env: Environment
 var sun: DirectionalLight3D
 var build_ms := 0.0
 var on := true
-var _map_view := false   # 2D shown only for the turf / money map
 
 func _ready() -> void:
 	if world_driver_path.is_empty():
@@ -63,6 +63,10 @@ func setup(w: World, city: CityData, at: Vector2) -> void:
 	furniture.world = world
 	furniture.origin = centre
 	add_child(furniture)
+	turf_map.world = world
+	turf_map.origin = centre
+	turf_map.visible = false
+	add_child(turf_map)
 	day_night.world = world
 	day_night.sun = sun
 	day_night.env = env
@@ -93,19 +97,8 @@ func show_3d(yes: bool) -> void:
 ## the overlay is cycled off again, back to 3D.
 func _process(_delta: float) -> void:
 	_follow()
-	var overlay := get_parent().get_node_or_null("TurfOverlay")
-	if overlay == null:
-		return
-	if on and Input.is_action_just_pressed(&"turf_map"):
-		_map_view = true
-		show_3d(false)
-		overlay.mode = 1   # the turf map, opened by this press
-		overlay.visible = true
-		overlay.opened_frame = Engine.get_process_frames()
-		overlay.queue_redraw()
-	elif _map_view and not on and overlay.mode == 0:
-		_map_view = false
-		show_3d(true)
+	if on and InputMap.has_action(&"turf_map") and Input.is_action_just_pressed(&"turf_map"):
+		turf_map.cycle()   # T3: turf, money, off, laid over the 3D city
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if event.pressed and not event.echo and event.physical_keycode == KEY_F9:
@@ -133,6 +126,7 @@ func _follow() -> void:
 	if at == Vector2.INF:
 		return
 	stream.focus = at
+	turf_map.focus = at
 	_plane.position = Vector3(roundf(at.x - centre.x), -0.01, roundf(at.y - centre.y))
 
 func _player_at(fallback: Vector2) -> Vector2:
