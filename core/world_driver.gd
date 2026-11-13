@@ -19,7 +19,11 @@ var city: CityData
 var seed_used := 0
 var loaded_from_save := false
 var choosing := false          # O1: new game: waiting for difficulty and style
-var paused := false            # PM1: the Esc menu is up: the world stands still
+var paused := false            # PM1: the Esc menu is up (or F2): the world stands still
+var speed := 1                 # Z2: Zomboid's time controls: F3 1x, F4 5x, F5 20x, F6 40x
+const SPEEDS := {KEY_F3: 1, KEY_F4: 5, KEY_F5: 20, KEY_F6: 40}
+var _health_seen := -1.0
+var slowed_because := ""       # Z2: why fast-forward dropped back to 1x (the HUD says it once)
 var _saved_hour := 0
 var _dead_handled := false
 
@@ -65,7 +69,8 @@ func choose(difficulty: int, style: int) -> void:
 func _physics_process(delta: float) -> void:
 	if SimNav.active == null or not SimNav.active.is_ready() or choosing or paused:
 		return   # routes still loading, or the new-game choice not made: nobody moves yet
-	var steps := NeedsSystem.SLEEP_SPEED if _asleep() else 1   # G2: sleep is the only fast-forward
+	_check_speed()
+	var steps := NeedsSystem.SLEEP_SPEED if _asleep() else speed   # G2 sleep / Z2 time controls
 	for i in steps:
 		world.step(delta)
 	_keep_save()
@@ -114,6 +119,53 @@ func _rescue(player: Entity) -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST and not _dead_handled and SimNav.active != null:
 		SaveGame.write(world, seed_used)   # quitting saves, like Zomboid
+
+## Z2: F2 pauses (no menu), F3-F6 set the speed, like Zomboid's single player.
+func _unhandled_key_input(event: InputEvent) -> void:
+	if not (event is InputEventKey and event.pressed and not event.echo) or choosing:
+		return
+	if event.keycode == KEY_F2:
+		paused = not paused
+	elif SPEEDS.has(event.keycode):
+		speed = SPEEDS[event.keycode]
+		paused = false
+		slowed_because = ""
+
+## Z2: fast-forward is for quiet moments. It drops back to 1x the moment you
+## are hurt, bleeding, wanted, aiming, or in a menu, and says why.
+func _check_speed() -> void:
+	var player: Entity = world.entities.get(PlayerFactory.PLAYER_ENTITY_ID)
+	if player == null:
+		return
+	var npc: NPCData = player.get_component(ComponentNames.NPC)
+	var st: PlayerStateData = player.get_component(ComponentNames.PLAYER_STATE)
+	var why := fast_forward_blocker(npc, st, _health_seen)
+	_health_seen = npc.health
+	if speed > 1 and why != "":
+		speed = 1
+		slowed_because = why
+		_slowed_at = Time.get_ticks_msec()
+
+var _slowed_at := 0
+const SLOWED_SHOWN_MS := 5000
+
+func _process(_delta: float) -> void:
+	if slowed_because != "" and Time.get_ticks_msec() - _slowed_at > SLOWED_SHOWN_MS:
+		slowed_because = ""   # the "why" line on the clock has been read
+
+## Why fast-forward must stop right now ("" when it may run).
+static func fast_forward_blocker(npc: NPCData, st: PlayerStateData, health_before: float) -> String:
+	if health_before >= 0.0 and npc.health < health_before - 0.0001:
+		return "you're hurt"
+	if npc.bleeding:
+		return "you're bleeding"
+	if st.law_tier > 0:
+		return "the police are looking"
+	if st.aiming:
+		return "weapon up"
+	if not st.menu_options.is_empty() or st.store_id != &"" or st.inventory_open:
+		return "a menu is open"
+	return ""
 
 ## C6 permadeath: once the player is down, Enter starts a new run (new seed).
 func _unhandled_input(event: InputEvent) -> void:

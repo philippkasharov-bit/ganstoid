@@ -22,7 +22,7 @@ var _show_fps := false
 var _loaded := false
 
 func _unhandled_key_input(event: InputEvent) -> void:
-	if event.pressed and not event.echo and event.keycode == KEY_F3:
+	if event.pressed and not event.echo and event.keycode == KEY_F8:   # Z2: F3 is "normal speed" now, Zomboid's keys
 		_show_fps = not _show_fps
 func _ready() -> void:
 	_world = get_node(world_driver_path).world
@@ -48,6 +48,7 @@ func _ready() -> void:
 	var clock := ClockBox.new()       # UI6: Zomboid layout
 	get_parent().add_child.call_deferred(clock)
 	clock.setup(_world)
+	clock._driver = get_node(world_driver_path)   # Z2: shows the speed
 	var moodles := Moodles.new()
 	get_parent().add_child.call_deferred(moodles)
 	moodles.setup(_world)
