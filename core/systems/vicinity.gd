@@ -27,6 +27,8 @@ static func near(world: World, npc: NPCData, state: PlayerStateData) -> Array:
 	var inside := _building(world, state.inside_id)
 	if inside != null:
 		for kind in Containers.open(world, npc, inside):
+			if Indoors.out_of_reach(npc.position, kind):
+				continue   # R3D14: walk over to the cupboard to see what's in it
 			var items: Dictionary = inside.containers[kind]["items"]
 			for id in items:
 				out.append({"kind": "container", "building": inside.id, "cont": kind, "id": id, "n": int(items[id])})
@@ -39,8 +41,12 @@ static func near(world: World, npc: NPCData, state: PlayerStateData) -> Array:
 ## or any time at your own. Call every player tick.
 static func update_inside(world: World, npc: NPCData, state: PlayerStateData) -> void:
 	var b := _building(world, state.inside_id)
-	if b != null and b.position.distance_to(npc.position) > REACH_M * 2.0:
+	var here := Indoors.building_at(npc.position)   # R3D14: standing in a footprint
+	if b != null and b.position.distance_to(npc.position) > REACH_M * 2.0 and here.get("id", &"") != b.id:
 		state.inside_id = &""
+	if not here.is_empty() and Indoors.may_loot(world, npc, state, here["id"]):
+		state.inside_id = here["id"]
+		return
 	if state.inside_id == &"":
 		for id in world.spatial_index.query_nearby(npc.position):
 			var e: Entity = world.entities.get(id)

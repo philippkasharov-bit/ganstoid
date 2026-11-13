@@ -187,7 +187,7 @@ func process_entities(entities: Dictionary, delta: float, tick: int) -> void:
 				speed = SNEAK_SPEED
 			speed *= NeedsSystem.speed_factor(npc) * BodyParts.move_mult(state) * Stamina.speed_mult(state)   # HP1 limp, ST1 heavy load
 			var step := input_dir.normalized() * speed * CrewSystem.player_speed_multiplier(_world, state) * delta
-			npc.position = SimNav.active.slide(npc.position, step) if SimNav.active != null else npc.position + step   # walls are solid
+			npc.position = Indoors.step(_world, npc, state, step)   # R3D14: walls are solid; doors let you in where you may go
 			_world.reindex_position(npc.id)
 		if in_menu:
 			continue   # a menu has the keys: no E / Enter / crew keys under it

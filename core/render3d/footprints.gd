@@ -78,13 +78,15 @@ static func _hides(entry: Array, strip: PackedVector2Array, you: Vector2, back: 
 	return false
 
 ## R3D11: building outlines within `reach` of `p`, as wall pairs (a, b, a, b...).
-func edges_near(p: Vector2, reach: float) -> PackedVector2Array:
+func edges_near(p: Vector2, reach: float, skip_id: StringName = &"") -> PackedVector2Array:
 	var out := PackedVector2Array()
 	var seen := {}
 	for entry in _near(Rect2(p - Vector2.ONE * reach, Vector2.ONE * reach * 2.0)):
 		if seen.has(entry[1]):
 			continue
 		seen[entry[1]] = true
+		if skip_id != &"" and entry[3]["id"] == skip_id:
+			continue   # the one you are in: its own walls (door open) come from its layout
 		var poly: PackedVector2Array = entry[0]
 		if poly[0].distance_to(p) > reach + 60.0:
 			continue

@@ -1,4 +1,4 @@
-## R3D screenshot: the 3D look test. godot --path . -s debug/shot_3d.gd -- --out=<png> [--size=<ortho m>] [--radius=<m>] [--sim=<seconds of sim to run first>] [--behind (R3D4: stand the player behind the nearest tall building)] [--inside (R3D5: in the nearest house)] [--turn=<quarters>] [--hour=<0-24> (R3D10)]
+## R3D screenshot: the 3D look test. godot --path . -s debug/shot_3d.gd -- --out=<png> [--size=<ortho m>] [--radius=<m>] [--sim=<seconds of sim to run first>] [--behind (R3D4: stand the player behind the nearest tall building)] [--inside (R3D5: in the nearest house)] [--turn=<quarters>] [--hour=<0-24> (R3D10)] [--home (R3D14: walk in through your own front door)]
 extends SceneTree
 
 func _initialize() -> void:
@@ -22,6 +22,8 @@ func _initialize() -> void:
 		var me: NPCData = preview.driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
 		var outside: int = preview.driver.world.get_entities_with_component(ComponentNames.NPC).values().filter(func(e: Entity) -> bool: return not (e.get_component(ComponentNames.NPC) as NPCData).indoors).size()
 		print("R3D3: player %s (spawn %s) indoors=%s; %d people outdoors in the district" % [me.position, preview.centre, me.indoors, outside])
+		if args.has("home"):
+			await _walk_home(preview, me)
 		if args.has("inside"):
 			me.position = _in_house(me.position)
 		if args.has("behind"):
@@ -79,3 +81,21 @@ func _in_house(near: Vector2) -> Vector2:
 		if b["kind"] == "house" and Geometry2D.is_point_in_polygon(mid, poly) and mid.distance_squared_to(near) < best.distance_squared_to(near):
 			best = mid
 	return best
+
+## R3D14: stand outside your own front door and walk in through it.
+func _walk_home(preview: Node, me: NPCData) -> void:
+	var st: PlayerStateData = preview.driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
+	for b in preview.city_data.buildings:
+		if b["id"] == me.home_building_id:
+			var l := InteriorLayout.of(b)
+			var mid := l.door_a.lerp(l.door_b, 0.5)
+			var out := (l.door_b - l.door_a).normalized().orthogonal()
+			if Geometry2D.is_point_in_polygon(mid + out * 0.5, l.poly):
+				out = -out
+			me.position = mid + out * 1.5
+			for i in 40:
+				me.position = Indoors.step(preview.driver.world, me, st, -out * 0.1)
+				await physics_frame
+			print("R3D14: walked home: inside %s (door %s-%s, at %s, kind %s)" % [Geometry2D.is_point_in_polygon(me.position, l.poly), l.door_a, l.door_b, me.position, b["kind"]])
+			return
+	print("R3D14: home is not a city building")

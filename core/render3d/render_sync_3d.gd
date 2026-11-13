@@ -99,7 +99,7 @@ func _cast_sight() -> void:
 		return
 	if _player_at.distance_to(_sight.from) < SIGHT_RECAST_M and _inside_id == _sight_inside:
 		return
-	var walls := footprints.edges_near(_player_at, SightMap.MAX_M)
+	var walls := footprints.edges_near(_player_at, SightMap.MAX_M, StringName(_inside_id))
 	if _inside != null:
 		walls.append_array(_inside.get_meta("walls", PackedVector2Array()))
 	_sight.cast(_player_at, walls)

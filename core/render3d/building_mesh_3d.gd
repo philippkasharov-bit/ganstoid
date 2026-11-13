@@ -56,7 +56,8 @@ static func add(st: SurfaceTool, b: Dictionary, v: Callable, tag: int = 0) -> vo
 		"tag": tag, "glow": GLOW.get(kind, 0.3), "seed": rng.randi()}
 	st.set_uv(Vector2(0, tag))   # R3D7: the Cutaway cuts this building whole by its tag
 	var ccw := _ccw(poly)
-	var door_edge := _door_edge(poly, b.get("door", Vector2.INF))
+	var span := InteriorSolid.door_span(poly, b.get("door", Vector2.INF))   # R3D14: the same door the sim lets you through
+	var door_edge := int(span.x)
 	for i in poly.size():
 		var a := poly[i]
 		var c := poly[(i + 1) % poly.size()]
@@ -67,7 +68,7 @@ static func add(st: SurfaceTool, b: Dictionary, v: Callable, tag: int = 0) -> vo
 		var n := Vector3(out.x, 0, out.y)
 		quad(st, [v.call(a, 0.0), v.call(c, 0.0), v.call(c, h), v.call(a, h)], n, col)
 		quad(st, [v.call(a + out * 0.02, 0.0), v.call(c + out * 0.02, 0.0), v.call(c + out * 0.02, TRIM), v.call(a + out * 0.02, TRIM)], n, col.darkened(0.3))
-		var door_t := _door_t(a, c, b["door"]) if i == door_edge else -1.0
+		var door_t := span.y if i == door_edge else -1.0
 		_openings(st, v, a, c, out, levels, door_t, style)
 	_roof(st, v, poly, h, kind, levels, rng)
 	st.set_uv(Vector2.ZERO)   # what follows (roads, the next lot) is not this building
@@ -178,22 +179,3 @@ static func _centroid(poly: PackedVector2Array) -> Vector2:
 	for p in poly:
 		c += p
 	return c / poly.size()
-
-static func _door_edge(poly: PackedVector2Array, door: Vector2) -> int:
-	if door == Vector2.INF:
-		return -1
-	var best := -1
-	var best_d := INF
-	for i in poly.size():
-		var d := Geometry2D.get_closest_point_to_segment(door, poly[i], poly[(i + 1) % poly.size()]).distance_squared_to(door)
-		if d < best_d:
-			best_d = d
-			best = i
-	return best
-
-static func _door_t(a: Vector2, c: Vector2, door: Vector2) -> float:
-	var length := a.distance_to(c)
-	if length < DOOR_W * 1.6:
-		return -1.0
-	var margin := DOOR_W / length
-	return clampf((door - a).dot(c - a) / (length * length), margin, 1.0 - margin)

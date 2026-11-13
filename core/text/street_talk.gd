@@ -50,6 +50,7 @@ const LINES := {
 	"no_gun_to_sell": ["You've got no gun to sell."],
 	"not_a_buyer": ["They're not buying."],
 	"nothing_here": ["Nothing to do here."],
+	"locked": ["Locked.", "It's locked.", "Door won't give."],
 	"job_offers": ["\"Got work if you want it.\"", "\"Few things need doing. Pick one.\""],
 	"job_taken": ["Deal. Clock's running: a day.", "You're on it. Don't make them wait."],
 	"job_done": ["Job done. ${n} from the fixer.", "Paid in full: ${n}. They'll call again."],
