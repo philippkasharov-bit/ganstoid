@@ -82,8 +82,10 @@ func step(mover_id: StringName, pos: Vector2, goal: Vector2, speed: float, delta
 
 ## TUNE1 (smooth frames): a long civilian route costs 5-10 ms of navmesh work.
 ## It now runs on a worker thread; the walker waits a tick or two at the door.
-## At most ASYNC_MAX routes are being worked out at once.
-const ASYNC_MAX := 4
+## At most ASYNC_MAX routes are being worked out at once. PF1: never more
+## than the cores left over after the game's own thread, so route planning
+## cannot steal the frame on a 2-core machine (it did: 16+ ms ticks).
+static var ASYNC_MAX := clampi(OS.get_processor_count() - 1, 1, 4)
 var _async_jobs := {}      # mover_id -> [task id, goal]
 var _async_done := {}      # mover_id -> plan (written by workers, under _async_lock)
 var _async_lock := Mutex.new()

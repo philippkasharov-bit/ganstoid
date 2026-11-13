@@ -76,11 +76,24 @@ static func collect_all(world: World) -> int:
 ## Owned legit shops (grow houses are counted by ProductionSystem).
 static func count_owned(world: World) -> int:
 	var n := 0
-	for entity in world.get_entities_with_component(ComponentNames.BUILDING).values():
-		var building: BuildingData = entity.get_component(ComponentNames.BUILDING)
+	for building in all_buildings(world):
 		if owned_by_player(building) and building.building_type == GanstoidEnums.BuildingType.LEGIT_BUSINESS:
 			n += 1
 	return n
+
+## PF1: every building as a plain list, kept between calls (2,400 component
+## lookups an hour cost several ms; the set of buildings never changes in a run).
+static var _all: Array[BuildingData] = []
+static var _all_for := 0
+static func all_buildings(world: World) -> Array[BuildingData]:
+	var index := world.get_entities_with_component(ComponentNames.BUILDING)
+	var stamp := world.get_instance_id() * 100003 + index.size()
+	if stamp != _all_for:
+		_all_for = stamp
+		_all.clear()
+		for entity in index.values():
+			_all.append(entity.get_component(ComponentNames.BUILDING))
+	return _all
 
 static func buy(world: World, building_id: StringName) -> Dictionary:
 	var entity: Entity = world.entities.get(building_id)

@@ -22,6 +22,8 @@ static func generate_real_city_game(world: World, seed: int, city: CityData, cen
 	car_rng.seed = seed + 4
 	DriveSystem.assign_owners(world, car_rng)
 	_spawn_player_near(world, building_ids, centre)
+	for id in building_ids:   # PF1: as seeded: the save leaves them out until something changes them
+		world.entities[id].get_component(ComponentNames.BUILDING).touched = false
 
 ## Player starts at the home nearest the district centre.
 static func _spawn_player_near(world: World, building_ids: Array[StringName], centre: Vector2) -> void:

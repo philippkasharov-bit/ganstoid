@@ -74,8 +74,8 @@ static func grow_all(world: World) -> int:
 
 static func count_grow_houses(world: World) -> int:
 	var n := 0
-	for entity in world.get_entities_with_component(ComponentNames.BUILDING).values():
-		if is_grow_house(entity.get_component(ComponentNames.BUILDING)):
+	for building in BusinessSystem.all_buildings(world):
+		if is_grow_house(building):
 			n += 1
 	return n
 

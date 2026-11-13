@@ -37,8 +37,8 @@ static func snapshot(world: World, seed: int) -> Dictionary:
 		var entity: Entity = world.entities[id]
 		for name in entity.components:
 			var comp: Resource = entity.components[name]
-			if comp is VehicleData and not comp.touched:
-				continue   # a parked car nobody touched is rebuilt as seeded
+			if (comp is VehicleData or comp is BuildingData) and not comp.touched:
+				continue   # PF1: a parked car or a building nobody touched is rebuilt as seeded
 			comps[name] = _fields(comp)
 		entities[id] = comps
 	var goods := {}

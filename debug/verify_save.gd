@@ -61,6 +61,20 @@ func _initialize() -> void:
 	print("autosave stalls the game for %d ms (the rest is written on a worker thread)" % snap_ms)
 	if not _check(snap_ms < 60, "an autosave stalls the game under 60 ms"):
 		return
+	# PF1: only changed buildings go in the save; a changed one comes back.
+	var snap := SaveGame.snapshot(a, SEED)
+	var some: BuildingData = null
+	for e in a.get_entities_with_component(ComponentNames.BUILDING).values():
+		var bd: BuildingData = e.get_component(ComponentNames.BUILDING)
+		if not bd.touched:
+			some = bd
+			break
+	if not _check(some != null and not snap["entities"][some.id].has(ComponentNames.BUILDING), "a building as seeded is left out of the save"):
+		return
+	some.cash_on_hand += 5
+	var after := SaveGame.snapshot(a, SEED)
+	if not _check(after["entities"][some.id].has(ComponentNames.BUILDING) and after["entities"][some.id][ComponentNames.BUILDING]["cash_on_hand"] == some.cash_on_hand, "a building that changed is saved"):
+		return
 	var f := FileAccess.open(PATH, FileAccess.WRITE)
 	f.store_string("garbage {")
 	f.close()

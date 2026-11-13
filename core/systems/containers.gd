@@ -24,6 +24,7 @@ static func open(world: World, me: NPCData, building: BuildingData) -> Array:
 	return kinds
 
 static func _ensure(world: World, building: BuildingData, kind: String) -> void:
+	building.touched = true   # PF1: its drawers are now part of the save
 	if not building.containers.has(kind):
 		building.containers[kind] = {"items": {}, "filled": false, "emptied_tick": -1000000}
 	var c: Dictionary = building.containers[kind]
@@ -38,6 +39,7 @@ static func _ensure(world: World, building: BuildingData, kind: String) -> void:
 
 ## Takes up to n of id from a building container; returns how many came out.
 static func take(world: World, building: BuildingData, kind: String, id: StringName, n: int) -> int:
+	building.touched = true
 	var items: Dictionary = building.containers[kind]["items"]
 	var got := mini(n, int(items.get(id, 0)))
 	items[id] = int(items.get(id, 0)) - got
@@ -49,6 +51,7 @@ static func take(world: World, building: BuildingData, kind: String, id: StringN
 
 ## Puts n of id into your stash.
 static func put(building: BuildingData, id: StringName, n: int) -> void:
+	building.touched = true
 	var items: Dictionary = building.containers[STASH]["items"]
 	items[id] = int(items.get(id, 0)) + n
 

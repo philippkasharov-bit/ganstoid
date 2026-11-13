@@ -23,6 +23,7 @@ const LAWYER_CUT := 30.0
 const SIGHT_CHECK_TICKS := 30
 
 var _last_hour := -1
+const PHASE_TICKS := 47
 var _world_ref: WeakRef
 var _world: World:
 	get:
@@ -51,7 +52,7 @@ func process_entities(entities: Dictionary, _delta: float, tick: int) -> void:
 			if tick >= state.prison_until_tick:
 				_release(me, state)
 			continue
-		var hour := tick / SimClock.hours(1.0)
+		var hour := (tick - PHASE_TICKS) / SimClock.hours(1.0)   # PF1: staggered from the other hourly jobs
 		if hour != _last_hour:
 			_last_hour = hour
 			var home: bool = state.sleeping and state.sleeping_home or _at_home(me)

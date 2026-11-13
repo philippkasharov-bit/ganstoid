@@ -12,6 +12,7 @@ const THRESHOLDS := [0, 30, 90, 200, 400, 800, 1500]
 const GUN_RANK := 1
 
 var _last_hour := -1
+const PHASE_TICKS := 23
 var _world_ref: WeakRef
 var _world: World:
 	get:
@@ -23,7 +24,7 @@ func _init(world: World) -> void:
 	required_component = ComponentNames.PLAYER_STATE
 
 func process_entities(entities: Dictionary, _delta: float, tick: int) -> void:
-	var hour := tick / SimClock.hours(1.0)
+	var hour := (tick - PHASE_TICKS) / SimClock.hours(1.0)   # PF1: not on the same tick as the other hourly jobs
 	if hour == _last_hour:
 		return
 	_last_hour = hour
