@@ -39,6 +39,9 @@ var _player_face := 0.0
 var _seen_from := Vector2.INF   # R3D8: last frame's eye and facing: people out of sight are not drawn
 var _seen_face := 0.0
 var _room := Rect2()
+var _sight := SightMap.new()    # R3D11: walls block sight
+var _sight_inside := "-"
+const SIGHT_RECAST_M := 0.15
 var _inside: MeshInstance3D     # R3D9: rooms and furniture of the building you are in
 var _inside_id := ""
 var _inside_mat: ShaderMaterial            # map rect of the room you are in (empty outdoors)
@@ -81,11 +84,27 @@ func _see_player() -> void:
 	_seen_from = _player_at
 	_seen_face = _player_face
 	_open_room()
+	_cast_sight()
+
+## R3D11: recast what walls let you see when you move or go in or out.
+func _cast_sight() -> void:
+	if footprints == null:
+		return
+	if _player_at.distance_to(_sight.from) < SIGHT_RECAST_M and _inside_id == _sight_inside:
+		return
+	var walls := footprints.edges_near(_player_at, SightMap.MAX_M)
+	if _inside != null:
+		walls.append_array(_inside.get_meta("walls", PackedVector2Array()))
+	_sight.cast(_player_at, walls)
+	_sight_inside = _inside_id
+	Cutaway.sight(_sight.depth)
 
 ## R3D8: in your field of view (or right by you), and indoors only in your room.
 func _in_sight(p: Vector2) -> bool:
 	if _seen_from == Vector2.INF:
 		return true
+	if not _sight.sees(p):
+		return false   # R3D11: behind a wall
 	var d := p - _seen_from
 	if d.length() < NEAR_M:
 		return true

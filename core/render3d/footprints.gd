@@ -76,3 +76,19 @@ static func _hides(entry: Array, strip: PackedVector2Array, you: Vector2, back: 
 		if entry[2] > 1.0 + maxf(nearest, 0.0) * SIGHT_RISE:
 			return true
 	return false
+
+## R3D11: building outlines within `reach` of `p`, as wall pairs (a, b, a, b...).
+func edges_near(p: Vector2, reach: float) -> PackedVector2Array:
+	var out := PackedVector2Array()
+	var seen := {}
+	for entry in _near(Rect2(p - Vector2.ONE * reach, Vector2.ONE * reach * 2.0)):
+		if seen.has(entry[1]):
+			continue
+		seen[entry[1]] = true
+		var poly: PackedVector2Array = entry[0]
+		if poly[0].distance_to(p) > reach + 60.0:
+			continue
+		for i in poly.size():
+			out.append(poly[i])
+			out.append(poly[(i + 1) % poly.size()])
+	return out

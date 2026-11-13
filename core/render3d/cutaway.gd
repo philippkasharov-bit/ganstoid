@@ -10,6 +10,7 @@
 ## ring round you is always seen.
 ## R3D10: night: the city goes dark except in lamp pools and headlights
 ## (DayNight3D sends them), and lit windows and shop fronts glow.
+## R3D11: walls block sight (SightMap): past the nearest wall it is dark.
 ## R3D5: inside a building, its roof and upper floors go, and the walls on
 ## the camera's side drop to waist height, so you see the room you are in.
 class_name Cutaway
@@ -41,6 +42,8 @@ uniform float night = 0.0;            // 0 day .. 1 night
 uniform vec4 lights[96];              // x, z (3D), radius, strength
 uniform int light_count = 0;
 uniform float moon = 0.28;
+uniform float sight[360];             // R3D11: how far you can see each degree round you (SightMap)
+uniform bool sight_on = false;
 varying float glow;                   // a lit window / shop front (UV.x)
 varying vec3 world_pos;
 varying flat int tag;  // the building this vertex belongs to (0: road, ground, palm)
@@ -48,7 +51,7 @@ varying vec2 palm;     // a palm's foot in 3D x/z
 
 void vertex() {
 	world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
-	tag = int(UV.y + 0.5);
+	tag = use_vertex ? int(UV.y + 0.5) : 0;   // flat meshes (ground, palms) have their own UVs
 	glow = use_vertex ? UV.x : 0.0;
 	palm = vec2(MODEL_MATRIX[3].x, MODEL_MATRIX[3].z);
 }
@@ -95,6 +98,11 @@ float seen() {
 	float ring = 1.0 - smoothstep(near_m, near_m + 1.5, dist);
 	float cone = smoothstep(cone_cos - 0.12, cone_cos + 0.06, dot(d / max(dist, 0.001), normalize(look)));
 	float v = max(ring, cone);
+	if (sight_on && tag == 0) {   // walls hide what is behind them (building shells keep their outside)
+		float a = atan(d.y, d.x);
+		int bin = int(mod(floor(a / 6.2831853 * 360.0), 360.0));
+		v *= 1.0 - smoothstep(sight[bin] + 0.2, sight[bin] + 0.9, dist);
+	}
 	if (room_on) {
 		vec2 p = world_pos.xz;
 		bool inside = all(greaterThanEqual(p, room_min)) && all(lessThanEqual(p, room_max));
@@ -152,6 +160,13 @@ static func light(dark: float, lights: PackedVector4Array) -> void:
 		mat.set_shader_parameter("night", dark)
 		mat.set_shader_parameter("lights", list)
 		mat.set_shader_parameter("light_count", mini(lights.size(), 96))
+
+## R3D11: the sight depth round you (SightMap.depth), or none.
+static func sight(depth: PackedFloat32Array) -> void:
+	for mat in _materials:
+		mat.set_shader_parameter("sight_on", not depth.is_empty())
+		if not depth.is_empty():
+			mat.set_shader_parameter("sight", depth)
 
 ## R3D8: which way you face (map radians): the vision cone.
 static func facing(angle: float) -> void:

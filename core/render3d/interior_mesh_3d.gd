@@ -33,6 +33,7 @@ var _base := Vector2.ZERO      # map point at the frame's origin
 var _angle := 0.0              # the frame's turn (its longest wall)
 var _origin := Vector2.ZERO    # map point at 3D (0, 0, 0)
 var _doors: Array[Vector2] = []   # doorway middles, in the frame
+var _walls := PackedVector2Array()  # R3D11: inner walls as map pairs, for SightMap
 
 ## The inside of building `b` (CityData dict) as one mesh, in the 3D view's space.
 static func build(b: Dictionary, origin: Vector2, material: Material) -> MeshInstance3D:
@@ -55,6 +56,7 @@ static func build(b: Dictionary, origin: Vector2, material: Material) -> MeshIns
 		im._furnish(rooms[i], local, kinds[i], rng)
 	var mi := MeshInstance3D.new()
 	mi.mesh = im._st.commit()
+	mi.set_meta("walls", im._walls)   # R3D11: what blocks sight inside
 	mi.material_override = material
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	return mi
@@ -113,6 +115,8 @@ func _slab(a: Vector2, b: Vector2) -> void:
 	if a.distance_to(b) < 0.05:
 		return
 	var n := (b - a).normalized().orthogonal() * WALL_T * 0.5
+	_walls.append(_base + a.rotated(_angle))
+	_walls.append(_base + b.rotated(_angle))
 	_cuboid([a - n, b - n, b + n, a + n], 0.0, WALL_H, WALL_COL)
 
 func _floor(r: Rect2, local: PackedVector2Array, col: Color) -> void:
