@@ -60,6 +60,7 @@ func _install_routes() -> void:
 	await get_tree().process_frame   # let the loading line render first
 	await get_tree().process_frame
 	SimNav.install(city, city.spawn, DISTRICT_RADIUS)
+	StreetLights.install(city, city.spawn, DISTRICT_RADIUS)   # R3D10b: who sees you at night depends on the lamps
 
 ## O1: the new-game choice made: the run starts.
 func choose(difficulty: int, style: int) -> void:

@@ -200,11 +200,11 @@ static func _get_player_entity(world: World) -> Entity:
 		return entity
 	return null
 
-## W1: how far a face can be made out: daylight vs street-lit night.
+## W1: how far a face can be made out. R3D10b: by the light where you are
+## (StreetLights): full range by day or under a lamp, a few metres in a dark
+## gap at night (the same light the 3D view draws).
 const SIGHT_DAY_M := ENCOUNTER_RADIUS
-const SIGHT_NIGHT_M := 8.0
-const DAY_FROM_HOUR := 6.5
-const DAY_TO_HOUR := 19.5
+const SIGHT_DARK_M := 3.0
 
 ## W1: could someone standing at `eye` see what happens at `at` right now?
 ## In range for the light, and no wall in between. (Facing and attention come
@@ -222,7 +222,7 @@ static func _sneaking_at(world: World, at: Vector2) -> bool:
 
 static func can_see(world: World, eye: Vector2, at: Vector2) -> bool:
 	var hour := SimClock.day_fraction(world.tick) * 24.0
-	var reach := SIGHT_DAY_M if hour >= DAY_FROM_HOUR and hour < DAY_TO_HOUR else SIGHT_NIGHT_M
+	var reach := lerpf(SIGHT_DARK_M, SIGHT_DAY_M, StreetLights.light_at(at, hour))
 	if _sneaking_at(world, at):
 		reach *= SNEAK_SIGHT   # B3: crouched in the shadows you are seen from half as far
 	if eye.distance_to(at) > reach:
