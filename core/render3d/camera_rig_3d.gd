@@ -16,6 +16,7 @@ const ZOOM_STEP := 1.15
 const EASE := 10.0             # how fast zoom, turn and follow settle (per second)
 
 var world: World
+var follow: RenderSync3D        # Z-feel: the camera sits on where the player is drawn
 var origin := Vector2.ZERO     # map point at 3D (0, 0, 0)
 var camera := Camera3D.new()
 var yaw_deg := START_YAW_DEG
@@ -23,6 +24,7 @@ var target_yaw_deg := START_YAW_DEG
 var target_size := START_SIZE
 
 func _ready() -> void:
+	process_priority = 10   # after RenderSync3D: follow this frame's player, not last frame's
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
 	camera.size = START_SIZE
 	camera.near = 1.0
@@ -37,10 +39,9 @@ func _process(delta: float) -> void:
 	yaw_deg = lerpf(yaw_deg, target_yaw_deg, k)
 	camera.size = lerpf(camera.size, target_size, k)
 	_apply_turn()
-	var player: Entity = world.entities.get(PlayerFactory.PLAYER_ENTITY_ID) if world != null else null
-	if player != null:
-		var p: Vector2 = (player.get_component(ComponentNames.NPC) as NPCData).position - origin
-		position = position.lerp(Vector3(p.x, 0, p.y), k) if position.distance_to(Vector3(p.x, 0, p.y)) < 30.0 else Vector3(p.x, 0, p.y)
+	if follow != null and follow.player_shown != Vector2.INF:
+		var p := follow.player_shown - origin
+		position = Vector3(p.x, 0, p.y)   # Z-feel: locked on you, as in Zomboid (no lag, no drift)
 
 func _apply_turn() -> void:
 	rotation_degrees = Vector3(PITCH_DEG, yaw_deg, 0)

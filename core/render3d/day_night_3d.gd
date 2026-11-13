@@ -30,7 +30,6 @@ var hour_override := -1.0       # checks and screenshots: a fixed hour
 var city: CityData              # streets to light (set by the view)
 var radius := 300.0             # lamps placed this far round origin
 var _lights: StreetLights
-var _head_mat := StandardMaterial3D.new()   # lamp heads: lit at night
 
 func _ready() -> void:
 	_lights = StreetLights.build(city, origin, radius)   # the same layout the sim sees by
@@ -39,7 +38,7 @@ func _ready() -> void:
 ## Posts as tall as their pool is wide, each with a head that glows at night.
 func _posts(at: PackedVector3Array) -> Node3D:
 	var pole := CylinderMesh.new()
-	pole.top_radius = 0.06
+	pole.top_radius = 0.08
 	pole.bottom_radius = 0.09
 	pole.height = 1.0
 	pole.radial_segments = 5
@@ -47,7 +46,7 @@ func _posts(at: PackedVector3Array) -> Node3D:
 	head.size = Vector3(0.7, 0.18, 0.35)
 	var both := Node3D.new()
 	var posts := _multi(pole, Cutaway.material(Color("4a4d52"), false, 0.8))
-	var heads := _multi(head, _head_mat)
+	var heads := _multi(head, Cutaway.material(Color("ffe2a8"), false, 0.6, 1.4))   # cut with its pole; glows at night
 	for mi in [posts, heads]:
 		mi.multimesh.instance_count = at.size()
 		both.add_child(mi)
@@ -55,7 +54,7 @@ func _posts(at: PackedVector3Array) -> Node3D:
 		var tall := POST_H * at[i].z / 11.0
 		var foot := Vector3(at[i].x - origin.x, 0, at[i].y - origin.y)
 		posts.multimesh.set_instance_transform(i, Transform3D(Basis().scaled(Vector3(1, tall, 1)), foot + Vector3(0, tall * 0.5, 0)))
-		heads.multimesh.set_instance_transform(i, Transform3D(Basis(), foot + Vector3(0, tall, 0)))
+		heads.multimesh.set_instance_transform(i, Transform3D(Basis(), foot + Vector3(0, tall - 0.05, 0)))
 	return both
 
 static func _multi(mesh: Mesh, mat: Material) -> MultiMeshInstance3D:
@@ -73,9 +72,6 @@ func _process(_delta: float) -> void:
 		return
 	var hour := hour_override if hour_override >= 0.0 else SimClock.day_fraction(world.tick) * 24.0
 	night = StreetLights.darkness(hour)
-	_head_mat.albedo_color = Color("6b6d70").lerp(Color("ffe2a8"), night)
-	_head_mat.emission_enabled = night > 0.0
-	_head_mat.emission = Color("ffd58a") * night * 1.6
 	_sky(hour)
 	var player: Entity = world.entities.get(PlayerFactory.PLAYER_ENTITY_ID) if world != null else null
 	_gather((player.get_component(ComponentNames.NPC) as NPCData).position if player != null else origin)

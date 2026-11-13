@@ -36,6 +36,9 @@ var _eased: Dictionary = {}   # person id -> [shown position, facing]
 var _ghost := _silhouette()
 var _player_at := Vector2.INF
 var _player_face := 0.0
+var player_shown := Vector2.INF   # Z-feel: where the player is drawn this frame (the camera locks on it)
+var _tick_was := Vector2.ZERO
+var _tick_now := Vector2.INF
 var _seen_from := Vector2.INF   # R3D8: last frame's eye and facing: people out of sight are not drawn
 var _seen_face := 0.0
 var _room := Rect2()
@@ -208,13 +211,25 @@ func _ease(id: StringName, npc: NPCData, ps: PlayerStateData) -> Array:
 	var at: Vector2 = was[0]
 	var face: float = was[1]
 	var gap := npc.position - at
-	at = npc.position if ps != null or gap.length() > SNAP_M else at + gap * minf(1.0, _delta * SMOOTH)
+	if ps != null:
+		at = _player_between(npc.position)   # Z-feel: you glide between sim ticks, no stutter
+	else:
+		at = npc.position if gap.length() > SNAP_M else at + gap * minf(1.0, _delta * SMOOTH)
 	if ps != null and ps.aim_point != npc.position:
 		face = (ps.aim_point - npc.position).angle()   # you face the mouse
 	elif gap.length_squared() > 0.0004 and gap.length_squared() < 25.0:
 		face = lerp_angle(face, gap.angle(), 0.3)
 	_eased[id] = [at, face]
 	return [at, face]
+
+## Z-feel: the player drawn between the last two sim positions, by how far
+## into the next physics tick this frame is (a jump > SNAP_M just snaps).
+func _player_between(sim: Vector2) -> Vector2:
+	if sim != _tick_now:
+		_tick_was = _tick_now if _tick_now.distance_to(sim) < SNAP_M else sim
+		_tick_now = sim
+	player_shown = _tick_was.lerp(_tick_now, Engine.get_physics_interpolation_fraction())
+	return player_shown
 
 ## Legs, torso and head stacked; turned to face `face` (map radians). Down: flat on the ground.
 func _place_person(i: int, at: Vector2, face: float, down: bool, crouched: bool, shirt: Color, skin: Color) -> void:

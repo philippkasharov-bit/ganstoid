@@ -169,10 +169,12 @@ func process_entities(entities: Dictionary, delta: float, tick: int) -> void:
 			_drive(npc, state, delta)
 			continue   # at the wheel: WASD drive the car
 		_combat_input(npc, state, tick)
-		if _action_menu_input(npc, state) or _store_input(npc, state) or _inventory_input(npc, state):
-			continue   # a menu is open: the number keys belong to it
-		_hotbar_input(state)   # HB1: otherwise 1-9 are the hotbar
-		var input_dir := _move_input()
+		var in_menu := _action_menu_input(npc, state) or _store_input(npc, state) or _inventory_input(npc, state)
+		if not in_menu:
+			_hotbar_input(state)   # HB1: with no menu up, 1-9 are the hotbar
+		var input_dir := _move_input()   # Z-feel: you walk with windows open, as in Zomboid
+		if input_dir != Vector2.ZERO and not state.menu_options.is_empty():
+			state.menu_options = []   # walking off closes the right-click menu
 		if Input.is_physical_key_pressed(KEY_SHIFT) and state.sneaking:
 			state.sneaking = false   # B3: breaking into a run stands you up
 		var running := Input.is_physical_key_pressed(KEY_SHIFT) and Stamina.can_run(state) and not state.aiming
@@ -187,6 +189,8 @@ func process_entities(entities: Dictionary, delta: float, tick: int) -> void:
 			var step := input_dir.normalized() * speed * CrewSystem.player_speed_multiplier(_world, state) * delta
 			npc.position = SimNav.active.slide(npc.position, step) if SimNav.active != null else npc.position + step   # walls are solid
 			_world.reindex_position(npc.id)
+		if in_menu:
+			continue   # a menu has the keys: no E / Enter / crew keys under it
 		if Input.is_action_just_pressed("ui_accept"):
 			_report(state, _attempt_interact(npc))
 		if Input.is_action_just_pressed(RECRUIT_ACTION):

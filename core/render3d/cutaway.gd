@@ -44,6 +44,7 @@ uniform int light_count = 0;
 uniform float moon = 0.28;
 uniform float sight[360];             // R3D11: how far you can see each degree round you (SightMap)
 uniform bool sight_on = false;
+uniform float self_glow = 0.0;        // lamp heads: lit at night
 varying float glow;                   // a lit window / shop front (UV.x)
 varying vec3 world_pos;
 varying flat int tag;  // the building this vertex belongs to (0: road, ground, palm)
@@ -125,7 +126,7 @@ void fragment() {
 	float pool = lamp();
 	float bright = mix(1.0, max(moon, pool), night);   // at night you see what is lit
 	ALBEDO = mix(mix(grey, col, 0.35) * unseen, col, lit) * bright;
-	EMISSION = night * (vec3(1.0, 0.8, 0.5) * pool * 0.6 * col + vec3(1.0, 0.82, 0.5) * glow * 0.9);
+	EMISSION = night * (vec3(1.0, 0.8, 0.5) * pool * 0.6 * col + vec3(1.0, 0.82, 0.5) * glow * 0.9 + tint * self_glow);
 	ROUGHNESS = roughness;
 }
 """
@@ -134,7 +135,7 @@ static var _shader: Shader
 static var _materials: Array[ShaderMaterial] = []
 
 ## A city material that takes part in the cutaway: vertex colours, or one flat colour.
-static func material(colour: Color = Color.WHITE, use_vertex: bool = true, roughness: float = 0.95) -> ShaderMaterial:
+static func material(colour: Color = Color.WHITE, use_vertex: bool = true, roughness: float = 0.95, glows: float = 0.0) -> ShaderMaterial:
 	if _shader == null:
 		_shader = Shader.new()
 		_shader.code = SHADER
@@ -143,6 +144,7 @@ static func material(colour: Color = Color.WHITE, use_vertex: bool = true, rough
 	mat.set_shader_parameter("use_vertex", use_vertex)
 	mat.set_shader_parameter("tint", colour)
 	mat.set_shader_parameter("roughness", roughness)
+	mat.set_shader_parameter("self_glow", glows)
 	_materials.append(mat)
 	return mat
 

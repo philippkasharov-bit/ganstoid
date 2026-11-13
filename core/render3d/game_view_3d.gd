@@ -59,6 +59,7 @@ func setup(w: World, city: CityData, at: Vector2) -> void:
 	add_child(day_night)
 	rig.origin = centre
 	rig.world = world
+	rig.follow = people3d
 	add_child(rig)
 
 ## Switch between the 3D view and the old 2D map.
