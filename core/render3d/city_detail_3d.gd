@@ -4,7 +4,9 @@
 ## and asphalt; parks, pitches, playgrounds, plazas, parking lots and
 ## backyard pools as they are mapped; walls, fences and hedges along their
 ## lines; zebra crossings where they are painted; hydrants, benches and
-## bins. Drawn into the city's chunk meshes (one material), below the roads.
+## bins. D4: lane lines on the big roads, painted crosswalks at junctions,
+## concrete driveway aprons across the sidewalk. Drawn into the city's chunk
+## meshes (one material); ground below the roads, paint on top of them.
 ## Trees and the overhead power lines come back as MultiMeshes.
 class_name CityDetail3D
 extends RefCounted
@@ -22,8 +24,9 @@ const BARRIER := {"wall": [1.8, 0.22, Color("d9cdb5")], "fence": [1.3, 0.06, Col
 const POINT := {"hydrant": [Vector3(0.3, 0.75, 0.3), Color("d6452f")], "bench": [Vector3(1.6, 0.5, 0.5), Color("8a6a45")], "bin": [Vector3(0.55, 0.95, 0.55), Color("4f5a4f")]}
 
 ## Adds the detail within `radius` of `centre` to the city builder `m`.
-static func add(m: CityMesh3D, real: CityReal, centre: Vector2, radius: float) -> void:
+static func add(m: CityMesh3D, city: CityData, real: CityReal, centre: Vector2, radius: float) -> void:
 	var r2 := radius * radius
+	_paint(m, city, centre, r2)
 	for lot in real.lots:
 		if CityMesh3D._near(lot["poly"], centre, r2):
 			m._flat_poly(CityMesh3D._open(lot["poly"]), LOT_H, _lot_colour(lot))
@@ -87,3 +90,52 @@ static func _prism(m: CityMesh3D, c: Array, h: float, col: Color) -> void:
 		var e := b - a
 		m._quad(st, [m._v(a, 0.0), m._v(b, 0.0), m._v(b, h), m._v(a, h)], Vector3(e.y, 0, -e.x).normalized(), col.darkened(0.06 * (i % 2)))
 	m._quad(st, [m._v(c[0], h), m._v(c[1], h), m._v(c[2], h), m._v(c[3], h)], Vector3.UP, col.lightened(0.05))
+
+const PAINT_H := 0.047
+const PAINT := Color("ecebe4")
+const DASH_M := 3.0
+const DASH_GAP_M := 6.0
+
+## D4: lane dashes, junction crosswalks and driveway aprons.
+static func _paint(m: CityMesh3D, city: CityData, centre: Vector2, r2: float) -> void:
+	for r in city.roads:
+		if r["tier"] in ["art", "fwy"] and CityMesh3D._near(r["pts"], centre, r2):
+			_lanes(m, r)
+	for c in city.crosswalks:
+		if c["c"].distance_squared_to(centre) < r2:
+			var half: Vector2 = c["dir"] * float(c["len"]) * 0.5
+			_zebra(m, PackedVector2Array([c["c"] - half, c["c"] + half]))
+	for d in city.driveways:
+		if d["c"].distance_squared_to(centre) < r2:
+			var out: Vector2 = d["dir"]
+			var side := out.orthogonal() * float(d["w"]) * 0.5
+			var c: Vector2 = d["c"]
+			var far := c + out * float(d["len"])
+			m._quad(m._tool(c), [m._v(c - side, 0.03), m._v(c + side, 0.03), m._v(far + side, 0.03), m._v(far - side, 0.03)], Vector3.UP, Color("d6d1c6"))
+
+## White dashes between the lanes on each side of the middle.
+static func _lanes(m: CityMesh3D, r: Dictionary) -> void:
+	var lanes := maxi(2, str(r.get("lanes", "2")).to_int())
+	var w: float = r.get("w", CityMesh3D.ROAD_W.get(r["tier"], 6.0))
+	var per_side := lanes / 2
+	var pts: PackedVector2Array = r["pts"]
+	for k in range(1, per_side):
+		for side in [-1.0, 1.0]:
+			_dashes(m, pts, side * k * w / lanes)
+
+static func _dashes(m: CityMesh3D, pts: PackedVector2Array, offset: float) -> void:
+	var run := 0.0
+	for i in pts.size() - 1:
+		var seg := pts[i + 1] - pts[i]
+		var length := seg.length()
+		if length < 0.1:
+			continue
+		var dir := seg / length
+		var n := dir.orthogonal()
+		while run < length:
+			var a := pts[i] + dir * run + n * offset
+			var b := pts[i] + dir * minf(run + DASH_M, length) + n * offset
+			var t := n * 0.07
+			m._quad(m._tool(a), [m._v(a - t, PAINT_H), m._v(b - t, PAINT_H), m._v(b + t, PAINT_H), m._v(a + t, PAINT_H)], Vector3.UP, PAINT)
+			run += DASH_M + DASH_GAP_M
+		run -= length

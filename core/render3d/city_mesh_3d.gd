@@ -37,7 +37,7 @@ static func build(city: CityData, centre: Vector2, radius: float) -> Array[Node3
 		if _near(city.buildings[i]["poly"], centre, r2):
 			b._building(city.buildings[i], i + 1)   # R3D7: its tag is its index + 1 (0: not a building)
 	var real := CityReal.load_files()
-	CityDetail3D.add(b, real, centre, radius)   # D2: yards, lots, pools, walls, fences, crossings, hydrants
+	CityDetail3D.add(b, city, real, centre, radius)   # D2: yards, lots, pools, walls, fences, crossings, hydrants
 	var out: Array[Node3D] = b._commit()
 	out.append_array(CityProps3D.build(city, real, centre, radius))   # D2: shade trees, power lines
 	var wells := PackedVector2Array()
