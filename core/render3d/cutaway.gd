@@ -5,6 +5,9 @@
 ## lose their crown and trunk the same way. Footprints.covering picks the
 ## buildings that hide you; each building's vertices carry its tag (UV.y),
 ## so the merged city meshes still cut one building at a time.
+## R3D8: Zomboid's vision cone: what is outside your field of view (and,
+## indoors, everything outside the room) is drawn dark and grey; a small
+## ring round you is always seen.
 ## R3D5: inside a building, its roof and upper floors go, and the walls on
 ## the camera's side drop to waist height, so you see the room you are in.
 class_name Cutaway
@@ -28,6 +31,10 @@ uniform vec2 room_min = vec2(0.0);
 uniform vec2 room_max = vec2(0.0);
 uniform float ceiling = 2.6;
 uniform float waist = 1.0;
+uniform vec2 look = vec2(1.0, 0.0);   // where you face, 3D x/z
+uniform float cone_cos = 0.34;        // half the field of view (about 70 degrees)
+uniform float near_m = 3.5;           // always seen round you
+uniform float unseen = 0.42;          // how bright the unseen world is
 varying vec3 world_pos;
 varying flat int tag;  // the building this vertex belongs to (0: road, ground, palm)
 varying vec2 palm;     // a palm's foot in 3D x/z
@@ -63,6 +70,21 @@ bool cut_room() {
 	return world_pos.y > ceiling || (near_side && world_pos.y > waist);
 }
 
+// 1: in your field of view; 0: not seen (soft edges).
+float seen() {
+	vec2 d = world_pos.xz - focus.xz;
+	float dist = length(d);
+	float ring = 1.0 - smoothstep(near_m, near_m + 1.5, dist);
+	float cone = smoothstep(cone_cos - 0.12, cone_cos + 0.06, dot(d / max(dist, 0.001), normalize(look)));
+	float v = max(ring, cone);
+	if (room_on) {
+		vec2 p = world_pos.xz;
+		bool inside = all(greaterThanEqual(p, room_min)) && all(lessThanEqual(p, room_max));
+		v = inside ? v : v * 0.15;   // indoors: outside is a dark blur, as through walls
+	}
+	return focus.y < -100.0 ? 1.0 : v;
+}
+
 void fragment() {
 	bool cut = in_front();
 	if (cut_room() || (cut && world_pos.y > cut_h)) {
@@ -72,7 +94,9 @@ void fragment() {
 	if (cut && world_pos.y > cut_h - cap_m) {
 		col *= 0.45;   // the cap: the cut reads as a wall top, not a hole
 	}
-	ALBEDO = col;
+	float lit = seen();
+	vec3 grey = vec3(dot(col, vec3(0.3, 0.59, 0.11)));
+	ALBEDO = mix(mix(grey, col, 0.35) * unseen, col, lit);
 	ROUGHNESS = roughness;
 }
 """
@@ -98,6 +122,11 @@ static func aim(focus: Vector3, view_dir: Vector3) -> void:
 	for mat in _materials:
 		mat.set_shader_parameter("focus", focus)
 		mat.set_shader_parameter("view_dir", view_dir.normalized())
+
+## R3D8: which way you face (map radians): the vision cone.
+static func facing(angle: float) -> void:
+	for mat in _materials:
+		mat.set_shader_parameter("look", Vector2.from_angle(angle))
 
 ## R3D7: the buildings to cut (tags from Footprints.covering).
 static func cut(tags: PackedInt32Array) -> void:

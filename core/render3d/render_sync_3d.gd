@@ -35,6 +35,12 @@ var _cabin := _layer(Vector3.ONE, MAX_CARS)
 var _eased: Dictionary = {}   # person id -> [shown position, facing]
 var _ghost := _silhouette()
 var _player_at := Vector2.INF
+var _player_face := 0.0
+var _seen_from := Vector2.INF   # R3D8: last frame's eye and facing: people out of sight are not drawn
+var _seen_face := 0.0
+var _room := Rect2()            # map rect of the room you are in (empty outdoors)
+const CONE_COS := 0.34          # matches the Cutaway shader
+const NEAR_M := 3.5
 var _delta := 0.016
 
 func _ready() -> void:
@@ -68,14 +74,30 @@ func _see_player() -> void:
 	if footprints != null:
 		Cutaway.cut(footprints.covering(_player_at, Vector2(view.x, view.z)))
 	_ghost.position = chest
+	Cutaway.facing(_player_face)
+	_seen_from = _player_at
+	_seen_face = _player_face
 	_open_room()
+
+## R3D8: in your field of view (or right by you), and indoors only in your room.
+func _in_sight(p: Vector2) -> bool:
+	if _seen_from == Vector2.INF:
+		return true
+	var d := p - _seen_from
+	if d.length() < NEAR_M:
+		return true
+	if _room.has_area() and not _room.grow(0.4).has_point(p):
+		return false
+	return d.normalized().dot(Vector2.from_angle(_seen_face)) > CONE_COS
 
 ## R3D5: standing inside a footprint: that building opens up round you.
 func _open_room() -> void:
 	var poly := footprints.at(_player_at) if footprints != null else PackedVector2Array()
+	_room = Rect2()
 	if poly.is_empty():
 		Cutaway.room(Rect2(), false)
 		return
+	_room = Footprints._box(poly)
 	var box := Rect2(poly[0] - origin, Vector2.ZERO)
 	for p in poly:
 		box = box.expand(p - origin)
@@ -134,6 +156,9 @@ func _people(focus: Vector2) -> void:
 		var pose := _ease(id, npc, ps)
 		if ps != null and not npc.is_down:
 			_player_at = pose[0]
+			_player_face = pose[1]
+		elif not _in_sight(pose[0]):
+			continue   # Zomboid: who you cannot see is not drawn
 		_place_person(n, pose[0], pose[1], npc.is_down, ps != null and ps.sneaking, _shirt(e, npc), SKIN[absi(String(id).hash()) % SKIN.size()])
 		n += 1
 	shown_people = n
@@ -192,7 +217,10 @@ func _cars(focus: Vector2) -> void:
 		var turn := Basis(Vector3.UP, -car.heading)
 		var at := Vector3(car.position.x - origin.x, 0, car.position.y - origin.y)
 		_body.multimesh.set_instance_transform(n, Transform3D(turn.scaled(Vector3(car.length_m, 0.75, car.width_m)), at + Vector3(0, 0.62, 0)))
-		_body.multimesh.set_instance_color(n, car.color.darkened(car.damage * 0.5))
+		var paint := car.color.darkened(car.damage * 0.5)
+		if not _in_sight(car.position):   # R3D8: a car you cannot see stays as a dim grey shape
+			paint = Color(paint.get_luminance(), paint.get_luminance(), paint.get_luminance()).lerp(paint, 0.35) * Color(0.42, 0.42, 0.42)
+		_body.multimesh.set_instance_color(n, paint)
 		var back := turn * Vector3(-car.length_m * 0.08, 0, 0)   # cabin sits a little behind the middle
 		_cabin.multimesh.set_instance_transform(n, Transform3D(turn.scaled(Vector3(car.length_m * 0.5, 0.55, car.width_m * 0.9)), at + back + Vector3(0, 1.27, 0)))
 		_cabin.multimesh.set_instance_color(n, CABIN)

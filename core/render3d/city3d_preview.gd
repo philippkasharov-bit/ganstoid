@@ -83,7 +83,7 @@ func _ground() -> void:
 	pm.size = Vector2.ONE * radius_m * 2.5
 	plane.mesh = pm
 	plane.position.y = -0.01
-	plane.material_override = _mat(GROUND)
+	plane.material_override = Cutaway.material(GROUND, false, 1.0)   # R3D8: darkens outside your view too
 	add_child(plane)
 
 func _box(at: Vector2, size: Vector3, h: float, col: Color) -> MeshInstance3D:
