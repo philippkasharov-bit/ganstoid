@@ -159,7 +159,8 @@ func process_entities(entities: Dictionary, delta: float, tick: int) -> void:
 			StreetTalk.say(_world, state, wired)
 		Vicinity.update_inside(_world, npc, state)   # LT1
 		var busy := _move_input() != Vector2.ZERO or Input.is_action_just_pressed(ATTACK_ACTION)
-		StreetTalk.say(_world, state, TimedAction.advance(_world, npc, state, busy))   # TA1
+		var acted := TimedAction.advance(_world, npc, state, busy)   # TA1
+		StreetTalk.say(_world, state, _do_move(npc, state, acted["do_move"]) if acted.has("do_move") else acted)   # B4: a timed move lands
 		if Input.is_action_just_pressed(TAG_ACTION) and state.vehicle_id == &"" and TerritorySystem.data(_world) != null:
 			StreetTalk.say(_world, state, TerritorySystem.tag(_world, npc))
 		if Input.is_action_just_pressed(SNEAK_ACTION) and state.vehicle_id == &"":
@@ -487,7 +488,11 @@ func _options(npc: NPCData, state: PlayerStateData) -> Array:
 ## G2: I opens what you carry; 1-9 eat, drink or apply that line.
 func _inventory_input(npc: NPCData, state: PlayerStateData) -> bool:
 	if not state.ui_move.is_empty():   # INV4: drop / stash / take from the vicinity panel
-		StreetTalk.say(_world, state, _do_move(npc, state, state.ui_move))
+		var cash_only: bool = state.ui_move.has("src") and state.ui_move["src"]["id"] == &"cash"
+		if cash_only:
+			StreetTalk.say(_world, state, _do_move(npc, state, state.ui_move))   # grabbing notes is instant
+		else:
+			TimedAction.start_move(_world, state, state.ui_move)   # B4: Zomboid's transfer time
 		state.ui_move = {}
 	if state.ui_use != &"":   # UI5/UI8: a bag line or a moodle was clicked
 		_use_or_hold(npc, state, state.ui_use)

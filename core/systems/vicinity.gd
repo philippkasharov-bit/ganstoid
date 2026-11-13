@@ -105,7 +105,11 @@ static func take(world: World, state: PlayerStateData, src: Dictionary, n: int) 
 	if src["kind"] in ["container", "glovebox"]:
 		n = _take_from(world, src, n)
 	elif src["kind"] == "ground":
-		var p: Dictionary = state.ground[src["index"]]
+		var at := _ground_index(state, src)   # B4: a queued take may come after other piles moved
+		if at < 0:
+			return {"ok": false, "reason": "dont_have"}
+		src["index"] = at
+		var p: Dictionary = state.ground[at]
 		n = mini(n, int(p["n"]))
 		p["n"] = int(p["n"]) - n
 		if p["n"] <= 0:
@@ -119,6 +123,17 @@ static func take(world: World, state: PlayerStateData, src: Dictionary, n: int) 
 	state.inventory[id] = int(state.inventory.get(id, 0)) + n
 	BagGrid.sync(state)
 	return {"ok": true, "effect": "picked_up"}
+
+## The pile a ground source means now: its old index if that still holds the
+## same thing, else the first pile of that item. -1 when it is gone.
+static func _ground_index(state: PlayerStateData, src: Dictionary) -> int:
+	var i: int = src["index"]
+	if i < state.ground.size() and state.ground[i]["id"] == src["id"]:
+		return i
+	for j in state.ground.size():
+		if state.ground[j]["id"] == src["id"]:
+			return j
+	return -1
 
 ## Takes from a building container or glovebox; returns how many came out.
 static func _take_from(world: World, src: Dictionary, n: int) -> int:
