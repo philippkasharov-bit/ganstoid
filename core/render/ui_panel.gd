@@ -5,6 +5,7 @@ class_name UiPanel
 extends PanelContainer
 
 signal row_picked(index: int)   # UIF1: a numbered row was clicked
+signal row_hovered(index: int)  # WM1: the mouse is over a numbered row (fly-out menus)
 
 const BG := UiTheme.BG
 const ACCENT := UiTheme.ACCENT
@@ -17,6 +18,8 @@ var _title := Label.new()
 var _rows := VBoxContainer.new()
 var _footer := MarginContainer.new()   # UI26: keycap prompts
 var _footer_key := ""
+var _buttons: Array[Button] = []   # numbered rows, in order
+var lit_row := -1                  # WM1: a row shown as the open one (its fly-out is showing)
 
 func setup(world: World, at: Vector2) -> void:
 	_world = world
@@ -54,27 +57,28 @@ func _process(_delta: float) -> void:
 func refresh() -> void:
 	pass
 
-## rows: Array of [key text ("1", "" for none), label, right-hand text];
+## rows: Array of [key text ("1"; "" for a plain line; "-" clickable, no number), label, right-hand text];
 ## hints: [[key, what it does], ...] shown as keycaps under the rows.
 func show_panel(title: String, rows: Array, hints: Array) -> void:
 	visible = true
 	_title.text = title.to_upper()
 	_set_hints(hints)
-	var key := str(rows.hash()) + title
+	var key := str(rows.hash()) + title + str(lit_row)
 	if get_meta("key", "") == key:
 		return   # unchanged: do not rebuild the rows every frame
 	set_meta("key", key)
 	for c in _rows.get_children():
 		c.queue_free()
+	_buttons.clear()
 	var numbered := 0
 	for r in rows:
 		var line := HBoxContainer.new()
 		line.add_theme_constant_override("separation", 6)
 		var k := Label.new()
-		k.text = " %s " % r[0] if r[0] != "" else "   "
+		k.text = " %s " % r[0] if r[0] not in ["", "-"] else ("" if r[0] == "-" else "   ")
 		k.add_theme_color_override("font_color", ACCENT)
 		var kb := StyleBoxFlat.new()
-		kb.bg_color = KEY_BG if r[0] != "" else Color.TRANSPARENT
+		kb.bg_color = KEY_BG if r[0] not in ["", "-"] else Color.TRANSPARENT
 		kb.set_corner_radius_all(3)
 		k.add_theme_stylebox_override("normal", kb)
 		var t := Label.new()
@@ -117,7 +121,18 @@ func _clickable(line: HBoxContainer, index: int) -> Button:
 		part.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	b.add_child(line)
 	b.pressed.connect(func() -> void: row_picked.emit(index))
+	b.mouse_entered.connect(func() -> void: row_hovered.emit(index))
+	if index == lit_row:   # flat buttons draw no "normal" box, so the lit one is not flat
+		b.flat = false
+		var lit := UiTheme.box(UiTheme.BG_ROW_SELECT, Color.TRANSPARENT, 0)
+		for look in ["normal", "hover", "pressed"]:
+			b.add_theme_stylebox_override(look, lit)
+	_buttons.append(b)
 	return b
+
+## WM1: where numbered row `index` is on screen (to hang a fly-out off it).
+func row_rect(index: int) -> Rect2:
+	return _buttons[index].get_global_rect() if index >= 0 and index < _buttons.size() else get_global_rect()
 
 func player_state() -> PlayerStateData:
 	var p: Entity = _world.entities.get(PlayerFactory.PLAYER_ENTITY_ID)

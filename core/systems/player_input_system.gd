@@ -268,15 +268,19 @@ func _drive(npc: NPCData, state: PlayerStateData, delta: float) -> void:
 ## E or Esc closes. Replaces the old one-key-per-action scheme (Esc to sell).
 var _menu_runs: Array[Callable] = []
 var _menu_top: Array = []   # UIF3: the whole option list, for stepping back out of a category
+var _cat_runs: Array[Callable] = []   # WM1: open each category's fly-out
+var _rmb_ms := -1                     # WM1: when the right button went down (a quick tap = menu, a hold = aim)
+const TAP_MS := 220
 
 func _action_menu_input(npc: NPCData, state: PlayerStateData) -> bool:
 	if state.store_id != &"" or state.inventory_open:
 		return false
-	if Input.is_action_just_pressed(STORE_ACTION):
-		if not state.menu_options.is_empty():
+	var tapped := _rmb_tap()
+	if Input.is_action_just_pressed(STORE_ACTION) or tapped:
+		if not state.menu_options.is_empty() and not tapped:
 			state.menu_options = []
 			return true
-		_open_menu(npc, state, _options(npc, state))
+		_open_menu(npc, state, _options(npc, state))   # WM1: right-click opens it at the cursor, Zomboid's way
 		if state.menu_options.is_empty():
 			StreetTalk.say_key(_world, state, "nothing_here")
 		return true
@@ -284,9 +288,17 @@ func _action_menu_input(npc: NPCData, state: PlayerStateData) -> bool:
 		return false
 	if Input.is_action_just_pressed("ui_cancel"):
 		if state.menu_title != "What now?" and not _menu_top.is_empty():
+			var serial := state.menu_serial
 			_open_menu(npc, state, _menu_top)   # UIF3: Esc in a category steps back to the categories
+			state.menu_serial = serial          # WM1: and stays where it is
 		else:
 			state.menu_options = []
+		return true
+	if state.ui_pick_parent >= 0:   # WM1: hovered or clicked a category: open its fly-out
+		var c := state.ui_pick_parent
+		state.ui_pick_parent = -1
+		if c < _cat_runs.size() and c != state.menu_parent_on:
+			_cat_runs[c].call()
 		return true
 	for i in mini(_menu_runs.size(), SLOT_ACTIONS.size()):
 		if Input.is_action_just_pressed(SLOT_ACTIONS[i]) or _picked(state, i):
@@ -305,17 +317,41 @@ func _action_menu_input(npc: NPCData, state: PlayerStateData) -> bool:
 ## UIF3: a short list opens flat; a long one opens on its categories.
 func _open_menu(npc: NPCData, state: PlayerStateData, options: Array) -> void:
 	_menu_top = options
+	_cat_runs.clear()
+	state.menu_parent = []
+	state.menu_parent_on = -1
+	state.ui_pick_parent = -1
+	state.menu_serial += 1
 	if options.size() <= ActionMenuModel.FLAT_UP_TO or not state.job_offers.is_empty():
 		_show_list(npc, state, "What now?", options)
 		return
 	var groups := ActionMenuModel.group(options)
 	var rows: Array = []
+	var labels: PackedStringArray = []
+	for cat in groups:
+		labels.append("%s  ›" % cat)
 	for cat in groups:
 		var picked: Array = groups[cat]
-		rows.append(["%s  ›" % cat, func() -> Dictionary:
+		var index := rows.size()
+		var open_cat := func() -> Dictionary:   # WM1: the category stays shown, its list flies out beside it
 			_show_list(npc, state, cat, picked)
-			return {"submenu": true}])
+			state.menu_parent = labels
+			state.menu_parent_on = index
+			return {"submenu": true}
+		_cat_runs.append(open_cat)
+		rows.append([labels[index], open_cat])
 	_show_list(npc, state, "What now?", rows, false)
+
+## WM1: a quick right-click (not a held aim), released over the world, not a window.
+func _rmb_tap() -> bool:
+	if Input.is_action_just_pressed(AIM_ACTION):
+		var root := (Engine.get_main_loop() as SceneTree).root if Engine.get_main_loop() is SceneTree else null
+		_rmb_ms = -1 if root != null and root.gui_get_hovered_control() != null else Time.get_ticks_msec()
+	if Input.is_action_just_released(AIM_ACTION) and _rmb_ms >= 0:
+		var quick := Time.get_ticks_msec() - _rmb_ms <= TAP_MS
+		_rmb_ms = -1
+		return quick
+	return false
 
 func _show_list(npc: NPCData, state: PlayerStateData, title: String, options: Array, notes := true) -> void:
 	_menu_runs.clear()
