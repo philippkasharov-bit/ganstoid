@@ -96,14 +96,48 @@ static func _make_person(color: Color, scale: float = 1.0, rim: Color = Color(0.
 	var art := ART_DIR + String(kind) + ".tscn"
 	if ResourceLoader.exists(art):
 		return (load(art) as PackedScene).instantiate() as Node2D
+	return _make_figure(color, scale, rim)
+
+## ISO1: a person as a standing block seen slightly from the south, the same
+## lean as the buildings (CityRenderer.LIFT_PER_M): a soft shadow on the
+## ground, the body's front face, the shoulders on top and the head above,
+## so people stand up out of the map instead of lying on it. The body never
+## turns (the lean must stay up-screen); only the "Face" child turns to show
+## which way they look.
+const FIGURE_H := 0.85     # how far up-screen the shoulders sit (local units, before the 1.6 scale)
+const BODY_R := Vector2(0.24, 0.16)
+
+static func _make_figure(color: Color, scale: float, rim: Color) -> Node2D:
 	var body := Node2D.new()
-	var shoulders := Rect2(Vector2(-0.22, -0.3), Vector2(0.44, 0.6)).grow(0.0)
-	var head := Rect2(Vector2(-0.12, -0.13), Vector2(0.26, 0.26))
 	body.scale = Vector2.ONE * scale * 1.6   # drawn a bit larger than life so people read at street zoom
+	var w := BODY_R.x * 2.0
+	var d := BODY_R.y * 2.0
+	var legs := Color(0.16, 0.17, 0.22)
 	body.draw.connect(func() -> void:
-		body.draw_rect(shoulders.grow(0.06), rim)
-		body.draw_rect(shoulders, color)
-		body.draw_rect(head.grow(0.04), rim)
-		body.draw_rect(head, color.lightened(0.35))
-		body.draw_rect(Rect2(Vector2(0.14, -0.05), Vector2(0.1, 0.1)), rim))   # nose: which way they face
+		body.draw_colored_polygon(_ellipse(Vector2(0.14, 0.06), BODY_R * 1.3), Color(0, 0, 0, 0.22))   # shadow on the ground
+		_block(body, Vector2(-w * 0.5, d * 0.5), w, FIGURE_H * 0.45, d, legs, rim)                     # legs
+		_block(body, Vector2(-w * 0.55, d * 0.5 - FIGURE_H * 0.45), w * 1.1, FIGURE_H * 0.55, d, color, rim)   # torso and shoulders
+		_block(body, Vector2(-w * 0.28, d * 0.3 - FIGURE_H), w * 0.56, 0.22, d * 0.6, color.lightened(0.35), rim))   # head
+	var face := Node2D.new()
+	face.name = "Face"
+	face.position = Vector2(0, -FIGURE_H - 0.2)
+	face.draw.connect(func() -> void: face.draw_rect(Rect2(Vector2(0.1, -0.04), Vector2(0.09, 0.08)), rim))   # nose: which way they face
+	body.add_child(face)
 	return body
+
+## A box standing on `base` (its front-bottom-left corner, screen coords):
+## the front face `h` tall, the top `depth` deep, both with a thin rim.
+static func _block(ci: CanvasItem, base: Vector2, width: float, h: float, depth: float, col: Color, rim: Color) -> void:
+	var front := Rect2(base - Vector2(0, h), Vector2(width, h))
+	var top := Rect2(base - Vector2(0, h + depth), Vector2(width, depth))
+	ci.draw_rect(front, col.darkened(0.25))
+	ci.draw_rect(top, col)
+	ci.draw_rect(Rect2(top.position, Vector2(width, h + depth)), rim, false, 0.05)
+
+## 16 points round an ellipse, starting at the right, going clockwise on screen (down first).
+static func _ellipse(c: Vector2, r: Vector2) -> PackedVector2Array:
+	var out := PackedVector2Array()
+	for k in 16:
+		var a := k * TAU / 16.0
+		out.append(c + Vector2(cos(a) * r.x, sin(a) * r.y))
+	return out

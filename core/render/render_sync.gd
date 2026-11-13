@@ -70,9 +70,9 @@ func _sync_visuals() -> void:
 			if people[id].has_component(ComponentNames.PLAYER_STATE):
 				var st: PlayerStateData = people[id].get_component(ComponentNames.PLAYER_STATE)
 				if st.aim_point != npc.position:
-					visual.rotation = (st.aim_point - npc.position).angle()   # the player faces the mouse
+					_turn(visual, (st.aim_point - npc.position).angle())   # the player faces the mouse
 			elif moved.length_squared() > 0.0004 and moved.length_squared() < 25.0:
-				visual.rotation = lerp_angle(visual.rotation, moved.angle(), 0.3)   # NPCs face where they walk
+				_turn(visual, lerp_angle(_facing(visual), moved.angle(), 0.3))   # NPCs face where they walk
 			var gap: Vector2 = npc.position - visual.position
 			if people[id].has_component(ComponentNames.PLAYER_STATE) or gap.length() > SNAP_M:
 				visual.position = npc.position
@@ -87,7 +87,7 @@ func _sync_visuals() -> void:
 			if visual.modulate != tint:
 				visual.modulate = tint   # combat: a body on the ground, or someone out cold
 				var base: float = 1.6 * (1.15 if people[id].has_component(ComponentNames.PLAYER_STATE) else 1.0)
-				visual.scale = Vector2(base * 1.3, base * 0.8) if npc.is_down else Vector2.ONE * base   # lying flat
+				visual.scale = Vector2(base * 1.3, base * 0.35) if npc.is_down else Vector2.ONE * base   # lying flat (ISO1: the standing lean squashed down)
 
 	for id in _world.get_entities_with_component(ComponentNames.VEHICLE):
 		var car: VehicleData = _world.entities[id].get_component(ComponentNames.VEHICLE)
@@ -97,6 +97,18 @@ func _sync_visuals() -> void:
 		if car_visual != null:
 			car_visual.position = car.position
 			car_visual.rotation = car.heading
+
+## ISO1: a standing figure keeps its lean up-screen; only its Face turns.
+static func _turn(visual: Node2D, angle: float) -> void:
+	var face := visual.get_node_or_null("Face") as Node2D
+	if face != null:
+		face.rotation = angle
+	else:
+		visual.rotation = angle
+
+static func _facing(visual: Node2D) -> float:
+	var face := visual.get_node_or_null("Face") as Node2D
+	return face.rotation if face != null else visual.rotation
 
 static func _in_car(player: Entity) -> bool:
 	return (player.get_component(ComponentNames.PLAYER_STATE) as PlayerStateData).vehicle_id != &""
