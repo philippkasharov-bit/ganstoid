@@ -96,6 +96,16 @@ func _walk_home(preview: Node, me: NPCData) -> void:
 			for i in 40:
 				me.position = Indoors.step(preview.driver.world, me, st, -out * 0.1)
 				await physics_frame
-			print("R3D14: walked home: inside %s (door %s-%s, at %s, kind %s)" % [Geometry2D.is_point_in_polygon(me.position, l.poly), l.door_a, l.door_b, me.position, b["kind"]])
+			for i in 10:
+				await process_frame
+			var mates := 0
+			var mates_in := 0
+			for e in preview.driver.world.get_entities_with_component(ComponentNames.NPC).values():
+				var o: NPCData = e.get_component(ComponentNames.NPC)
+				if o != me and o.home_building_id == me.home_building_id:
+					mates += 1
+					mates_in += int(o.indoors)
+			print("R3D14: %d live here, %d indoors" % [mates, mates_in])
+			print("R3D14: walked home: inside %s, %d people in here with you" % [Geometry2D.is_point_in_polygon(me.position, l.poly), preview.people3d._indoor.size()])
 			return
 	print("R3D14: home is not a city building")

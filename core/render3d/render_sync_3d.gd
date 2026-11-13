@@ -17,8 +17,6 @@ const MAX_CARS := 600
 const SMOOTH := 12.0
 const SNAP_M := 6.0
 const LEGS := Color(0.16, 0.17, 0.22)
-const SKIN := [Color("f1c7a5"), Color("d9a77f"), Color("b07a52"), Color("8a5a3b"), Color("5e3d2a")]
-const SHIRTS := [Color("4a5568"), Color("7b8794"), Color("9c4a3c"), Color("3e6a5a"), Color("b8a68a"), Color("2f3b52"), Color("e2ddd2"), Color("6b4f7a")]
 const CABIN := Color(0.32, 0.4, 0.48)
 
 var world: World
@@ -33,7 +31,7 @@ var _head := _layer(Vector3(0.3, 0.3, 0.3), MAX_PEOPLE)
 var _body := _layer(Vector3.ONE, MAX_CARS)
 var _cabin := _layer(Vector3.ONE, MAX_CARS)
 var _eased: Dictionary = {}   # person id -> [shown position, facing]
-var _ghost := _silhouette()
+var _ghost := PersonLook3D.silhouette()
 var _player_at := Vector2.INF
 var _player_face := 0.0
 var _riding := false
@@ -49,6 +47,9 @@ var _sight_inside := "-"
 const SIGHT_RECAST_M := 0.15
 var _inside: MeshInstance3D     # R3D9: rooms and furniture of the building you are in
 var _inside_id := ""
+var _indoor: Dictionary = {}    # R3D15: id -> [point, facing, lying] for people in your building
+var _indoor_at := -1000000
+const INDOOR_EVERY_TICKS := 60
 var _inside_mat: ShaderMaterial            # map rect of the room you are in (empty outdoors)
 const CONE_COS := 0.34          # matches the Cutaway shader
 const NEAR_M := 3.5
@@ -133,6 +134,11 @@ func _open_room() -> void:
 ## R3D9: the inside of the building you are in, built as you enter, dropped as you leave.
 func _show_inside(b: Dictionary) -> void:
 	var id: String = String(b.get("id", ""))
+	if not b.is_empty() and (id != _inside_id or world.tick >= _indoor_at + INDOOR_EVERY_TICKS):
+		_indoor = IndoorPeople3D.place(world, b)   # R3D15: who is home, where in the rooms
+		_indoor_at = world.tick
+	elif b.is_empty():
+		_indoor = {}
 	if id == _inside_id:
 		return
 	_inside_id = id
@@ -145,22 +151,6 @@ func _show_inside(b: Dictionary) -> void:
 		_inside_mat = Cutaway.material()
 	_inside = InteriorMesh3D.build(b, origin, _inside_mat)
 	add_child(_inside)
-
-static func _silhouette() -> MeshInstance3D:
-	var box := BoxMesh.new()
-	box.size = Vector3(0.55, 1.85, 0.35)
-	var mat := StandardMaterial3D.new()
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.no_depth_test = true   # drawn over whatever stands in front
-	mat.albedo_color = Color(EntityVisualFactory.PLAYER_COLOR, 0.28)
-	mat.render_priority = 1
-	box.material = mat
-	var mi := MeshInstance3D.new()
-	mi.mesh = box
-	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	mi.visible = false
-	return mi
 
 static func _layer(size: Vector3, count: int) -> MultiMeshInstance3D:
 	var box := BoxMesh.new()
@@ -190,8 +180,14 @@ func _people(focus: Vector2) -> void:
 	for id in people:
 		var e: Entity = people[id]
 		var npc: NPCData = e.get_component(ComponentNames.NPC)
-		if n >= MAX_PEOPLE or npc.indoors or npc.position.distance_squared_to(focus) > VIEW_M * VIEW_M:
+		var home: Array = _indoor.get(id, [])   # R3D15: indoors, drawn only inside the building you are in
+		if n >= MAX_PEOPLE or (npc.indoors and home.is_empty()) or npc.position.distance_squared_to(focus) > VIEW_M * VIEW_M:
 			_eased.erase(id)
+			continue
+		if npc.indoors:
+			if _in_sight(home[0]):
+				_place_person(n, home[0], home[1], home[2], false, PersonLook3D.shirt(e, npc), PersonLook3D.skin(id))
+				n += 1
 			continue
 		var ps: PlayerStateData = e.get_component(ComponentNames.PLAYER_STATE)
 		if ps != null and ps.vehicle_id != &"":
@@ -205,7 +201,7 @@ func _people(focus: Vector2) -> void:
 		elif not _in_sight(pose[0]):
 			continue   # Zomboid: who you cannot see is not drawn
 		var lit := DayNight3D.light_at(pose[0])   # R3D10: people are as dark as where they stand
-		_place_person(n, pose[0], pose[1], npc.is_down, ps != null and ps.sneaking, _shirt(e, npc) * lit, SKIN[absi(String(id).hash()) % SKIN.size()] * lit)
+		_place_person(n, pose[0], pose[1], npc.is_down, ps != null and ps.sneaking, PersonLook3D.shirt(e, npc) * lit, PersonLook3D.skin(id) * lit)
 		n += 1
 	shown_people = n
 	for layer in [_legs, _torso, _head]:
@@ -252,17 +248,6 @@ func _place_person(i: int, at: Vector2, face: float, down: bool, crouched: bool,
 		var mm: MultiMesh = p[0].multimesh
 		mm.set_instance_transform(i, Transform3D(basis, pos))
 		mm.set_instance_color(i, p[2])
-
-static func _shirt(e: Entity, npc: NPCData) -> Color:
-	if e.has_component(ComponentNames.PLAYER_STATE):
-		return EntityVisualFactory.PLAYER_COLOR
-	if npc.is_cop:
-		return Color("2c3e66")   # navy uniform
-	if npc.is_dealer:
-		return EntityVisualFactory.DEALER_COLOR
-	if npc.is_fixer:
-		return Color(0.75, 0.5, 0.95)
-	return SHIRTS[absi(String(npc.id).hash()) % SHIRTS.size()]
 
 ## Cars: a body box and a smaller cabin box, both the length and width the sim gives.
 ## A car drawn between its last two sim poses (position, heading).

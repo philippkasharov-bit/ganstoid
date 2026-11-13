@@ -2,7 +2,8 @@
 ## are stopped ("Locked."); at your own you walk in through the door and are
 ## inside its footprint; inside, the walls hold you (walking far one way never
 ## takes you out through a wall); the kitchen cupboard opens only standing by
-## its furniture.
+## its furniture. R3D15: someone home is drawn in a room, clear of the
+## furniture, and in a bed at night.
 extends SceneTree
 
 func _initialize() -> void:
@@ -32,10 +33,30 @@ func _initialize() -> void:
 	for dir in [Vector2.RIGHT, Vector2.LEFT, Vector2.UP, Vector2.DOWN, Vector2(1, 1).normalized(), Vector2(-1, 1).normalized()]:
 		held = held and _only_by_door(world, npc, st, l, home, dir, 40.0)
 	var reach := _reach(l)
+	var mate := _housemate(world, b)
+	world.tick = SimClock.hours(14.0)
+	var day: Array = IndoorPeople3D.place(world, b).get(mate.id, [])
+	world.tick = SimClock.hours(2.0)
+	var night: Array = IndoorPeople3D.place(world, b).get(mate.id, [])
+	var has_bed := l.furniture.any(func(f: Dictionary) -> bool: return f["name"] == "bed")
+	var home_ok: bool = not day.is_empty() and Geometry2D.is_point_in_polygon(day[0], l.poly) and InteriorSolid.clearance(l, day[0]) > 0.4 and not day[2] and (not has_bed or (not night.is_empty() and night[2]))
+	print("someone home: in a room, clear of furniture %s; in bed at night %s" % [home_ok, has_bed])
 	print("house %s: stranger stopped outside %s (said '%s'); own door lets you in %s; walls hold %s; cupboard only by its furniture %s" % [b["id"], not Geometry2D.is_point_in_polygon(stranger, l.poly), st.last_message, inside, held, reach])
-	var ok := not Geometry2D.is_point_in_polygon(stranger, l.poly) and locked and inside and held and reach
+	var ok := not Geometry2D.is_point_in_polygon(stranger, l.poly) and locked and inside and held and reach and home_ok
 	print("WALK_IN_VERIFY: %s" % ("PASS" if ok else "FAIL - doors or walls"))
 	quit(0 if ok else 1)
+
+## Someone who lives in `b`, at home (the sim keeps them at the door point).
+func _housemate(world: World, b: Dictionary) -> NPCData:
+	var mate := NPCData.new()
+	mate.id = &"mate"
+	mate.home_building_id = b["id"]
+	mate.indoors = true
+	mate.position = b["door"]
+	var e := Entity.new(mate.id)
+	e.add_component(mate)
+	world.register_entity(e)
+	return mate
 
 ## A house near the spawn with a front door and a kitchen cupboard.
 func _house(city: CityData) -> Dictionary:
