@@ -16,8 +16,6 @@ const MAX_PEOPLE := 1500
 const MAX_CARS := 600
 const SMOOTH := 12.0
 const SNAP_M := 6.0
-const LEGS := Color(0.16, 0.17, 0.22)
-const CABIN := Color(0.32, 0.4, 0.48)
 
 var world: World
 var origin := Vector2.ZERO    # map point at 3D (0, 0, 0)
@@ -25,17 +23,13 @@ var footprints: Footprints    # R3D5: set by the view, to open up the building y
 var shown_people := 0
 var shown_cars := 0
 
-var _legs := _layer(Vector3(0.45, 0.85, 0.3), MAX_PEOPLE)
-var _torso := _layer(Vector3(0.55, 0.7, 0.32), MAX_PEOPLE)
-var _head := _layer(Vector3(0.3, 0.3, 0.3), MAX_PEOPLE)
-var _body := _layer(Vector3.ONE, MAX_CARS)
-var _cabin := _layer(Vector3.ONE, MAX_CARS)
+var _rig := PersonRig3D.new(MAX_PEOPLE)   # D1: legs and arms that swing as people walk
+var _car_rig := CarRig3D.new(MAX_CARS)   # D1: wheels that roll, lamps that light
 var _eased: Dictionary = {}   # person id -> [shown position, facing]
 var _ghost := PersonLook3D.silhouette()
 var _player_at := Vector2.INF
 var _player_face := 0.0
 var _riding := false
-var _car_ticks: Dictionary = {}   # car id -> [was pos, was heading, now pos, now heading]
 var player_shown := Vector2.INF   # Z-feel: where the player is drawn this frame (the camera locks on it)
 var _tick_was := Vector2.ZERO
 var _tick_now := Vector2.INF
@@ -56,7 +50,9 @@ const NEAR_M := 3.5
 var _delta := 0.016
 
 func _ready() -> void:
-	for layer in [_legs, _torso, _head, _body, _cabin, _ghost]:
+	_rig.origin = origin
+	_car_rig.origin = origin
+	for layer in [_rig, _car_rig, _ghost]:
 		add_child(layer)
 
 func _process(delta: float) -> void:
@@ -152,24 +148,6 @@ func _show_inside(b: Dictionary) -> void:
 	_inside = InteriorMesh3D.build(b, origin, _inside_mat)
 	add_child(_inside)
 
-static func _layer(size: Vector3, count: int) -> MultiMeshInstance3D:
-	var box := BoxMesh.new()
-	box.size = size
-	var mat := StandardMaterial3D.new()
-	mat.vertex_color_use_as_albedo = true
-	mat.roughness = 0.95
-	box.material = mat
-	var mm := MultiMesh.new()
-	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.use_colors = true
-	mm.mesh = box
-	mm.instance_count = count
-	mm.visible_instance_count = 0
-	var mi := MultiMeshInstance3D.new()
-	mi.multimesh = mm
-	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF   # standing rule: no shadows
-	return mi
-
 func _focus() -> Vector2:
 	var player: Entity = world.entities.get(PlayerFactory.PLAYER_ENTITY_ID)
 	return (player.get_component(ComponentNames.NPC) as NPCData).position if player != null else origin
@@ -183,10 +161,11 @@ func _people(focus: Vector2) -> void:
 		var home: Array = _indoor.get(id, [])   # R3D15: indoors, drawn only inside the building you are in
 		if n >= MAX_PEOPLE or (npc.indoors and home.is_empty()) or npc.position.distance_squared_to(focus) > VIEW_M * VIEW_M:
 			_eased.erase(id)
+			_rig.forget(id)
 			continue
 		if npc.indoors:
 			if _in_sight(home[0]):
-				_place_person(n, home[0], home[1], home[2], false, PersonLook3D.shirt(e, npc), PersonLook3D.skin(id))
+				_rig.place(n, home[0], home[1], 0.0, 0.0, home[2], false, PersonLook3D.shirt(e, npc), PersonLook3D.skin(id))
 				n += 1
 			continue
 		var ps: PlayerStateData = e.get_component(ComponentNames.PLAYER_STATE)
@@ -201,11 +180,11 @@ func _people(focus: Vector2) -> void:
 		elif not _in_sight(pose[0]):
 			continue   # Zomboid: who you cannot see is not drawn
 		var lit := DayNight3D.light_at(pose[0])   # R3D10: people are as dark as where they stand
-		_place_person(n, pose[0], pose[1], npc.is_down, ps != null and ps.sneaking, PersonLook3D.shirt(e, npc) * lit, PersonLook3D.skin(id) * lit)
+		var step := _rig.gait(id, pose[0], _delta)
+		_rig.place(n, pose[0], pose[1], step[0], step[1], npc.is_down, ps != null and ps.sneaking, PersonLook3D.shirt(e, npc) * lit, PersonLook3D.skin(id) * lit)
 		n += 1
 	shown_people = n
-	for layer in [_legs, _torso, _head]:
-		layer.multimesh.visible_instance_count = n
+	_rig.set_count(n)
 
 ## Shown position eases toward the sim's (the player snaps); facing follows the walk.
 func _ease(id: StringName, npc: NPCData, ps: PlayerStateData) -> Array:
@@ -233,33 +212,7 @@ func _player_between(sim: Vector2) -> Vector2:
 	player_shown = _tick_was.lerp(_tick_now, Engine.get_physics_interpolation_fraction())
 	return player_shown
 
-## Legs, torso and head stacked; turned to face `face` (map radians). Down: flat on the ground.
-func _place_person(i: int, at: Vector2, face: float, down: bool, crouched: bool, shirt: Color, skin: Color) -> void:
-	var turn := Basis(Vector3.UP, -face)
-	var squat := 0.8 if crouched else 1.0
-	var parts := [[_legs, 0.425, LEGS], [_torso, 1.2, shirt], [_head, 1.7, skin]]
-	for p in parts:
-		var basis := turn.scaled(Vector3(1, squat, 1))
-		var lift: float = p[1] * squat
-		var pos := Vector3(at.x - origin.x, lift, at.y - origin.y)
-		if down:   # lying along the way they faced
-			basis = turn * Basis(Vector3.BACK, PI * 0.5)
-			pos = Vector3(at.x - origin.x, 0.18, at.y - origin.y) + turn * Vector3(lift - 0.9, 0, 0)
-		var mm: MultiMesh = p[0].multimesh
-		mm.set_instance_transform(i, Transform3D(basis, pos))
-		mm.set_instance_color(i, p[2])
-
-## Cars: a body box and a smaller cabin box, both the length and width the sim gives.
-## A car drawn between its last two sim poses (position, heading).
-func _car_between(id: StringName, car: VehicleData) -> Array:
-	var t: Array = _car_ticks.get(id, [car.position, car.heading, car.position, car.heading])
-	if car.position != t[2] or car.heading != t[3]:
-		var jump: bool = car.position.distance_to(t[2]) > SNAP_M
-		t = [car.position if jump else t[2], car.heading if jump else t[3], car.position, car.heading]
-		_car_ticks[id] = t
-	var f := Engine.get_physics_interpolation_fraction()
-	return [(t[0] as Vector2).lerp(t[2], f), lerp_angle(t[1], t[3], f)]
-
+## Cars: drawn by CarRig3D; a car you cannot see stays a dim grey shape.
 func _cars(focus: Vector2) -> void:
 	var n := 0
 	var cars := world.get_entities_with_component(ComponentNames.VEHICLE)
@@ -267,18 +220,10 @@ func _cars(focus: Vector2) -> void:
 		var car: VehicleData = cars[id].get_component(ComponentNames.VEHICLE)
 		if n >= MAX_CARS or car.position.distance_squared_to(focus) > VIEW_M * VIEW_M:
 			continue
-		var pose := _car_between(id, car)   # Z-feel: a moving car glides between sim ticks too
-		var turn := Basis(Vector3.UP, -pose[1])
-		var at := Vector3(pose[0].x - origin.x, 0, pose[0].y - origin.y)
-		_body.multimesh.set_instance_transform(n, Transform3D(turn.scaled(Vector3(car.length_m, 0.75, car.width_m)), at + Vector3(0, 0.62, 0)))
 		var paint := car.color.darkened(car.damage * 0.5)
-		if not _in_sight(car.position):   # R3D8: a car you cannot see stays as a dim grey shape
+		if not _in_sight(car.position):
 			paint = Color(paint.get_luminance(), paint.get_luminance(), paint.get_luminance()).lerp(paint, 0.35) * Color(0.42, 0.42, 0.42)
-		_body.multimesh.set_instance_color(n, paint * DayNight3D.light_at(car.position))
-		var back := turn * Vector3(-car.length_m * 0.08, 0, 0)   # cabin sits a little behind the middle
-		_cabin.multimesh.set_instance_transform(n, Transform3D(turn.scaled(Vector3(car.length_m * 0.5, 0.55, car.width_m * 0.9)), at + back + Vector3(0, 1.27, 0)))
-		_cabin.multimesh.set_instance_color(n, CABIN * DayNight3D.light_at(car.position))
+		_car_rig.place(n, id, car, paint, DayNight3D.light_at(car.position), car.driver_id != &"" and DayNight3D.night > 0.3)
 		n += 1
 	shown_cars = n
-	_body.multimesh.visible_instance_count = n
-	_cabin.multimesh.visible_instance_count = n
+	_car_rig.set_count(n)
