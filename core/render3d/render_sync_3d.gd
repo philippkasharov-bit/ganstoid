@@ -87,7 +87,7 @@ func _see_player() -> void:
 	if footprints != null:
 		Cutaway.cut(footprints.covering(_player_at, Vector2(view.x, view.z)))
 	_ghost.position = chest
-	_ghost.visible = not _riding   # no see-through figure over the car
+	_ghost.visible = false   # P1: the clean cut already shows you; the see-through box only covered your figure
 	Cutaway.facing(_player_face)
 	_seen_from = _player_at
 	_seen_face = _player_face

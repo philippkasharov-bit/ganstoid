@@ -133,8 +133,9 @@ void fragment() {
 	float pool = lamp();
 	float bright = mix(1.0, max(moon, pool), night);   // at night you see what is lit
 	float dim = mix(0.68, unseen, night);   // by day the unseen world is only a little dimmer (Zomboid)
-	ALBEDO = mix(mix(grey, col, mix(0.6, 0.35, night)) * dim, col, lit) * bright;
-	EMISSION = night * (vec3(1.0, 0.8, 0.5) * pool * 0.6 * col + vec3(1.0, 0.82, 0.5) * glow * 0.9 + tint * self_glow);
+	vec3 sodium = mix(vec3(1.0), vec3(1.0, 0.78, 0.5), clamp(pool, 0.0, 1.0) * night);   // P1: lamp light is warm sodium, not grey fog
+	ALBEDO = mix(mix(grey, col, mix(0.6, 0.35, night)) * dim, col, lit) * bright * sodium;
+	EMISSION = night * (vec3(1.0, 0.72, 0.4) * pool * 0.55 * col + vec3(1.0, 0.82, 0.5) * glow * 0.9 + tint * self_glow);
 	ROUGHNESS = roughness;
 }
 """

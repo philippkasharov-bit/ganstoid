@@ -11,7 +11,7 @@ const START_YAW_DEG := 45.0
 const BACK_M := 1500.0
 const SIZE_MIN := 12.0         # metres of view height: close street level
 const SIZE_MAX := 160.0        # a few blocks
-const START_SIZE := 40.0
+const START_SIZE := 30.0       # P1: close enough to read people, as Zomboid starts
 const ZOOM_STEP := 1.15
 const EASE := 10.0             # how fast zoom, turn and follow settle (per second)
 
