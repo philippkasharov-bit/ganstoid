@@ -16,6 +16,8 @@ const SIZE := Vector2(40, 40)
 
 
 var _world: World
+var _idle_box := UiTheme.window_box()
+var _active_box := UiTheme.box(UiTheme.BG, UiTheme.ACCENT, 2)
 
 func setup(world: World) -> void:
 	_world = world
@@ -41,7 +43,7 @@ func _button(label: String, key: String, action: StringName, icon: String) -> Bu
 	b.add_theme_font_size_override("font_size", UiTheme.FONT_SMALL)
 	b.add_theme_color_override("font_color", UiTheme.TEXT)
 	b.add_theme_color_override("font_hover_color", UiTheme.ACCENT)
-	b.add_theme_stylebox_override("normal", UiTheme.window_box())
+	b.add_theme_stylebox_override("normal", _idle_box)
 	b.add_theme_stylebox_override("hover", UiTheme.box(UiTheme.BG_HEADER, UiTheme.ACCENT))
 	b.add_theme_stylebox_override("pressed", UiTheme.box(UiTheme.BG_ROW_SELECT, UiTheme.ACCENT))
 	b.tooltip_text = "%s (%s)" % [label, key]
@@ -55,5 +57,27 @@ func _send(action: StringName) -> void:
 	Input.action_release(action)
 
 ## UIF1: hidden until a life has begun (the difficulty choice comes first).
+## UIF2: the button of an open window gets the gold frame.
 func _process(_delta: float) -> void:
 	visible = _world != null and GameRules.of(_world) != null
+	if not visible:
+		return
+	var open := _open_windows()
+	for i in get_child_count():
+		var b := get_child(i) as Button
+		if b != null:
+			b.add_theme_stylebox_override("normal", _active_box if open.has(BUTTONS[i][0]) else _idle_box)
+
+## Button labels whose window is showing right now.
+func _open_windows() -> Dictionary:
+	var out := {}
+	for n in get_parent().get_children():
+		if n is InventoryWindow and n.visible:
+			out["Bag"] = true
+		elif n is CharacterWindow and n.visible:
+			out["Character"] = true
+		elif n is HealthWindow and n.visible:
+			out["Health"] = true
+		elif n is CrewRoster and n.visible:
+			out["Crew"] = true
+	return out

@@ -18,7 +18,10 @@ const VERBS := {"food": "Eat", "drink": "Drink", "medical": "Apply", "weapon": "
 
 var _world: World
 var _hands := UiTheme.label("", UiTheme.FONT_SMALL)
-var _hand_slot := BagGridView.new()   # UIF1: a real slot, Tarkov/DayZ-style
+var _hand_slot := BagGridView.new()
+var _hint: Label
+static var _opens := 0
+const HINT_OPENS := 3   # UIF2: the how-to line shows the first few times only   # UIF1: a real slot, Tarkov/DayZ-style
 var _grid := BagGridView.new()
 var _loose := UiTheme.label("", UiTheme.FONT_SMALL, UiTheme.BAD)
 var _weight_text := UiTheme.label("", UiTheme.FONT_SMALL, UiTheme.DIM)
@@ -27,6 +30,7 @@ var _menu := ContextMenu.new()
 var _menu_item: StringName = &""
 var _key := ""
 var _near := BagGridView.new()
+var _near_title: Label
 var _menu_src := {}
 const NEAR_COLS := 4
 
@@ -56,7 +60,8 @@ func setup(world: World, at: Vector2) -> void:
 	_loose.custom_minimum_size.x = _grid.custom_minimum_size.x + _near.custom_minimum_size.x
 	body.add_child(_loose)
 	body.add_child(_weight_text)
-	body.add_child(UiTheme.label("Drag · drag across to drop or take · R turn · double-click use · right-click", 10, UiTheme.DIM))
+	_hint = UiTheme.label("Drag · drag across to drop or take · R turn · double-click use · right-click", 10, UiTheme.DIM)
+	body.add_child(_hint)
 	_wire_grid()
 	visible = false
 
@@ -84,7 +89,11 @@ func _wire_grid() -> void:
 
 func _process(_delta: float) -> void:
 	var state := _state()
-	visible = state != null and state.inventory_open and state.store_id == &""
+	var now := state != null and state.inventory_open and state.store_id == &""
+	if now and not visible:
+		_opens += 1
+		_hint.visible = _opens <= HINT_OPENS
+	visible = now
 	if not visible:
 		_tip.hide_tip()
 		_menu.visible = false
@@ -96,6 +105,7 @@ func _process(_delta: float) -> void:
 		_key = key
 		_rebuild(state)
 		_near.show_piles(Vicinity.layout(near, NEAR_COLS, BagGrid.ROWS))
+		_near_title.text = _near_heading(near)
 
 func _rebuild(state: PlayerStateData) -> void:
 	BagGrid.sync(state)
@@ -177,11 +187,20 @@ func _show_tip(id: StringName, at: Vector2) -> void:
 ## INV6: the Nearby grid (DayZ vicinity), same look as the bag.
 func _vicinity_pane() -> VBoxContainer:
 	var pane := VBoxContainer.new()
-	var title := UiTheme.label("Nearby", UiTheme.FONT_SMALL, UiTheme.DIM)
-	pane.add_child(title)
+	_near_title = UiTheme.label("Nearby", UiTheme.FONT_SMALL, UiTheme.DIM)
+	pane.add_child(_near_title)
 	_near.resize_grid(NEAR_COLS, BagGrid.ROWS)
 	pane.add_child(_near)
 	return pane
+
+## "Ground" / "Trunk" / "Ground + trunk": where the Nearby items are.
+static func _near_heading(near: Array) -> String:
+	var kinds := {}
+	for src in near:
+		kinds[src["kind"]] = true
+	if kinds.has("ground") and kinds.has("trunk"):
+		return "Ground + trunk"
+	return "Trunk" if kinds.has("trunk") else "Ground"
 
 func _take(i: int, n: int) -> void:
 	_state().ui_move = {"op": "take", "src": _near.piles[i]["src"], "n": n}

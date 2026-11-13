@@ -52,10 +52,11 @@ func _ready() -> void:
 	moodles.setup(_world)
 	var skills := CharacterWindow.new()
 	get_parent().add_child.call_deferred(skills)
-	skills.setup(_world, Vector2(600, 200))
+	var right := get_viewport().get_visible_rect().size.x
+	skills.setup(_world, Vector2(right - 320, 60))   # UIF2: docked right, like Zomboid
 	var health := HealthWindow.new()   # HP1: H
 	get_parent().add_child.call_deferred(health)
-	health.setup(_world, Vector2(54, 110))
+	health.setup(_world, Vector2(right - 400, 330))
 	var bar := SideBar.new()
 	get_parent().add_child.call_deferred(bar)
 	bar.setup(_world)

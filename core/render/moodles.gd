@@ -52,7 +52,7 @@ static func list(npc: NPCData, state: PlayerStateData) -> Array:
 		if lvl > 0:
 			out.append([n[0], n[2][lvl - 1], lvl, false, n[3], n[4]])
 	if npc.hunger > 0.95:
-		out.append(["hunger", "Well Fed", 1, true, "You ate well. Nothing to worry about for a while.", ""])
+		out.append(["well_fed", "Well Fed", 1, true, "You ate well. Nothing to worry about for a while.", ""])
 	_problems(out, npc, state)
 	return out
 

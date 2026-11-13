@@ -55,7 +55,7 @@ func _rebuild_info(state: PlayerStateData) -> void:
 	var rank := UiTheme.label(RankSystem.name_of(state.rank), UiTheme.FONT_TITLE, UiTheme.ACCENT)
 	_info.add_child(rank)
 	for line in [["Next rank", "%d pts" % RankSystem.to_next(_world, npc, state)], ["Fame", str(roundi(state.fame))],
-			["Cash", "$%d" % npc.cash], ["Crew", "%d/%d" % [state.crew_ids.size(), CrewSystem.MAX_CREW]],
+			["Crew", "%d/%d" % [state.crew_ids.size(), CrewSystem.MAX_CREW]],
 			["Businesses", str(BusinessSystem.count_owned(_world))], ["Labs", str(ProductionSystem.count_grow_houses(_world))]]:
 		_info.add_child(_stat_row(line[0], line[1]))
 	_info.add_child(UiTheme.divider())

@@ -28,5 +28,8 @@ func _draw() -> void:
 		draw_circle(at, SIZE * 0.7, Color(0, 0, 0, 0.55))
 		var kind: String = ItemCatalog.item(pile["id"]).get("kind", "goods")
 		ItemArt.draw(self, pile["id"], Rect2(at - Vector2(SIZE, SIZE) * 0.5, Vector2(SIZE, SIZE)), InventoryWindow.KIND_COLOURS.get(kind, Color.WHITE), false)
-		if int(pile["n"]) > 1:
-			draw_string(ThemeDB.fallback_font, at + Vector2(SIZE * 0.6, SIZE * 0.6), "x%d" % int(pile["n"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, UiTheme.ACCENT)
+		if int(pile["n"]) > 1:   # UIF2: the count on a dark pill, readable on the bright map
+			var text := "%d" % int(pile["n"])
+			var pill := Rect2(at + Vector2(SIZE * 0.45, SIZE * 0.2), Vector2(8 + 6 * text.length(), 12))
+			draw_rect(pill, Color(0, 0, 0, 0.7))
+			draw_string(ThemeDB.fallback_font, pill.position + Vector2(4, 10), text, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, UiTheme.TEXT)
