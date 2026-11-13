@@ -101,10 +101,10 @@ static func _paint(m: CityMesh3D, city: CityData, centre: Vector2, r2: float) ->
 	for r in city.roads:
 		if r["tier"] in ["art", "fwy"] and CityMesh3D._near(r["pts"], centre, r2):
 			_lanes(m, r)
-	for c in city.crosswalks:
-		if c["c"].distance_squared_to(centre) < r2:
-			var half: Vector2 = c["dir"] * float(c["len"]) * 0.5
-			_zebra(m, PackedVector2Array([c["c"] - half, c["c"] + half]))
+	for x in _junctions().near(centre, sqrt(r2)):
+		if x["kind"] == "signal":   # P1: LA paints its crossings at signals (the nav data's walk zones are not paint)
+			for leg in x["legs"]:
+				_crossing_at(m, x["c"], leg[0], leg[1])
 	for d in city.driveways:
 		if d["c"].distance_squared_to(centre) < r2:
 			var out: Vector2 = d["dir"]
@@ -139,3 +139,16 @@ static func _dashes(m: CityMesh3D, pts: PackedVector2Array, offset: float) -> vo
 			m._quad(m._tool(a), [m._v(a - t, PAINT_H), m._v(b - t, PAINT_H), m._v(b + t, PAINT_H), m._v(a + t, PAINT_H)], Vector3.UP, PAINT)
 			run += DASH_M + DASH_GAP_M
 		run -= length
+
+static var _j: Junctions
+
+static func _junctions() -> Junctions:
+	if _j == null:
+		_j = Junctions.load_file()
+	return _j
+
+## Zebra across one leg of a junction, between its stop line and the corner.
+static func _crossing_at(m: CityMesh3D, c: Vector2, into: Vector2, w: float) -> void:
+	var mid := c - into * (w * 0.5 + 1.2)
+	var across := into.orthogonal() * w * 0.5
+	_zebra(m, PackedVector2Array([mid - across, mid + across]))

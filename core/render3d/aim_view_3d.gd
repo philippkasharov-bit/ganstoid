@@ -9,6 +9,7 @@ const FACING_M := 4.0
 const LIFT := 0.06
 const FACING_COLOR := Color(1, 1, 1, 0.35)
 const CONE_COLOR := Color(1.0, 0.85, 0.3, 0.22)
+const MARK_COLOR := Color(0.55, 1.0, 0.65, 0.55)
 const GOAL_COLOR := Color(0.95, 0.72, 0.2, 0.9)
 
 var world: World
@@ -35,11 +36,11 @@ func _process(_delta: float) -> void:
 	var me: Vector2 = (player.get_component(ComponentNames.NPC) as NPCData).position
 	state.aim_point = ScreenMap.to_map(get_viewport(), get_viewport().get_mouse_position())
 	var dir := (state.aim_point - me).normalized()
-	if dir == Vector2.ZERO:
-		return
 	_lines.surface_begin(Mesh.PRIMITIVE_TRIANGLES)
-	_strip(me, me + dir * FACING_M, 0.05, FACING_COLOR)
-	if state.aiming:
+	_ring(me, 0.55, MARK_COLOR)   # P1: you, among the crowd (drawn even with the mouse on you)
+	if dir != Vector2.ZERO:
+		_strip(me + dir * 0.6, me + dir * FACING_M, 0.05, FACING_COLOR)
+	if state.aiming and dir != Vector2.ZERO:
 		_cone(me, dir, CombatSystem.WEAPONS[state.weapon])
 	var goal: Variant = JobSystem.target_point(world, state)
 	if goal != null:
@@ -72,4 +73,4 @@ func _ring(c: Vector2, r: float, col: Color) -> void:
 	for i in 32:
 		var a := c + Vector2.from_angle(i * TAU / 32.0) * r
 		var b := c + Vector2.from_angle((i + 1) * TAU / 32.0) * r
-		_strip(a, b, 0.12, col)
+		_strip(a, b, 0.12 if r > 1.0 else 0.04, col)

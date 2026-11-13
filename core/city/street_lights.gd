@@ -12,8 +12,8 @@ extends RefCounted
 
 const LAMP_R := 10.0            # the map's own lamps
 ## tier -> [spacing along one side, pool radius, both sides]
-const STREETS := {"art": [26.0, 15.0, true], "fwy": [40.0, 20.0, true], "ramp": [30.0, 15.0, false],
-	"res": [34.0, 12.0, true], "svc": [36.0, 9.0, false]}
+const STREETS := {"art": [26.0, 15.0, true], "res": [34.0, 12.0, true]}   # P1: only streets people walk; freeway and service-lot lamps landed in yards
+const MIN_ROAD_M := 20.0        # a stub this short (a driveway, a lot entrance) gets no lamps
 const MAX_R := 20.0              # the widest pool
 const MOON := 0.28
 const CELL_M := 40.0
@@ -32,10 +32,17 @@ static func build(city: CityData, centre: Vector2, radius: float) -> StreetLight
 		if p["kind"] == "lamp" and p["p"].distance_to(centre) < radius:
 			s.add(Vector3(p["p"].x, p["p"].y, LAMP_R))
 	if city != null:
+		var solid := CityCollision.new(city)   # P1: never a lamp inside or against a building
 		for r in city.roads:
-			if STREETS.has(r["tier"]) and _within(r["pts"], centre, radius):
-				s._light_road(r)
+			if STREETS.has(r["tier"]) and _within(r["pts"], centre, radius) and _length(r["pts"]) >= MIN_ROAD_M:
+				s._light_road(r, solid)
 	return s
+
+static func _length(pts: PackedVector2Array) -> float:
+	var total := 0.0
+	for i in pts.size() - 1:
+		total += pts[i].distance_to(pts[i + 1])
+	return total
 
 static func _within(pts: PackedVector2Array, c: Vector2, radius: float) -> bool:
 	for p in pts:
@@ -52,7 +59,7 @@ func add(l: Vector3) -> void:
 
 ## Lamps at the kerb every `spacing` (both sides staggered, or alternating);
 ## a spot too close to a lamp already there (the piece before) is skipped.
-func _light_road(r: Dictionary) -> void:
+func _light_road(r: Dictionary, solid: CityCollision) -> void:
 	var spec: Array = STREETS[r["tier"]]
 	var spacing: float = spec[0]
 	var both: bool = spec[2]
@@ -66,7 +73,7 @@ func _light_road(r: Dictionary) -> void:
 		var length := seg.length()
 		while run <= length and length > 0.0:
 			var at := pts[i] + seg * (run / length) + seg.normalized().orthogonal() * off * side
-			if _clear(at, step * 0.6):
+			if _clear(at, step * 0.6) and not solid.blocked(at, 0.5):
 				add(Vector3(at.x, at.y, spec[1]))
 			side = -side
 			run += step

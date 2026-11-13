@@ -184,6 +184,8 @@ func _people(focus: Vector2) -> void:
 		elif not _in_sight(pose[0]):
 			continue   # Zomboid: who you cannot see is not drawn
 		var lit := DayNight3D.light_at(pose[0])   # R3D10: people are as dark as where they stand
+		if ps != null:
+			lit = maxf(lit, 0.65)   # P1: you can always see yourself
 		var step := _rig.gait(id, pose[0], _delta)
 		var arms := _arms(ps)   # D3: aiming and striking
 		_rig.place(n, pose[0], pose[1], step[0], step[1], npc.is_down, ps != null and ps.sneaking, PersonLook3D.shirt(e, npc) * lit, PersonLook3D.skin(id) * lit, arms.x, arms.y)
