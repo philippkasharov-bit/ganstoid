@@ -67,6 +67,20 @@ func _run(main: Node, args: Dictionary) -> void:
 		st.menu_serial += 1
 		await process_frame
 		await process_frame
+	if args.has("store"):   # TR1 look: a store counter open with a basket
+		var ss: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
+		var ms: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
+		for id in driver.world.entities:
+			if ShopSystem.counter_kind(driver.world, id) == "shop" and ShopSystem.is_open(driver.world, id):
+				ss.store_id = id
+				ms.position = PlayerInputSystem._counter_position(driver.world.entities[id])   # stand at the counter
+				driver.world.reindex_position(ms.id)
+				break
+		ms.cash = 30
+		ss.inventory = {&"water": 1}
+		ss.basket = {&"burrito": 2, &"bandage": 1, &"soda": 1}
+		for i in 6:
+			await process_frame
 	if args.has("hotbar"):   # HB1 look: a loaded belt, pistol in hand
 		var sh: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
 		sh.inventory = {&"bat": 1, &"knife": 1, &"pistol": 1, &"bandage": 4, &"burrito": 2, &"water": 1}

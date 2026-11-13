@@ -67,6 +67,28 @@ static func buy(world: World, me: NPCData, state: PlayerStateData, source_id: St
 		b.cash_on_hand += price   # the till fills: more to rob tonight
 	return {"ok": true, "effect": "bought", "amount": price, "item": item_id}
 
+## TR1: the basket's total price.
+static func basket_total(basket: Dictionary) -> int:
+	var total := 0
+	for id in basket:
+		total += int(ItemCatalog.item(id).get("price", 0)) * int(basket[id])
+	return total
+
+## TR1: buys the basket one at a time; stops at the first thing that fails
+## (no cash, no room, closed). What was bought leaves the basket.
+static func buy_basket(world: World, me: NPCData, state: PlayerStateData, source_id: StringName) -> Dictionary:
+	var spent := 0
+	var last := {}
+	for id in state.basket.keys():
+		while int(state.basket.get(id, 0)) > 0:
+			last = buy(world, me, state, source_id, id)
+			if not last.get("ok", false):
+				return last if spent == 0 else {"ok": true, "effect": "bought", "amount": spent, "partial": last.get("reason", "")}
+			spent += int(last["amount"])
+			state.basket[id] = int(state.basket[id]) - 1
+		state.basket.erase(id)
+	return {"ok": true, "effect": "bought", "amount": spent} if spent > 0 else {}
+
 ## Weapons you can hold: fists always, plus every weapon item you carry.
 static func owned_weapons(state: PlayerStateData) -> Array[StringName]:
 	var out: Array[StringName] = [&"fists"]

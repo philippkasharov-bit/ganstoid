@@ -51,6 +51,15 @@ func _initialize() -> void:
 	print("Q cycles: %s" % [seen])
 	if not _check(seen == [&"bat", &"pistol", &"fists", &"bat"], "Q cycles only through carried weapons"):
 		return
+	# TR1: the trade window's basket: total, then bought until the cash runs out.
+	world.tick = SimClock.hours(12.0)
+	me.cash = 20
+	state.basket = {&"burrito": 2, &"water": 5}
+	var total := ShopSystem.basket_total(state.basket)
+	var paid := ShopSystem.buy_basket(world, me, state, day_id)
+	print("basket total %d, paid %s, left %s, cash %d" % [total, paid, state.basket, me.cash])
+	if not _check(total == 24 and paid.get("amount", 0) == 20 and paid.get("partial", "") == "cant_afford" and state.basket == {&"water": 2} and me.cash == 0, "a basket buys what the cash covers and keeps the rest"):
+		return
 	print("ITEMS_VERIFY: PASS")
 	quit()
 

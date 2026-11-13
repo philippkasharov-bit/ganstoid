@@ -231,6 +231,7 @@ func _store_input(npc: NPCData, state: PlayerStateData) -> bool:
 		return false
 	if Input.is_action_just_pressed(STORE_ACTION):
 		state.store_id = &""
+		state.basket = {}
 		return true
 	if state.store_id == &"":
 		return false
@@ -238,12 +239,16 @@ func _store_input(npc: NPCData, state: PlayerStateData) -> bool:
 	var at: Vector2 = _counter_position(counter)
 	if Input.is_action_just_pressed("ui_cancel") or at.distance_to(npc.position) > CrimeSystem.INTERACT_RADIUS * 2.0:
 		state.store_id = &""
+		state.basket = {}   # TR1: walking off puts it all back
 		return true
 	var stock := ItemCatalog.stock(ShopSystem.counter_kind(_world, state.store_id))
-	for i in mini(stock.size(), SLOT_ACTIONS.size()):
+	for i in mini(stock.size(), SLOT_ACTIONS.size()):   # TR1: 1-9 or a click puts one in the basket
 		if Input.is_action_just_pressed(SLOT_ACTIONS[i]) or _picked(state, i):
-			StreetTalk.say(_world, state, ShopSystem.buy(_world, npc, state, state.store_id, stock[i]))
+			state.basket[stock[i]] = int(state.basket.get(stock[i], 0)) + 1
 	state.ui_pick = -1
+	if state.ui_buy or Input.is_action_just_pressed(&"ui_accept"):
+		state.ui_buy = false
+		StreetTalk.say(_world, state, ShopSystem.buy_basket(_world, npc, state, state.store_id))
 	return true
 
 ## UIF1: was row `i` clicked in the open menu?
