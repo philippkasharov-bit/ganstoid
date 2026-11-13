@@ -37,6 +37,7 @@ var _ghost := _silhouette()
 var _player_at := Vector2.INF
 var _player_face := 0.0
 var _riding := false
+var _car_ticks: Dictionary = {}   # car id -> [was pos, was heading, now pos, now heading]
 var player_shown := Vector2.INF   # Z-feel: where the player is drawn this frame (the camera locks on it)
 var _tick_was := Vector2.ZERO
 var _tick_now := Vector2.INF
@@ -264,6 +265,16 @@ static func _shirt(e: Entity, npc: NPCData) -> Color:
 	return SHIRTS[absi(String(npc.id).hash()) % SHIRTS.size()]
 
 ## Cars: a body box and a smaller cabin box, both the length and width the sim gives.
+## A car drawn between its last two sim poses (position, heading).
+func _car_between(id: StringName, car: VehicleData) -> Array:
+	var t: Array = _car_ticks.get(id, [car.position, car.heading, car.position, car.heading])
+	if car.position != t[2] or car.heading != t[3]:
+		var jump: bool = car.position.distance_to(t[2]) > SNAP_M
+		t = [car.position if jump else t[2], car.heading if jump else t[3], car.position, car.heading]
+		_car_ticks[id] = t
+	var f := Engine.get_physics_interpolation_fraction()
+	return [(t[0] as Vector2).lerp(t[2], f), lerp_angle(t[1], t[3], f)]
+
 func _cars(focus: Vector2) -> void:
 	var n := 0
 	var cars := world.get_entities_with_component(ComponentNames.VEHICLE)
@@ -271,8 +282,9 @@ func _cars(focus: Vector2) -> void:
 		var car: VehicleData = cars[id].get_component(ComponentNames.VEHICLE)
 		if n >= MAX_CARS or car.position.distance_squared_to(focus) > VIEW_M * VIEW_M:
 			continue
-		var turn := Basis(Vector3.UP, -car.heading)
-		var at := Vector3(car.position.x - origin.x, 0, car.position.y - origin.y)
+		var pose := _car_between(id, car)   # Z-feel: a moving car glides between sim ticks too
+		var turn := Basis(Vector3.UP, -pose[1])
+		var at := Vector3(pose[0].x - origin.x, 0, pose[0].y - origin.y)
 		_body.multimesh.set_instance_transform(n, Transform3D(turn.scaled(Vector3(car.length_m, 0.75, car.width_m)), at + Vector3(0, 0.62, 0)))
 		var paint := car.color.darkened(car.damage * 0.5)
 		if not _in_sight(car.position):   # R3D8: a car you cannot see stays as a dim grey shape
