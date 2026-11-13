@@ -6,7 +6,7 @@ extends UiPanel
 
 const CONTROLS := [["WASD", "move"], ["Shift", "run"], ["LMB", "attack"], ["RMB hold", "aim"], ["RMB tap", "actions here"],
 	["E", "actions / shop"], ["1-9", "hotbar, or pick in a menu"], ["I", "bag"], ["K", "character"], ["H", "health"],
-	["Z", "sleep"], ["F", "car door"], ["Tab", "crew"], ["U", "turf"], ["Esc", "back / pause"], ["F2", "pause"], ["F3", "1x"], ["F4 F5 F6", "5x 20x 40x"], ["F8", "fps"]]
+	["Z", "sleep"], ["C", "crouch / sneak"], ["F", "car door"], ["Tab", "crew"], ["U", "turf"], ["Esc", "back / pause"], ["F2", "pause"], ["F3", "1x"], ["F4 F5 F6", "5x 20x 40x"], ["F8", "fps"]]
 
 var _driver: Node
 var _showing_controls := false

@@ -127,6 +127,7 @@ var basket: Dictionary = {}                     # TR1: item id -> how many in th
 var ui_buy: bool = false                        # TR1: the Buy button was pressed (not saved)
 var hurt_serial: int = 0                        # A3: +1 on every hit you take (not saved)
 var hurt_part: String = ""                      # A3: the body part the last hit landed on (not saved)
+var sneaking: bool = false                      # B3: crouched (C): slow and quiet, half as far to be seen (not saved)
 var ui_hotbar: int = -1                         # HB1: a hotbar slot clicked (not saved)
 var ui_treat: Dictionary = {}                   # HP3: {op: bandage|remove, part} from the health window (not saved)
 var menu_options: PackedStringArray = []        # UI1: the open E menu (not saved)

@@ -26,6 +26,8 @@ var _world: World
 var _visuals: Dictionary = {}  # StringName -> Node2D
 var _visuals_for := -1          # entity count the visuals were last built for
 
+const SNEAK_TINT := Color(0.7, 0.75, 0.85)
+
 func _ready() -> void:
 	var driver: Node = get_node(world_driver_path)
 	_world = driver.world
@@ -77,6 +79,11 @@ func _sync_visuals() -> void:
 			else:
 				visual.position += gap * minf(1.0, _frame_delta * SMOOTH)
 			var tint := Color.WHITE if not npc.is_down else (KO_TINT if npc.ko_until_tick >= 0 else DOWN_TINT)
+			var ps: PlayerStateData = people[id].get_component(ComponentNames.PLAYER_STATE)
+			if ps != null and not npc.is_down:   # B3: crouched: a smaller, darker shape
+				var crouch := 0.8 if ps.sneaking else 1.0
+				visual.scale = Vector2.ONE * 1.6 * 1.15 * crouch
+				tint = SNEAK_TINT if ps.sneaking else tint
 			if visual.modulate != tint:
 				visual.modulate = tint   # combat: a body on the ground, or someone out cold
 				var base: float = 1.6 * (1.15 if people[id].has_component(ComponentNames.PLAYER_STATE) else 1.0)

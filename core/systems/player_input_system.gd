@@ -48,13 +48,14 @@ const SHIFT_HOURS := 4          # O1: honest work at any open counter
 const BOARD_UP_COST := 40   # DW2
 const SHIFT_PAY_PER_HOUR := 15
 const AIM_SPEED := SimUnits.WALK * 0.6   # weapon up: a careful step, no running
+const SNEAK_SPEED := SimUnits.WALK * 0.5 # B3: crouched
 ## G1: E opens the counter you stand at (shop, workshop, dealer); 1-9 buy.
 const STORE_ACTION := &"store"
 const INVENTORY_ACTION := &"inventory"   # G2: I
 const SLEEP_ACTION := &"sleep"           # G2: Z
 const CAR_ACTION := &"car_door"          # V1: F
 const TAG_ACTION := &"tag"               # TR: T
-const PRODUCT_ACTION := &"product"       # DR1: C at your safehouse
+const SNEAK_ACTION := &"sneak"           # B3: C crouches (Zomboid)
 const SLOT_ACTIONS: Array[StringName] = [&"slot_1", &"slot_2", &"slot_3", &"slot_4", &"slot_5", &"slot_6", &"slot_7", &"slot_8", &"slot_9"]
 
 func _init(world: World) -> void:
@@ -94,7 +95,7 @@ func _init(world: World) -> void:
 	_bind_key(SLEEP_ACTION, KEY_Z)
 	_bind_key(CAR_ACTION, KEY_F)
 	_bind_key(TAG_ACTION, KEY_T)
-	_bind_key(PRODUCT_ACTION, KEY_C)
+	_bind_key(SNEAK_ACTION, KEY_C)
 	for i in SLOT_ACTIONS.size():
 		_bind_key(SLOT_ACTIONS[i], KEY_1 + i)
 	_bind_mouse(ATTACK_ACTION, MOUSE_BUTTON_LEFT)
@@ -161,10 +162,8 @@ func process_entities(entities: Dictionary, delta: float, tick: int) -> void:
 		StreetTalk.say(_world, state, TimedAction.advance(_world, npc, state, busy))   # TA1
 		if Input.is_action_just_pressed(TAG_ACTION) and state.vehicle_id == &"" and TerritorySystem.data(_world) != null:
 			StreetTalk.say(_world, state, TerritorySystem.tag(_world, npc))
-		if Input.is_action_just_pressed(PRODUCT_ACTION):
-			var lab := _find_own_grow_house(npc.position)
-			if lab != &"":
-				StreetTalk.say(_world, state, ProductionSystem.switch_product(_world, lab))
+		if Input.is_action_just_pressed(SNEAK_ACTION) and state.vehicle_id == &"":
+			state.sneaking = not state.sneaking   # B3: Zomboid's crouch (what the safehouse makes is switched in the E menu)
 		if state.vehicle_id != &"":
 			_drive(npc, state, delta)
 			continue   # at the wheel: WASD drive the car
@@ -173,12 +172,16 @@ func process_entities(entities: Dictionary, delta: float, tick: int) -> void:
 			continue   # a menu is open: the number keys belong to it
 		_hotbar_input(state)   # HB1: otherwise 1-9 are the hotbar
 		var input_dir := _move_input()
+		if Input.is_physical_key_pressed(KEY_SHIFT) and state.sneaking:
+			state.sneaking = false   # B3: breaking into a run stands you up
 		var running := Input.is_physical_key_pressed(KEY_SHIFT) and Stamina.can_run(state) and not state.aiming
 		Stamina.update(state, running, input_dir != Vector2.ZERO, delta)   # ST1: breath
 		if input_dir != Vector2.ZERO:
 			var speed := RUN_SPEED if running else MOVE_SPEED
 			if state.aiming:
 				speed = AIM_SPEED
+			elif state.sneaking:
+				speed = SNEAK_SPEED
 			speed *= NeedsSystem.speed_factor(npc) * BodyParts.move_mult(state) * Stamina.speed_mult(state)   # HP1 limp, ST1 heavy load
 			var step := input_dir.normalized() * speed * CrewSystem.player_speed_multiplier(_world, state) * delta
 			npc.position = SimNav.active.slide(npc.position, step) if SimNav.active != null else npc.position + step   # walls are solid

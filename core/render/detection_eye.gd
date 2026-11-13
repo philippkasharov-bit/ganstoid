@@ -43,6 +43,8 @@ func _process(delta: float) -> void:
 	var eyes := ActionMenuModel.eyes_on(_world, at)
 	var colour := COPS if cops > 0 else (SEEN if eyes > 0 else UNSEEN)
 	_text.text = "Police see you" if cops > 0 else ("Unseen" if eyes == 0 else "%d see you" % eyes)
+	if p.get_component(ComponentNames.PLAYER_STATE).sneaking:
+		_text.text = "Sneaking · " + _text.text   # B3
 	_text.add_theme_color_override("font_color", colour)
 	_icon.modulate = colour
 	reset_size()
