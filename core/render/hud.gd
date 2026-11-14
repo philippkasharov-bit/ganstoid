@@ -63,6 +63,9 @@ func _ready() -> void:
 	var hotbar := HotbarView.new()   # HB1: Zomboid's hotbar, bottom middle
 	get_parent().add_child.call_deferred(hotbar)
 	hotbar.setup(_world)
+	var map := CityMapWindow.new()   # MP1: N, the city map with the shops on it
+	get_parent().add_child.call_deferred(map)
+	map.setup(_world, get_node(world_driver_path).city, Vector2(120, 70))
 	var bar := SideBar.new()
 	get_parent().add_child.call_deferred(bar)
 	bar.setup(_world)

@@ -11,6 +11,7 @@ const BUTTONS := [
 	["Health", "H", &"health_window", "medkit"],
 	["Crew", "Tab", &"ui_focus_next", "crew"],
 	["Turf / money map", "U", &"turf_map", "turf"],
+	["City map", "N", &"city_map", "map"],
 ]
 const SIZE := Vector2(40, 40)
 
@@ -78,4 +79,6 @@ func _open_windows() -> Dictionary:
 			out["Health" if n.showing_health() else "Character"] = true   # CI1: one window, two buttons
 		elif n is CrewRoster and n.visible:
 			out["Crew"] = true
+		elif n is CityMapWindow and n.visible:
+			out["City map"] = true
 	return out

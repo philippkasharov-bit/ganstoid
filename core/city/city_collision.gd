@@ -9,9 +9,11 @@ const LINE_STEP_M := 0.5
 
 var _grid := {}   # Vector2i -> Array[PackedVector2Array]
 var _owners := {}  # Vector2i -> Array[Dictionary]: the CityData building of each poly, same order
+var by_id := {}    # LT2: building id -> its CityData dictionary
 
 func _init(city: CityData) -> void:
 	for b in city.buildings:
+		by_id[b["id"]] = b
 		var poly: PackedVector2Array = b["poly"]
 		var lo := Vector2(INF, INF)
 		var hi := Vector2(-INF, -INF)

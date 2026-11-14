@@ -35,11 +35,29 @@ static func _ensure(world: World, building: BuildingData, kind: String) -> void:
 	if not c["filled"] or (c["items"].is_empty() and restocked):
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash(String(building.id) + kind + str(world.tick / SimClock.day_ticks))
-		var roll := LootTables.roll(kind, rng)
+		var roll := {}
+		for i in _pieces(building, kind):   # LT2: every cupboard rolls (a block of flats has dozens of kitchens)
+			var r := LootTables.roll(kind, rng)
+			for id in r:
+				roll[id] = roll.get(id, 0) + r[id]
 		if c["filled"] and not _pay_restock(building, LootTables.value(roll)):
 			return   # E3: they could not afford to stock it again; it stays empty
 		c["items"] = roll
 		c["filled"] = true
+
+## LT2: how many pieces of furniture hold `kind` in this building (1 when its
+## layout is unknown or has none): an apartment block rolls each flat's kitchen.
+const MAX_PIECES := 12
+
+static func _pieces(building: BuildingData, kind: String) -> int:
+	var col: CityCollision = SimNav.active.collision if SimNav.active != null else null
+	var b: Dictionary = col.by_id.get(building.id, {}) if col != null else {}
+	if b.is_empty():
+		return 1
+	var n := 0
+	for f in InteriorLayout.of(b).furniture:
+		n += int(f["container"] == kind)
+	return clampi(ceili(n / 3.0), 1, MAX_PIECES)   # a kitchen is about three pieces (counter, fridge, cupboard)
 
 ## E3: the people there buy what fills the drawers again (from the cash at
 ## home or the till, then savings). False when they cannot afford it.
