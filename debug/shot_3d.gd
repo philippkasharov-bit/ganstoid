@@ -21,6 +21,9 @@ func _initialize() -> void:
 		print("R3D3: %d people, %d cars drawn" % [preview.people3d.shown_people, preview.people3d.shown_cars])
 		var me: NPCData = preview.driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
 		var outside: int = preview.driver.world.get_entities_with_component(ComponentNames.NPC).values().filter(func(e: Entity) -> bool: return not (e.get_component(ComponentNames.NPC) as NPCData).indoors).size()
+		var near: Array = preview.driver.world.get_entities_with_component(ComponentNames.NPC).values().filter(func(e: Entity) -> bool: var n: NPCData = e.get_component(ComponentNames.NPC); return not n.indoors and n.position.distance_to(me.position) < 160.0)
+		var seen: Array = near.filter(func(e: Entity) -> bool: return preview.people3d._in_sight((e.get_component(ComponentNames.NPC) as NPCData).position))
+		print("A1: %d people outdoors within 160 m of you, %d of them in sight" % [near.size(), seen.size()])
 		print("R3D3: player %s (spawn %s) indoors=%s; %d people outdoors in the district" % [me.position, preview.centre, me.indoors, outside])
 		if args.has("home"):
 			await _walk_home(preview, me)
