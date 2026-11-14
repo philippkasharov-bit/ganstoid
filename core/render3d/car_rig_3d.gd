@@ -81,7 +81,8 @@ func _model(i: int, turn: Basis, at: Vector3, l: float, w: float, spin: float, p
 	_body.multimesh.set_instance_color(i, paint)
 	for k in 4:
 		var hub: Vector3 = CarModel3D.hubs[k] * stretch
-		_wheels.multimesh.set_instance_transform(i * 4 + k, Transform3D(turn * Basis(Vector3.BACK, -spin), at + turn * hub))
+		var flip := Basis(Vector3.UP, PI) if k % 2 == 1 else Basis()   # M3: the right wheels are the left one turned round
+		_wheels.multimesh.set_instance_transform(i * 4 + k, Transform3D(turn * flip * Basis(Vector3.BACK, -spin if k % 2 == 0 else spin), at + turn * hub))
 		var front := k < 2
 		var lamp := Vector3((l * 0.5 + 0.06) * (1 if front else -1), 0.64, (w * 0.38) * (1 if k % 2 == 0 else -1))
 		var size := Vector3(0.04, 0.12, 0.3) if lit else Vector3.ZERO   # the model's lamps glow anyway; these are the night beams

@@ -1,4 +1,4 @@
-## M2: the 90s sedan made in Blender (assets/models/car_90s_sedan.glb) taken
+## M2/M3: the 90s sedan (assets/models/car_90s_sedan.glb: Tripo, from a Magnific reference image, cleaned in Blender) taken
 ## apart for CarRig3D's MultiMeshes: the body mesh (its Body_Paint surface
 ## takes each car's paint from the instance colour; trim, glass, chrome and
 ## lamps keep their own materials), one wheel mesh, and where the four
@@ -7,8 +7,21 @@ class_name CarModel3D
 extends RefCounted
 
 const PATH := "res://assets/models/car_90s_sedan.glb"
-const LENGTH := 4.5   # the model's body, which each car is stretched from
-const WIDTH := 1.8
+const LENGTH := 4.9   # M3: the Tripo sedan's body, which each car is stretched from
+const WIDTH := 2.0
+const PAINT := """
+shader_type spatial;
+uniform sampler2D tex : source_color, filter_linear_mipmap;
+vec3 lin(vec3 c) { return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(vec3(0.04045), c)); }
+void fragment() {
+	vec4 t = texture(tex, UV);
+	float red = smoothstep(0.1, 0.28, t.r - max(t.g, t.b));   // the model's red paint (not chrome, glass, tyres or amber lamps)
+	float shade = dot(t.rgb, vec3(0.3, 0.59, 0.11)) / 0.16;   // its light and dark, kept
+	ALBEDO = mix(t.rgb, lin(COLOR.rgb) * clamp(shade, 0.35, 1.4), red);
+	ROUGHNESS = mix(0.7, 0.35, red);
+	METALLIC = 0.15 * red;
+}
+"""
 
 static var _loaded := false
 static var body: Mesh
@@ -36,15 +49,16 @@ static func _load() -> void:
 				hubs.append(w.position)
 	scene.free()
 
-## A copy of the body whose Body_Paint surface is coloured by each copy's instance colour.
+## A copy of the body whose Body_Paint surface repaints the model's red with each copy's instance colour.
 static func _painted(mesh: Mesh) -> Mesh:
 	var copy: ArrayMesh = mesh.duplicate()
+	var shader := Shader.new()
+	shader.code = PAINT
 	for s in copy.get_surface_count():
-		var mat := copy.surface_get_material(s)
-		if mat != null and mat.resource_name == "Body_Paint":
-			var paint: StandardMaterial3D = (mat as StandardMaterial3D).duplicate()
-			paint.albedo_color = Color.WHITE
-			paint.vertex_color_use_as_albedo = true
-			paint.vertex_color_is_srgb = true
+		var mat := copy.surface_get_material(s) as StandardMaterial3D
+		if mat != null and (mat.resource_name == "Body_Paint" or mat.albedo_texture != null):   # the Tripo body has one textured material
+			var paint := ShaderMaterial.new()
+			paint.shader = shader
+			paint.set_shader_parameter("tex", mat.albedo_texture)
 			copy.surface_set_material(s, paint)
 	return copy
