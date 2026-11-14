@@ -6,9 +6,9 @@
 extends SceneTree
 
 const RADIUS := 120.0
-const BASE := 1000         # triangles of kit parts per house (walls and roof are extra)
+const BASE := 2000         # triangles of kit parts per house (walls and roof are extra)
 const PER_STOREY := 2500
-const AVERAGE := 3500
+const AVERAGE := 4500   # A2b: gutters and downspouts added ~0.9k; the spec allows 2-5k
 
 func _initialize() -> void:
 	KitBatch3D.prime()
