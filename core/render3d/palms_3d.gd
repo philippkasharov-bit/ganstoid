@@ -18,6 +18,7 @@ static func build(wells: PackedVector2Array, v: Callable) -> Array[Node3D]:
 	var trunks := _layer(_trunk(), Cutaway.shared("palm_trunk", TRUNK, false, 1.0), wells.size())
 	var skirts := _layer(_skirt(), Cutaway.shared("palm_skirt", SKIRT, false, 1.0, 0.0, 0.5), wells.size())
 	var crowns := _layer(crown(), Cutaway.shared("palm_crown", Color.WHITE, false, 1.0, 0.0, 1.0), wells.size())
+	var blobs := BlobShadows3D.layer(wells.size())   # A2a: the crown's patch of shade, under the top (palms lean)
 	for i in wells.size():
 		var roll := absi(hash(wells[i]))
 		var tall := 0.8 + float(roll % 60) / 100.0   # a Mexican fan palm beside a shorter date palm
@@ -29,10 +30,7 @@ static func build(wells: PackedVector2Array, v: Callable) -> Array[Node3D]:
 		skirts.multimesh.set_instance_transform(i, Transform3D(turn, top - Vector3(0, 0.75, 0)))
 		crowns.multimesh.set_instance_transform(i, Transform3D(turn, top))
 		crowns.multimesh.set_instance_color(i, GREENS[roll % GREENS.size()])
-	var blobs := BlobShadows3D.layer(wells.size())   # A2a: the crown's patch of shade, under the top (palms lean)
-	for i in wells.size():
-		var top := crowns.multimesh.get_instance_transform(i).origin
-		BlobShadows3D.place(blobs, i, top, Vector2.ONE * 4.2, 0.0, 0.4)
+		BlobShadows3D.place(blobs, i, top, Vector2.ONE * 4.2, 0.0, 0.4)   # never read a MultiMesh back on a stream worker: it waits for the render thread
 	return [trunks, skirts, crowns, blobs]
 
 static func _trunk() -> Mesh:
