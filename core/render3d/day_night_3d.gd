@@ -93,8 +93,8 @@ func _sky(hour: float) -> void:
 		sun.light_energy = lerpf(0.9, 0.55, night)   # the shader does the dark; the sun only cools
 	if env != null:
 		env.background_color = SKY_DAY.lerp(SKY_NIGHT, night)
-		env.ambient_light_color = Color(0.85, 0.85, 0.9).lerp(Color(0.55, 0.62, 0.85), night)
-		env.ambient_light_energy = lerpf(0.75, 0.55, night)   # day: shaded walls stay readable
+		env.ambient_light_color = Color(0.93, 0.88, 0.8).lerp(Color(0.55, 0.62, 0.85), night)   # A1: warm LA daylight in the shade
+		env.ambient_light_energy = lerpf(0.66, 0.55, night)   # day: shaded walls readable, but darker than the sunlit ones
 	if sun != null:
 		sun.light_color = sun.light_color.lerp(Color(0.6, 0.68, 0.95), night)   # moonlight blue
 

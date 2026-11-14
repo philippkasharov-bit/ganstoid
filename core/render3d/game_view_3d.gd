@@ -118,8 +118,11 @@ func _environment() -> void:
 	env.ambient_light_color = Color(0.85, 0.85, 0.9)
 	env.ambient_light_energy = 0.55
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC   # TX3: sunlit pale concrete rolls off instead of clipping to white
-	env.tonemap_exposure = 1.25
+	env.tonemap_exposure = 1.15
 	env.tonemap_white = 3.0
+	env.adjustment_enabled = true   # A1: deeper darks, a touch more colour (Zomboid is muted, never washed out)
+	env.adjustment_contrast = 1.18
+	env.adjustment_saturation = 1.08
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)

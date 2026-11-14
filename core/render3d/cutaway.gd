@@ -60,6 +60,8 @@ const vec3 DOOR_PAINT[8] = vec3[8](vec3(0.184, 0.29, 0.227), vec3(0.541, 0.165, 
 	vec3(0.42, 0.29, 0.18), vec3(0.937, 0.918, 0.878), vec3(0.165, 0.42, 0.42), vec3(0.722, 0.537, 0.18));   // = KitBatch3D.DOOR_PAINT (a uniform array here upset the others in the compatibility renderer)
 varying flat float kit_door;
 uniform int plain_surface = 15;       // TX3: a one-colour mesh's material (the ground)
+uniform float contact = 0.45;         // A1: how dark an upright surface gets where it meets the ground
+uniform float contact_m = 1.4;        // ... fading out this high
 varying vec3 wnormal;
 varying float glow;                   // a lit window / shop front (UV.x)
 varying vec3 world_pos;
@@ -186,11 +188,15 @@ void fragment() {
 	if (cut && wp.y > cut_h - cap_m) {
 		col *= 0.45;   // the cap: the cut reads as a wall top, not a hole
 	}
+	vec3 wn = (INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz;
+	if (abs(wn.y) < 0.6) {   // A1: walls, posts, trunks and boxes sit on the ground (contact darkening), tall walls lighter up top
+		col *= mix(1.0 - contact, 1.0, smoothstep(0.0, contact_m, wp.y)) * mix(0.94, 1.04, smoothstep(0.0, 8.0, wp.y));
+	}
 	float lit = seen(wp);
 	vec3 grey = vec3(dot(col, vec3(0.3, 0.59, 0.11)));
 	float pool = lamp(wp);
 	float bright = mix(1.0, max(moon, pool), night);   // at night you see what is lit
-	float dim = mix(0.68, unseen, night);   // by day the unseen world is only a little dimmer (Zomboid)
+	float dim = mix(0.8, unseen, night);   // A1: by day the unseen side is only a little darker, not a shadow   // by day the unseen world is only a little dimmer (Zomboid)
 	vec3 sodium = mix(vec3(1.0), vec3(1.0, 0.78, 0.5), clamp(pool, 0.0, 1.0) * night);   // P1: lamp light is warm sodium, not grey fog
 	ALBEDO = mix(mix(grey, col, mix(0.6, 0.35, night)) * dim, col, lit) * bright * sodium;
 	EMISSION = night * (vec3(1.0, 0.72, 0.4) * pool * 0.55 * col + vec3(1.0, 0.82, 0.5) * lit_glass * 0.9 + tint * self_glow);
