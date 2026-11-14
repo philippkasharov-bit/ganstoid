@@ -48,6 +48,22 @@ static func wall(m: CityMesh3D, st: SurfaceTool, v: Callable, a: Vector2, c: Vec
 	if i == (int(ctx["door_edge"]) + 1) and length >= 2.4:
 		_put(m, v, a + dir * 0.6, dir, out, "kit_meter", 0.0, 0.0, ctx)
 
+## A2b: a gutter along the eave a..c (at height h, `apex` inside) and, if `spout`, a downspout at a.
+static func eave(m: CityMesh3D, v: Callable, a: Vector2, c: Vector2, apex: Vector2, h: float, spout: bool, ctx: Dictionary) -> void:
+	var length := a.distance_to(c)
+	if length < 0.5:
+		return
+	var dir := (c - a) / length
+	var out := dir.orthogonal()
+	if out.dot((a + c) * 0.5 - apex) < 0.0:
+		out = -out
+	var basis := Basis(Vector3(-dir.x, 0, -dir.y), Vector3.UP, Vector3(out.x, 0, out.y))
+	var custom := KitBatch3D.custom(ctx["tag"], 0.0, ctx["door"])
+	m.kit_put(a, "kit_gutter", Transform3D(basis.scaled_local(Vector3(length, 1, 1)), v.call((a + c) * 0.5, h - 0.02)), ctx["trim"], custom)
+	if spout:
+		var foot := a + dir * 0.25 - out * 0.12   # down the wall under the gutter's end
+		m.kit_put(a, "kit_downspout", Transform3D(basis.scaled_local(Vector3(1, h - 0.1, 1)), v.call(foot, 0.0)), ctx["trim"], custom)
+
 ## A corner board up every corner of the footprint.
 static func corners(m: CityMesh3D, v: Callable, poly: PackedVector2Array, h: float, ctx: Dictionary) -> void:
 	for k in poly.size():

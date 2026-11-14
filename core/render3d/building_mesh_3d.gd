@@ -33,6 +33,8 @@ const GLOW := {"commercial": 0.85, "apartments": 0.45, "house": 0.35, "civic": 0
 const DOOR_W := 1.1
 const DOOR_H := 2.1
 const HIP_MAX_AREA := 400.0
+const HIP_MAX_HOUSE := 650.0
+const HULL_FILL_HOUSE := 0.72   # a house roof may overhang a small notch
 const HULL_FILL := 0.82   # a footprint this close to its hull takes a hipped roof
 const EAVES := 1.06
 const AC_SHARE := {"apartments": 14, "house": 4}   # G1: percent of upper windows with an AC unit
@@ -81,7 +83,7 @@ static func add(st: SurfaceTool, b: Dictionary, v: Callable, tag: int = 0, kit: 
 		_openings(st, v, a, c, out, levels, door_t, style)
 	if not house.is_empty():
 		HouseKit3D.corners(kit, v, poly, h, house)
-	_roof(st, v, poly, h, kind, levels, rng)
+	_roof(st, v, poly, h, kind, levels, rng, house, kit)
 	st.set_uv(Vector2.ZERO)   # what follows (roads, the next lot) is not this building
 
 static func quad(st: SurfaceTool, q: Array, n: Vector3, col: Color) -> void:
@@ -98,10 +100,12 @@ static func flat(st: SurfaceTool, v: Callable, poly: PackedVector2Array, h: floa
 		st.add_vertex(v.call(poly[k], h))
 
 ## A hipped roof on a small convex house; otherwise flat with a parapet and rooftop boxes.
-static func _roof(st: SurfaceTool, v: Callable, poly: PackedVector2Array, h: float, kind: String, levels: int, rng: RandomNumberGenerator) -> void:
+static func _roof(st: SurfaceTool, v: Callable, poly: PackedVector2Array, h: float, kind: String, levels: int, rng: RandomNumberGenerator, house: Dictionary = {}, kit: CityMesh3D = null) -> void:
 	var area := absf(_area(poly))
 	var hull := _open(Geometry2D.convex_hull(poly))
-	if kind in ["house", "apartments"] and levels <= 2 and area < HIP_MAX_AREA and area > HULL_FILL * absf(_area(hull)):
+	var big := HIP_MAX_HOUSE if kind == "house" else HIP_MAX_AREA   # A2b: LA houses almost all have pitched roofs
+	var fill := HULL_FILL_HOUSE if kind == "house" else HULL_FILL
+	if kind in ["house", "apartments"] and levels <= 2 and area < big and area > fill * absf(_area(hull)):
 		var tiles: Array = ROOF_TILE if rng.randf() < 0.65 else ROOF_SHINGLE
 		var col := SurfaceDetail.mark(tiles[rng.randi() % tiles.size()], SurfaceDetail.CLAY if tiles == ROOF_TILE else SurfaceDetail.SHINGLE)
 		var apex := _centroid(hull)
@@ -116,6 +120,8 @@ static func _roof(st: SurfaceTool, v: Callable, poly: PackedVector2Array, h: flo
 			for p in tri:
 				st.add_vertex(p)
 			BuildingDetail3D.fascia(st, v, a, c, h)   # G1: the board under the eaves
+			if not house.is_empty():
+				HouseKit3D.eave(kit, v, a, c, apex, h, i % 2 == 0, house)   # A2b: a gutter along it, a downspout at every other corner
 		if rng.randf() < CHIMNEY_SHARE:
 			BuildingDetail3D.chimney(st, v, apex + (hull[0] - apex) * 0.45, h, top + 0.5)
 		if rng.randf() < DISH_SHARE:   # G4: a satellite dish low on the slope
