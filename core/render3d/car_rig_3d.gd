@@ -57,7 +57,7 @@ func place(i: int, id: StringName, car: VehicleData, paint: Color, shade: float,
 		_wheels.multimesh.set_instance_transform(i * 4 + k, Transform3D(turn * Basis(Vector3.BACK, -spin), at + turn * off))
 		_wheels.multimesh.set_instance_color(i * 4 + k, TYRE)
 		var front := k < 2
-		var lamp := Vector3((l * 0.5 + 0.01) * (1 if front else -1), 0.75, (w * 0.32) * (1 if k % 2 == 0 else -1))
+		var lamp := Vector3((l * 0.5 + 0.01) * (1 if front else -1), 0.58, (w * 0.32) * (1 if k % 2 == 0 else -1))   # G5: in the face of the new body, not above it
 		var col: Color = (HEAD if front else TAIL) * (1.0 if lit else 0.45)
 		_lamps.multimesh.set_instance_transform(i * 4 + k, Transform3D(turn.scaled_local(Vector3(0.05, 0.14, 0.32)), at + turn * lamp))
 		_lamps.multimesh.set_instance_color(i * 4 + k, col)
