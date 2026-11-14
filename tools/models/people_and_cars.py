@@ -19,6 +19,8 @@ def reset():
     bpy.ops.wm.read_factory_settings(use_empty=True)
 
 def new_obj(name, bm):
+    bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)   # A1b: faces were wound by hand; some pointed in, so cars showed their inside
     me = bpy.data.meshes.new(name)
     bm.to_mesh(me)
     bm.free()
