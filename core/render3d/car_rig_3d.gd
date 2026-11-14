@@ -34,6 +34,12 @@ func _init(count: int = 600) -> void:
 	glow.vertex_color_is_srgb = true   # A2b: right in Mobile too
 	glow.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_lamps.material_override = glow
+	if CarModel3D.ready():   # M2: the Blender sedan; its own materials per surface
+		_body.multimesh.mesh = CarModel3D.body
+		_body.material_override = null
+		_wheels.multimesh.mesh = CarModel3D.wheel
+		_wheels.material_override = null
+		_cabin.visible = false   # the glass is part of the body
 
 func set_count(n: int) -> void:
 	for l in [_body, _cabin]:
@@ -49,6 +55,9 @@ func place(i: int, id: StringName, car: VehicleData, paint: Color, shade: float,
 	var at := Vector3(pose[0].x - origin.x, 0, pose[0].y - origin.y)
 	var l := car.length_m
 	var w := car.width_m
+	if CarModel3D.ready():
+		_model(i, turn, at, l, w, pose[2], paint * shade, lit)
+		return [at, pose[1]]
 	_body.multimesh.set_instance_transform(i, Transform3D(turn.scaled_local(Vector3(l, 0.62, w)), at + Vector3(0, 0.68, 0)))
 	_body.multimesh.set_instance_color(i, paint * shade)
 	_cabin.multimesh.set_instance_transform(i, Transform3D(turn.scaled_local(Vector3(l * 0.48, 0.48, w * 0.86)), at + turn * Vector3(-l * 0.06, 0, 0) + Vector3(0, 1.22, 0)))
@@ -64,6 +73,20 @@ func place(i: int, id: StringName, car: VehicleData, paint: Color, shade: float,
 		_lamps.multimesh.set_instance_transform(i * 4 + k, Transform3D(turn.scaled_local(Vector3(0.05, 0.14, 0.32)), at + turn * lamp))
 		_lamps.multimesh.set_instance_color(i * 4 + k, col)
 	return [at, pose[1]]
+
+## M2: car `i` drawn with the Blender sedan, stretched to this car's length and width.
+func _model(i: int, turn: Basis, at: Vector3, l: float, w: float, spin: float, paint: Color, lit: bool) -> void:
+	var stretch := Vector3(l / CarModel3D.LENGTH, 1.0, w / CarModel3D.WIDTH)
+	_body.multimesh.set_instance_transform(i, Transform3D(turn.scaled_local(stretch), at))
+	_body.multimesh.set_instance_color(i, paint)
+	for k in 4:
+		var hub: Vector3 = CarModel3D.hubs[k] * stretch
+		_wheels.multimesh.set_instance_transform(i * 4 + k, Transform3D(turn * Basis(Vector3.BACK, -spin), at + turn * hub))
+		var front := k < 2
+		var lamp := Vector3((l * 0.5 + 0.06) * (1 if front else -1), 0.64, (w * 0.38) * (1 if k % 2 == 0 else -1))
+		var size := Vector3(0.04, 0.12, 0.3) if lit else Vector3.ZERO   # the model's lamps glow anyway; these are the night beams
+		_lamps.multimesh.set_instance_transform(i * 4 + k, Transform3D(turn.scaled_local(size), at + turn * lamp))
+		_lamps.multimesh.set_instance_color(i * 4 + k, HEAD if front else TAIL)
 
 ## [position, heading, wheel turn] between the last two sim poses.
 func _between(id: StringName, car: VehicleData) -> Array:

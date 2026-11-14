@@ -55,12 +55,14 @@ var _delta := 0.016
 var _cut_insides := CutInteriors3D.new()
 var _blobs := BlobShadows3D.layer(MAX_PEOPLE + MAX_CARS)   # A2a: a dark patch under everyone and every car
 var _blob_n := 0
+var _figure := PlayerModel3D.new()   # M2: the player, rigged and animated
+var _figure_shown := false
 
 func _ready() -> void:
 	_rig.origin = origin
 	_car_rig.origin = origin
 	_cut_insides.origin = origin
-	for layer in [_rig, _car_rig, _ghost, _cut_insides, _blobs]:
+	for layer in [_rig, _car_rig, _ghost, _cut_insides, _blobs, _figure]:
 		add_child(layer)
 
 func _process(delta: float) -> void:
@@ -74,7 +76,10 @@ func sync() -> void:
 	_player_at = Vector2.INF
 	_riding = false
 	_blob_n = 0
+	_figure_shown = false
 	_people(focus)
+	if not _figure_shown:
+		_figure.hide_figure()   # riding, down, or out of the world
 	_cars(focus)
 	_blobs.multimesh.visible_instance_count = _blob_n
 	_see_player()
@@ -197,6 +202,11 @@ func _people(focus: Vector2) -> void:
 			lit = maxf(lit, 0.65)   # P1: you can always see yourself
 		var step := _rig.gait(id, pose[0], _delta)
 		var arms := _arms(ps)   # D3: aiming and striking
+		if ps != null and not npc.is_down and _figure.usable():
+			_figure.pose(Vector3(pose[0].x - origin.x, 0, pose[0].y - origin.y), pose[1], step[1])   # M2: the Blender character
+			_figure_shown = true
+			_blob(Vector3(pose[0].x - origin.x, 0, pose[0].y - origin.y), Vector2(0.95, 0.95), pose[1], 0.7)
+			continue
 		_rig.place(n, pose[0], pose[1], step[0], step[1], npc.is_down, ps != null and ps.sneaking, PersonLook3D.shirt(e, npc) * lit, PersonLook3D.skin(id) * lit, arms.x, arms.y)
 		_blob(Vector3(pose[0].x - origin.x, 0, pose[0].y - origin.y), Vector2(1.6, 0.9) if npc.is_down else Vector2(0.95, 0.95), pose[1], 0.7)
 		n += 1
