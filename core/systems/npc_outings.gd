@@ -50,7 +50,7 @@ const VIA_MAX_M := 220.0
 const VIA_MIN_TRIP_M := 120.0              # shorter walks have no meaningful alternative
 
 var _shops := {}   # home door -> Array[Vector2] of business doors near it
-var _businesses: Array[Vector2] = []   # every business door in the district
+var _businesses: Dictionary = {}   # MAP1: Vector2i cell (SHOP_MAX_M square) -> business doors in it
 var _businesses_for := -1
 
 ## Ticks until this person next thinks about going out.
@@ -104,22 +104,33 @@ func _promenade(home: Vector2, rng: RandomNumberGenerator) -> Dictionary:
 		legs.append({"p": spot, "stay": 0})
 	return {"kind": Kind.PROMENADE, "legs": legs, "pace": rng.randf_range(STROLL_PACE[0], STROLL_PACE[1])}
 
+## MAP1: the business doors bucketed by area, so a 21,000-building map is walked
+## once (at new game: NPCScheduleSystem.settle_all), never on a tick.
+func prime(world: World) -> void:
+	var buildings := world.get_entities_with_component(ComponentNames.BUILDING)
+	if _businesses_for == buildings.size():
+		return
+	_businesses_for = buildings.size()
+	_businesses.clear()
+	for entity in buildings.values():
+		var b: BuildingData = entity.get_component(ComponentNames.BUILDING)
+		if b.building_type == GanstoidEnums.BuildingType.LEGIT_BUSINESS:
+			_businesses.get_or_add(Vector2i((b.position / SHOP_MAX_M).floor()), []).append(b.position)
+
 ## The few businesses someone living at `home` actually uses: the nearest of a
 ## sample of the district's businesses (nobody knows every shop in town).
 func _shops_near(world: World, home: Vector2, rng: RandomNumberGenerator) -> Array:
 	if _shops.has(home):
 		return _shops[home]
-	var buildings := world.get_entities_with_component(ComponentNames.BUILDING)
-	if _businesses_for != buildings.size():
-		_businesses_for = buildings.size()
-		_businesses.clear()
-		for entity in buildings.values():
-			var b: BuildingData = entity.get_component(ComponentNames.BUILDING)
-			if b.building_type == GanstoidEnums.BuildingType.LEGIT_BUSINESS:
-				_businesses.append(b.position)
+	prime(world)
+	var near: Array[Vector2] = []
+	var c := Vector2i((home / SHOP_MAX_M).floor())
+	for x in range(c.x - 1, c.x + 2):
+		for y in range(c.y - 1, c.y + 2):
+			near.append_array(_businesses.get(Vector2i(x, y), []))
 	var seen := []
-	for i in mini(SHOPS_SAMPLED, _businesses.size()):
-		var door: Vector2 = _businesses[rng.randi() % _businesses.size()]
+	for i in mini(SHOPS_SAMPLED, near.size()):
+		var door: Vector2 = near[rng.randi() % near.size()]
 		if door.distance_to(home) <= SHOP_MAX_M and not seen.has(door):
 			seen.append(door)
 	seen.sort_custom(func(a: Vector2, b: Vector2) -> bool: return a.distance_squared_to(home) < b.distance_squared_to(home))

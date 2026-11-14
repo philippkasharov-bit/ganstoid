@@ -68,6 +68,8 @@ func try_drive(npc: NPCData, door: Vector2) -> bool:
 	var car: VehicleData = car_e.get_component(ComponentNames.VEHICLE)
 	if car.driver_id != &"" or car.damage >= VehicleSystem.WRECKED or car.position.distance_to(npc.position) > CAR_NEAR_M:
 		return false   # stolen, wrecked, or left across town
+	if _unseen(npc.position) and _unseen(door):
+		return false   # MAP1: a road route across town costs 30-50 ms; out of sight they just walk (straight, NPCStreet)
 	_plans_left -= 1
 	var pts := graph.route(car.position, door)
 	if pts.size() < 2:
@@ -82,6 +84,10 @@ func try_drive(npc: NPCData, door: Vector2) -> bool:
 	drives[npc.id] = {"car": car, "pts": pts, "i": 0, "door": door, "npc": npc}
 	trips_driven += 1
 	return true
+
+func _unseen(p: Vector2) -> bool:
+	var me: Entity = _world.entities.get(PlayerFactory.PLAYER_ENTITY_ID)
+	return me != null and p.distance_to(me.get_component(ComponentNames.NPC).position) > NPCStreet.ABSTRACT_M
 
 func process_entities(entities: Dictionary, delta: float, tick: int) -> void:
 	_plans_left = PLANS_PER_TICK

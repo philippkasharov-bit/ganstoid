@@ -20,6 +20,7 @@ const ARRIVE_EPSILON := SimUnits.ARRIVE_M
 const PASS_M := 4.0                # close enough to a point one only walks past
 const NEAR_M := 150.0              # full-rate movement inside this distance of the player
 const FAR_EVERY := 6               # beyond it: one step per this many ticks
+const UNSEEN_EVERY := 30           # MAP1: past ABSTRACT_M: one step per this many ticks
 const ABSTRACT_M := 520.0          # POP1: past the streamed city (CityStream3D.UNLOAD_M + margin) walkers go straight, no routes
 const PAUSE_EVERY_S := 40.0        # near the player, a walker stops about this often ...
 const PAUSE_TICKS := [90, 360]     # ... for 1.5 to 6 s (phone, shoelace, looking around)
@@ -155,9 +156,10 @@ func _move(npc: NPCData, delta: float, tick: int, player_pos: Vector2) -> bool:
 	var player_d2 := npc.position.distance_squared_to(player_pos)
 	var unseen := player_d2 > ABSTRACT_M * ABSTRACT_M   # POP1: past the built city: nobody can see the route
 	if player_d2 > NEAR_M * NEAR_M:
-		if (tick + _phase(npc.id)) % FAR_EVERY != 0:
+		var every := UNSEEN_EVERY if unseen else FAR_EVERY   # MAP1: out of sight, a step every half second
+		if (tick + _phase(npc.id)) % every != 0:
 			return false
-		step_delta = delta * FAR_EVERY
+		step_delta = delta * every
 	elif _pausing(npc, tick):
 		return false
 	var before := npc.position
@@ -232,4 +234,4 @@ func _loiter(npc: NPCData, anchor: Vector2, delta: float, tick: int) -> void:
 	npc.position = npc.position.move_toward(spot, IDLE_WALK_SPEED * delta)
 
 static func _phase(npc_id: StringName) -> int:
-	return absi(hash(npc_id)) % FAR_EVERY
+	return absi(hash(npc_id)) % UNSEEN_EVERY   # a multiple of FAR_EVERY: both spread evenly

@@ -10,8 +10,9 @@
 ## HUD shows a loading line and the sim waits until they are ready.
 extends Node
 
-const DISTRICT_RADIUS := 900.0   # metres around the spawn that are simulated
-const GAME_POPULATION := 1500     # POP1: 1.4 ms a tick at rush hour on a 2-core box (was 600; verify_sim_perf)
+const DISTRICT_RADIUS := 900.0   # metres of routes (navmesh) loaded round the player; they follow you (MAP1)
+const MAP_RADIUS := 6500.0       # MAP1: the whole 6 km map is simulated (buildings, people, turf, business)
+const GAME_POPULATION := 6000     # MAP1: the whole map; ~1.8 ms a tick at rush hour on a 2-core box (verify_sim_perf SIM_RADIUS=6500)
 const START_HOUR := 8.0           # a new game begins in the morning rush, with everyone where their routine puts them
 
 var world: World = World.new()
@@ -36,7 +37,7 @@ func _ready() -> void:
 	TrafficSystem.roads = city.roads   # V2: traffic drives the real streets
 	TrafficSystem.junctions = Junctions.load_file()   # MP3a: lights and stop signs
 	DriveSystem.graph = RoadGraph.build(city.roads)   # V4: people drive the real streets
-	WorldGenerator.generate_real_city_game(world, seed_used, city, city.spawn, DISTRICT_RADIUS, GAME_POPULATION)
+	WorldGenerator.generate_real_city_game(world, seed_used, city, city.spawn, MAP_RADIUS, GAME_POPULATION)
 	world.tick = SimClock.hours(START_HOUR)
 	if not saved.is_empty():
 		if saved["entities"].has(GameRules.ENTITY):
@@ -60,7 +61,7 @@ func _install_routes() -> void:
 	await get_tree().process_frame   # let the loading line render first
 	await get_tree().process_frame
 	SimNav.install(city, city.spawn, DISTRICT_RADIUS)
-	StreetLights.install(city, city.spawn, DISTRICT_RADIUS)   # R3D10b: who sees you at night depends on the lamps
+	StreetLights.install(city, city.spawn, MAP_RADIUS)   # R3D10b: who sees you at night depends on the lamps
 
 ## O1: the new-game choice made: the run starts.
 func choose(difficulty: int, style: int) -> void:
@@ -71,6 +72,9 @@ func _physics_process(delta: float) -> void:
 	if SimNav.active == null or not SimNav.active.usable() or choosing or paused:
 		return   # routes still loading, or the new-game choice not made: nobody moves yet
 	_check_speed()
+	var me: Entity = world.entities.get(PlayerFactory.PLAYER_ENTITY_ID)
+	if me != null:
+		SimNav.active.follow(me.get_component(ComponentNames.NPC).position)   # MAP1: routes load where you go
 	var steps := NeedsSystem.SLEEP_SPEED if _asleep() else speed   # G2 sleep / Z2 time controls
 	for i in steps:
 		world.step(delta)

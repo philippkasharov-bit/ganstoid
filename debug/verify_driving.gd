@@ -28,6 +28,7 @@ func _initialize() -> void:
 		return
 	var car: VehicleData = world.entities[who.car_id].get_component(ComponentNames.VEHICLE)
 	who.position = car.position + Vector2(3, 0)
+	world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC).position = who.position   # MAP1: only trips in sight drive
 	var far := car.position + Vector2(900, 400)
 	var dest: Vector2 = DriveSystem.graph.astar.get_point_position(DriveSystem.graph.astar.get_closest_point(far))
 	var short := drive.try_drive(who, who.position + Vector2(100, 0))

@@ -76,6 +76,7 @@ func process_entities(entities: Dictionary, delta: float, tick: int) -> void:
 ## at home, on their corner) instead of all starting at home. Call once after
 ## the world is generated; a later jump in time does this by itself.
 func settle_all(tick: int) -> void:
+	_outings.prime(_world)   # MAP1: not on the first outing's tick
 	_resync(_world.get_entities_with_component(ComponentNames.NPC), tick)
 	_last_tick = tick
 

@@ -151,7 +151,6 @@ var _hot_buildings: Array[BuildingData] = []
 var _hot_scanned_tick := -1000000
 var _alert_set_tick: Dictionary = {}  # StringName -> int
 
-var _all_buildings: Array[BuildingData] = []
 var _cops: Array[NPCData] = []
 var beat := CopBeat.new()   # S3b: foot patrol along the streets round the station
 var _cops_for := -1
@@ -216,13 +215,8 @@ func _advance_patrol(npc: NPCData, delta: float, tick: int) -> void:
 ## whichever building happens to come first in iteration order.
 func _collect_hot_buildings() -> void:
 	_hot_buildings.clear()
-	var all := _world.get_entities_with_component(ComponentNames.BUILDING)
-	if _all_buildings.size() != all.size():   # S1: plain cached list; the scan runs 4x a second
-		_all_buildings.clear()
-		for entity in all.values():
-			_all_buildings.append(entity.get_component(ComponentNames.BUILDING))
-	for building in _all_buildings:
-		if building.crime_heat >= PATROL_BIAS_HEAT_THRESHOLD:
+	for building: BuildingData in BuildingData.heated:   # MAP1: only buildings with heat, not all 21,000
+		if building.crime_heat >= PATROL_BIAS_HEAT_THRESHOLD and _world.entities.has(building.id):
 			_hot_buildings.append(building)
 
 func _find_hottest_nearby_building(depot_position: Vector2) -> BuildingData:

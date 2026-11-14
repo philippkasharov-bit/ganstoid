@@ -75,6 +75,13 @@ var touched := true
 		if v != crime_heat:
 			touched = true
 		crime_heat = v
+		if v > 0.0:
+			heated[self] = true   # MAP1: the few buildings with any heat, so nobody walks all 21,000
+		else:
+			heated.erase(self)
+
+## MAP1: every building whose crime_heat is above 0 (EconomySystem decays them, CopAISystem patrols them).
+static var heated: Dictionary = {}
 
 ## Batch 19: world tick this business last paid your muscle protection
 ## money -- they pay at most once per CrewMuscleSystem.PROTECTION_COOLDOWN_TICKS.

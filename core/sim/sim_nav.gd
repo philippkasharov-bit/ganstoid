@@ -85,6 +85,21 @@ func _expand() -> void:
 		n.radius = _full_radius
 		n.focus(_centre)
 
+## MAP1: the navmeshes follow the player round the whole map: once they are
+## REFOCUS_M from the middle of what is loaded, the tiles round them load and
+## the far ones go. The old map keeps answering while the new one syncs.
+const REFOCUS_M := 400.0
+var refocus_ms := 0.0   # the last refocus's cost on the main thread (checks)
+
+func follow(p: Vector2) -> void:
+	if not _expanded or p.distance_to(_centre) < REFOCUS_M:
+		return
+	var t0 := Time.get_ticks_usec()
+	_centre = p
+	for n in navs.values():
+		n.focus(p)
+	refocus_ms = (Time.get_ticks_usec() - t0) / 1000.0
+
 ## Nearest walkable point on `layer` (wander targets must be reachable).
 func snap(p: Vector2, layer: String) -> Vector2:
 	return navs[layer].closest(p)

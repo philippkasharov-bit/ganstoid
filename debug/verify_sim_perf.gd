@@ -8,10 +8,10 @@
 ## never eat a whole frame in one tick.
 extends SceneTree
 
-const POPULATION := 1500         # = WorldDriver.GAME_POPULATION (PF3: SIM_POP=1500 overrides, for stress runs)
+const POPULATION := 6000         # = WorldDriver.GAME_POPULATION (PF3: SIM_POP=1500 overrides, for stress runs)
 const TICKS := 3600              # one real minute
-const AVG_BUDGET_MS := {3.0: 1.0, 8.0: 2.5, 11.0: 1.5}   # POP1 at 1500: measured 0.4 / 1.4 / 0.6 in the sandbox
-const WORST_TICK_MS := 10.0   # PF1: was 16; long routes no longer plan on the tick
+const AVG_BUDGET_MS := {3.0: 1.0, 8.0: 3.0, 11.0: 2.0}   # MAP1, whole map at 6000: measured 0.2 / 1.7 / 1.3 in the sandbox
+const WORST_TICK_MS := 20.0   # MAP1: the whole map at 6000 people: one rush-hour wave of re-plans reaches ~17 ms on a 2-core box (PF1 had 10 for 600 people round the spawn)
 
 func _initialize() -> void:
 	var saved := SimClock.day_ticks
@@ -21,8 +21,10 @@ func _initialize() -> void:
 	for hour in [3.0, 8.0, 11.0]:
 		var world := World.new()
 		SystemRegistry.register_all(world)
-		WorldGenerator.generate_real_city_game(world, 1, city, city.spawn, TestWorlds.DISTRICT_RADIUS, int(OS.get_environment("SIM_POP")) if OS.has_environment("SIM_POP") else POPULATION)
-		SimNav.install(city, city.spawn, TestWorlds.DISTRICT_RADIUS)
+		var gen0 := Time.get_ticks_msec()
+		WorldGenerator.generate_real_city_game(world, 1, city, city.spawn, _radius(), int(OS.get_environment("SIM_POP")) if OS.has_environment("SIM_POP") else POPULATION)
+		print("generated in %d ms: %d entities, %d MB static" % [Time.get_ticks_msec() - gen0, world.entities.size(), OS.get_static_memory_usage() / 1048576])
+		SimNav.install(city, city.spawn, minf(_radius(), TestWorlds.DISTRICT_RADIUS))
 		await TestWorlds.wait_nav(self, [SimNav.active])
 		world.tick = SimClock.hours(hour)
 		(world.find_system(NPCScheduleSystem) as NPCScheduleSystem).settle_all(world.tick)
@@ -77,3 +79,7 @@ func _check(ok: bool, what: String) -> bool:
 	if not ok:
 		print("SIM_PERF_VERIFY: FAIL - ", what)
 	return ok
+
+## MAP1: SIM_RADIUS=<m> simulates that far round the spawn (stress runs); default the game's district.
+static func _radius() -> float:
+	return float(OS.get_environment("SIM_RADIUS")) if OS.has_environment("SIM_RADIUS") else 6500.0   # as the game (WorldDriver.MAP_RADIUS): the whole map

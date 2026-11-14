@@ -59,7 +59,6 @@ const PRICE_ELASTICITY := 0.8
 const PRICE_MIN_MULT := 0.4
 const PRICE_MAX_MULT := 2.5
 
-var _buildings: Array[BuildingData] = []   # rebuilt when the number of buildings changes
 var _world_ref: WeakRef
 var _world: World:
 	get:
@@ -74,13 +73,8 @@ func process_entities(entities: Dictionary, _delta: float, _tick: int) -> void:
 	# S1: nearly every building is idle on any given tick (no heat, till full).
 	# Walk a cached plain list and test that inline, instead of fetching the
 	# component and making two calls for each of ~2,600 buildings six times a second.
-	if _buildings.size() != entities.size():
-		_buildings.clear()
-		for entity in entities.values():
-			_buildings.append(entity.get_component(ComponentNames.BUILDING))
-	for building in _buildings:
-		if building.crime_heat != 0.0:
-			_decay_crime_heat(building)
+	for building: BuildingData in BuildingData.heated.keys():   # MAP1: only the heated few (the map has 21,000 buildings)
+		_decay_crime_heat(building)
 	for item in _world.economy_items.values():
 		_drift_price(item)
 	_decay_relationships()
