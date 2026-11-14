@@ -4,13 +4,16 @@ extends SceneTree
 
 func _init() -> void:
 	var out := "/tmp/models.png"
+	var yaw := 45.0
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--out="):
 			out = a.trim_prefix("--out=")
+		if a.begins_with("--yaw="):
+			yaw = float(a.trim_prefix("--yaw="))
 	var world := Node3D.new()
 	root.add_child(world)
 	var car := CarRig3D.new(1)
-	var person := PersonRig3D.new(1)
+	var person := PersonRig3D.new(3)
 	world.add_child(car)
 	world.add_child(person)
 	var light := DirectionalLight3D.new()
@@ -25,9 +28,9 @@ func _init() -> void:
 	world.add_child(env)
 	var cam := Camera3D.new()
 	cam.projection = Camera3D.PROJECTION_ORTHOGONAL
-	cam.size = 6.5
-	cam.rotation_degrees = Vector3(-30, 45, 0)
-	cam.position = Vector3(8, 6.5, 8)
+	cam.size = 5.5
+	cam.rotation_degrees = Vector3(-30, yaw, 0)
+	cam.position = Vector3(sin(deg_to_rad(yaw)) * 11.0, 6.5, cos(deg_to_rad(yaw)) * 11.0)
 	world.add_child(cam)
 	cam.make_current()
 	var data := VehicleData.new()
@@ -36,8 +39,10 @@ func _init() -> void:
 	data.width_m = 1.85
 	car.place(0, &"car", data, Color("b0312a"), 1.0, false)
 	car.set_count(1)
-	person.place(0, Vector2(1.5, 2.2), 0.6, 0.3, 0.6, false, false, Color("e9e5dc"), Color("a8775a"))
-	person.set_count(1)
+	person.place(0, Vector2(1.2, 2.2), 0.6, 0.3, 0.6, false, false, Color("e9e5dc"), Color("a8775a"))
+	person.place(1, Vector2(-0.6, 2.4), 1.2, 0.0, 0.0, false, false, Color("1f2a44"), Color("6b4a35"), 1.0)   # aiming
+	person.place(2, Vector2(2.6, 1.2), -0.4, 0.9, 0.9, false, false, Color("7a1f1f"), Color("d9b08c"))   # mid-stride
+	person.set_count(3)
 	for i in 10:
 		await process_frame
 	root.get_viewport().get_texture().get_image().save_png(out)
