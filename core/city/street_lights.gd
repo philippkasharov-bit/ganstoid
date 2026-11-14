@@ -28,14 +28,16 @@ static func install(city: CityData, centre: Vector2, radius: float) -> void:
 
 static func build(city: CityData, centre: Vector2, radius: float) -> StreetLights:
 	var s := StreetLights.new()
+	var space := RoadSpace.of(city) if city != null else null   # B1: no lamp standing in the traffic
 	for p in CityReal.load_files().points:
 		if p["kind"] == "lamp" and p["p"].distance_to(centre) < radius:
-			s.add(Vector3(p["p"].x, p["p"].y, LAMP_R))
+			var at: Vector2 = space.clear(p["p"], 0.6) if space != null else p["p"]
+			s.add(Vector3(at.x, at.y, LAMP_R))
 	if city != null:
 		var solid := CityCollision.new(city)   # P1: never a lamp inside or against a building
 		for r in city.roads:
 			if STREETS.has(r["tier"]) and _within(r["pts"], centre, radius) and _length(r["pts"]) >= MIN_ROAD_M:
-				s._light_road(r, solid)
+				s._light_road(r, solid, space)
 	return s
 
 static func _length(pts: PackedVector2Array) -> float:
@@ -59,7 +61,7 @@ func add(l: Vector3) -> void:
 
 ## Lamps at the kerb every `spacing` (both sides staggered, or alternating);
 ## a spot too close to a lamp already there (the piece before) is skipped.
-func _light_road(r: Dictionary, solid: CityCollision) -> void:
+func _light_road(r: Dictionary, solid: CityCollision, space: RoadSpace) -> void:
 	var spec: Array = STREETS[r["tier"]]
 	var spacing: float = spec[0]
 	var both: bool = spec[2]
@@ -72,7 +74,7 @@ func _light_road(r: Dictionary, solid: CityCollision) -> void:
 		var seg := pts[i + 1] - pts[i]
 		var length := seg.length()
 		while run <= length and length > 0.0:
-			var at := pts[i] + seg * (run / length) + seg.normalized().orthogonal() * off * side
+			var at := space.clear(pts[i] + seg * (run / length) + seg.normalized().orthogonal() * off * side, 0.6)
 			if _clear(at, step * 0.6) and not solid.blocked(at, 0.5):
 				add(Vector3(at.x, at.y, spec[1]))
 			side = -side

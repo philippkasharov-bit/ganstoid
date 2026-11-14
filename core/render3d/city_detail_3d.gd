@@ -104,9 +104,11 @@ const DASH_GAP_M := 6.0
 
 ## D4: lane dashes, junction crosswalks and driveway aprons.
 static func _paint(m: CityMesh3D, city: CityData, centre: Vector2, r2: float) -> void:
-	for r in city.roads:
+	var space := RoadSpace.of(city)
+	for i in city.roads.size():
+		var r: Dictionary = city.roads[i]
 		if r["tier"] in ["art", "fwy"] and CityMesh3D._near(r["pts"], centre, r2):
-			_lanes(m, r)
+			_lanes(m, r, i, space)
 	for x in _junctions().near(centre, sqrt(r2)):
 		if x["kind"] == "signal":   # P1: LA paints its crossings at signals (the nav data's walk zones are not paint)
 			for leg in x["legs"]:
@@ -120,16 +122,17 @@ static func _paint(m: CityMesh3D, city: CityData, centre: Vector2, r2: float) ->
 			m._quad(m._tool(c), [m._v(c - side, 0.03), m._v(c + side, 0.03), m._v(far + side, 0.03), m._v(far - side, 0.03)], Vector3.UP, SurfaceDetail.mark(Color("d6d1c6"), SurfaceDetail.SIDEWALK))
 
 ## White dashes between the lanes on each side of the middle.
-static func _lanes(m: CityMesh3D, r: Dictionary) -> void:
+static func _lanes(m: CityMesh3D, r: Dictionary, own: int, space: RoadSpace) -> void:
 	var lanes := maxi(2, str(r.get("lanes", "2")).to_int())
 	var w: float = r.get("w", CityMesh3D.ROAD_W.get(r["tier"], 6.0))
 	var per_side := lanes / 2
 	var pts: PackedVector2Array = r["pts"]
 	for k in range(1, per_side):
 		for side in [-1.0, 1.0]:
-			_dashes(m, pts, side * k * w / lanes)
+			_dashes(m, pts, side * k * w / lanes, own, space)
 
-static func _dashes(m: CityMesh3D, pts: PackedVector2Array, offset: float) -> void:
+## B1: a dash is left out where another road crosses (no lane lines through junctions).
+static func _dashes(m: CityMesh3D, pts: PackedVector2Array, offset: float, own: int, space: RoadSpace) -> void:
 	var run := 0.0
 	for i in pts.size() - 1:
 		var seg := pts[i + 1] - pts[i]
@@ -142,7 +145,8 @@ static func _dashes(m: CityMesh3D, pts: PackedVector2Array, offset: float) -> vo
 			var a := pts[i] + dir * run + n * offset
 			var b := pts[i] + dir * minf(run + DASH_M, length) + n * offset
 			var t := n * 0.07
-			m._quad(m._tool(a), [m._v(a - t, PAINT_H), m._v(b - t, PAINT_H), m._v(b + t, PAINT_H), m._v(a + t, PAINT_H)], Vector3.UP, PAINT)
+			if not space.inside((a + b) * 0.5, 0.5, own):
+				m._quad(m._tool(a), [m._v(a - t, PAINT_H), m._v(b - t, PAINT_H), m._v(b + t, PAINT_H), m._v(a + t, PAINT_H)], Vector3.UP, PAINT)
 			run += DASH_M + DASH_GAP_M
 		run -= length
 

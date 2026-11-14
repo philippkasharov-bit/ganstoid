@@ -62,6 +62,7 @@ func setup(w: World, city: CityData, at: Vector2) -> void:
 	aim.origin = centre
 	add_child(aim)
 	furniture.world = world
+	furniture.space = RoadSpace.of(city)
 	furniture.origin = centre
 	add_child(furniture)
 	turf_map.world = world

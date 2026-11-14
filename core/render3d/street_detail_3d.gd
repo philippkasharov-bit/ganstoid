@@ -40,7 +40,7 @@ static func add(m: CityMesh3D, city: CityData, real: CityReal, centre: Vector2, 
 		var r: Dictionary = city.roads[i]
 		if r["tier"] in KERBED and CityMesh3D._near(r["pts"], centre, r2):
 			_kerbs(m, r, i, grid, hydrants)
-			RoadWear3D.add(m, r)
+			RoadWear3D.add(m, r, i, RoadSpace.of(city))
 
 ## Every crossing road's segments, bucketed by CELL_M square.
 static func _grid(city: CityData, centre: Vector2, r2: float) -> Dictionary:

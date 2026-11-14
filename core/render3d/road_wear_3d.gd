@@ -16,7 +16,7 @@ const DRAIN_EVERY := 48.0
 const PATCH_EVERY := 30.0
 
 ## All the wear along road `r` (CityData road dict).
-static func add(m: CityMesh3D, r: Dictionary) -> void:
+static func add(m: CityMesh3D, r: Dictionary, own: int, space: RoadSpace) -> void:
 	var half: float = float(r.get("w", CityMesh3D.ROAD_W.get(r["tier"], 6.0))) * 0.5
 	var pts: PackedVector2Array = r["pts"]
 	var seed := absi(hash(pts[0]))
@@ -25,7 +25,8 @@ static func add(m: CityMesh3D, r: Dictionary) -> void:
 	_every(pts, DRAIN_EVERY, seed + 1, func(p: Vector2, dir: Vector2, k: int) -> void:
 		_rect(m, p + dir.orthogonal() * (half - 0.25) * (1.0 if k % 2 == 0 else -1.0), dir, Vector2(0.45, 0.2), GRATE))
 	_every(pts, PATCH_EVERY, seed + 2, func(p: Vector2, dir: Vector2, k: int) -> void:
-		_scar(m, p, dir, half, seed + k))
+		if not space.inside(p, 3.0, own):   # B1: not in a junction, where it would run onto the corner
+			_scar(m, p, dir, half, seed + k))
 
 ## Calls `put(point, direction, index)` every `step` metres along `pts` (first one offset by the seed).
 static func _every(pts: PackedVector2Array, step: float, seed: int, put: Callable) -> void:

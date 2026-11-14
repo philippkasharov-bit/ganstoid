@@ -23,9 +23,10 @@ static func build(city: CityData, real: CityReal, centre: Vector2, radius: float
 	if origin == Vector2.INF:
 		origin = centre
 	var spots := PackedVector2Array()
+	var space := RoadSpace.of(city)
 	for t in real.trees:
 		if t.distance_to(centre) < radius:
-			spots.append(t)
+			spots.append(space.clear(t, 0.8))   # B1: a surveyed tree a little off is moved to the verge, not the lane
 	spots.append_array(_yard_trees(city, real, centre, radius))
 	var kept := PackedVector2Array()
 	for t in spots:
@@ -91,7 +92,7 @@ static func _power(city: CityData, centre: Vector2, radius: float, origin: Vecto
 			var seg := pts[i + 1] - pts[i]
 			var length := seg.length()
 			while run < length and length > 0.0:
-				var at := pts[i] + seg * (run / length) + seg.normalized().orthogonal() * off
+				var at := RoadSpace.of(city).clear(pts[i] + seg * (run / length) + seg.normalized().orthogonal() * off, 0.5)
 				if not keep.has_area() or keep.has_point(at):
 					poles.append([at, seg.normalized()])
 					if last != Vector2.INF and last.distance_to(at) < POLE_EVERY * 1.6:

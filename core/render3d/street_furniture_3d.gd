@@ -12,6 +12,7 @@ const POLE := Color("2b2b2e")
 const LIGHTS := {"green": Color("3fd16b"), "yellow": Color("f2c230"), "red": Color("ea3b3b")}
 
 var world: World
+var space: RoadSpace   # B1: set by the view; keeps poles out of the crossing road
 var origin := Vector2.ZERO
 var _left := 0.0
 var _poles := _layer(_cyl(0.07, 4.2, 6), false)
@@ -44,6 +45,8 @@ func _rebuild(at: Vector2) -> void:
 			var right := Vector2(-into.y, into.x)
 			var stop_at: Vector2 = x["c"] - into * (w * 0.5 + 3.0)
 			var kerb := stop_at + right * (w * 0.5 + 0.6)
+			if space != null:
+				kerb = space.clear(kerb, 0.6)
 			_put(_lines, n, "line", stop_at + right * w * 0.25, into.angle(), Vector3(0.35, 1, w * 0.5), 0.02, Color(1, 1, 1, 1))
 			_put(_poles, n, "pole", kerb, 0.0, Vector3.ONE, 2.1, POLE)
 			if x["kind"] == "signal":

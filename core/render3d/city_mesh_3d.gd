@@ -13,8 +13,9 @@ extends RefCounted
 
 const CHUNK_M := 160.0
 const ROAD_W := {"fwy": 26.0, "ramp": 6.0, "art": 14.0, "res": 6.0, "alley": 3.0, "path": 2.5, "svc": 7.0, "hill": 5.0, "trail": 2.5, "aisle": 7.3, "drive": 3.7}
-const ROAD_COL := {"fwy": Color("75746f"), "ramp": Color("7b7a75"), "art": Color("6f6e6a"), "res": Color("7d7a74"), "alley": Color("8c887f"),
-	"path": Color("cfcbc1"), "svc": Color("85837d"), "hill": Color("8f8570"), "trail": Color("9b8357"), "aisle": Color("85837d"), "drive": Color("b8b4aa")}
+const ASPHALT := Color("777671")   # B1: one asphalt for every driven road, so overlaps at junctions do not show
+const ROAD_COL := {"fwy": ASPHALT, "ramp": ASPHALT, "art": ASPHALT, "res": ASPHALT, "alley": ASPHALT,
+	"path": Color("cfcbc1"), "svc": ASPHALT, "hill": Color("8f8570"), "trail": Color("9b8357"), "aisle": ASPHALT, "drive": Color("b8b4aa")}
 const AREA_COL := {"park": Color("a9c48f"), "hills": Color("d6dcc4"), "mountains": Color("b9c6a8"), "airfield": Color("dcd8cc"),
 	"foothill": Color("e3dac6"), "industrial": Color("d3cfd8"), "downtown": Color("d8cbb0"), "commercial": Color("e1d4ba"), "river": Color("9fb3bf")}
 const SIDEWALK := Color("cbc7be")
@@ -26,6 +27,7 @@ const ALL := Vector2i(-1000000, -1000000)
 var origin := Vector2.ZERO
 var only := ALL    # OPT1: the one chunk being built (ALL: every chunk)
 var _tools := {}   # chunk Vector2i -> SurfaceTool
+var space: RoadSpace     # B1: where other roads cross (the centre line stops there)
 var _sink: SurfaceTool   # geometry for other chunks lands here and is thrown away
 
 ## Every chunk mesh plus the palms, as nodes ready to add under a Node3D.
@@ -37,9 +39,10 @@ static func build(city: CityData, centre: Vector2, radius: float, at_origin: Vec
 	for area in city.areas:
 		if _near(area["poly"], centre, r2):
 			b._area(area)
-	for road in city.roads:
-		if _near(road["pts"], centre, r2):
-			b._road(road)
+	b.space = RoadSpace.of(city)
+	for i in city.roads.size():
+		if _near(city.roads[i]["pts"], centre, r2):
+			b._road(city.roads[i], i)
 	for i in city.buildings.size():
 		if _near(city.buildings[i]["poly"], centre, r2):
 			b._building(city.buildings[i], city.buildings[i].get("tag", i + 1))   # R3D7: its tag is its city index + 1 (0: not a building)
@@ -51,7 +54,7 @@ static func build(city: CityData, centre: Vector2, radius: float, at_origin: Vec
 	var wells := PackedVector2Array()
 	for w in city.tree_wells:
 		if w.distance_squared_to(centre) < r2 and (not keep.has_area() or keep.has_point(w)):
-			wells.append(w)
+			wells.append(b.space.clear(w, 0.8))   # B1: no palm in the lane
 	out.append_array(b._palms(wells))
 	return out
 
@@ -105,14 +108,26 @@ func _area(area: Dictionary) -> void:
 		_flat_poly(_open(area["poly"]), 0.005, SurfaceDetail.mark(col, SurfaceDetail.GRASS) if area["kind"] == "park" else col)
 
 ## A road: its sidewalk band, the carriageway, and a centre line on arterials.
-func _road(r: Dictionary) -> void:
+func _road(r: Dictionary, own: int) -> void:
 	var w: float = r.get("w", ROAD_W.get(r["tier"], 6.0))
 	var walk: float = r.get("walk", 0.0)
 	if walk > 0.0:
 		_ribbon(r["pts"], w * 0.5 + walk, 0.02, SurfaceDetail.mark(SIDEWALK, SurfaceDetail.SIDEWALK))
-	_ribbon(r["pts"], w * 0.5, 0.04, SurfaceDetail.mark(ROAD_COL.get(r["tier"], ROAD_COL["res"]), ROAD_SURFACE.get(r["tier"], SurfaceDetail.ASPHALT)))
+	var h := 0.04 if ROAD_SURFACE.get(r["tier"], SurfaceDetail.ASPHALT) == SurfaceDetail.ASPHALT else 0.035   # B1: paths and driveways tuck under the asphalt, no z-fight
+	_ribbon(r["pts"], w * 0.5, h, SurfaceDetail.mark(ROAD_COL.get(r["tier"], ROAD_COL["res"]), ROAD_SURFACE.get(r["tier"], SurfaceDetail.ASPHALT)))
 	if r["tier"] == "art":
-		_ribbon(r["pts"], 0.1, 0.05, CENTRE_LINE)
+		_centre_line(r["pts"], own)
+
+## B1: the double-yellow, in 2 m pieces, left out where another road crosses.
+func _centre_line(pts: PackedVector2Array, own: int) -> void:
+	for i in pts.size() - 1:
+		var length := pts[i].distance_to(pts[i + 1])
+		var pieces := maxi(1, ceili(length / 2.0))
+		for k in pieces:
+			var a := pts[i].lerp(pts[i + 1], float(k) / pieces)
+			var b := pts[i].lerp(pts[i + 1], float(k + 1) / pieces)
+			if space == null or not space.inside((a + b) * 0.5, 0.3, own):
+				_ribbon(PackedVector2Array([a, b]), 0.1, 0.05, CENTRE_LINE)
 
 ## A ribbon along a polyline, with a square under each joint so bends close.
 func _ribbon(pts: PackedVector2Array, half: float, h: float, col: Color) -> void:
