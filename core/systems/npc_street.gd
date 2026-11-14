@@ -28,6 +28,8 @@ const IDLE_WALK_SPEED := SimUnits.STROLL
 const IDLE_DWELL_MIN_TICKS := 300    # stand 5 s ...
 const IDLE_DWELL_MAX_TICKS := 2400   # ... to 40 s between strolls
 const IDLE_SPOT_TRIES := 3
+const IDLE_PICKS_PER_TICK := 3     # PF3: new loiter spots chosen per tick (each costs up to three navmesh snaps)
+var _picks_left := IDLE_PICKS_PER_TICK
 const IDLE_BODY_M := 0.3
 
 var outside: Array[NPCData] = []   # everyone on the street
@@ -66,6 +68,7 @@ func clear() -> void:
 ## Moves everyone outside one tick; people near the player then step apart.
 func step_all(delta: float, tick: int, player_pos: Vector2) -> void:
 	var near: Array[NPCData] = []
+	_picks_left = IDLE_PICKS_PER_TICK
 	var i := outside.size() - 1
 	while i >= 0:
 		var npc: NPCData = outside[i]
@@ -204,6 +207,9 @@ func _loiter(npc: NPCData, anchor: Vector2, delta: float, tick: int) -> void:
 		return
 	var spot: Variant = _idle_targets.get(npc.id)
 	if spot == null or npc.position.distance_to(spot) <= ARRIVE_EPSILON:
+		if _picks_left <= 0:
+			return   # PF3: a navmesh snap is ~0.4 ms; the rest pick their spot next tick
+		_picks_left -= 1
 		_idle_dwell_until[npc.id] = tick + randi_range(IDLE_DWELL_MIN_TICKS, IDLE_DWELL_MAX_TICKS)
 		_idle_targets.erase(npc.id)
 		for k in IDLE_SPOT_TRIES:

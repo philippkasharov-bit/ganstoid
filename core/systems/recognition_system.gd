@@ -30,14 +30,31 @@ func _init() -> void:
 ## nothing for the player and nothing ever raises theirs above 0.0, so they
 ## hit the early-exit below every tick at negligible cost. Not worth a
 ## second marker component to exclude one always-zero entity from a loop.
+##
+## PF3: walking every NPC each warm tick cost 5-10 ms at 1500-3000 people,
+## while almost nobody remembers anything. Only those with a hunch are kept
+## (`_remembering`); a slow walk over everyone, 1/SCAN_EVERY of them a call,
+## picks up anyone set some other way (a loaded save).
+const SCAN_EVERY := 30
+static var _fresh: Array[NPCData] = []   # witnesses since the last call
+var _remembering: Dictionary = {}        # NPCData -> true
+var _scan: Array = []                    # entities still to look at in this walk
+
 func process_entities(entities: Dictionary, _delta: float, _tick: int) -> void:
-	for entity in entities.values():
-		var npc: NPCData = entity.get_component(ComponentNames.NPC)
-		if npc.recognition_chance <= 0.0:
-			continue
+	if _scan.is_empty():
+		_scan = entities.values()
+	for i in mini(_scan.size(), ceili(entities.size() / float(SCAN_EVERY)) + 1):
+		var npc: NPCData = _scan.pop_back().get_component(ComponentNames.NPC)
+		if npc != null and npc.recognition_chance > 0.0:
+			_remembering[npc] = true
+	for npc in _fresh:
+		_remembering[npc] = true
+	_fresh.clear()
+	for npc: NPCData in _remembering.keys():
 		npc.recognition_chance *= DECAY_FACTOR_PER_WARM_TICK
 		if npc.recognition_chance < FORGOTTEN_THRESHOLD:
 			npc.recognition_chance = 0.0
+			_remembering.erase(npc)
 
 ## Called by the crime/witness trigger (Phase 1) when this NPC sees something.
 ## Approaches 1.0 with diminishing returns — a civilian already fairly sure
@@ -45,6 +62,7 @@ func process_entities(entities: Dictionary, _delta: float, _tick: int) -> void:
 static func register_witness(npc: NPCData, severity: float) -> void:
 	var clamped_severity := clampf(severity, 0.0, 1.0)
 	npc.recognition_chance += (1.0 - npc.recognition_chance) * clamped_severity
+	_fresh.append(npc)
 
 ## Called on player-NPC encounter (Phase 1) to roll whether this NPC clocks
 ## the player. A pure probability check — recognition is never guaranteed.
