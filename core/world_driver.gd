@@ -11,7 +11,7 @@
 extends Node
 
 const DISTRICT_RADIUS := 900.0   # metres around the spawn that are simulated
-const GAME_POPULATION := 600      # S1: the sim costs about 0.5 ms a tick at this size (verify_sim_perf)
+const GAME_POPULATION := 1500     # POP1: 1.4 ms a tick at rush hour on a 2-core box (was 600; verify_sim_perf)
 const START_HOUR := 8.0           # a new game begins in the morning rush, with everyone where their routine puts them
 
 var world: World = World.new()

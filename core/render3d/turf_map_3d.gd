@@ -72,7 +72,7 @@ func _turf(st: SurfaceTool) -> void:
 			continue
 		var owner := TerritorySystem.controller(t, c)
 		var col: Color = TerritorySystem.GANG_COLORS.get(top[0], Color.GRAY)
-		var whole := owner != &"" and districts.get(h.district_of(c), &"") == owner   # their district: drawn stronger
+		var whole: bool = owner != &"" and districts.get(h.district_of(c), &"") == owner   # their district: drawn stronger
 		_fill(st, b["poly"], Color(col, 0.45 if whole else (0.32 if owner != &"" else 0.08 + top[1] / 100.0 * 0.15)))
 		if owner != &"":
 			var ring: PackedVector2Array = b["poly"] + PackedVector2Array([b["poly"][0]])

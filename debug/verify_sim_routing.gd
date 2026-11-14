@@ -1,6 +1,6 @@
 ## MG1b validator: the sim's movers walk the real city. With SimNav installed for
 ## the district, civilians, dealers and cops move along navmesh routes: over a
-## stretch of sim time nobody is ever inside a building, people actually move at
+## stretch of sim time nobody in sight (POP1) is ever inside a building, people actually move at
 ## walking pace (not the old 60 m/s), and the player slides along walls.
 extends SceneTree
 
@@ -21,6 +21,7 @@ func _initialize() -> void:
 	var start := {}
 	for id in movers:
 		start[id] = movers[id].position
+	var me: NPCData = world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
 	var inside := 0
 	var fastest := 0.0
 	var last := start.duplicate()
@@ -30,7 +31,7 @@ func _initialize() -> void:
 		if t % SAMPLE_EVERY == 0:
 			for id in movers:
 				var p: Vector2 = movers[id].position
-				inside += int(col.blocked(p, 0.0))
+				inside += int(col.blocked(p, 0.0) and p.distance_to(me.position) <= NPCStreet.ABSTRACT_M)   # POP1: out of sight they walk straight
 				fastest = maxf(fastest, p.distance_to(last[id]) / (float(SAMPLE_EVERY) / SimClock.TICKS_PER_SECOND))
 				last[id] = p
 	var ms_per_tick := float(Time.get_ticks_msec() - t0) / TICKS

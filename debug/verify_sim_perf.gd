@@ -8,9 +8,9 @@
 ## never eat a whole frame in one tick.
 extends SceneTree
 
-const POPULATION := 600          # = WorldDriver.GAME_POPULATION (PF3: SIM_POP=1500 overrides, for stress runs)
+const POPULATION := 1500         # = WorldDriver.GAME_POPULATION (PF3: SIM_POP=1500 overrides, for stress runs)
 const TICKS := 3600              # one real minute
-const AVG_BUDGET_MS := {3.0: 1.0, 8.0: 2.5, 11.0: 1.5}   # measured 0.3 / 0.8 / 0.5 in the sandbox
+const AVG_BUDGET_MS := {3.0: 1.0, 8.0: 2.5, 11.0: 1.5}   # POP1 at 1500: measured 0.4 / 1.4 / 0.6 in the sandbox
 const WORST_TICK_MS := 10.0   # PF1: was 16; long routes no longer plan on the tick
 
 func _initialize() -> void:
