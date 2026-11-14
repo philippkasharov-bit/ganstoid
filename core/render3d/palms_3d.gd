@@ -30,7 +30,7 @@ static func build(wells: PackedVector2Array, v: Callable) -> Array[Node3D]:
 		skirts.multimesh.set_instance_transform(i, Transform3D(turn, top - Vector3(0, 0.75, 0)))
 		crowns.multimesh.set_instance_transform(i, Transform3D(turn, top))
 		crowns.multimesh.set_instance_color(i, GREENS[roll % GREENS.size()])
-		BlobShadows3D.place(blobs, i, top, Vector2.ONE * 4.2, 0.0, 0.4)   # never read a MultiMesh back on a stream worker: it waits for the render thread
+		BlobShadows3D.place(blobs, i, top, Vector2.ONE * 4.2, 0.0, 0.55)   # never read a MultiMesh back on a stream worker: it waits for the render thread
 	return [trunks, skirts, crowns, blobs]
 
 static func _trunk() -> Mesh:

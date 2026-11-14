@@ -16,11 +16,12 @@ void vertex() {
 }
 void fragment() {
 	ALBEDO = vec3(0.0);
-	ALPHA = dark * 0.2;   // nine nested discs stack it: dark core, soft rim (a per-pixel fade read as nothing in the compatibility renderer)
+	ALPHA = dark * 0.24;   // A2b: fourteen nested discs stack it: dark core, soft rim. A per-pixel fade (UV, a fade texture or
+	                       // a vertex varying) read as nothing in the compatibility renderer, so the fade is geometry
 }
 """
-const RING := 16
-const LAYERS := 9
+const RING := 20
+const LAYERS := 14
 
 static var _material: ShaderMaterial
 static var _plane: ArrayMesh
@@ -34,12 +35,12 @@ static func prime() -> void:
 		_material.shader = shader
 		_plane = _disc()
 
-## A unit patch: LAYERS nested discs (radius 0.5 down to 0.12) whose overlap darkens towards the middle.
+## A unit patch: LAYERS nested discs (radius 0.5 down to 0.075) whose overlap darkens towards the middle.
 static func _disc() -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	for layer in LAYERS:
-		var r := 0.5 - layer * (0.38 / LAYERS)
+		var r := 0.5 * (1.0 - pow(float(layer) / LAYERS, 0.7) * 0.85)   # rings bunch towards the rim: the edge fades smoothly
 		for k in RING:
 			st.set_normal(Vector3.UP)
 			for p in [Vector2.ZERO, Vector2.from_angle(TAU * k / RING) * r, Vector2.from_angle(TAU * (k + 1) / RING) * r]:

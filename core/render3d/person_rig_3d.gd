@@ -89,6 +89,7 @@ static func _layer(size: Vector3, count: int, model: String = "") -> MultiMeshIn
 		mesh = box
 	var mat := StandardMaterial3D.new()
 	mat.vertex_color_use_as_albedo = true   # the model's shading x this person's colour
+	mat.vertex_color_is_srgb = true   # A2b: right in Mobile too
 	mat.roughness = 0.95
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D

@@ -31,6 +31,7 @@ func _init(count: int = 600) -> void:
 	_wheels.multimesh.mesh = _wheel_mesh()
 	var glow := StandardMaterial3D.new()
 	glow.vertex_color_use_as_albedo = true
+	glow.vertex_color_is_srgb = true   # A2b: right in Mobile too
 	glow.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_lamps.material_override = glow
 
@@ -89,6 +90,7 @@ static func _wheel_mesh() -> ArrayMesh:
 	st.append_from(hub, 0, Transform3D())
 	var mat := StandardMaterial3D.new()
 	mat.vertex_color_use_as_albedo = true
+	mat.vertex_color_is_srgb = true   # A2b: right in Mobile too
 	mat.roughness = 0.9
 	var mesh := st.commit()
 	mesh.surface_set_material(0, mat)

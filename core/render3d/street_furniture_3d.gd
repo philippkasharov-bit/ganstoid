@@ -77,6 +77,7 @@ func _put(layer: MultiMeshInstance3D, n: Dictionary, key: String, p: Vector2, an
 static func _layer(mesh: Mesh, lit: bool) -> MultiMeshInstance3D:
 	var mat := StandardMaterial3D.new()
 	mat.vertex_color_use_as_albedo = true
+	mat.vertex_color_is_srgb = true   # A2b: right in Mobile too
 	mat.roughness = 0.9
 	if lit:
 		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED   # a signal shines day and night

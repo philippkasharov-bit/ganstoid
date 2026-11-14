@@ -112,6 +112,13 @@ bool cut_room(vec3 wp) {
 	return wp.y > ceiling || (near_side && wp.y > waist);
 }
 
+// A2b: vertex and instance colours are sRGB; the Mobile and Forward+ renderers light in linear
+// (only the Compatibility renderer works in sRGB), so they are converted there. Without this the
+// game Phil plays (Mobile) came out washed out to near white.
+vec3 lin(vec3 c) {
+	return OUTPUT_IS_SRGB ? c : mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(vec3(0.04045), c));
+}
+
 // TX1: the material's grain here, 1.0 = no change (top-down on flats, along the wall on walls).
 float grain(int id, vec3 wp) {
 	vec2 uv = wp.xz;
@@ -165,19 +172,19 @@ void fragment() {
 	if (cut_room(wp) || (cut && wp.y > cut_h)) {
 		discard;
 	}
-	vec3 col = use_vertex ? COLOR.rgb : tint * COLOR.rgb;   // G3: a MultiMesh may tint each instance
+	vec3 col = use_vertex ? lin(COLOR.rgb) : tint * lin(COLOR.rgb);   // G3: a MultiMesh may tint each instance
 	if (decal_on) {
 		vec4 paint = texture(decal_tex, UV2);
 		if (paint.a < 0.45) {
 			discard;
 		}
-		col = paint.rgb * COLOR.rgb;   // vertex colour fades old tags
+		col = paint.rgb * lin(COLOR.rgb);   // vertex colour fades old tags
 	}
 	float lit_glass = glow;
 	if (kit_on) {
 		vec4 sheet = texture(kit_atlas, UV);
 		int cell = int(floor(UV.y * 4.0)) * 4 + int(floor(UV.x * 4.0));   // kit_lib.SLOTS order
-		vec3 paint = cell == 1 ? DOOR_PAINT[clamp(int(kit_door + 0.5), 0, 7)] : COLOR.rgb;
+		vec3 paint = lin(cell == 1 ? DOOR_PAINT[clamp(int(kit_door + 0.5), 0, 7)] : COLOR.rgb);
 		col = mix(sheet.rgb, sheet.rgb * paint, sheet.a);
 		lit_glass = (cell == 2 || cell == 3) ? glow : 0.0;
 	}
