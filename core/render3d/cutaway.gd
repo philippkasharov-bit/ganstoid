@@ -150,7 +150,7 @@ void fragment() {
 	if (cut_room() || (cut && world_pos.y > cut_h)) {
 		discard;
 	}
-	vec3 col = use_vertex ? COLOR.rgb : tint;
+	vec3 col = use_vertex ? COLOR.rgb : tint * COLOR.rgb;   // G3: a MultiMesh may tint each instance
 	if (decal_on) {
 		vec4 paint = texture(decal_tex, UV2);
 		if (paint.a < 0.45) {

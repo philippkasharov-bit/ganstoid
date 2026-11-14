@@ -57,7 +57,7 @@ static func build(city: CityData, centre: Vector2, radius: float, at_origin: Vec
 	for w in city.tree_wells:
 		if w.distance_squared_to(centre) < r2 and (not keep.has_area() or keep.has_point(w)):
 			wells.append(b.space.clear(w, 0.8))   # B1: no palm in the lane
-	out.append_array(b._palms(wells))
+	out.append_array(Palms3D.build(wells, b._v))   # G3: ringed, leaning, skirted palms
 	return out
 
 static func _near(pts: PackedVector2Array, c: Vector2, r2: float) -> bool:
@@ -185,43 +185,3 @@ func _commit() -> Array[Node3D]:
 		tags.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		out.append(tags)
 	return out
-
-## LA palms: a tall trunk and a crown of drooping fronds, two MultiMeshes.
-func _palms(wells: PackedVector2Array) -> Array[Node3D]:
-	var trunk := CylinderMesh.new()
-	trunk.top_radius = 0.16
-	trunk.bottom_radius = 0.26
-	trunk.height = 9.0
-	trunk.radial_segments = 6
-	var crown := _fronds()
-	var out: Array[Node3D] = []
-	for part in [[trunk, Color("7a5f45"), 4.5], [crown, Color("4f7a3a"), 9.0]]:
-		var mm := MultiMesh.new()
-		mm.transform_format = MultiMesh.TRANSFORM_3D
-		mm.mesh = part[0]
-		mm.instance_count = wells.size()
-		for i in wells.size():
-			var turn := Basis(Vector3.UP, float(absi(int(wells[i].x * 7.0 + wells[i].y * 13.0)) % 360) * PI / 180.0)
-			mm.set_instance_transform(i, Transform3D(turn, _v(wells[i], part[2])))
-		var mmi := MultiMeshInstance3D.new()
-		mmi.multimesh = mm
-		mmi.material_override = Cutaway.shared("palm_%s" % part[2], part[1], false, 1.0, 0.0, 1.0)   # D2: palms sway
-		out.append(mmi)
-	return out
-
-## Eight long leaves round the top, each bending down at the tip.
-static func _fronds() -> ArrayMesh:
-	var st := SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for k in 8:
-		var d := Vector2.from_angle(k * TAU / 8.0)
-		var side := d.orthogonal() * 0.35
-		var p0 := Vector3(0, 0.2, 0)
-		var p1 := Vector3(d.x * 1.6, 0.5, d.y * 1.6)
-		var p2 := Vector3(d.x * 3.0, -0.6, d.y * 3.0)
-		var s := Vector3(side.x, 0, side.y)
-		for tri in [[p0, p1 + s, p1 - s], [p1 + s, p2, p1 - s]]:
-			st.set_normal(Vector3.UP)
-			for v in tri:
-				st.add_vertex(v)
-	return st.commit()

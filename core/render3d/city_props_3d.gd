@@ -11,7 +11,8 @@ const POLE_H := 9.0
 const WIRE_H := 8.4
 const YARD_TREE_SHARE := 0.45
 const TRUNK := Color("6e5843")
-const LEAVES := [Color("4f7a3a"), Color("5c8840")]
+const LEAVES := [Color("4f7a3a"), Color("5c8840"), Color("46703a"), Color("6b8f45"), Color("587a3c")]
+const BUSHES := [Color("4d7a3c"), Color("5a8a44"), Color("44703a"), Color("4d7a3c"), Color("5a8a44"), Color("b8326e"), Color("c23b3b")]   # mostly green; bougainvillea, hibiscus
 const WOOD := Color("6b5a47")
 const WIRE := Color("2b2b2e")
 const CAN := Color("8e9396")
@@ -35,6 +36,7 @@ static func build(city: CityData, real: CityReal, centre: Vector2, radius: float
 	var out: Array[Node3D] = []
 	out.append_array(_trees(kept, origin))
 	out.append_array(_power(city, centre, radius, origin, keep))
+	out.append(_bushes(city, centre, radius, origin, keep))
 	return out
 
 ## One tree in the yard of many houses: a lot corner pulled in, clear of every house.
@@ -62,19 +64,15 @@ static func _trees(spots: PackedVector2Array, centre: Vector2) -> Array[Node3D]:
 	trunk.bottom_radius = 0.22
 	trunk.height = 3.2
 	trunk.radial_segments = 6
-	var crown := SphereMesh.new()
-	crown.radius = 2.4
-	crown.height = 3.6
-	crown.radial_segments = 8
-	crown.rings = 4
 	var trunks := _multi(trunk, Cutaway.shared("tree_trunk", TRUNK, false, 1.0), spots.size())
-	var crowns := _multi(crown, Cutaway.shared("tree_crown", LEAVES[1], false, 1.0, 0.0, 0.6), spots.size())
+	var crowns := _multi(_lobes(), Cutaway.shared("tree_crown", Color.WHITE, false, 1.0, 0.0, 0.6), spots.size(), true)
 	for i in spots.size():
 		var p := Vector3(spots[i].x - centre.x, 0, spots[i].y - centre.y)
 		var size := 0.75 + float(absi(int(spots[i].x * 11.0)) % 50) / 100.0
 		var turn := Basis(Vector3.UP, spots[i].y).scaled(Vector3.ONE * size)
 		trunks.multimesh.set_instance_transform(i, Transform3D(Basis().scaled(Vector3(1, size, 1)), p + Vector3(0, 1.6 * size, 0)))
 		crowns.multimesh.set_instance_transform(i, Transform3D(turn, p + Vector3(0, 4.2 * size, 0)))
+		crowns.multimesh.set_instance_color(i, LEAVES[absi(hash(spots[i])) % LEAVES.size()])   # G3: each tree its own green
 	return [trunks, crowns]
 
 ## Wooden poles down one side of residential streets, three wires pole to pole.
@@ -144,9 +142,60 @@ static func _transformers(poles: Array, centre: Vector2) -> MultiMeshInstance3D:
 		cans.multimesh.set_instance_transform(k, Transform3D(Basis(), Vector3(p.x + off.x - centre.x, TRANSFORMER_H, p.y + off.y - centre.y)))
 	return cans
 
-static func _multi(mesh: Mesh, mat: Material, count: int) -> MultiMeshInstance3D:
+## G3: a crown of five overlapping lobes (four round the sides and a top), not a ball.
+static func _lobes() -> ArrayMesh:
+	var lobe := SphereMesh.new()
+	lobe.radius = 1.45
+	lobe.height = 2.3
+	lobe.radial_segments = 8
+	lobe.rings = 4
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for k in 4:
+		var d := Vector2.from_angle(k * TAU / 4.0 + 0.4) * 1.05
+		st.append_from(lobe, 0, Transform3D(Basis().scaled(Vector3.ONE * (0.9 + 0.08 * k)), Vector3(d.x, -0.3 + 0.15 * (k % 2), d.y)))
+	st.append_from(lobe, 0, Transform3D(Basis(), Vector3(0, 0.75, 0)))
+	return st.commit()
+
+## G3: bushes either side of each house and apartment door, some in
+## bougainvillea magenta or hibiscus red.
+static func _bushes(city: CityData, centre: Vector2, radius: float, origin: Vector2, keep: Rect2) -> MultiMeshInstance3D:
+	var spots := PackedVector2Array()
+	for b in city.buildings:
+		var poly: PackedVector2Array = b["poly"]
+		if b.get("kind", "") in ["house", "apartments"] and poly[0].distance_to(centre) < radius:
+			spots.append_array(_by_door(poly, b.get("door", Vector2.INF), keep))
+	var bush := SphereMesh.new()
+	bush.radius = 0.6
+	bush.height = 0.95
+	bush.radial_segments = 7
+	bush.rings = 3
+	var layer := _multi(bush, Cutaway.shared("bush", Color.WHITE, false, 1.0, 0.0, 0.2), spots.size(), true)
+	for i in spots.size():
+		var size := 0.8 + float(absi(hash(spots[i])) % 50) / 100.0
+		layer.multimesh.set_instance_transform(i, Transform3D(Basis().scaled(Vector3.ONE * size), Vector3(spots[i].x - origin.x, 0.4 * size, spots[i].y - origin.y)))
+		layer.multimesh.set_instance_color(i, BUSHES[absi(hash(spots[i])) % BUSHES.size()])
+	return layer
+
+## Up to four spots along the door's wall, 0.75 m out, clear of the door and the corners.
+static func _by_door(poly: PackedVector2Array, door: Vector2, keep: Rect2) -> PackedVector2Array:
+	var out_spots := PackedVector2Array()
+	var span := InteriorSolid.door_span(poly, door)
+	var a := poly[int(span.x)]
+	var c := poly[(int(span.x) + 1) % poly.size()]
+	var e := c - a
+	var out := (Vector2(e.y, -e.x) if CityMesh3D._ccw(poly) else Vector2(-e.y, e.x)).normalized()
+	for along in [-2.4, -1.4, 1.4, 2.4]:
+		var t: float = span.y + float(along) / maxf(e.length(), 0.1)
+		var at := a.lerp(c, t) + out * 0.75
+		if t > 0.05 and t < 0.95 and absi(hash(at)) % 3 != 0 and (not keep.has_area() or keep.has_point(at)):
+			out_spots.append(at)
+	return out_spots
+
+static func _multi(mesh: Mesh, mat: Material, count: int, tinted: bool = false) -> MultiMeshInstance3D:
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.use_colors = tinted
 	mm.mesh = mesh
 	mm.instance_count = count
 	var mi := MultiMeshInstance3D.new()
