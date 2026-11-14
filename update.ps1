@@ -13,9 +13,10 @@ $godot = Join-Path $godotDir "Godot_v$($godotVersion)_win64.exe"
 $repo = 'philippkasharov-bit/ganstoid'
 $tokenFile = Join-Path $root 'github_token.txt'
 $versionFile = Join-Path $root 'version.txt'
-# Folders that must match GitHub exactly: files deleted there are deleted here too.
+# Every folder in the repo is mirrored: files deleted there are deleted here too.
 # (Stale navmesh tiles left behind by the old copy-only updater made people walk wrong.)
-$mirrored = @('core', 'data', 'debug', 'scenes', 'tools')
+# It used to be a fixed list (core, data, debug, scenes, tools), so art, assets and
+# fonts never arrived: the house kit, textures, graffiti, fonts and models were missing.
 # Local-only folders inside those that the mirror must never delete: downloaded source
 # data (LA parcels, OpenStreetMap cells) lives here and is not in the repo.
 $keep = @((Join-Path $root 'tools\city\osm'))
@@ -61,7 +62,7 @@ try {
         Expand-Archive -Force $zip $tmp
         $inner = (Get-ChildItem $tmp | Select-Object -First 1).FullName
         Say 'Installing...'
-        foreach ($dir in $mirrored) {
+        foreach ($dir in (Get-ChildItem $inner -Directory | Where-Object { $_.Name -notlike '.*' } | ForEach-Object { $_.Name })) {
             $from = Join-Path $inner $dir
             if (Test-Path $from) {
                 # /MIR = exact mirror. /XF keeps Godot's own sidecar files, which are not in the repo.
