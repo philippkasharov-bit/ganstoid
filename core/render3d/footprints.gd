@@ -14,6 +14,7 @@ const SIGHT_RISE := 0.577      # tan 30: the sight line climbs this per metre to
 const MAX_CUT := 16            # the shader's list
 
 var _grid: Dictionary = {}   # Vector2i -> Array of [poly, tag, height, building dict]
+var _by_tag: Dictionary = {}  # A1b: tag -> building dict (the cut buildings show their insides)
 
 static func build(city: CityData, centre: Vector2, radius: float) -> Footprints:
 	var f := Footprints.new()
@@ -23,6 +24,7 @@ static func build(city: CityData, centre: Vector2, radius: float) -> Footprints:
 		if poly.is_empty() or poly[0].distance_to(centre) > radius:
 			continue
 		var entry := [poly, i + 1, maxi(1, int(b.get("levels", 1))) * STOREY_M + 1.5, b]
+		f._by_tag[i + 1] = b
 		var box := _box(poly)
 		for x in range(floori(box.position.x / CELL_M), floori(box.end.x / CELL_M) + 1):
 			for y in range(floori(box.position.y / CELL_M), floori(box.end.y / CELL_M) + 1):
@@ -57,6 +59,10 @@ func covering(you: Vector2, view: Vector2) -> PackedInt32Array:
 		if out.size() < MAX_CUT and not out.has(entry[1]) and _hides(entry, strip, you, back):
 			out.append(entry[1])
 	return out
+
+## The building with Cutaway tag `tag` ({} when not known here).
+func building_of(tag: int) -> Dictionary:
+	return _by_tag.get(tag, {})
 
 func _near(box: Rect2) -> Array:
 	var seen: Array = []

@@ -278,6 +278,14 @@ static func room(box: Rect2, on: bool) -> void:
 		mat.set_shader_parameter("room_min", box.position - Vector2.ONE * 0.4)
 		mat.set_shader_parameter("room_max", box.end + Vector2.ONE * 0.4)
 
+## A1b: a material made once and kept across cities (the kit's, the graffiti's)
+## stays on the list Cutaway updates; reset() would otherwise freeze it with
+## the last room, cut and lights it was given.
+static func keep(mat: ShaderMaterial) -> ShaderMaterial:
+	if not _materials.has(mat):
+		_materials.append(mat)
+	return mat
+
 ## A fresh city drops the old materials.
 static func reset() -> void:
 	_materials.clear()

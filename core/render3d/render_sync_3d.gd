@@ -52,11 +52,13 @@ var _inside_mat: ShaderMaterial            # map rect of the room you are in (em
 const CONE_COS := 0.34          # matches the Cutaway shader
 const NEAR_M := 3.5
 var _delta := 0.016
+var _cut_insides := CutInteriors3D.new()
 
 func _ready() -> void:
 	_rig.origin = origin
 	_car_rig.origin = origin
-	for layer in [_rig, _car_rig, _ghost]:
+	_cut_insides.origin = origin
+	for layer in [_rig, _car_rig, _ghost, _cut_insides]:
 		add_child(layer)
 
 func _process(delta: float) -> void:
@@ -85,7 +87,10 @@ func _see_player() -> void:
 	var view := -cam.global_basis.z
 	Cutaway.aim(chest, view)
 	if footprints != null:
-		Cutaway.cut(footprints.covering(_player_at, Vector2(view.x, view.z)))
+		var tags := footprints.covering(_player_at, Vector2(view.x, view.z))
+		Cutaway.cut(tags)
+		_cut_insides.footprints = footprints
+		_cut_insides.show_for(tags, _inside_id)   # A1b: a cut building shows its rooms
 	_ghost.position = chest
 	_ghost.visible = false   # P1: the clean cut already shows you; the see-through box only covered your figure
 	Cutaway.facing(_player_face)

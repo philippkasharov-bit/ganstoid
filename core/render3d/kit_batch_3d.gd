@@ -35,7 +35,7 @@ static func material() -> ShaderMaterial:
 		if img != null:
 			img.generate_mipmaps()
 			_material.set_shader_parameter("kit_atlas", ImageTexture.create_from_image(img))
-	return _material
+	return Cutaway.keep(_material)   # A1b: stays updated across a city reset (it froze with a stale room cut)
 
 ## A copy's custom data: its building tag in two base-256 digits (r, a), whether
 ## its window is lit (g) and its door colour (b). Every channel stays in 0..1, so

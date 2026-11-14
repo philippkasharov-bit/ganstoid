@@ -45,7 +45,7 @@ static func add(m: CityMesh3D, city: CityData, real: CityReal, centre: Vector2, 
 			if b["kind"] == "wall":
 				Graffiti3D.on_wall(m, b["pts"])   # B2
 	for c in real.crossings:
-		if c["markings"] != "no" and CityMesh3D._near(c["pts"], centre, r2):
+		if c["markings"] != "no" and CityMesh3D._near(c["pts"], centre, r2) and not _at_signal(c["pts"][0]):
 			_zebra(m, c["pts"])
 	for p in real.points:
 		if POINT.has(p["kind"]) and p["p"].distance_squared_to(centre) < r2:
@@ -151,6 +151,13 @@ static func _dashes(m: CityMesh3D, pts: PackedVector2Array, offset: float, own: 
 				m._quad(m._tool(a), [m._v(a - t, PAINT_H), m._v(b - t, PAINT_H), m._v(b + t, PAINT_H), m._v(a + t, PAINT_H)], Vector3.UP, PAINT)
 			run += DASH_M + DASH_GAP_M
 		run -= length
+
+## A1b: signals get their crosswalks painted by _crossing_at; a surveyed one there too would double the stripes.
+static func _at_signal(p: Vector2) -> bool:
+	for x in _junctions().near(p, 18.0):
+		if x["kind"] == "signal":
+			return true
+	return false
 
 static var _j: Junctions
 

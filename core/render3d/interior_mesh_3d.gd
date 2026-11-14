@@ -24,12 +24,13 @@ var _l: InteriorLayout
 var _origin := Vector2.ZERO    # map point at 3D (0, 0, 0)
 
 ## The inside of building `b` (CityData dict) as one mesh, in the 3D view's space.
-static func build(b: Dictionary, origin: Vector2, material: Material) -> MeshInstance3D:
+## `tag` > 0 lets the Cutaway cut it with its building (an inside seen through a cut wall).
+static func build(b: Dictionary, origin: Vector2, material: Material, tag: int = 0) -> MeshInstance3D:
 	var im := InteriorMesh3D.new()
 	im._origin = origin
 	im._l = InteriorLayout.of(b)
 	im._st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	im._st.set_uv(Vector2.ZERO)
+	im._st.set_uv(Vector2(0, tag))
 	for i in im._l.rooms.size():
 		im._floor(im._l.rooms[i], SurfaceDetail.mark(FLOORS[im._l.kinds[i]], FLOOR_OF.get(im._l.kinds[i], SurfaceDetail.NONE)))
 	for i in range(0, im._l.walls.size() - 1, 2):

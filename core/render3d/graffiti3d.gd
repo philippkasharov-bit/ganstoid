@@ -26,7 +26,7 @@ static func material() -> ShaderMaterial:
 		if img != null:
 			img.generate_mipmaps()
 			_material.set_shader_parameter("decal_tex", ImageTexture.create_from_image(img))
-	return _material
+	return Cutaway.keep(_material)
 
 ## Maybe a tag on building `b` (CityData dict) with Cutaway tag `tag`.
 static func on_building(m: CityMesh3D, b: Dictionary, tag: int) -> void:

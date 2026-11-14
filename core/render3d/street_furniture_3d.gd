@@ -9,6 +9,7 @@ const RANGE_M := 160.0
 const REFRESH_S := 0.25
 const MAX := 400
 const POLE := Color("2b2b2e")
+const LAMP_Y := {"red": 0.3, "yellow": 0.0, "green": -0.3}
 const LIGHTS := {"green": Color("3fd16b"), "yellow": Color("f2c230"), "red": Color("ea3b3b")}
 
 var world: World
@@ -16,13 +17,14 @@ var space: RoadSpace   # B1: set by the view; keeps poles out of the crossing ro
 var origin := Vector2.ZERO
 var _left := 0.0
 var _poles := _layer(_cyl(0.07, 4.2, 6), false)
-var _heads := _layer(_box(Vector3(0.35, 0.9, 0.3)), true)     # signal heads, lit in their colour
+var _heads := _layer(_box(Vector3(0.36, 0.95, 0.3)), false)   # A1b: signal heads, a dark housing ...
+var _lamps := _layer(_box(Vector3(0.22, 0.22, 0.1)), true)     # ... with one lamp lit: red on top, amber, green below
 var _signs := _layer(_cyl(0.42, 0.04, 8), false)               # stop sign plates
 var _lines := _layer(_box(Vector3(1.0, 0.02, 0.35)), false)    # stop lines, stretched to the lane
 var _shelters := _layer(_box(Vector3(3.6, 0.12, 1.3)), false)
 
 func _ready() -> void:
-	for l in [_poles, _heads, _signs, _lines, _shelters]:
+	for l in [_poles, _heads, _lamps, _signs, _lines, _shelters]:
 		add_child(l)
 
 func _process(delta: float) -> void:
@@ -37,7 +39,7 @@ func _process(delta: float) -> void:
 func _rebuild(at: Vector2) -> void:
 	var j := TrafficSystem.junctions
 	var secs := float(world.tick) / SimClock.TICKS_PER_SECOND
-	var n := {"pole": 0, "head": 0, "sign": 0, "line": 0, "shelter": 0}
+	var n := {"pole": 0, "head": 0, "lamp": 0, "sign": 0, "line": 0, "shelter": 0}
 	for x in j.near(at, RANGE_M):
 		for leg in x["legs"]:
 			var into: Vector2 = leg[0]
@@ -50,14 +52,16 @@ func _rebuild(at: Vector2) -> void:
 			_put(_lines, n, "line", stop_at + right * w * 0.25, into.angle(), Vector3(0.35, 1, w * 0.5), 0.02, Color(1, 1, 1, 1))
 			_put(_poles, n, "pole", kerb, 0.0, Vector3.ONE, 2.1, POLE)
 			if x["kind"] == "signal":
-				_put(_heads, n, "head", kerb, into.angle(), Vector3.ONE, 4.0, LIGHTS[Junctions.light(x, into, secs)])
+				var state: String = Junctions.light(x, into, secs)
+				_put(_heads, n, "head", kerb, into.angle(), Vector3.ONE, 4.0, Color("2a2b2d"))
+				_put(_lamps, n, "lamp", kerb - into * 0.16, into.angle(), Vector3.ONE, 4.0 + LAMP_Y[state], LIGHTS[state])
 			else:
 				_put(_signs, n, "sign", kerb - into * 0.1, 0.0, Vector3.ONE, 2.3, Color("c62828"), Basis(Vector3.UP, -into.angle()) * Basis(Vector3.FORWARD, PI * 0.5))
 	for b in j.bus_stops:
 		if b["c"].distance_to(at) <= RANGE_M:
 			var d: Vector2 = b["dir"]
 			_put(_shelters, n, "shelter", b["c"] + Vector2(-d.y, d.x) * 1.2, d.angle(), Vector3.ONE, 2.4, Color("2a5d9f"))
-	for pair in [[_poles, "pole"], [_heads, "head"], [_signs, "sign"], [_lines, "line"], [_shelters, "shelter"]]:
+	for pair in [[_poles, "pole"], [_heads, "head"], [_lamps, "lamp"], [_signs, "sign"], [_lines, "line"], [_shelters, "shelter"]]:
 		pair[0].multimesh.visible_instance_count = n[pair[1]]
 
 ## One instance at map point `p`, turned to `angle`, scaled, raised to `h`.
