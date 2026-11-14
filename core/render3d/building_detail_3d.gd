@@ -46,6 +46,21 @@ static func chimney(st: SurfaceTool, v: Callable, at: Vector2, base: float, top:
 	box(st, v, at, Vector2(0.75, 0.6), base, top - base, SurfaceDetail.mark(CHIMNEY, SurfaceDetail.BRICK))
 	box(st, v, at, Vector2(0.9, 0.75), top, 0.12, Color("8a8580"))   # its cap
 
+## G4: a satellite dish on a short mast at `at`, standing on `y`, looking south and up.
+static func dish(st: SurfaceTool, v: Callable, at: Vector2, y: float) -> void:
+	box(st, v, at, Vector2(0.06, 0.06), y, 0.5, Color("8f918e"))
+	var look := Vector3(0.25, 0.75, 0.6).normalized()   # map +y is south: LA dishes face the southern sky
+	var right := look.cross(Vector3.UP).normalized()
+	var up := right.cross(look).normalized()
+	var c: Vector3 = v.call(at, y + 0.6) + look * 0.08
+	st.set_color(Color("e4e3de"))
+	st.set_normal(look)
+	for i in 8:
+		var a0 := TAU * i / 8.0
+		var a1 := TAU * (i + 1) / 8.0
+		for p in [c - look * 0.1, c + (right * cos(a0) + up * sin(a0)) * 0.34, c + (right * cos(a1) + up * sin(a1)) * 0.34]:
+			st.add_vertex(p)
+
 ## A window AC unit under a window, sticking out of the wall.
 static func ac_unit(st: SurfaceTool, v: Callable, p: Vector2, dir: Vector2, out: Vector2, y: float) -> void:
 	_ledge(st, v, p + out * 0.03, dir * 0.33, out, y - 0.42, 0.38, 0.45, AC)

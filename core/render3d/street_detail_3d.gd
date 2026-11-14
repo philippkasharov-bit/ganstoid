@@ -20,6 +20,8 @@ const KERB := Color("cfcac0")
 const KERB_RED := Color("b8392e")
 const GUTTER := Color("a9a59c")
 const TICK := Color("e6e4dc")
+const METER := Color("6f7479")
+const METER_POST := Color("4a4d50")
 const RED_M := 4.5
 const DRIVE_M := 3.0           # kerb cut this far either side of a driveway             # no parking this close to a hydrant
 const ROAD_Y := 0.04
@@ -92,6 +94,12 @@ static func _kerbs(m: CityMesh3D, r: Dictionary, own: int, grid: Dictionary, hyd
 					_piece(m, a, b, out, red)
 					if r["tier"] == "art" and not red and j % 3 == 0:   # a metered space every ~6 m
 						RoadWear3D._rect(m, a - out * 1.1, out, Vector2(0.45, 0.06), TICK)
+						_meter(m, a + out * (KERB_W + 0.45))
+
+## G4: a parking meter on the sidewalk by each space: a post and its head.
+static func _meter(m: CityMesh3D, p: Vector2) -> void:
+	CityDetail3D._box(m, p, Vector3(0.07, 1.15, 0.07), 0.0, METER_POST)
+	StreetClutter3D._raised(m, p, Vector3(0.2, 0.32, 0.16), 1.15, 0.0, METER)
 
 static func _by_hydrant(p: Vector2, hydrants: Dictionary) -> bool:
 	for h in hydrants.get(Vector2i((p / CELL_M).floor()), []):

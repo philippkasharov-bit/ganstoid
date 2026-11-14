@@ -39,6 +39,13 @@ func _initialize() -> void:
 	for i in 60:
 		await process_frame
 	print("R3D: built in %d ms, %d chunk meshes, %.1f ms a frame" % [preview.build_ms, preview.get_children().filter(func(n: Node) -> bool: return n.name.begins_with("Chunk")).size(), (Time.get_ticks_usec() - t0) / 60000.0])
+	if args.has("look"):   # G4: frame a map point (x,y) instead of the player
+		var xy: PackedStringArray = args["look"].split(",")
+		var me3: NPCData = preview.driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
+		me3.position = Vector2(float(xy[0]), float(xy[1]))   # the camera follows the player: move them there
+		preview.rig.look_at_map(me3.position)
+		for i in 30:
+			await process_frame
 	if args.has("turn"):   # R3D6: the view turned by quarters
 		preview.rig.turn(int(args["turn"]))
 		for i in 40:

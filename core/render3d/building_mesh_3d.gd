@@ -37,6 +37,7 @@ const HULL_FILL := 0.82   # a footprint this close to its hull takes a hipped ro
 const EAVES := 1.06
 const AC_SHARE := {"apartments": 14, "house": 4}   # G1: percent of upper windows with an AC unit
 const CHIMNEY_SHARE := 0.35
+const DISH_SHARE := 0.22
 const PARAPET_M := 0.25
 
 ## Adds building `b` to SurfaceTool `st`. `v` maps a map point + height to 3D;
@@ -111,6 +112,8 @@ static func _roof(st: SurfaceTool, v: Callable, poly: PackedVector2Array, h: flo
 			BuildingDetail3D.fascia(st, v, a, c, h)   # G1: the board under the eaves
 		if rng.randf() < CHIMNEY_SHARE:
 			BuildingDetail3D.chimney(st, v, apex + (hull[0] - apex) * 0.45, h, top + 0.5)
+		if rng.randf() < DISH_SHARE:   # G4: a satellite dish low on the slope
+			BuildingDetail3D.dish(st, v, apex + (hull[1] - apex) * 0.8, h + (top - h) * 0.2)
 		return
 	var flat_col: Color = ROOF_FLAT[rng.randi() % ROOF_FLAT.size()]
 	flat(st, v, poly, h, SurfaceDetail.mark(flat_col, SurfaceDetail.GRAVEL))
@@ -121,6 +124,9 @@ static func _roof(st: SurfaceTool, v: Callable, poly: PackedVector2Array, h: flo
 		var at := mid + Vector2(rng.randf_range(-1, 1), rng.randf_range(-1, 1)) * sqrt(area) * 0.25
 		if Geometry2D.is_point_in_polygon(at, poly):
 			_box(st, v, at, Vector2(rng.randf_range(1.0, 2.6), rng.randf_range(1.0, 2.0)), h, rng.randf_range(0.8, 1.6), Color("b9bcbf").darkened(rng.randf() * 0.2))
+	for k in (rng.randi() % 4 if kind == "apartments" else 0):   # G4: every flat has its own dish
+		var corner := poly[rng.randi() % poly.size()]
+		BuildingDetail3D.dish(st, v, corner + (mid - corner).normalized() * 1.0, h)
 
 ## G1: a parapet with thickness: outer face, inner face and a pale coping cap.
 static func _parapet(st: SurfaceTool, v: Callable, poly: PackedVector2Array, h: float, col: Color) -> void:

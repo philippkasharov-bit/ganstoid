@@ -19,7 +19,7 @@ const LOT_COL := {"commercial": Color("b9b4aa"), "industrial": Color("a8a59e"), 
 const SURFACE_COL := {"park": Color("8fb36a"), "grass": Color("97b872"), "pitch": Color("7fae5c"), "school": Color("c9b79a"),
 	"sports": Color("b0704a"), "parking": Color("6f6d69"), "pool": Color("4fa6c9"), "plaza": Color("cfc6b4"), "playground": Color("c46a3a"),
 	"water": Color("5b8fb0"), "railyard": Color("8a7f70"), "vacant": Color("c8b98f")}
-const BARRIER := {"wall": [1.8, 0.22, Color("d9cdb5")], "fence": [1.3, 0.06, Color("5d6166")], "hedge": [1.3, 0.7, Color("5f8a4a")],
+const BARRIER := {"wall": [1.8, 0.22, Color("d9cdb5")], "fence": [1.45, 0.03, Color("a4a9ae")], "hedge": [1.3, 0.7, Color("5f8a4a")],
 	"gate": [1.4, 0.08, Color("3a3d42")], "rail": [1.0, 0.08, Color("6d7075")]}
 const LOT_SURFACE := {"house": SurfaceDetail.GRASS, "apartments": SurfaceDetail.GRASS, "commercial": SurfaceDetail.SIDEWALK, "civic": SurfaceDetail.SIDEWALK,
 	"industrial": SurfaceDetail.ASPHALT, "parking": SurfaceDetail.ASPHALT, "open": SurfaceDetail.DIRT}   # TX1
@@ -32,6 +32,7 @@ static func add(m: CityMesh3D, city: CityData, real: CityReal, centre: Vector2, 
 	var r2 := radius * radius
 	_paint(m, city, centre, r2)
 	StreetDetail3D.add(m, city, real, centre, r2)   # G2: kerbs, gutters, road wear
+	StreetClutter3D.add(m, city, real, centre, r2)   # G4: mailboxes, bins, fence posts, street signs
 	for lot in real.lots:
 		if CityMesh3D._near(lot["poly"], centre, r2):
 			m._flat_poly(CityMesh3D._open(lot["poly"]), LOT_H, SurfaceDetail.mark(_lot_colour(lot), LOT_SURFACE.get(lot["use"], SurfaceDetail.NONE)))

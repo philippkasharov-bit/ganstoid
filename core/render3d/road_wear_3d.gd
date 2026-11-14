@@ -9,8 +9,8 @@ extends RefCounted
 const Y := 0.042
 const IRON := Color("3d3c3a")
 const GRATE := Color("2c2c2b")
-const PATCH := Color("5b5a57")
-const TAR := Color("262627")
+const PATCH := Color("666562")
+const TAR := Color("3a3a3b")
 const HOLE_EVERY := 65.0
 const DRAIN_EVERY := 48.0
 const PATCH_EVERY := 30.0
@@ -47,7 +47,7 @@ static func _scar(m: CityMesh3D, p: Vector2, dir: Vector2, half: float, h: int) 
 	var roll := absi(hash(h))
 	var across := dir.orthogonal() * (float(roll % 200) / 100.0 - 1.0) * half * 0.7
 	if roll % 3 == 0:
-		_rect(m, p + across, dir, Vector2(1.0 + float(roll % 7) * 0.4, 0.8 + float(roll % 5) * 0.3), SurfaceDetail.mark(PATCH, SurfaceDetail.ASPHALT))
+		_rect(m, p + across * 0.6, dir, Vector2(0.5 + float(roll % 6) * 0.2, 0.4 + float(roll % 4) * 0.15), SurfaceDetail.mark(PATCH, SurfaceDetail.ASPHALT))   # half-extents: up to 3 x 2 m
 		return
 	var at := p + across
 	var side := dir.orthogonal()

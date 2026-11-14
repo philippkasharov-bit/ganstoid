@@ -14,6 +14,8 @@ const TRUNK := Color("6e5843")
 const LEAVES := [Color("4f7a3a"), Color("5c8840")]
 const WOOD := Color("6b5a47")
 const WIRE := Color("2b2b2e")
+const CAN := Color("8e9396")
+const TRANSFORMER_H := 6.9
 
 ## Trees and power lines within `radius` of `centre`, in the 3D view's space.
 ## OPT1: placed relative to `origin`; with `keep`, only what stands inside it (its chunk).
@@ -125,7 +127,21 @@ static func _poles_and_wires(poles: Array, wires: Array, centre: Vector2) -> Arr
 			var side := dir.orthogonal() * (k - 1) * 0.8
 			var at := Vector3(mid.x + side.x - centre.x, WIRE_H + 0.2, mid.y + side.y - centre.y)
 			lines.multimesh.set_instance_transform(i * 3 + k, Transform3D(Basis(Vector3.UP, -dir.angle()).scaled_local(Vector3(a.distance_to(b), 0.035, 0.035)), at))
-	return [posts, arms, lines]
+	return [posts, arms, lines, _transformers(poles, centre)]
+
+## G4: a grey transformer can hung on every fourth pole.
+static func _transformers(poles: Array, centre: Vector2) -> MultiMeshInstance3D:
+	var can := CylinderMesh.new()
+	can.top_radius = 0.27
+	can.bottom_radius = 0.27
+	can.height = 0.95
+	can.radial_segments = 8
+	var cans := _multi(can, Cutaway.shared("transformer", CAN, false, 0.7), (poles.size() + 1) / 4)
+	for k in cans.multimesh.instance_count:
+		var p: Vector2 = poles[k * 4][0]
+		var off: Vector2 = (poles[k * 4][1] as Vector2) * 0.38
+		cans.multimesh.set_instance_transform(k, Transform3D(Basis(), Vector3(p.x + off.x - centre.x, TRANSFORMER_H, p.y + off.y - centre.y)))
+	return cans
 
 static func _multi(mesh: Mesh, mat: Material, count: int) -> MultiMeshInstance3D:
 	var mm := MultiMesh.new()
