@@ -67,6 +67,6 @@ func commit() -> Array[Node3D]:
 		var mi := MultiMeshInstance3D.new()
 		mi.multimesh = mm
 		mi.material_override = material()
-		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON   # V1: real sun shadows
 		out.append(mi)
 	return out

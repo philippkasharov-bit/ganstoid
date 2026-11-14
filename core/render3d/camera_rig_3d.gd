@@ -8,7 +8,7 @@ extends Node3D
 
 const PITCH_DEG := -30.0
 const START_YAW_DEG := 45.0
-const BACK_M := 1500.0
+const BACK_M := 250.0   # V1: near enough that sun shadows can cover the view (they count from the camera)
 const SIZE_MIN := 12.0         # metres of view height: close street level
 const SIZE_MAX := 160.0        # a few blocks
 const START_SIZE := 30.0       # P1: close enough to read people, as Zomboid starts

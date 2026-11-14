@@ -91,5 +91,5 @@ static func _layer(mesh: Mesh, mat: Material, count: int) -> MultiMeshInstance3D
 	var mi := MultiMeshInstance3D.new()
 	mi.multimesh = mm
 	mi.material_override = mat
-	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON   # V1: real sun shadows
 	return mi

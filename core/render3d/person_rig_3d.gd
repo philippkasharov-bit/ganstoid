@@ -100,7 +100,7 @@ static func _layer(size: Vector3, count: int, model: String = "") -> MultiMeshIn
 	var mi := MultiMeshInstance3D.new()
 	mi.multimesh = mm
 	mi.material_override = mat
-	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON   # V1: real sun shadows
 	return mi
 
 ## M1: a model from art/models (made in Blender), or null.

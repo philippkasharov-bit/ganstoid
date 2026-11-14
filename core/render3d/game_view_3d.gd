@@ -7,6 +7,7 @@
 class_name GameView3D
 extends Node3D
 
+const SHADOW_M := CameraRig3D.BACK_M + 160.0   # V1: shadows count from the camera, which sits BACK_M behind what it looks at
 const GROUND := Color("cbc4a6")   # TX3: dry parkway dirt, not a pale void that the sun burns white
 const MAP_2D := ["CityLayer", "RenderSync", "StreetFurniture", "TurfOverlay", "AimView", "Camera2D"]
 
@@ -118,9 +119,10 @@ func _environment() -> void:
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color(0.85, 0.85, 0.9)
 	env.ambient_light_energy = 0.55
-	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC   # TX3: sunlit pale concrete rolls off instead of clipping to white
-	env.tonemap_exposure = 1.02   # A2b: tuned in the Mobile renderer the game runs on
-	env.tonemap_white = 3.0
+	env.tonemap_mode = Environment.TONE_MAPPER_ACES   # V1: sunlit pale concrete rolls off instead of clipping to white
+	env.tonemap_exposure = 0.78
+	env.tonemap_white = 4.0
+	_occlusion(env)
 	env.adjustment_enabled = true   # A1: deeper darks, a touch more colour (Zomboid is muted, never washed out)
 	env.adjustment_contrast = 1.24
 	env.adjustment_saturation = 1.08
@@ -128,10 +130,38 @@ func _environment() -> void:
 	we.environment = env
 	add_child(we)
 	sun = DirectionalLight3D.new()
-	sun.rotation_degrees = Vector3(-55, -35, 0)   # afternoon sun from the south-west: walls read by shade
-	sun.light_energy = 0.9
-	sun.shadow_enabled = false
+	sun.rotation_degrees = Vector3(-50, -35, 0)   # afternoon sun from the south-west: walls read by shade
+	sun.light_energy = 1.7
+	_shadows(sun)
 	add_child(sun)
+
+## V1 (Forward+): soft contact shading in corners, under eaves, along kerbs and
+## under props (SSAO), and a little bounce light off sunlit walls (SSIL).
+static func _occlusion(e: Environment) -> void:
+	e.ssao_enabled = true
+	e.ssao_radius = 1.4
+	e.ssao_intensity = 2.2
+	e.ssao_power = 1.6
+	e.ssao_detail = 0.6
+	e.ssao_light_affect = 0.15
+	e.ssil_enabled = true
+	e.ssil_radius = 4.0
+	e.ssil_intensity = 0.7
+
+## V1: real sun shadows (Phil, 2026-11-14): four splits, soft edges, sized to the iso view.
+static func _shadows(light: DirectionalLight3D) -> void:
+	light.shadow_enabled = true
+	light.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
+	light.directional_shadow_max_distance = SHADOW_M
+	light.directional_shadow_blend_splits = true
+	var near := (CameraRig3D.BACK_M - 140.0) / SHADOW_M   # the splits sit where the city is, not in the empty air in front of it
+	light.directional_shadow_split_1 = near
+	light.directional_shadow_split_2 = near + (1.0 - near) * 0.3
+	light.directional_shadow_split_3 = near + (1.0 - near) * 0.6
+	light.shadow_blur = 1.0
+	light.shadow_bias = 0.04
+	light.shadow_normal_bias = 1.2
+	light.light_angular_distance = 0.35   # a soft penumbra, sharper near the caster
 
 ## OPT1: the stream and the ground go where the player is.
 func _follow() -> void:

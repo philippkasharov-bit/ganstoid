@@ -16,7 +16,7 @@ const HEADLIGHT_AHEAD := 6.0
 const HEADLIGHT_R := 7.0
 const SKY_DAY := Color("e9e1cf")
 const SKY_NIGHT := Color("0d1018")
-const SUN_DAY := Color(1.0, 0.98, 0.94)
+const SUN_DAY := Color("fff4e0")   # V1: warm LA sun
 const SUN_LOW := Color(1.0, 0.72, 0.5)
 
 static var night := 0.0         # 0 full day .. 1 full night
@@ -70,7 +70,7 @@ static func _multi(mesh: Mesh, mat: Material) -> MultiMeshInstance3D:
 	var mi := MultiMeshInstance3D.new()
 	mi.multimesh = mm
 	mi.material_override = mat
-	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON   # V1: real sun shadows
 	return mi
 
 func _process(_delta: float) -> void:
@@ -90,11 +90,11 @@ func _sky(hour: float) -> void:
 	var golden := maxf(1.0 - absf(hour - 6.5) / 1.2, 1.0 - absf(hour - 19.0) / 1.2)   # warm only round sunrise and sunset
 	if sun != null:
 		sun.light_color = SUN_DAY.lerp(SUN_LOW, clampf(golden, 0.0, 1.0))
-		sun.light_energy = lerpf(0.9, 0.55, night)   # the shader does the dark; the sun only cools
+		sun.light_energy = lerpf(1.7, 0.55, night)   # the shader does the dark; the sun only cools
 	if env != null:
 		env.background_color = SKY_DAY.lerp(SKY_NIGHT, night)
 		env.ambient_light_color = Color(0.93, 0.88, 0.8).lerp(Color(0.55, 0.62, 0.85), night)   # A1: warm LA daylight in the shade
-		env.ambient_light_energy = lerpf(0.66, 0.55, night)   # day: shaded walls readable, but darker than the sunlit ones
+		env.ambient_light_energy = lerpf(0.42, 0.55, night)   # day: shaded walls readable, but darker than the sunlit ones
 	if sun != null:
 		sun.light_color = sun.light_color.lerp(Color(0.6, 0.68, 0.95), night)   # moonlight blue
 

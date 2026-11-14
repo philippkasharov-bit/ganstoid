@@ -90,7 +90,7 @@ static func _layer(mesh: Mesh, lit: bool) -> MultiMeshInstance3D:
 	mm.visible_instance_count = 0
 	var mi := MultiMeshInstance3D.new()
 	mi.multimesh = mm
-	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON   # V1: real sun shadows
 	return mi
 
 static func _cyl(r: float, h: float, sides: int) -> Mesh:
