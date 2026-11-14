@@ -104,6 +104,8 @@ static func _holed(st: SurfaceTool, v: Callable, a: Vector2, dir: Vector2, lengt
 			continue
 		var y := 0.0
 		for gap in _gaps(holes, xa, xb):
+			if gap.x >= h:
+				break   # an opening above this band (the base trim is 0.45 m): nothing more to leave out
 			if gap.x > y:
 				BuildingMesh3D.quad(st, [v.call(a + dir * xa, y), v.call(a + dir * xb, y), v.call(a + dir * xb, minf(gap.x, h)), v.call(a + dir * xa, minf(gap.x, h))], n, col)
 			y = maxf(y, gap.y)
