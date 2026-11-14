@@ -73,8 +73,8 @@ static func _windows(holes: Array, length: float, levels: int, edge: int, front:
 			var hole := _hole(part, x, y0, y0 + (0.6 if part == "kit_window_small" else WIN_H))
 			if hole["x0"] < CORNER_GAP or hole["x1"] > length - CORNER_GAP or _clashes(hole, holes):
 				continue
-			if not front and absi(hash([ctx["seed"], edge, k, 3])) % 100 >= SIDE_KEEP:
-				continue
+			if not front and k != count / 2 and absi(hash([ctx["seed"], edge, k, 3])) % 100 >= SIDE_KEEP:
+				continue   # the middle column always stays: no long blank wall
 			hole["lit"] = 0.8 if absi(hash([ctx["seed"], edge, k, lv])) % 100 < int(float(ctx["glow"]) * 100.0) else 0.0
 			holes.append(hole)
 
