@@ -41,7 +41,8 @@ func set_count(n: int) -> void:
 	_lamps.multimesh.visible_instance_count = n * 4
 
 ## Car `i`: drawn between its last two sim poses, painted `paint`, lamps on when `lit`.
-func place(i: int, id: StringName, car: VehicleData, paint: Color, shade: float, lit: bool) -> void:
+## Returns where it was drawn: [3D position, heading] (A2a: its ground patch follows it).
+func place(i: int, id: StringName, car: VehicleData, paint: Color, shade: float, lit: bool) -> Array:
 	var pose := _between(id, car)
 	var turn := Basis(Vector3.UP, -pose[1])
 	var at := Vector3(pose[0].x - origin.x, 0, pose[0].y - origin.y)
@@ -61,6 +62,7 @@ func place(i: int, id: StringName, car: VehicleData, paint: Color, shade: float,
 		var col: Color = (HEAD if front else TAIL) * (1.0 if lit else 0.45)
 		_lamps.multimesh.set_instance_transform(i * 4 + k, Transform3D(turn.scaled_local(Vector3(0.05, 0.14, 0.32)), at + turn * lamp))
 		_lamps.multimesh.set_instance_color(i * 4 + k, col)
+	return [at, pose[1]]
 
 ## [position, heading, wheel turn] between the last two sim poses.
 func _between(id: StringName, car: VehicleData) -> Array:

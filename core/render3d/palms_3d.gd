@@ -29,7 +29,11 @@ static func build(wells: PackedVector2Array, v: Callable) -> Array[Node3D]:
 		skirts.multimesh.set_instance_transform(i, Transform3D(turn, top - Vector3(0, 0.75, 0)))
 		crowns.multimesh.set_instance_transform(i, Transform3D(turn, top))
 		crowns.multimesh.set_instance_color(i, GREENS[roll % GREENS.size()])
-	return [trunks, skirts, crowns]
+	var blobs := BlobShadows3D.layer(wells.size())   # A2a: the crown's patch of shade, under the top (palms lean)
+	for i in wells.size():
+		var top := crowns.multimesh.get_instance_transform(i).origin
+		BlobShadows3D.place(blobs, i, top, Vector2.ONE * 4.2, 0.0, 0.4)
+	return [trunks, skirts, crowns, blobs]
 
 static func _trunk() -> Mesh:
 	var trunk := CylinderMesh.new()

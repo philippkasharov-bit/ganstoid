@@ -12,7 +12,7 @@ const WIRE_H := 8.4
 const YARD_TREE_SHARE := 0.45
 const TRUNK := Color("6e5843")
 const LEAVES := [Color("4f7a3a"), Color("5c8840"), Color("46703a"), Color("6b8f45"), Color("587a3c")]
-const BUSHES := [Color("4d7a3c"), Color("5a8a44"), Color("44703a"), Color("4d7a3c"), Color("5a8a44"), Color("b8326e"), Color("c23b3b")]   # mostly green; bougainvillea, hibiscus
+const BUSHES := [Color("4d7a3c"), Color("5a8a44"), Color("44703a"), Color("4d7a3c"), Color("5a8a44"), Color("9c3a68"), Color("a5403c")]   # A2a: flowers toned down   # mostly green; bougainvillea, hibiscus
 const WOOD := Color("6b5a47")
 const WIRE := Color("2b2b2e")
 const CAN := Color("8e9396")
@@ -66,6 +66,7 @@ static func _trees(spots: PackedVector2Array, centre: Vector2) -> Array[Node3D]:
 	trunk.radial_segments = 6
 	var trunks := _multi(trunk, Cutaway.shared("tree_trunk", TRUNK, false, 1.0), spots.size())
 	var crowns := _multi(crown(), Cutaway.shared("tree_crown", Color.WHITE, false, 1.0, 0.0, 0.6), spots.size(), true)
+	var blobs := BlobShadows3D.layer(spots.size())
 	for i in spots.size():
 		var p := Vector3(spots[i].x - centre.x, 0, spots[i].y - centre.y)
 		var size := 0.75 + float(absi(int(spots[i].x * 11.0)) % 50) / 100.0
@@ -73,7 +74,8 @@ static func _trees(spots: PackedVector2Array, centre: Vector2) -> Array[Node3D]:
 		trunks.multimesh.set_instance_transform(i, Transform3D(Basis().scaled(Vector3(1, size, 1)), p + Vector3(0, 1.6 * size, 0)))
 		crowns.multimesh.set_instance_transform(i, Transform3D(turn, p + Vector3(0, 4.2 * size, 0)))
 		crowns.multimesh.set_instance_color(i, LEAVES[absi(hash(spots[i])) % LEAVES.size()])   # G3: each tree its own green
-	return [trunks, crowns]
+		BlobShadows3D.place(blobs, i, p, Vector2.ONE * 4.6 * size, 0.0, 0.5)   # A2a: the crown's shade on the ground
+	return [trunks, crowns, blobs]
 
 ## Wooden poles down one side of residential streets, three wires pole to pole.
 static func _power(city: CityData, centre: Vector2, radius: float, origin: Vector2, keep: Rect2) -> Array[Node3D]:
@@ -182,10 +184,13 @@ static func _bushes(city: CityData, centre: Vector2, radius: float, origin: Vect
 	bush.radial_segments = 7
 	bush.rings = 3
 	var layer := _multi(bush, Cutaway.shared("bush", Color.WHITE, false, 1.0, 0.0, 0.2), spots.size(), true)
+	var blobs := BlobShadows3D.layer(spots.size())
 	for i in spots.size():
 		var size := 0.8 + float(absi(hash(spots[i])) % 50) / 100.0
 		layer.multimesh.set_instance_transform(i, Transform3D(Basis().scaled(Vector3.ONE * size), Vector3(spots[i].x - origin.x, 0.4 * size, spots[i].y - origin.y)))
-		layer.multimesh.set_instance_color(i, BUSHES[absi(hash(spots[i])) % BUSHES.size()])
+		layer.multimesh.set_instance_color(i, BUSHES[absi(hash(spots[i])) % BUSHES.size()].darkened(0.08))
+		BlobShadows3D.place(blobs, i, Vector3(spots[i].x - origin.x, 0, spots[i].y - origin.y), Vector2.ONE * 1.5 * size, 0.0, 0.6)
+	layer.add_child(blobs)
 	return layer
 
 ## Up to four spots along the door's wall, 0.75 m out, clear of the door and the corners.

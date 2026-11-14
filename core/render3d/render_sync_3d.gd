@@ -53,12 +53,14 @@ const CONE_COS := 0.34          # matches the Cutaway shader
 const NEAR_M := 3.5
 var _delta := 0.016
 var _cut_insides := CutInteriors3D.new()
+var _blobs := BlobShadows3D.layer(MAX_PEOPLE + MAX_CARS)   # A2a: a dark patch under everyone and every car
+var _blob_n := 0
 
 func _ready() -> void:
 	_rig.origin = origin
 	_car_rig.origin = origin
 	_cut_insides.origin = origin
-	for layer in [_rig, _car_rig, _ghost, _cut_insides]:
+	for layer in [_rig, _car_rig, _ghost, _cut_insides, _blobs]:
 		add_child(layer)
 
 func _process(delta: float) -> void:
@@ -71,8 +73,10 @@ func sync() -> void:
 	var focus := _focus()
 	_player_at = Vector2.INF
 	_riding = false
+	_blob_n = 0
 	_people(focus)
 	_cars(focus)
+	_blobs.multimesh.visible_instance_count = _blob_n
 	_see_player()
 
 ## R3D4: the cutaway hole and the see-through silhouette follow you.
@@ -194,9 +198,16 @@ func _people(focus: Vector2) -> void:
 		var step := _rig.gait(id, pose[0], _delta)
 		var arms := _arms(ps)   # D3: aiming and striking
 		_rig.place(n, pose[0], pose[1], step[0], step[1], npc.is_down, ps != null and ps.sneaking, PersonLook3D.shirt(e, npc) * lit, PersonLook3D.skin(id) * lit, arms.x, arms.y)
+		_blob(Vector3(pose[0].x - origin.x, 0, pose[0].y - origin.y), Vector2(1.6, 0.9) if npc.is_down else Vector2(0.95, 0.95), pose[1], 0.7)
 		n += 1
 	shown_people = n
 	_rig.set_count(n)
+
+## A2a: the next ground patch.
+func _blob(at: Vector3, size: Vector2, angle: float, dark: float) -> void:
+	if _blob_n < _blobs.multimesh.instance_count:
+		BlobShadows3D.place(_blobs, _blob_n, at, size, angle, dark)
+		_blob_n += 1
 
 ## Shown position eases toward the sim's (the player snaps); facing follows the walk.
 func _ease(id: StringName, npc: NPCData, ps: PlayerStateData) -> Array:
@@ -235,7 +246,8 @@ func _cars(focus: Vector2) -> void:
 		var paint := car.color.darkened(car.damage * 0.5)
 		if not _in_sight(car.position):
 			paint = Color(paint.get_luminance(), paint.get_luminance(), paint.get_luminance()).lerp(paint, 0.35) * Color(0.42, 0.42, 0.42)
-		_car_rig.place(n, id, car, paint, DayNight3D.light_at(car.position), car.driver_id != &"" and DayNight3D.night > 0.3)
+		var drawn: Array = _car_rig.place(n, id, car, paint, DayNight3D.light_at(car.position), car.driver_id != &"" and DayNight3D.night > 0.3)
+		_blob(drawn[0], Vector2(car.length_m * 1.12, car.width_m * 1.25), drawn[1], 0.8)
 		n += 1
 	shown_cars = n
 	_car_rig.set_count(n)

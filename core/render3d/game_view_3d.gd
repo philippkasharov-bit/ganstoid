@@ -48,6 +48,7 @@ func setup(w: World, city: CityData, at: Vector2) -> void:
 	Palms3D.crown()
 	Graffiti3D.material()
 	KitBatch3D.prime()   # K4: the Blender house kit
+	BlobShadows3D.prime()   # A2a: ground patches (props build theirs on stream workers)
 	_environment()
 	_ground()
 	day_night.origin = centre
