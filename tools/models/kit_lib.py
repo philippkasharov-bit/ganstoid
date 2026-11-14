@@ -23,6 +23,9 @@ MATERIALS: dict[str, tuple[float, float, float]] = {
 }
 GLOWS = {"glass", "frosted"}
 BEVEL_M = 0.006
+SHEET_GRID = 4          # the texture sheet is 4 x 4 cells, one per slot in SLOTS order (kit_atlas.py)
+CELL_INSET = 0.03
+METRES = {"door": 2.1, "garage": 2.6, "brick": 1.5, "roof_tile": 2.0, "glass": 1.4, "concrete": 1.5}   # surface per cell; others 1 m
 BEVEL_MIN_EDGE_M = 0.3   # sash bars and knobs stay sharp: the triangles go where they show
 SLOTS = list(MATERIALS)
 
@@ -74,6 +77,7 @@ class Part:
         solid = [e for e in self.bm.edges if len(e.link_faces) == 2 and e.calc_length() >= BEVEL_MIN_EDGE_M]   # mid-poly: big hard edges catch a sliver of light
         bmesh.ops.bevel(self.bm, geom=solid, offset=BEVEL_M, segments=1, affect="EDGES", clamp_overlap=True)
         _glow_mask(self.bm)
+        _sheet_uvs(self.bm)
         me = bpy.data.meshes.new(self.name)
         self.bm.to_mesh(me)
         self.bm.free()
@@ -90,6 +94,25 @@ def _glow_mask(bm: bmesh.types.BMesh) -> None:
         red = 1.0 if SLOTS[face.material_index] in GLOWS else 0.0
         for loop in face.loops:
             loop[layer] = (red, 1.0, 1.0, 1.0)
+
+
+def _sheet_uvs(bm: bmesh.types.BMesh) -> None:
+    """K3: each face projected flat (its dominant axis dropped) into its slot's
+    cell of the texture sheet: METRES[slot] of surface per cell, a face bigger
+    than that squeezed to fit, and a small inset so mipmaps don't bleed."""
+    layer = bm.loops.layers.uv.get("UVMap") or bm.loops.layers.uv.new("UVMap")
+    for face in bm.faces:
+        slot = SLOTS[face.material_index]
+        n = face.normal
+        keep = [i for i in range(3) if i != max(range(3), key=lambda k: abs(n[k]))]
+        flat = [(loop.vert.co[keep[0]], loop.vert.co[keep[1]]) for loop in face.loops]
+        lo = (min(p[0] for p in flat), min(p[1] for p in flat))
+        span = max(max(p[0] for p in flat) - lo[0], max(p[1] for p in flat) - lo[1], METRES.get(slot, 1.0))
+        row, col = divmod(SLOTS.index(slot), SHEET_GRID)
+        for loop, (a, b) in zip(face.loops, flat):
+            u, v = (a - lo[0]) / span, (b - lo[1]) / span
+            loop[layer].uv = ((col + CELL_INSET + u * (1 - 2 * CELL_INSET)) / SHEET_GRID,
+                1 - (row + 1 - CELL_INSET - v * (1 - 2 * CELL_INSET)) / SHEET_GRID)
 
 
 def material(slot: str) -> bpy.types.Material:

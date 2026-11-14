@@ -1,7 +1,7 @@
 """K2: render the house kit laid out in a row in front of a stucco wall
 (Cycles, CPU), so the parts can be judged before they go into the game.
 
-    python3 tools/models/kit_preview.py <out.png>
+    python3 tools/models/kit_preview.py [art/textures/kit_atlas.png] <out.png>
 """
 from __future__ import annotations
 
@@ -78,8 +78,30 @@ def camera(length: float, out: str) -> None:
     bpy.ops.render.render(write_still=True)
 
 
+TINTS = {"paint": (0.93, 0.9, 0.82), "door": (0.12, 0.28, 0.2), "garage": (0.95, 0.94, 0.9)}   # one house's colours, for the look
+
+
+def textured(sheet: str) -> None:
+    """K3: every slot material reads the baked sheet; painted cells take this house's tint (alpha = paint mask)."""
+    image = bpy.data.images.load(sheet)
+    image.alpha_mode = "CHANNEL_PACKED"   # alpha is the paint mask, not transparency
+    for slot in kit.SLOTS:
+        tree = kit.material(slot).node_tree
+        tex = tree.nodes.new("ShaderNodeTexImage")
+        tex.image = image
+        mix = tree.nodes.new("ShaderNodeMix")
+        mix.data_type = "RGBA"
+        mix.blend_type = "MULTIPLY"
+        mix.inputs["B"].default_value = (*TINTS.get(slot, (1.0, 1.0, 1.0)), 1.0)
+        tree.links.new(tex.outputs["Alpha"], mix.inputs["Factor"])
+        tree.links.new(tex.outputs["Color"], mix.inputs["A"])
+        tree.links.new(mix.outputs["Result"], tree.nodes["Principled BSDF"].inputs["Base Color"])
+
+
 if __name__ == "__main__":
     kit.reset()
     span = lay_out()
+    if len(sys.argv) > 2 and sys.argv[-2].endswith(".png"):
+        textured(os.path.abspath(sys.argv[-2]))
     stage(span)
     camera(span, sys.argv[-1])
