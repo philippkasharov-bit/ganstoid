@@ -143,14 +143,28 @@ func find_system(script: Script) -> SystemBase:
 			return system
 	return null
 
+## PF1: when true, step() keeps each system's slowest single run (usec) in `slowest_usec` (checks only).
+var profiling := false
+var slowest_usec: Dictionary = {}   # system class name -> usec
+
 func step(delta: float) -> void:
 	tick += 1
 	for system in _hot_systems:
-		system.process_entities(_entities_for(system), delta, tick)
+		_run(system, delta)
 	if tick % WARM_TICK_INTERVAL == 0:
 		var warm_delta := delta * WARM_TICK_INTERVAL
 		for system in _warm_systems:
-			system.process_entities(_entities_for(system), warm_delta, tick)
+			_run(system, warm_delta)
+
+func _run(system: SystemBase, delta: float) -> void:
+	if not profiling:
+		system.process_entities(_entities_for(system), delta, tick)
+		return
+	var t0 := Time.get_ticks_usec()
+	system.process_entities(_entities_for(system), delta, tick)
+	var took := Time.get_ticks_usec() - t0
+	var key: String = system.get_script().get_global_name()
+	slowest_usec[key] = maxi(slowest_usec.get(key, 0), took)
 
 ## Event-triggered systems (economy raid aftermath, save/load) never run from
 ## step() — callers invoke them explicitly when the triggering event occurs.

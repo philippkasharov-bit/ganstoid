@@ -93,12 +93,17 @@ func snap(p: Vector2, layer: String) -> Vector2:
 func step(mover_id: StringName, pos: Vector2, goal: Vector2, speed: float, delta: float, layer: String) -> Vector2:
 	var plan: Dictionary = _plans.get(mover_id, {})
 	if plan.is_empty() or plan["layer"] != layer or plan["goal"].distance_to(goal) > REPATH_M:
-		if layer == "public" and not _is_short(pos, goal):
-			plan = _take_async(mover_id, pos, goal)   # TUNE1: civilians' routes are planned off the main thread
-			if plan.is_empty():
-				return pos   # a moment's pause at the door while the route is worked out
-		else:
+		if _is_short(pos, goal):
 			plan = _plan(pos, goal, layer, lane_of(mover_id))
+		else:
+			# TUNE1/PF1: every long route (both layers) is planned off the main thread; a full-mesh
+			# query took up to 23 ms on the tick. A chaser keeps following its old route meanwhile.
+			var fresh := _take_async(mover_id, pos, goal, layer)
+			if fresh.is_empty():
+				if plan.is_empty() or plan["layer"] != layer:
+					return pos   # a moment's pause at the door while the route is worked out
+				fresh = plan
+			plan = fresh
 		_plans[mover_id] = plan
 	var budget := speed * delta
 	var pts: PackedVector2Array = plan["pts"]
@@ -124,7 +129,7 @@ var _async_jobs := {}      # mover_id -> [task id, goal]
 var _async_done := {}      # mover_id -> plan (written by workers, under _async_lock)
 var _async_lock := Mutex.new()
 
-func _take_async(mover_id: StringName, pos: Vector2, goal: Vector2) -> Dictionary:
+func _take_async(mover_id: StringName, pos: Vector2, goal: Vector2, layer: String) -> Dictionary:
 	for id in _async_jobs.keys():   # free finished worker tasks (Godot needs each one waited on)
 		if WorkerThreadPool.is_task_completed(_async_jobs[id][0]):
 			WorkerThreadPool.wait_for_task_completion(_async_jobs[id][0])
@@ -134,13 +139,13 @@ func _take_async(mover_id: StringName, pos: Vector2, goal: Vector2) -> Dictionar
 	_async_done.erase(mover_id)
 	_async_lock.unlock()
 	if not done.is_empty():
-		if done["goal"].distance_to(goal) <= REPATH_M:
+		if done["goal"].distance_to(goal) <= REPATH_M and done["layer"] == layer:
 			return done
 	if _async_jobs.has(mover_id) or _async_jobs.size() >= ASYNC_MAX:
 		return {}
 	var lane := lane_of(mover_id)
 	var task := WorkerThreadPool.add_task(func() -> void:
-		var plan := _plan(pos, goal, "public", lane)
+		var plan := _plan(pos, goal, layer, lane)
 		_async_lock.lock()
 		_async_done[mover_id] = plan
 		_async_lock.unlock())

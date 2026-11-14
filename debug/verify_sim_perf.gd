@@ -11,7 +11,7 @@ extends SceneTree
 const POPULATION := 600          # = WorldDriver.GAME_POPULATION
 const TICKS := 3600              # one real minute
 const AVG_BUDGET_MS := {3.0: 1.0, 8.0: 2.5, 11.0: 1.5}   # measured 0.3 / 0.8 / 0.5 in the sandbox
-const WORST_TICK_MS := 16.0
+const WORST_TICK_MS := 10.0   # PF1: was 16; long routes no longer plan on the tick
 
 func _initialize() -> void:
 	var saved := SimClock.day_ticks
@@ -28,16 +28,23 @@ func _initialize() -> void:
 		(world.find_system(NPCScheduleSystem) as NPCScheduleSystem).settle_all(world.tick)
 		for i in SimClock.real_seconds(20):
 			world.step(1.0 / SimClock.TICKS_PER_SECOND)
+		world.profiling = true   # PF1: which system makes the worst tick
 		var worst := 0
+		var over := 0   # PF1: ticks over 4 ms (a quarter frame): spikes, not machine noise
 		var t0 := Time.get_ticks_usec()
 		for i in TICKS:
 			var t1 := Time.get_ticks_usec()
 			world.step(1.0 / SimClock.TICKS_PER_SECOND)
 			worst = maxi(worst, Time.get_ticks_usec() - t1)
+			over += 1 if Time.get_ticks_usec() - t1 > 4000 else 0
 		var avg_ms := (Time.get_ticks_usec() - t0) / 1000.0 / TICKS
 		var c := _count(world)
 		print("%02d:00  %.2f ms/tick avg, worst tick %.1f ms | civilians %d: indoors %d, on the street %d | employed %d, of them at their workplace %d | routes planned %d (navmesh %d)" % [
 			int(hour), avg_ms, worst / 1000.0, c["people"], c["indoors"], c["people"] - c["indoors"], c["employed"], c["at_work"], SimNav.active.plans_made, SimNav.active.plans_routed])
+		var top: Array = world.slowest_usec.keys()
+		top.sort_custom(func(a, b): return world.slowest_usec[a] > world.slowest_usec[b])
+		print("       ticks over 4 ms: %d of %d" % [over, TICKS])
+		print("       slowest systems: %s" % ", ".join(top.slice(0, 4).map(func(k): return "%s %.1f ms" % [k, world.slowest_usec[k] / 1000.0])))
 		print("       slowest route plan %.1f ms (%s)" % [SimNav.active.slowest_plan_usec / 1000.0, SimNav.active.slowest_plan_what])
 		ok = _check(avg_ms <= AVG_BUDGET_MS[hour], "%02d:00 average tick within %.1f ms" % [int(hour), AVG_BUDGET_MS[hour]]) and ok
 		ok = _check(worst / 1000.0 <= WORST_TICK_MS, "%02d:00 no single tick over %.0f ms" % [int(hour), WORST_TICK_MS]) and ok
