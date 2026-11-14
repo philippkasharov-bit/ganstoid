@@ -9,6 +9,9 @@ const KEEP_SHARE := 0.45            # not every space is taken
 const KERB_IN_M := 1.2              # car centre this far in from the kerb
 const MAX_CARS := 450
 const UNLOCKED_SHARE := 0.15
+const MAX_DRIVEWAY_CARS := 180
+const DRIVEWAY_SHARE := 0.4
+const DRIVEWAY_IN_M := 2.8          # car centre this far past the apron, up the drive
 const TIERS := ["res", "art"]
 const COLORS := [Color(0.85, 0.85, 0.85), Color(0.15, 0.15, 0.17), Color(0.55, 0.57, 0.6), Color(0.6, 0.12, 0.12),
 	Color(0.15, 0.25, 0.5), Color(0.9, 0.9, 0.95), Color(0.35, 0.4, 0.3), Color(0.75, 0.65, 0.45)]
@@ -28,6 +31,22 @@ static func seed(world: World, seed: int, city: CityData, centre: Vector2, radiu
 	while n < MAX_CARS and int(n * stride) < spots.size():
 		_park(world, rng, StringName("car_%d" % n), spots[int(n * stride)])
 		n += 1
+	return n + _driveways(world, rng, city, centre, radius)
+
+## B5: a car up many driveways, nose to the house, as LA parks. Owned by the
+## street like the kerb cars, so DriveSystem hands the one nearest a driver's
+## home to that driver. Seeded after the kerb cars, so those stay the same.
+static func _driveways(world: World, rng: RandomNumberGenerator, city: CityData, centre: Vector2, radius: float) -> int:
+	var solid := CityCollision.new(city)
+	var n := 0
+	for d in city.driveways:
+		if n >= MAX_DRIVEWAY_CARS or d["c"].distance_to(centre) > radius or rng.randf() >= DRIVEWAY_SHARE:
+			continue
+		var into: Vector2 = d["dir"]
+		var at: Vector2 = d["c"] + into * (float(d["len"]) + DRIVEWAY_IN_M)
+		if not solid.blocked(at, 1.2):
+			_park(world, rng, StringName("car_d%d" % n), [at, into.angle()])
+			n += 1
 	return n
 
 static func _spots_along(spots: Array, rng: RandomNumberGenerator, a: Vector2, b: Vector2, w: float, centre: Vector2, radius: float) -> void:
