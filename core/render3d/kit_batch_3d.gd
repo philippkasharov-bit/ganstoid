@@ -67,6 +67,12 @@ func commit() -> Array[Node3D]:
 		var mi := MultiMeshInstance3D.new()
 		mi.multimesh = mm
 		mi.material_override = material()
-		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON   # V1: real sun shadows
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if _casts(part) else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF   # V1/PF2
 		out.append(mi)
 	return out
+
+const SHADOW_MIN_M := 1.6   # PF2: parts smaller than this (windows, gutters, downspouts, sills) sit flat on a wall: no visible shadow, half the kit's shadow triangles
+
+static func _casts(part: String) -> bool:
+	var size: Vector3 = _meshes[part].get_aabb().size
+	return maxf(size.x, maxf(size.y, size.z)) >= SHADOW_MIN_M

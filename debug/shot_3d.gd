@@ -43,6 +43,8 @@ func _initialize() -> void:
 		await process_frame
 	print("A2b: %d primitives, %d draw calls in view" % [Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME), Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)])
 	print("R3D: built in %d ms, %d chunk meshes, %.1f ms a frame" % [preview.build_ms, preview.get_children().filter(func(n: Node) -> bool: return n.name.begins_with("Chunk")).size(), (Time.get_ticks_usec() - t0) / 60000.0])
+	if args.has("breakdown"):   # PF3: triangles by layer
+		RenderBreakdown.report(preview)
 	if args.has("look"):   # G4: frame a map point (x,y) instead of the player
 		var xy: PackedStringArray = args["look"].split(",")
 		var me3: NPCData = preview.driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
