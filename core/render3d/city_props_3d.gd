@@ -65,7 +65,7 @@ static func _trees(spots: PackedVector2Array, centre: Vector2) -> Array[Node3D]:
 	trunk.height = 3.2
 	trunk.radial_segments = 6
 	var trunks := _multi(trunk, Cutaway.shared("tree_trunk", TRUNK, false, 1.0), spots.size())
-	var crowns := _multi(_lobes(), Cutaway.shared("tree_crown", Color.WHITE, false, 1.0, 0.0, 0.6), spots.size(), true)
+	var crowns := _multi(crown(), Cutaway.shared("tree_crown", Color.WHITE, false, 1.0, 0.0, 0.6), spots.size(), true)
 	for i in spots.size():
 		var p := Vector3(spots[i].x - centre.x, 0, spots[i].y - centre.y)
 		var size := 0.75 + float(absi(int(spots[i].x * 11.0)) % 50) / 100.0
@@ -142,13 +142,24 @@ static func _transformers(poles: Array, centre: Vector2) -> MultiMeshInstance3D:
 		cans.multimesh.set_instance_transform(k, Transform3D(Basis(), Vector3(p.x + off.x - centre.x, TRANSFORMER_H, p.y + off.y - centre.y)))
 	return cans
 
-## G3: a crown of five overlapping lobes (four round the sides and a top), not a ball.
+static var _crown: ArrayMesh
+
+## G3: the shade-tree crown, made once. GameView3D.setup calls this on the main
+## thread: building a mesh on a stream worker stalls it until the main thread syncs.
+static func crown() -> ArrayMesh:
+	if _crown == null:
+		_crown = _lobes()
+	return _crown
+
+## A crown of five overlapping lobes (four round the sides and a top), not a ball.
 static func _lobes() -> ArrayMesh:
-	var lobe := SphereMesh.new()
-	lobe.radius = 1.45
-	lobe.height = 2.3
-	lobe.radial_segments = 8
-	lobe.rings = 4
+	var sphere := SphereMesh.new()
+	sphere.radius = 1.45
+	sphere.height = 2.3
+	sphere.radial_segments = 8
+	sphere.rings = 4
+	var lobe := ArrayMesh.new()   # from its arrays: reading a PrimitiveMesh on a stream worker waits for the main thread
+	lobe.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, sphere.get_mesh_arrays())
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	for k in 4:

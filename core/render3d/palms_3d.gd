@@ -17,7 +17,7 @@ const LEAN_DEG := 4.0
 static func build(wells: PackedVector2Array, v: Callable) -> Array[Node3D]:
 	var trunks := _layer(_trunk(), Cutaway.shared("palm_trunk", TRUNK, false, 1.0), wells.size())
 	var skirts := _layer(_skirt(), Cutaway.shared("palm_skirt", SKIRT, false, 1.0, 0.0, 0.5), wells.size())
-	var crowns := _layer(_crown(), Cutaway.shared("palm_crown", Color.WHITE, false, 1.0, 0.0, 1.0), wells.size())
+	var crowns := _layer(crown(), Cutaway.shared("palm_crown", Color.WHITE, false, 1.0, 0.0, 1.0), wells.size())
 	for i in wells.size():
 		var roll := absi(hash(wells[i]))
 		var tall := 0.8 + float(roll % 60) / 100.0   # a Mexican fan palm beside a shorter date palm
@@ -49,6 +49,14 @@ static func _skirt() -> Mesh:
 	cone.radial_segments = 9
 	cone.rings = 1
 	return cone
+
+static var _crown_mesh: ArrayMesh
+
+## The crown, made once (GameView3D.setup primes it on the main thread).
+static func crown() -> ArrayMesh:
+	if _crown_mesh == null:
+		_crown_mesh = _crown()
+	return _crown_mesh
 
 ## FRONDS long leaves round the top, each in three pieces: up, out, drooping down.
 static func _crown() -> ArrayMesh:
