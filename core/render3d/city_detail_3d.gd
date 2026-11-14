@@ -42,6 +42,8 @@ static func add(m: CityMesh3D, city: CityData, real: CityReal, centre: Vector2, 
 	for b in real.barriers:
 		if BARRIER.has(b["kind"]) and CityMesh3D._near(b["pts"], centre, r2):
 			_barrier(m, b["pts"], BARRIER[b["kind"]])
+			if b["kind"] == "wall":
+				Graffiti3D.on_wall(m, b["pts"])   # B2
 	for c in real.crossings:
 		if c["markings"] != "no" and CityMesh3D._near(c["pts"], centre, r2):
 			_zebra(m, c["pts"])

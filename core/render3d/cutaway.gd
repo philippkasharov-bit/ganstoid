@@ -52,6 +52,8 @@ uniform float sway = 0.0;             // D2: palms and trees in the breeze
 uniform sampler2DArray detail : filter_linear_mipmap, repeat_enable;   // TX1: SurfaceDetail maps
 uniform float tile_m[15];
 uniform float strength[15];
+uniform bool decal_on = false;       // B2: a graffiti mesh: colour and cut-out from the atlas (UV2)
+uniform sampler2D decal_tex : source_color, filter_linear_mipmap;
 uniform int plain_surface = 15;       // TX3: a one-colour mesh's material (the ground)
 varying vec3 wnormal;
 varying float glow;                   // a lit window / shop front (UV.x)
@@ -149,6 +151,13 @@ void fragment() {
 		discard;
 	}
 	vec3 col = use_vertex ? COLOR.rgb : tint;
+	if (decal_on) {
+		vec4 paint = texture(decal_tex, UV2);
+		if (paint.a < 0.45) {
+			discard;
+		}
+		col = paint.rgb * COLOR.rgb;   // vertex colour fades old tags
+	}
 	int surface = use_vertex ? int(COLOR.a * 15.0 + 0.5) : plain_surface;
 	if (surface < 15) {
 		col *= grain(surface);

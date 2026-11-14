@@ -27,6 +27,7 @@ const ALL := Vector2i(-1000000, -1000000)
 var origin := Vector2.ZERO
 var only := ALL    # OPT1: the one chunk being built (ALL: every chunk)
 var _tools := {}   # chunk Vector2i -> SurfaceTool
+var _decals := {}  # B2: chunk Vector2i -> graffiti SurfaceTool
 var space: RoadSpace     # B1: where other roads cross (the centre line stops there)
 var _sink: SurfaceTool   # geometry for other chunks lands here and is thrown away
 
@@ -46,6 +47,7 @@ static func build(city: CityData, centre: Vector2, radius: float, at_origin: Vec
 	for i in city.buildings.size():
 		if _near(city.buildings[i]["poly"], centre, r2):
 			b._building(city.buildings[i], city.buildings[i].get("tag", i + 1))   # R3D7: its tag is its city index + 1 (0: not a building)
+			Graffiti3D.on_building(b, city.buildings[i], city.buildings[i].get("tag", i + 1))   # B2
 	if real == null:
 		real = CityReal.load_files()
 	CityDetail3D.add(b, city, real, centre, radius)   # D2: yards, lots, pools, walls, fences, crossings, hydrants
@@ -81,6 +83,19 @@ func _tool(at: Vector2) -> SurfaceTool:
 		st.set_uv(Vector2.ZERO)    # R3D7: UV.y carries each building's tag for the Cutaway; 0 = not a building
 		_tools[k] = st
 	return _tools[k]
+
+## B2: the chunk's graffiti mesh (its own material: the tag atlas, cut out).
+func decal_tool(at: Vector2) -> SurfaceTool:
+	var k := Vector2i(((at - origin) / CHUNK_M).floor())
+	if only != ALL and k != only:
+		return null
+	if not _decals.has(k):
+		var st := SurfaceTool.new()
+		st.begin(Mesh.PRIMITIVE_TRIANGLES)
+		st.set_uv(Vector2.ZERO)
+		st.set_uv2(Vector2.ZERO)
+		_decals[k] = st
+	return _decals[k]
 
 func _tri(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, n: Vector3, col: Color) -> void:
 	st.set_color(col)
@@ -163,6 +178,12 @@ func _commit() -> Array[Node3D]:
 		mi.material_override = mat
 		mi.name = "Chunk_%d_%d" % [k.x, k.y]
 		out.append(mi)
+	for k in _decals:
+		var tags := MeshInstance3D.new()
+		tags.mesh = _decals[k].commit()
+		tags.material_override = Graffiti3D.material()
+		tags.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		out.append(tags)
 	return out
 
 ## LA palms: a tall trunk and a crown of drooping fronds, two MultiMeshes.
