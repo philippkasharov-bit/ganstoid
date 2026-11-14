@@ -32,6 +32,7 @@ var _player_face := 0.0
 var _riding := false
 var _attack_seen: Dictionary = {}   # D3: the last attack already shown
 var _strike_left := 0.0
+var _jabbed := false   # M3: a fist or knife attack began this frame (the player figure throws its Punch)
 var _aim_amount := 0.0
 const STRIKE_S := 0.22
 var player_shown := Vector2.INF   # Z-feel: where the player is drawn this frame (the camera locks on it)
@@ -203,7 +204,8 @@ func _people(focus: Vector2) -> void:
 		var step := _rig.gait(id, pose[0], _delta)
 		var arms := _arms(ps)   # D3: aiming and striking
 		if ps != null and not npc.is_down and _figure.usable():
-			_figure.pose(Vector3(pose[0].x - origin.x, 0, pose[0].y - origin.y), pose[1], step[1])   # M2: the Blender character
+			_figure.pose(Vector3(pose[0].x - origin.x, 0, pose[0].y - origin.y), pose[1], step[1], _jabbed)   # M2: the Blender character
+			_jabbed = false
 			_figure_shown = true
 			_blob(Vector3(pose[0].x - origin.x, 0, pose[0].y - origin.y), Vector2(0.95, 0.95), pose[1], 0.7)
 			continue
@@ -269,6 +271,7 @@ func _arms(ps: PlayerStateData) -> Vector2:
 	if not is_same(ps.last_attack, _attack_seen) and not ps.last_attack.is_empty():
 		_attack_seen = ps.last_attack
 		_strike_left = STRIKE_S
+		_jabbed = ps.weapon == &"fists" or ps.weapon == &"knife"
 	_strike_left = maxf(0.0, _strike_left - _delta)
 	_aim_amount = lerpf(_aim_amount, 1.0 if ps.aiming else 0.0, minf(1.0, _delta * 12.0))
 	return Vector2(_aim_amount, sin(_strike_left / STRIKE_S * PI))

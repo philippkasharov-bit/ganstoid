@@ -1,11 +1,11 @@
 """M3: the Meshy player (Magnific, rigged by Meshy) made game-ready in Blender.
 
-Takes the Idle and Walking clips (each Meshy export carries one action on the
-same skeleton), puts both on one armature as actions named Idle and Walk,
+Takes the Meshy clips (each export carries one action on the same skeleton),
+puts them all on one armature as actions with the given names,
 turns the figure to face +X (the game's heading 0), keeps real scale and the
 feet at Z = 0, and exports player_character.glb.
 
-    python3 tools/models/meshy_player.py <idle.glb> <walk.glb> assets/models/player_character.glb
+    python3 tools/models/meshy_player.py assets/models/player_character.glb Idle=<idle.glb> Walk=<walk.glb> Punch=<punch.glb>
 """
 from __future__ import annotations
 
@@ -25,13 +25,21 @@ def clip(path: str) -> bpy.types.Action:
     return act, rig, new
 
 
-def main(idle_path: str, walk_path: str, out: str) -> None:
+def main(out: str, clips: list[str]) -> None:
+    """`clips`: Name=path pairs; the first one's mesh and rig are kept, the rest give only their action."""
     bpy.ops.wm.read_factory_settings(use_empty=True)
-    idle, rig, objs = clip(idle_path)
-    walk, _, extra = clip(walk_path)
-    for o in extra:   # only its action is needed
-        bpy.data.objects.remove(o, do_unlink=True)
-    for act, name in ((idle, "Idle"), (walk, "Walk")):
+    acts = []
+    rig, objs = None, []
+    for pair in clips:
+        name, path = pair.split("=", 1)
+        act, this_rig, new = clip(path)
+        if rig is None:
+            rig, objs = this_rig, new
+        else:
+            for o in new:   # only its action is needed
+                bpy.data.objects.remove(o, do_unlink=True)
+        acts.append((act, name))
+    for act, name in acts:
         act.name = name
         act.use_fake_user = True
         track = rig.animation_data.nla_tracks.new()
@@ -56,4 +64,5 @@ def _face_x(root: bpy.types.Object) -> None:
 
 
 if __name__ == "__main__":
-    main(*sys.argv[-3:])
+    args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else sys.argv[1:]
+    main(args[0], args[1:])

@@ -1,6 +1,7 @@
 ## M2: the player as the Blender character (assets/models/player_character.glb):
 ## a skinned figure in a hoodie, baggy pants, sneakers and a cap, playing its
-## baked Walk while you move (faster when you run) and Idle when you stand.
+## baked Walk while you move (faster when you run), Idle when you stand, and
+## Punch once on each attack (if the model has it).
 ## Everyone else stays on PersonRig3D's MultiMeshes: a thousand skinned
 ## figures would cost a thousand draw calls and skeletons.
 class_name PlayerModel3D
@@ -12,6 +13,7 @@ const BLEND_S := 0.2
 
 var _player: AnimationPlayer
 var _ok := false
+var _punch := false   # the model carries a Punch clip
 
 func _ready() -> void:
 	if not ResourceLoader.exists(PATH):
@@ -23,6 +25,9 @@ func _ready() -> void:
 	if _ok:
 		for anim in ["Walk", "Idle"]:
 			_player.get_animation(anim).loop_mode = Animation.LOOP_LINEAR
+		_punch = _player.has_animation("Punch")
+		if _punch:
+			_player.get_animation("Punch").loop_mode = Animation.LOOP_NONE
 		_player.play("Idle")
 	visible = false
 
@@ -30,11 +35,18 @@ func _ready() -> void:
 func usable() -> bool:
 	return _ok
 
-## Stands the figure at 3D point `at`, facing map angle `face`; `swing` > 0 while walking (bigger when running).
-func pose(at: Vector3, face: float, swing: float) -> void:
+## Stands the figure at 3D point `at`, facing map angle `face`; `swing` > 0 while walking (bigger when running);
+## `struck` is true on the frame an attack lands.
+func pose(at: Vector3, face: float, swing: float, struck: bool = false) -> void:
 	visible = true
 	position = at
 	basis = Basis(Vector3.UP, -face)
+	if _punch and struck:
+		_player.play("Punch", 0.05)
+		_player.seek(0.0, true)
+		_player.speed_scale = 1.0
+	if _player.current_animation == "Punch" and _player.is_playing():
+		return   # let the punch finish
 	var anim := "Walk" if swing > 0.15 else "Idle"
 	if _player.current_animation != anim:
 		_player.play(anim, BLEND_S)
