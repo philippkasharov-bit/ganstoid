@@ -41,6 +41,7 @@ func _initialize() -> void:
 	var t0 := Time.get_ticks_usec()
 	for i in 60:
 		await process_frame
+	print("A2b: %d primitives, %d draw calls in view" % [Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME), Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)])
 	print("R3D: built in %d ms, %d chunk meshes, %.1f ms a frame" % [preview.build_ms, preview.get_children().filter(func(n: Node) -> bool: return n.name.begins_with("Chunk")).size(), (Time.get_ticks_usec() - t0) / 60000.0])
 	if args.has("look"):   # G4: frame a map point (x,y) instead of the player
 		var xy: PackedStringArray = args["look"].split(",")

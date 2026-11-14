@@ -190,7 +190,8 @@ void fragment() {
 	}
 	int surface = (use_vertex && !kit_on) ? int(COLOR.a * 15.0 + 0.5) : plain_surface;
 	if (surface < 15) {
-		col *= grain(surface, wp);
+		float g = grain(surface, wp);
+		col *= OUTPUT_IS_SRGB ? g : pow(g, 2.2);   // A2b: in a linear renderer the same grain must be stronger to look the same
 	}
 	if (cut && wp.y > cut_h - cap_m) {
 		col *= 0.45;   // the cap: the cut reads as a wall top, not a hole
