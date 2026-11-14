@@ -94,14 +94,14 @@ static func _hood(npc: NPCData) -> String:
 		return "-"
 	return "%s · %s" % [h.hood_of(k), h.district_of(k)]
 
-## T2: the street you are on (the capture point) and who holds it ("Boyle · nobody's").
+## T3: the block you are on (the capture point) and who holds it ("Daly & Main · nobody's").
 func _turf(npc: NPCData) -> String:
 	var t := TerritorySystem.data(_world)
 	if t == null:
 		return "-"
 	var c := TerritoryData.turf_of(npc.position)
 	var owner := TerritorySystem.controller(t, c)
-	var block: String = Hoods.data().name_of(c) if Hoods.data() != null and (Hoods.is_block(c) or Hoods.is_street(c)) else "This block"   # T2: the street you are on
+	var block: String = Hoods.data().name_of(c) if Hoods.data() != null and (Hoods.is_block(c) or Hoods.is_street(c)) else "This block"
 	if owner == &"":
 		return "%s · nobody's" % block
 	if owner == TerritorySystem.PLAYER:

@@ -145,6 +145,8 @@ func process_entities(entities: Dictionary, _delta: float, tick: int) -> void:
 	if hour == t.last_hour:
 		return
 	t.last_hour = hour
+	if t.cells.keys().any(func(c: Vector2i) -> bool: return Hoods.is_street(c)):
+		TerritoryData.migrate_streets(t)   # T3: a T2 save
 	_hourly(t)
 	for player in entities.values():
 		_tax(t, player, tick)
@@ -263,9 +265,10 @@ func _tax(t: TerritoryData, player: Entity, tick: int) -> void:
 		return
 	t.taxed_day = day
 	var held := cells_held(t, PLAYER)
-	if held > 0:
-		Wallet.earn_dirty(_world, held * TAX_PER_CELL)
-		StreetTalk.say_key(_world, player.get_component(ComponentNames.PLAYER_STATE), "street_tax", held * TAX_PER_CELL)
+	var take := held * TAX_PER_CELL + DistrictControl.held_by(t, PLAYER).size() * DistrictControl.DISTRICT_TAX   # T3: districts pay on top
+	if take > 0:
+		Wallet.earn_dirty(_world, take)
+		StreetTalk.say_key(_world, player.get_component(ComponentNames.PLAYER_STATE), "street_tax", take)
 
 ## RG1: a gang whose cell you are muscling into sends SQUAD_SIZE of its people.
 func _rivals_react(t: TerritoryData, me: NPCData, tick: int) -> void:

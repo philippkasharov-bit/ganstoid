@@ -20,14 +20,29 @@ static func cell_of(p: Vector2) -> Vector2i:
 			return k
 	return Vector2i((p / CELL_M).floor())
 
-## T2: turf is held per street (capture point); off the map's streets, per grid square.
+## T3: turf is held per BLOCK (a square of houses between streets): each one
+## is a capture point; blocks roll up into districts (DistrictControl). T2
+## held it per street, which smeared one capture over blocks on both sides.
 static func turf_of(p: Vector2) -> Vector2i:
-	var h := Hoods.data()
-	if h != null and not h.streets.is_empty():
-		var k := h.street_of(p)
-		if k.x >= 0:
-			return k
 	return cell_of(p)
+
+## T3: a save from T2 holds streets; each street's influence goes to its blocks.
+static func migrate_streets(t: TerritoryData) -> void:
+	var h := Hoods.data()
+	if h == null:
+		return
+	var by_street := {}
+	for i in h.blocks.size():
+		by_street.get_or_add(int(h.blocks[i]["street"]), []).append(Vector2i(i, Hoods.BLOCK_Y))
+	for c in t.cells.keys():
+		if not Hoods.is_street(c):
+			continue
+		for b in by_street.get(c.x, []):
+			if not t.cells.has(b):
+				t.cells[b] = {}
+			for g in t.cells[c]:
+				t.cells[b][g] = maxf(t.cells[b].get(g, 0.0), t.cells[c][g])
+		t.cells.erase(c)
 
 static func centre_of(c: Vector2i) -> Vector2:
 	if (Hoods.is_block(c) or Hoods.is_street(c)) and Hoods.data() != null:

@@ -54,11 +54,8 @@ func _draw() -> void:
 			continue
 		var col: Color = TerritorySystem.GANG_COLORS.get(top, Color.GRAY)
 		col.a = 0.35 if owner != &"" else 0.06 + top_v / 100.0 * 0.2
-		if Hoods.is_street(c) and Hoods.data() != null:   # T2: a street: its blocks shaded, the street itself drawn bold
-			for poly in Hoods.data().blocks_of(c):
-				draw_colored_polygon(poly, col)
-			draw_polyline(Hoods.data().street(c).get("pts", PackedVector2Array()), Color(col, 0.95), 5.0 if owner != &"" else 2.5)
-			continue
+		if Hoods.is_street(c):
+			continue   # T3: an old street key (migrated on the next hour)
 		var shape := _shape(c)   # T1: a block, or the old grid square
 		draw_colored_polygon(shape, col)
 		if owner != &"":

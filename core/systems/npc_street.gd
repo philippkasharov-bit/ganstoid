@@ -20,6 +20,7 @@ const ARRIVE_EPSILON := SimUnits.ARRIVE_M
 const PASS_M := 4.0                # close enough to a point one only walks past
 const NEAR_M := 150.0              # full-rate movement inside this distance of the player
 const FAR_EVERY := 6               # beyond it: one step per this many ticks
+const ABSTRACT_M := 520.0          # POP1: past the streamed city (CityStream3D.UNLOAD_M + margin) walkers go straight, no routes
 const PAUSE_EVERY_S := 40.0        # near the player, a walker stops about this often ...
 const PAUSE_TICKS := [90, 360]     # ... for 1.5 to 6 s (phone, shoelace, looking around)
 ## Hanging around outside (dealers, loiterers).
@@ -151,7 +152,9 @@ func _move(npc: NPCData, delta: float, tick: int, player_pos: Vector2) -> bool:
 	if target == null:
 		return true   # no home or work building: nowhere to go
 	var step_delta := delta
-	if npc.position.distance_squared_to(player_pos) > NEAR_M * NEAR_M:
+	var player_d2 := npc.position.distance_squared_to(player_pos)
+	var unseen := player_d2 > ABSTRACT_M * ABSTRACT_M   # POP1: past the built city: nobody can see the route
+	if player_d2 > NEAR_M * NEAR_M:
 		if (tick + _phase(npc.id)) % FAR_EVERY != 0:
 			return false
 		step_delta = delta * FAR_EVERY
@@ -162,7 +165,12 @@ func _move(npc: NPCData, delta: float, tick: int, player_pos: Vector2) -> bool:
 	var stay: int = _stay.get(npc.id, FINAL)
 	var nav := SimNav.active
 	if stay == FINAL and dist <= IDLE_WANDER_RADIUS and NPCRoutine.stays_outside(npc, tick):
-		_loiter(npc, target, step_delta, tick)
+		if not unseen:
+			_loiter(npc, target, step_delta, tick)   # POP1: out of sight they just stand at the door
+	elif unseen:
+		npc.position = WanderBehavior.step_toward(npc.position, target, pace_now.get(npc.id, NPCRoutine.pace(npc.id)), step_delta, PASS_M if stay == 0 else ARRIVE_EPSILON)   # POP1: a straight line, no navmesh
+		if nav != null:
+			nav.forget(npc.id)
 	elif dist <= ARRIVE_EPSILON or (stay == 0 and dist <= PASS_M):
 		return _arrive(npc, target, tick)
 	elif nav != null and nav.finished(npc.id, target):

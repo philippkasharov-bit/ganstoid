@@ -60,17 +60,23 @@ func _turf(st: SurfaceTool) -> void:
 	var h := Hoods.data()
 	if t == null or h == null:
 		return
+	var districts := {}   # T3: who holds each district, worked out once a redraw
+	for d in DistrictControl.names():
+		districts[d] = DistrictControl.holder(t, d)[0]
 	for c in t.cells:
-		if not Hoods.is_street(c) or h.street(c).is_empty() or (h.street(c)["c"] as Vector2).distance_to(focus) > RANGE_M:
+		var b := h.block(c)
+		if b.is_empty() or (b["c"] as Vector2).distance_to(focus) > RANGE_M:
 			continue
 		var top := _top(t, c)
 		if top[0] == &"" or top[1] < 5.0:
 			continue
 		var owner := TerritorySystem.controller(t, c)
 		var col: Color = TerritorySystem.GANG_COLORS.get(top[0], Color.GRAY)
-		for poly in h.blocks_of(c):
-			_fill(st, poly, Color(col, 0.32 if owner != &"" else 0.08 + top[1] / 100.0 * 0.15))
-		_line(st, h.street(c)["pts"], 2.2 if owner != &"" else 1.0, Color(col, 0.9))
+		var whole := owner != &"" and districts.get(h.district_of(c), &"") == owner   # their district: drawn stronger
+		_fill(st, b["poly"], Color(col, 0.45 if whole else (0.32 if owner != &"" else 0.08 + top[1] / 100.0 * 0.15)))
+		if owner != &"":
+			var ring: PackedVector2Array = b["poly"] + PackedVector2Array([b["poly"][0]])
+			_line(st, ring, 1.6 if whole else 0.8, Color(col, 0.9))   # T3: each block is its own capture point
 
 static func _top(t: TerritoryData, c: Vector2i) -> Array:
 	var top: StringName = &""
