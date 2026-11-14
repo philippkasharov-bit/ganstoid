@@ -47,6 +47,7 @@ func setup(w: World, city: CityData, at: Vector2) -> void:
 	CityProps3D.crown()   # G3: shared meshes made on the main thread too
 	Palms3D.crown()
 	Graffiti3D.material()
+	KitBatch3D.prime()   # K4: the Blender house kit
 	_environment()
 	_ground()
 	day_night.origin = centre

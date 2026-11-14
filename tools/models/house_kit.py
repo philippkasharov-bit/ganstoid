@@ -36,7 +36,7 @@ def sill(p: kit.Part, w: float) -> None:
 
 def window(name: str, w: float, h: float, split: str, glass: str = "glass") -> kit.Part:
     """A window: lining, casing, sill, glass, and its sash bars ('sash', 'mullion' or 'none')."""
-    p = kit.Part(name)
+    p = kit.Part(name, bevel=False)
     opening(p, w, h)
     sill(p, w)
     p.quad([(-w / 2, 0.03, -0.13), (w / 2, 0.03, -0.13), (w / 2, h - 0.03, -0.13), (-w / 2, h - 0.03, -0.13)], glass)

@@ -42,7 +42,7 @@ const PARAPET_M := 0.25
 
 ## Adds building `b` to SurfaceTool `st`. `v` maps a map point + height to 3D;
 ## `tag` (city index + 1) lets the Cutaway cut it whole.
-static func add(st: SurfaceTool, b: Dictionary, v: Callable, tag: int = 0) -> void:
+static func add(st: SurfaceTool, b: Dictionary, v: Callable, tag: int = 0, kit: CityMesh3D = null) -> void:
 	var poly := _open(b["poly"])
 	if poly.size() < 3 or Geometry2D.triangulate_polygon(poly).is_empty():
 		return
@@ -63,6 +63,7 @@ static func add(st: SurfaceTool, b: Dictionary, v: Callable, tag: int = 0) -> vo
 	var ccw := _ccw(poly)
 	var span := InteriorSolid.door_span(poly, b.get("door", Vector2.INF))   # R3D14: the same door the sim lets you through
 	var door_edge := int(span.x)
+	var house := HouseKit3D.context(kit, poly, col, style, door_edge) if kit != null and kind == "house" else {}   # K4: the Blender kit
 	for i in poly.size():
 		var a := poly[i]
 		var c := poly[(i + 1) % poly.size()]
@@ -71,10 +72,15 @@ static func add(st: SurfaceTool, b: Dictionary, v: Callable, tag: int = 0) -> vo
 		var e := c - a
 		var out := (Vector2(e.y, -e.x) if ccw else Vector2(-e.y, e.x)).normalized()
 		var n := Vector3(out.x, 0, out.y)
+		var door_t := span.y if i == door_edge else -1.0
+		if not house.is_empty():
+			HouseKit3D.wall(kit, st, v, a, c, out, i, levels, h, door_t, house)
+			continue
 		quad(st, [v.call(a, 0.0), v.call(c, 0.0), v.call(c, h), v.call(a, h)], n, col)
 		quad(st, [v.call(a + out * 0.02, 0.0), v.call(c + out * 0.02, 0.0), v.call(c + out * 0.02, TRIM), v.call(a + out * 0.02, TRIM)], n, col.darkened(0.3))
-		var door_t := span.y if i == door_edge else -1.0
 		_openings(st, v, a, c, out, levels, door_t, style)
+	if not house.is_empty():
+		HouseKit3D.corners(kit, v, poly, h, house)
 	_roof(st, v, poly, h, kind, levels, rng)
 	st.set_uv(Vector2.ZERO)   # what follows (roads, the next lot) is not this building
 

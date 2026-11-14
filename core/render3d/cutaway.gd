@@ -54,6 +54,11 @@ uniform float tile_m[15];
 uniform float strength[15];
 uniform bool decal_on = false;       // B2: a graffiti mesh: colour and cut-out from the atlas (UV2)
 uniform sampler2D decal_tex : source_color, filter_linear_mipmap;
+uniform bool kit_on = false;          // K4: house-kit parts (MultiMesh): the baked sheet, painted by its alpha mask
+uniform sampler2D kit_atlas : source_color, filter_linear_mipmap, repeat_disable;
+const vec3 DOOR_PAINT[8] = vec3[8](vec3(0.184, 0.29, 0.227), vec3(0.541, 0.165, 0.141), vec3(0.122, 0.176, 0.29), vec3(0.11, 0.11, 0.118),
+	vec3(0.42, 0.29, 0.18), vec3(0.937, 0.918, 0.878), vec3(0.165, 0.42, 0.42), vec3(0.722, 0.537, 0.18));   // = KitBatch3D.DOOR_PAINT (a uniform array here upset the others in the compatibility renderer)
+varying flat float kit_door;
 uniform int plain_surface = 15;       // TX3: a one-colour mesh's material (the ground)
 varying vec3 wnormal;
 varying float glow;                   // a lit window / shop front (UV.x)
@@ -72,11 +77,16 @@ void vertex() {
 	}
 	tag = use_vertex ? int(UV.y + 0.5) : 0;   // flat meshes (ground, palms) have their own UVs
 	glow = use_vertex ? UV.x : 0.0;
+	if (kit_on) {   // K4: a kit copy carries its house's tag, lit window and door colour
+		tag = int(INSTANCE_CUSTOM.r * 255.0 + 0.5) + 256 * int(INSTANCE_CUSTOM.a * 255.0 + 0.5);   // KitBatch3D.custom: survives 8-bit storage
+		glow = INSTANCE_CUSTOM.g;
+		kit_door = INSTANCE_CUSTOM.b * 7.0;
+	}
 	palm = vec2(MODEL_MATRIX[3].x, MODEL_MATRIX[3].z);
 }
 
 // Is this whole building (or palm) between the camera and you?
-bool in_front() {
+bool in_front(vec3 wp) {
 	if (use_vertex) {
 		for (int i = 0; i < cut_count; i++) {
 			if (cut_tags[i] == tag) {
@@ -90,22 +100,22 @@ bool in_front() {
 	return dot(d, v) < 0.0 && dot(d, v) > -30.0 && abs(d.x * v.y - d.y * v.x) < clear_m + 1.2;
 }
 
-bool cut_room() {
-	vec2 p = world_pos.xz;
+bool cut_room(vec3 wp) {
+	vec2 p = wp.xz;
 	if (!room_on || any(lessThan(p, room_min)) || any(greaterThan(p, room_max))) {
 		return false;
 	}
 	vec2 toward_camera = -normalize(view_dir.xz);
 	bool near_side = dot(p - (room_min + room_max) * 0.5, toward_camera) > 0.0;
-	return world_pos.y > ceiling || (near_side && world_pos.y > waist);
+	return wp.y > ceiling || (near_side && wp.y > waist);
 }
 
 // TX1: the material's grain here, 1.0 = no change (top-down on flats, along the wall on walls).
-float grain(int id) {
-	vec2 uv = world_pos.xz;
+float grain(int id, vec3 wp) {
+	vec2 uv = wp.xz;
 	if (abs(wnormal.y) < 0.5) {
 		vec2 along = normalize(vec2(-wnormal.z, wnormal.x) + vec2(0.0001));
-		uv = vec2(dot(world_pos.xz, along), -world_pos.y);
+		uv = vec2(dot(wp.xz, along), -wp.y);
 	}
 	float d = texture(detail, vec3(uv / tile_m[id], float(id))).r;
 	if (id == 5 || id == 6 || id == 8 || id == 9) {   // gravel, asphalt, grass, dirt: a second, turned and larger copy breaks the repeat
@@ -116,18 +126,18 @@ float grain(int id) {
 }
 
 // Lamp pools and headlights here (0..1).
-float lamp() {
+float lamp(vec3 wp) {
 	float sum = 0.0;
 	for (int i = 0; i < light_count; i++) {
-		float d = distance(world_pos.xz, lights[i].xy);
+		float d = distance(wp.xz, lights[i].xy);
 		sum += (1.0 - smoothstep(lights[i].z * 0.3, lights[i].z, d)) * lights[i].w;   // = StreetLights.pool
 	}
 	return min(sum, 1.0);
 }
 
 // 1: in your field of view; 0: not seen (soft edges).
-float seen() {
-	vec2 d = world_pos.xz - focus.xz;
+float seen(vec3 wp) {
+	vec2 d = wp.xz - focus.xz;
 	float dist = length(d);
 	float ring = 1.0 - smoothstep(near_m, near_m + 1.5, dist);
 	float cone = smoothstep(cone_cos - 0.12, cone_cos + 0.06, dot(d / max(dist, 0.001), normalize(look)));
@@ -138,7 +148,7 @@ float seen() {
 		v *= 1.0 - smoothstep(sight[bin] + 0.2, sight[bin] + 0.9, dist);
 	}
 	if (room_on) {
-		vec2 p = world_pos.xz;
+		vec2 p = wp.xz;
 		bool inside = all(greaterThanEqual(p, room_min)) && all(lessThanEqual(p, room_max));
 		v = inside ? v : v * 0.15;   // indoors: outside is a dark blur, as through walls
 	}
@@ -146,8 +156,11 @@ float seen() {
 }
 
 void fragment() {
-	bool cut = in_front();
-	if (cut_room() || (cut && world_pos.y > cut_h)) {
+	// K4: the world point from the camera: right for MultiMesh copies too (in the
+	// compatibility renderer MODEL_MATRIX leaves out each copy's own transform)
+	vec3 wp = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	bool cut = in_front(wp);
+	if (cut_room(wp) || (cut && wp.y > cut_h)) {
 		discard;
 	}
 	vec3 col = use_vertex ? COLOR.rgb : tint * COLOR.rgb;   // G3: a MultiMesh may tint each instance
@@ -158,21 +171,29 @@ void fragment() {
 		}
 		col = paint.rgb * COLOR.rgb;   // vertex colour fades old tags
 	}
-	int surface = use_vertex ? int(COLOR.a * 15.0 + 0.5) : plain_surface;
-	if (surface < 15) {
-		col *= grain(surface);
+	float lit_glass = glow;
+	if (kit_on) {
+		vec4 sheet = texture(kit_atlas, UV);
+		int cell = int(floor(UV.y * 4.0)) * 4 + int(floor(UV.x * 4.0));   // kit_lib.SLOTS order
+		vec3 paint = cell == 1 ? DOOR_PAINT[clamp(int(kit_door + 0.5), 0, 7)] : COLOR.rgb;
+		col = mix(sheet.rgb, sheet.rgb * paint, sheet.a);
+		lit_glass = (cell == 2 || cell == 3) ? glow : 0.0;
 	}
-	if (cut && world_pos.y > cut_h - cap_m) {
+	int surface = (use_vertex && !kit_on) ? int(COLOR.a * 15.0 + 0.5) : plain_surface;
+	if (surface < 15) {
+		col *= grain(surface, wp);
+	}
+	if (cut && wp.y > cut_h - cap_m) {
 		col *= 0.45;   // the cap: the cut reads as a wall top, not a hole
 	}
-	float lit = seen();
+	float lit = seen(wp);
 	vec3 grey = vec3(dot(col, vec3(0.3, 0.59, 0.11)));
-	float pool = lamp();
+	float pool = lamp(wp);
 	float bright = mix(1.0, max(moon, pool), night);   // at night you see what is lit
 	float dim = mix(0.68, unseen, night);   // by day the unseen world is only a little dimmer (Zomboid)
 	vec3 sodium = mix(vec3(1.0), vec3(1.0, 0.78, 0.5), clamp(pool, 0.0, 1.0) * night);   // P1: lamp light is warm sodium, not grey fog
 	ALBEDO = mix(mix(grey, col, mix(0.6, 0.35, night)) * dim, col, lit) * bright * sodium;
-	EMISSION = night * (vec3(1.0, 0.72, 0.4) * pool * 0.55 * col + vec3(1.0, 0.82, 0.5) * glow * 0.9 + tint * self_glow);
+	EMISSION = night * (vec3(1.0, 0.72, 0.4) * pool * 0.55 * col + vec3(1.0, 0.82, 0.5) * lit_glass * 0.9 + tint * self_glow);
 	ROUGHNESS = roughness;
 }
 """

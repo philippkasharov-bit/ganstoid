@@ -28,6 +28,8 @@ var origin := Vector2.ZERO
 var only := ALL    # OPT1: the one chunk being built (ALL: every chunk)
 var _tools := {}   # chunk Vector2i -> SurfaceTool
 var _decals := {}  # B2: chunk Vector2i -> graffiti SurfaceTool
+var _kits := {}    # K4: chunk Vector2i -> KitBatch3D
+var aprons := PackedVector2Array()   # K4: driveway aprons near the build
 var space: RoadSpace     # B1: where other roads cross (the centre line stops there)
 var _sink: SurfaceTool   # geometry for other chunks lands here and is thrown away
 
@@ -41,6 +43,9 @@ static func build(city: CityData, centre: Vector2, radius: float, at_origin: Vec
 		if _near(area["poly"], centre, r2):
 			b._area(area)
 	b.space = RoadSpace.of(city)
+	for d in city.driveways:   # K4: a house's garage faces its driveway
+		if d["c"].distance_squared_to(centre) < (radius + 40.0) * (radius + 40.0):
+			b.aprons.append(d["c"])
 	for i in city.roads.size():
 		if _near(city.roads[i]["pts"], centre, r2):
 			b._road(city.roads[i], i)
@@ -167,7 +172,16 @@ static func _ccw(poly: PackedVector2Array) -> bool:
 ## A building, styled by BuildingMesh3D (R3D2: each one rolls its own look).
 func _building(b: Dictionary, tag: int) -> void:
 	var poly: PackedVector2Array = b["poly"]
-	BuildingMesh3D.add(_tool(poly[0]), b, _v, tag)
+	BuildingMesh3D.add(_tool(poly[0]), b, _v, tag, self)
+
+## K4: one copy of a kit part (HouseKit3D) in the chunk that holds `at`.
+func kit_put(at: Vector2, part: String, xform: Transform3D, paint: Color, custom: Color) -> void:
+	var k := Vector2i(((at - origin) / CHUNK_M).floor())
+	if only != ALL and k != only:
+		return
+	if not _kits.has(k):
+		_kits[k] = KitBatch3D.new()
+	_kits[k].put(part, xform, paint, custom)
 
 func _commit() -> Array[Node3D]:
 	var mat := Cutaway.shared("city")   # R3D4: see-through where it hides the player
@@ -184,4 +198,6 @@ func _commit() -> Array[Node3D]:
 		tags.material_override = Graffiti3D.material()
 		tags.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		out.append(tags)
+	for k in _kits:
+		out.append_array(_kits[k].commit())
 	return out

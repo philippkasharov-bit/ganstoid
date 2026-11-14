@@ -3,8 +3,9 @@
 Parts are built in game axes (x along the wall, y up, z out of the wall)
 and mapped to Blender's (x, -z, y) on the way in, like
 people_and_cars.py. Every face carries a material slot naming the cell of
-the kit texture sheet it will use (K3), and a vertex colour whose red
-channel is the glow mask (1 on glass, so lit windows glow at night).
+the kit texture sheet it will use (K3). Glass glows at night by its cell
+of the sheet (the game's shader knows the glass cells), so no vertex
+colours are exported: a MultiMesh would multiply them by each copy's paint.
 """
 from __future__ import annotations
 
@@ -21,7 +22,6 @@ MATERIALS: dict[str, tuple[float, float, float]] = {
     "roof_tile": (0.7, 0.33, 0.22), "metal": (0.35, 0.36, 0.37), "brick": (0.6, 0.32, 0.25),
     "rafter": (0.5, 0.36, 0.24), "ac": (0.78, 0.79, 0.8),
 }
-GLOWS = {"glass", "frosted"}
 BEVEL_M = 0.006
 SHEET_GRID = 4          # the texture sheet is 4 x 4 cells, one per slot in SLOTS order (kit_atlas.py)
 CELL_INSET = 0.03
@@ -38,8 +38,9 @@ def g(x: float, y: float, z: float) -> tuple[float, float, float]:
 class Part:
     """A bmesh being filled with faces, each tagged with its material slot."""
 
-    def __init__(self, name: str) -> None:
+    def __init__(self, name: str, bevel: bool = True) -> None:
         self.name = name
+        self.bevel = bevel   # windows repeat dozens of times per house: they go without
         self.bm = bmesh.new()
 
     def quad(self, pts: list[tuple[float, float, float]], mat: str) -> None:
@@ -74,9 +75,8 @@ class Part:
     def finish(self) -> bpy.types.Object:
         bmesh.ops.recalc_face_normals(self.bm, faces=self.bm.faces)
         bmesh.ops.remove_doubles(self.bm, verts=self.bm.verts, dist=1e-5)   # boxes share corners: weld so edges are solid
-        solid = [e for e in self.bm.edges if len(e.link_faces) == 2 and e.calc_length() >= BEVEL_MIN_EDGE_M]   # mid-poly: big hard edges catch a sliver of light
+        solid = [e for e in self.bm.edges if self.bevel and len(e.link_faces) == 2 and e.calc_length() >= BEVEL_MIN_EDGE_M]   # mid-poly: big hard edges catch a sliver of light
         bmesh.ops.bevel(self.bm, geom=solid, offset=BEVEL_M, segments=1, affect="EDGES", clamp_overlap=True)
-        _glow_mask(self.bm)
         _sheet_uvs(self.bm)
         me = bpy.data.meshes.new(self.name)
         self.bm.to_mesh(me)
@@ -86,14 +86,6 @@ class Part:
         ob = bpy.data.objects.new(self.name, me)
         bpy.context.scene.collection.objects.link(ob)
         return ob
-
-
-def _glow_mask(bm: bmesh.types.BMesh) -> None:
-    layer = bm.loops.layers.color.get("Col") or bm.loops.layers.color.new("Col")
-    for face in bm.faces:
-        red = 1.0 if SLOTS[face.material_index] in GLOWS else 0.0
-        for loop in face.loops:
-            loop[layer] = (red, 1.0, 1.0, 1.0)
 
 
 def _sheet_uvs(bm: bmesh.types.BMesh) -> None:
@@ -134,7 +126,7 @@ def export(ob: bpy.types.Object, out_dir: str) -> str:
     ob.select_set(True)
     bpy.context.view_layer.objects.active = ob
     path = os.path.join(out_dir, ob.name + ".obj")
-    bpy.ops.wm.obj_export(filepath=path, export_selected_objects=True, export_materials=True, export_colors=True,
+    bpy.ops.wm.obj_export(filepath=path, export_selected_objects=True, export_materials=True, export_colors=False,
         export_uv=True, forward_axis="NEGATIVE_Z", up_axis="Y", export_normals=True)
     return path
 
