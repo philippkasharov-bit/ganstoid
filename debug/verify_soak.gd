@@ -124,7 +124,7 @@ func _watch(world: World) -> void:
 		var b := _col.building_at(p) if in_sight else {}
 		if not b.is_empty() and _wall_distance(p, b["poly"]) > DEEP_WALL_M:
 			_flag("inside walls", "%s outdoors at %.1f, %.1f (%.0f m from you), %.1f m inside %s (%s)" % [npc.id, p.x, p.y, p.distance_to(me.position), _wall_distance(p, b["poly"]), b["id"], b.get("kind", "?")])
-		if npc.is_cop or npc.is_crew or npc.is_dealer or npc.post_position != Vector2.ZERO or not in_sight:
+		if npc.is_cop or npc.is_crew or npc.is_dealer or npc.post_position != Vector2.ZERO or npc.home_building_id == &"" or not in_sight:   # homeless: they sit at their camp (E1)
 			_last_pos.erase(npc.id)
 			continue
 		street += 1

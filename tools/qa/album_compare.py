@@ -15,15 +15,16 @@ import re
 import sys
 from pathlib import Path
 
-from PIL import Image, ImageChops, ImageOps, ImageStat
+from PIL import Image, ImageChops, ImageFilter, ImageOps, ImageStat
 
 THUMB = (640, 360)          # approved pictures are stored at this size
 COMPARE = (320, 180)        # and compared at this one, which hides tiny jitter
 PIXEL_DIFF = 40             # 0..255: a pixel counts as changed past this
-CHANGED_SHARE = 0.03        # 3% of the picture changed = worth a look
+BLUR = 2                    # softens both first: swaying palms differ up to 0.5% after it, a missing wall ~1%
+CHANGED_SHARE = 0.007       # 0.7% of the (softened) picture changed = worth a look
 BLANK_STDDEV = 4.0          # a picture this flat is blank
 ERROR = re.compile(r"^(ERROR|SCRIPT ERROR|USER ERROR|USER SCRIPT ERROR):")
-EXIT_NOTES = re.compile(r"still in use at exit|leaked at exit|were leaked|in use exist at exit")
+EXIT_NOTES = re.compile(r"still in use at exit|leaked at exit|were leaked|in use exist at exit|leaked [0-9]+ bytes|were never freed")
 
 
 def log_problem(log: Path) -> str:
@@ -45,8 +46,8 @@ def log_problem(log: Path) -> str:
 
 
 def changed_share(a: Image.Image, b: Image.Image) -> float:
-    a = a.convert("RGB").resize(COMPARE)
-    b = b.convert("RGB").resize(COMPARE)
+    a = a.convert("RGB").resize(COMPARE).filter(ImageFilter.GaussianBlur(BLUR))
+    b = b.convert("RGB").resize(COMPARE).filter(ImageFilter.GaussianBlur(BLUR))
     diff = ImageChops.difference(a, b).convert("L")
     hist = diff.histogram()
     return sum(hist[PIXEL_DIFF:]) / (COMPARE[0] * COMPARE[1])
@@ -90,7 +91,7 @@ def main() -> int:
                 status, note = "CHANGED", f"{share:.0%} of the picture differs: see changed/{name}.png"
                 side_by_side(Image.open(ref), now, album_dir / "changed" / f"{name}.png")
             else:
-                status, note = "same", f"{share:.1%} differs"
+                status, note = "same", f"{share:.2%} differs"
         counts[status] += 1
         rows.append(f"{status:8} {name:18} {note}")
         if approve and status != "FAIL" and now is not None:

@@ -41,8 +41,18 @@ func centre_on_player() -> void:
 	var me := _me()
 	if me != null:
 		centre = me.position
+	_keep_in_city()
 	_collect()
 	queue_redraw()
+
+## BUG-4: the view stops at the city's edge instead of showing empty dark space;
+## zoomed out past the whole city, it stays centred on it.
+func _keep_in_city() -> void:
+	if city == null or city.size_m <= 0.0:
+		return
+	var half := size * 0.5 / zoom
+	for axis in 2:
+		centre[axis] = city.size_m * 0.5 if half[axis] * 2.0 >= city.size_m else clampf(centre[axis], half[axis], city.size_m - half[axis])
 
 func _process(delta: float) -> void:
 	if not is_visible_in_tree():
@@ -133,6 +143,7 @@ func _gui_input(event: InputEvent) -> void:
 		var before := _to_map(event.position)
 		zoom = clampf(zoom * (1.25 if event.button_index == MOUSE_BUTTON_WHEEL_UP else 0.8), ZOOM_MIN, ZOOM_MAX)
 		centre += before - _to_map(event.position)   # zoom round the mouse
+		_keep_in_city()
 		queue_redraw()
 		accept_event()
 	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
@@ -141,6 +152,7 @@ func _gui_input(event: InputEvent) -> void:
 	elif event is InputEventMouseMotion:
 		if _drag:
 			centre -= event.relative / zoom
+			_keep_in_city()
 		_hover = _nearest(event.position)
 		queue_redraw()
 
