@@ -19,7 +19,8 @@ const CHECK_EVERY_MIN := 10.0
 const FROZEN_HOURS := 2.0          # outdoors and not moved 0.5 m for this long = frozen
 const FROZEN_SHARE_MAX := 0.01     # of civilians on the street
 const DEEP_WALL_M := 1.5           # inside a footprint, this far from every wall: not a doorway
-const SLOWDOWN_MAX := 1.6          # an hour's average tick vs the same hour on day 1
+const SLOWDOWN_MAX := 1.6          # an hour's average tick vs the same hour on day 2 (day 1 starts
+                                   # with everyone neatly placed and is always faster: a warm-up)
 const AT_DOOR_MIN := 30.0         # game minutes at their goal, outdoors, not hanging round on purpose
 const GROWTH_MAX := 0.10           # entities may grow 10% over the run (bodies, cars), no more
 
@@ -28,7 +29,7 @@ var _col: CityCollision
 var _last_pos := {}    # id -> Vector2
 var _still_since := {} # id -> tick it last moved
 var _problems := {}    # rule -> {count, example}
-var _hour_ms := {}     # hour of day -> first-day average ms/tick
+var _hour_ms := {}     # hour of day -> day-2 average ms/tick
 var _at_door_since := {}   # id -> tick they reached their goal and stayed out
 var _sched: NPCScheduleSystem
 
@@ -77,12 +78,11 @@ func _initialize() -> void:
 			var hod := int(SimClock.day_fraction(world.tick) * 24.0 + 0.5) % 24
 			var avg := hour_usec / 1000.0 / hour_ticks
 			var slow := ""
-			if _hour_ms.has(hod):
-				if avg > _hour_ms[hod] * SLOWDOWN_MAX and avg > 0.5:
-					_flag("slowdown", "%02d:00 on day %d: %.2f ms/tick vs %.2f on day 1" % [hod, day, avg, _hour_ms[hod]])
-					slow = "  SLOWER"
-			else:
+			if day == 2:
 				_hour_ms[hod] = avg
+			elif _hour_ms.has(hod) and avg > _hour_ms[hod] * SLOWDOWN_MAX and avg > 0.5:
+				_flag("slowdown", "%02d:00 on day %d: %.2f ms/tick vs %.2f on day 2" % [hod, day, avg, _hour_ms[hod]])
+				slow = "  SLOWER"
 			var top: Array = world.total_usec.keys()
 			top.sort_custom(func(a, b): return world.total_usec[a] > world.total_usec[b])
 			var outdoors := 0
