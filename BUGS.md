@@ -13,6 +13,7 @@ Severity: **high** = breaks a game or loses progress · **medium** = clearly wro
 
 | ID | Severity | What happens | Where | Found by |
 |----|----------|--------------|-------|----------|
+| BUG-12 | medium (to confirm) | A few people near you stand still for hours waiting for a route. Long routes are worked out by at most 3 helper threads with no queue: each tick the first walker to ask gets a free helper, and walkers are asked in the same order every tick, so the last ones can wait a very long time. It shows when the sim runs faster than real time: the soak, and in the game the 20x/40x fast-forward and sleeping. At 1x it is probably rare. Fix: a fair first-come queue for route requests. | `sim_nav.gd` `_take_async` | soak "frozen" (2 of ~80 near you) |
 | BUG-11 | medium | `verify_sim_perf` makes the game look about 2.5x faster than it is. It jumps the clock and measures right after placing everyone, when ~650 people are outdoors; a city that has been running keeps ~2,000 outdoors, and costs ~4 ms per sim tick with 6000 people (vs the 1.2-1.7 ms it reports). It also never switches traffic on (+0.25 ms). 4 ms is a quarter of a frame before any drawing. Fix the test (run the clock forward from 07:00 with traffic), then decide the budget with Phil. | `debug/verify_sim_perf.gd`; cost is `NPCScheduleSystem` | soak (per-system timing) |
 | BUG-9 | low (to check on Phil's PC) | In the shop (`--store` picture) a dark curved band runs across the shop floor, under the player. It could be a curved wall drawn at floor height, or a drawing glitch. | shop interior / cutaway | album `shop_counter` |
 | BUG-7 | low (to check on Phil's PC) | At night (22:00) the building walls are pitch black, so only the lit windows show and they seem to float. The server draws in OpenGL mode without the screen-space lighting Phil's PC has, so it may look fine there. | night lighting, `game_view_3d.gd` | album `street_night`, `3d_night` |
@@ -24,6 +25,7 @@ Severity: **high** = breaks a game or loses progress · **medium** = clearly wro
 
 | ID | Idea | Why it's not a bug |
 |----|------|--------------------|
+| IDEA-2 | Commutes take most of the night: people walk at real speed (about 1.5 m/s) but the clock runs 24x faster, so a 1 km walk takes ~4 game hours and a 3 km commute over 12. At 03:00 about a third of the city is still walking home. Options: people far from you move at "game-time" speed (nobody sees them), more of them drive or take the bus, or homes are placed nearer workplaces. It also costs speed: ~2,000 people outdoors in a running city. | By design (real walking speed on a 6 km map), not a coding mistake; needs Phil's choice. |
 | IDEA-1 | Let the sun move through the day (low and long shadows at 08:00 and 18:00, short at noon). | By design: the sun is fixed at an afternoon angle so walls read by shade (`game_view_3d.gd:133`); only its colour and brightness change. The album showed 08:00 and 12:00 look the same. |
 
 ## Being fixed
