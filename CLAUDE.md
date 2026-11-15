@@ -26,6 +26,7 @@ Import takes about 12 s and is required before any check, otherwise class_names 
 - One check: `$G --headless --path . -s debug/verify_<name>.gd 2>&1 | tail -20`
 - Checks by name filter: `debug/run_all.sh $G <filter>`, e.g. `economy`, `phase3`, `save`
 - Full suite: `debug/run_all.sh $G`. Prints one PASS/FAIL line each and exits with the number of failures. Slow, so run it in the background.
+- `verify_sim_perf` is timing-based and fails (a tick over 20 ms) when anything else heavy runs at the same time. Before treating a failure as real, re-run it alone. Baseline on 4 cores: 1.7 ms/tick average, worst tick about 12 ms.
 - Compile every script: `debug/run_all.sh $G scripts_parse` (2 s). **Run this after every GDScript edit.**
 - Screenshots and perf: `debug/shot_*.gd`, `debug/bench_3d.gd`, `debug/perf_main.gd`, `debug/render_breakdown.gd`. Run them with `$G --path . -s ...`. Rendering needs a display, so prefix them with `xvfb-run -a`.
 - City data rebuild (only when roads or buildings change): `tools/city/rebuild.sh`, then run the full suite.
