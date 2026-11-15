@@ -3,6 +3,13 @@
 Godot 4.7.2 crime/street-life sim on a real 6 km downtown-LA map. The project name is "Tagged" and the user dir is "Ganstoid".
 Phil plays it on Windows through `Play Ganstoid.bat` → `launcher.ps1` → `update.ps1`, which mirrors `main` from GitHub. **Anything pushed to `main` reaches his machine the next time he presses Play.**
 
+## Working with Phil (absolute beginner)
+- Plain language, no jargon. When a technical word is unavoidable, explain it in a few words.
+- Lead: end every reply with 2–3 concrete next steps and mark one **Recommended**, with one line on why. Never leave Phil to work out what to do next.
+- Propose before you build anything big, such as a new system, a redesign or a deletion: say what it does for the player, roughly how long it takes, and what could break. Small fixes can just be done.
+- Say what to test in the game after a change ("press N, the map should show yellow shops").
+- Flag risks and mistakes early, including in Phil's own ideas, and suggest the better route.
+
 ## Working rules (token budget)
 - Act, don't narrate. No option surveys, no restating the task, no recap of unchanged code. Final report: what changed, check results, anything left open. A few lines.
 - Read narrowly: `rg` for the symbol, then read only the function or range you need. Never cat a whole large file (`player_input_system.gd`, `city_renderer.gd`, `data/city/*.json` are MBs or hundreds of lines). Never open `data/city/*.json` or `tools/city/*.json` in full. Query them with `python3 -I -c` or `jq`.
