@@ -1,6 +1,6 @@
 ## Screenshot tool for the game scene (not a check): loads scenes/main.tscn,
 ## waits for the street routes, fast-forwards the sim, saves a PNG.
-## Run: godot --rendering-driver opengl3 --path . -s debug/shot_main.gd -- --out=<png> [--sim=<seconds>] [--zoom=<px/m>] [--hour=<0-23>] [--aim] [--bag]
+## Run: godot --rendering-driver opengl3 --path . -s debug/shot_main.gd -- --out=<png> [--sim=<seconds>] [--zoom=<px/m>] [--hour=<0-23>] [--aim] [--bag] [--map]
 extends SceneTree
 
 func _initialize() -> void:
@@ -8,6 +8,8 @@ func _initialize() -> void:
 	for a in OS.get_cmdline_user_args():
 		var kv := a.trim_prefix("--").split("=")
 		args[kv[0]] = kv[1] if kv.size() > 1 else ""
+	Engine.set_meta("seed", int(OS.get_environment("SHOT_SEED")) if OS.has_environment("SHOT_SEED") else 4242)   # QA4: same city every run
+	Engine.set_meta("no_save", true)   # QA4: a picture never writes (or reads back) a save
 	Engine.set_meta("skip_new_game", true)   # O1: screenshots start straight in (Normal / Street life)
 	var main: Node = load("res://scenes/main.tscn").instantiate()
 	root.add_child(main)
@@ -208,6 +210,13 @@ func _run(main: Node, args: Dictionary) -> void:
 		await process_frame
 		Input.action_press(PlayerInputSystem.ATTACK_ACTION)
 		await process_frame
+	if args.has("map"):   # QA4 look: the N map window, centred on you
+		for n in main.get_node("HudLayer").get_children():
+			if n is CityMapWindow:
+				n.visible = true
+				n._view.centre_on_player()
+		for i in 4:
+			await process_frame
 	await RenderingServer.frame_post_draw
 	root.get_viewport().get_texture().get_image().save_png(args.get("out", "/tmp/main.png"))
 	quit()

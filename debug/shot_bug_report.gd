@@ -5,6 +5,8 @@
 extends SceneTree
 
 func _initialize() -> void:
+	Engine.set_meta("seed", int(OS.get_environment("SHOT_SEED")) if OS.has_environment("SHOT_SEED") else 4242)   # QA4: same city every run
+	Engine.set_meta("no_save", true)   # QA4: a picture never writes (or reads back) a save
 	Engine.set_meta("skip_new_game", true)
 	var main: Node = load("res://scenes/main.tscn").instantiate()
 	root.add_child(main)

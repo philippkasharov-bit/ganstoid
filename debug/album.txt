@@ -1,0 +1,30 @@
+# QA4 photo album: one picture per line. name | script | arguments
+# The same seed every run (SHOT_SEED, default 4242), so a picture only changes when the game does.
+street_morning   | debug/shot_main.gd   | --sim=20
+street_noon      | debug/shot_main.gd   | --hour=12 --sim=10
+street_night     | debug/shot_main.gd   | --hour=22 --sim=10
+street_dawn      | debug/shot_main.gd   | --hour=6 --sim=10
+zoomed_in        | debug/shot_main.gd   | --zoom=40 --sim=10
+aim_and_shoot    | debug/shot_main.gd   | --aim
+bag_open         | debug/shot_main.gd   | --bag
+crime_menu       | debug/shot_main.gd   | --menu
+inside_a_house   | debug/shot_main.gd   | --inside
+broken_doors     | debug/shot_main.gd   | --openings
+money_map        | debug/shot_main.gd   | --money
+pause_menu       | debug/shot_main.gd   | --pause
+sleep            | debug/shot_main.gd   | --sleep
+shop_counter     | debug/shot_main.gd   | --store
+hotbar           | debug/shot_main.gd   | --hotbar
+hurt_and_eating  | debug/shot_main.gd   | --motion
+city_map         | debug/shot_main.gd   | --map
+bug_report       | debug/shot_bug_report.gd |
+3d_street        | debug/shot_3d.gd     |
+3d_night         | debug/shot_3d.gd     | --hour=22
+3d_turned        | debug/shot_3d.gd     | --turn=1
+3d_behind_tall   | debug/shot_3d.gd     | --behind
+3d_inside_house  | debug/shot_3d.gd     | --inside
+3d_live_people   | debug/shot_3d.gd     | --sim=15
+models_closeup   | debug/shot_models.gd |
+ui_widgets       | debug/shot_ui.gd     |
+new_game_screen  | debug/shot_new_game.gd |
+loading_screen   | debug/shot_loading.gd |

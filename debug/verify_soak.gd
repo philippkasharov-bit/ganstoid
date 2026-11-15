@@ -6,7 +6,8 @@
 ##   - nobody outdoors within sight of the player (NPCStreet.ABSTRACT_M) stands deep
 ##     inside a building's walls (farther out, walkers go straight on purpose)
 ##   - nobody holds negative cash; health stays 0..1
-##   - civilians on the street don't freeze in place for hours
+##   - civilians on the street within sight don't freeze in place for hours (out of
+##     sight, people hanging round outside stand still on purpose: POP1)
 ##   - the world doesn't swell (entity count) or slow down as days pass
 ## Prints a line per game hour and the worst cases it saw, with ids and places.
 ## SOAK_HOURS, SOAK_POP (default 1500; the game has 6000), SOAK_SEED (default 7).
@@ -119,10 +120,12 @@ func _watch(world: World) -> void:
 		if npc.indoors or npc.is_down or e.has_component(ComponentNames.PLAYER_STATE):
 			_last_pos.erase(npc.id)
 			continue
-		var b := _col.building_at(p) if p.distance_to(me.position) < NPCStreet.ABSTRACT_M - 100.0 else {}   # a margin: walkers coming in from the straight-line zone
+		var in_sight := p.distance_to(me.position) < NPCStreet.ABSTRACT_M - 100.0   # a margin: walkers coming in from the straight-line zone
+		var b := _col.building_at(p) if in_sight else {}
 		if not b.is_empty() and _wall_distance(p, b["poly"]) > DEEP_WALL_M:
 			_flag("inside walls", "%s outdoors at %.1f, %.1f (%.0f m from you), %.1f m inside %s (%s)" % [npc.id, p.x, p.y, p.distance_to(me.position), _wall_distance(p, b["poly"]), b["id"], b.get("kind", "?")])
-		if npc.is_cop or npc.is_crew or npc.is_dealer or npc.post_position != Vector2.ZERO:
+		if npc.is_cop or npc.is_crew or npc.is_dealer or npc.post_position != Vector2.ZERO or not in_sight:
+			_last_pos.erase(npc.id)
 			continue
 		street += 1
 		var last: Vector2 = _last_pos.get(npc.id, Vector2.INF)
