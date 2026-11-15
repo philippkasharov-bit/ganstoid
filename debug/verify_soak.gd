@@ -8,6 +8,8 @@
 ##   - nobody holds negative cash; health stays 0..1
 ##   - civilians on the street within sight don't freeze in place for hours (out of
 ##     sight, people hanging round outside stand still on purpose: POP1)
+##   - nobody, near or far, stands at the door they were walking to for over half
+##     an hour instead of going in (BUG-10: out of sight, walkers never went in)
 ##   - the world doesn't swell (entity count) or slow down as days pass
 ## Prints a line per game hour and the worst cases it saw, with ids and places.
 ## SOAK_HOURS, SOAK_POP (default 1500; the game has 6000), SOAK_SEED (default 7).
@@ -18,6 +20,7 @@ const FROZEN_HOURS := 2.0          # outdoors and not moved 0.5 m for this long 
 const FROZEN_SHARE_MAX := 0.01     # of civilians on the street
 const DEEP_WALL_M := 1.5           # inside a footprint, this far from every wall: not a doorway
 const SLOWDOWN_MAX := 1.6          # an hour's average tick vs the same hour on day 1
+const AT_DOOR_MIN := 30.0         # game minutes at their goal, outdoors, not hanging round on purpose
 const GROWTH_MAX := 0.10           # entities may grow 10% over the run (bodies, cars), no more
 
 var _city: CityData
@@ -26,6 +29,8 @@ var _last_pos := {}    # id -> Vector2
 var _still_since := {} # id -> tick it last moved
 var _problems := {}    # rule -> {count, example}
 var _hour_ms := {}     # hour of day -> first-day average ms/tick
+var _at_door_since := {}   # id -> tick they reached their goal and stayed out
+var _sched: NPCScheduleSystem
 
 func _initialize() -> void:
 	var hours := float(OS.get_environment("SOAK_HOURS")) if OS.has_environment("SOAK_HOURS") else 2.0
@@ -44,6 +49,7 @@ func _initialize() -> void:
 	SimNav.install(_city, _city.spawn, TestWorlds.DISTRICT_RADIUS)
 	await TestWorlds.wait_nav(self, [SimNav.active])
 	_col = SimNav.active.collision
+	_sched = world.find_system(NPCScheduleSystem)
 	world.tick = SimClock.hours(7.0)
 	(world.find_system(NPCScheduleSystem) as NPCScheduleSystem).settle_all(world.tick)
 	var start_entities := world.entities.size()
@@ -56,6 +62,7 @@ func _initialize() -> void:
 	var hour_ticks := 0
 	var hour_worst := 0
 	var ok := true
+	world.profiling = true   # where each hour's time goes (World.total_usec)
 	while world.tick < end_tick:
 		var t := Time.get_ticks_usec()
 		world.step(1.0 / SimClock.TICKS_PER_SECOND)
@@ -76,8 +83,15 @@ func _initialize() -> void:
 					slow = "  SLOWER"
 			else:
 				_hour_ms[hod] = avg
-			print("day %d %02d:00  %.2f ms/tick avg, worst %.1f ms | entities %d | %d MB | problems so far %d%s" % [
-				day, hod, avg, hour_worst / 1000.0, world.entities.size(), OS.get_static_memory_usage() / 1048576, _total(), slow])
+			var top: Array = world.total_usec.keys()
+			top.sort_custom(func(a, b): return world.total_usec[a] > world.total_usec[b])
+			var outdoors := 0
+			for e in world.get_entities_with_component(ComponentNames.NPC).values():
+				outdoors += int(not (e.get_component(ComponentNames.NPC) as NPCData).indoors)
+			print("day %d %02d:00  %.2f ms/tick avg, worst %.1f ms | outdoors %d | %s | entities %d | %d MB | problems so far %d%s" % [
+				day, hod, avg, hour_worst / 1000.0, outdoors, ", ".join(top.slice(0, 2).map(func(k): return "%s %.2f" % [k, world.total_usec[k] / 1000.0 / hour_ticks])),
+				world.entities.size(), OS.get_static_memory_usage() / 1048576, _total(), slow])
+			world.total_usec.clear()
 			hour_usec = 0
 			hour_ticks = 0
 			hour_worst = 0
@@ -119,7 +133,16 @@ func _watch(world: World) -> void:
 			_flag("bad health", "%s health %s" % [npc.id, npc.health])
 		if npc.indoors or npc.is_down or e.has_component(ComponentNames.PLAYER_STATE):
 			_last_pos.erase(npc.id)
+			_at_door_since.erase(npc.id)
 			continue
+		var goal: Variant = _sched.street._goal.get(npc.id)
+		if goal != null and p.distance_to(goal) < 0.6 and not NPCRoutine.stays_outside(npc, world.tick) and not npc.is_cop and not npc.is_crew and not npc.is_dealer:
+			var since: int = _at_door_since.get(npc.id, world.tick)
+			_at_door_since[npc.id] = since
+			if world.tick - since > SimClock.hours(AT_DOOR_MIN / 60.0):
+				_flag("stuck at door", "%s at %.1f, %.1f for %.0f min, %.0f m from you" % [npc.id, p.x, p.y, float(world.tick - since) / SimClock.hours(1.0) * 60.0, p.distance_to(me.position)])
+		else:
+			_at_door_since.erase(npc.id)
 		var in_sight := p.distance_to(me.position) < NPCStreet.ABSTRACT_M - 100.0   # a margin: walkers coming in from the straight-line zone
 		var b := _col.building_at(p) if in_sight else {}
 		if not b.is_empty() and _wall_distance(p, b["poly"]) > DEEP_WALL_M:
