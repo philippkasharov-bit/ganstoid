@@ -9,6 +9,17 @@ Phil plays it on Windows through `Play Ganstoid.bat` → `launcher.ps1` → `upd
 - Propose before you build anything big, such as a new system, a redesign or a deletion: say what it does for the player, roughly how long it takes, and what could break. Small fixes can just be done.
 - Say what to test in the game after a change ("press N, the map should show yellow shops").
 - Flag risks and mistakes early, including in Phil's own ideas, and suggest the better route.
+- **Magnific costs real credits: always ask first.** Before any Magnific call that generates, edits, upscales or converts anything, show Phil what it will make, the price (`simulate_cost` / `simulate_flows`) and the current balance, then wait for a yes. Free calls (listing, reading, checking balance or cost) need no permission. One yes covers only what was shown. A retry or a variation needs a new yes.
+
+## Two Claude accounts work on this repo
+Phil uses two Claude accounts on this game. Treat the other one as a teammate you can't talk to; GitHub is the only shared place.
+- **Start of every session:** `git fetch origin main --depth=50`, then `git log --oneline origin/main -10` and `git ls-remote --heads origin`. Tell Phil in one line what changed since last time and which other branches exist. Start your work from the latest `main`.
+- **One task = one branch**, named `<account-or-session>-<TASKID>-<short-name>`, e.g. `b-MP2-map-icons`. Never commit straight to `main`.
+- **Don't touch another session's branch.** Never delete, rebase or force-push a branch you didn't create. If its work overlaps yours (same files), tell Phil before going on.
+- **Task IDs:** before picking a new number, check `git log origin/main` and the open branch names so the two accounts don't both make `MP2`.
+- **Merging to `main`** (only when Phil says so): fetch `main` again, rebase your branch on it, re-run the checks, then do a fast-forward push. Never `push --force` to `main`. If `main` moved and conflicts, stop and explain to Phil in plain words.
+- Push your branch at the end of every reply that changed files, so the other account can see it and nothing is lost when the container closes.
+- The cloud environment ("Phil's games", which installs Godot) belongs to one account only. On the other account, use the Setup commands below by hand, or create the same environment there.
 
 ## Working rules (token budget)
 - Act, don't narrate. No option surveys, no restating the task, no recap of unchanged code. Final report: what changed, check results, anything left open. A few lines.
