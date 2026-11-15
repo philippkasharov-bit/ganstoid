@@ -25,7 +25,9 @@ func _initialize() -> void:
 			continue
 		var m := CityMesh3D.new()
 		m.origin = city.spawn
-		BuildingMesh3D.add(SurfaceTool.new(), b, m._v, i + 1, m)
+		var st := SurfaceTool.new()
+		st.begin(Mesh.PRIMITIVE_TRIANGLES)   # QA1: an unstarted tool logged 52k errors per run
+		BuildingMesh3D.add(st, b, m._v, i + 1, m)
 		var parts := _parts(m)
 		houses += 1
 		var span := InteriorSolid.door_span(CityMesh3D._open(b["poly"]), b.get("door", Vector2.INF))
