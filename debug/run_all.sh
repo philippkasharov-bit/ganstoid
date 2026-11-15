@@ -15,7 +15,7 @@ LOGS="${LOGS:-/tmp/qa_logs}"
 WARN_FAILS="${WARN_FAILS:-0}"
 cd "$(dirname "$0")/.." || exit 1
 mkdir -p "$LOGS"
-EXIT_NOTES='still in use at exit|leaked at exit'
+EXIT_NOTES='still in use at exit|leaked at exit|were leaked|in use exist at exit'
 shopt -s nullglob
 checks=(debug/verify_*${FILTER}*.gd)
 [ ${#checks[@]} -eq 0 ] && { echo "no checks match '$FILTER'"; exit 1; }

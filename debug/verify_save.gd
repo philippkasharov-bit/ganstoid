@@ -2,6 +2,7 @@
 ## city of the same seed is the same game: the clock, the player's cash, heat,
 ## gun and rounds, a dead body where it fell, a recruited crew member, prices.
 ## Also: writing takes little time, a broken or old file is ignored.
+## QA_EXPECT: is not a usable save
 extends SceneTree
 
 const PATH := "user://verify_save.txt"
