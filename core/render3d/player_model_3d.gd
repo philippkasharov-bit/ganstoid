@@ -25,11 +25,28 @@ func _ready() -> void:
 	if _ok:
 		for anim in ["Walk", "Idle"]:
 			_player.get_animation(anim).loop_mode = Animation.LOOP_LINEAR
+			centre_hips(_player.get_animation(anim))
 		_punch = _player.has_animation("Punch")
 		if _punch:
 			_player.get_animation("Punch").loop_mode = Animation.LOOP_NONE
 		_player.play("Idle")
 	visible = false
+
+## BUG-16: the gangster walk (PL2) was baked with the hips ~1.3 m forward and
+## 0.2 m to the side of the figure's feet, so walking drew you out of your
+## ring and stopping snapped you back. Moves the clip's hips so their average
+## stands over the origin; the bob and sway within the clip stay.
+static func centre_hips(a: Animation) -> void:
+	var t := a.find_track(NodePath("Armature/Skeleton3D:Hips"), Animation.TYPE_POSITION_3D)
+	if t < 0 or a.track_get_key_count(t) == 0:
+		return
+	var mean := Vector3.ZERO
+	for k in a.track_get_key_count(t):
+		mean += a.track_get_key_value(t, k)
+	mean /= a.track_get_key_count(t)
+	var shift := Vector3(mean.x, 0.0, mean.z)
+	for k in a.track_get_key_count(t):
+		a.track_set_key_value(t, k, (a.track_get_key_value(t, k) as Vector3) - shift)
 
 ## True when the model loaded (else the player stays a MultiMesh figure).
 func usable() -> bool:

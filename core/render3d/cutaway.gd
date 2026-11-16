@@ -154,12 +154,14 @@ float grain(int id, vec3 wp) {
 	return 1.0 + (d - 0.5) * 2.0 * strength[id];
 }
 
-// Lamp pools and headlights here (0..1).
+// Lamp pools and headlights here (0..1). The sim's StreetLights.pool (who can
+// see you) keeps its own simpler curve; this one is only the look.
 float lamp(vec3 wp) {
 	float sum = 0.0;
 	for (int i = 0; i < light_count; i++) {
 		float d = distance(wp.xz, lights[i].xy);
-		sum += (1.0 - smoothstep(lights[i].z * 0.3, lights[i].z, d)) * lights[i].w;   // = StreetLights.pool
+		float k = d / (lights[i].z * 0.45);   // BUG-20: bright under the head, a soft inverse-square fade, no rim
+		sum += clamp(1.4 / (1.0 + k * k) - 0.12, 0.0, 1.0) * lights[i].w;
 	}
 	return min(sum, 1.0);
 }
@@ -231,7 +233,8 @@ void fragment() {
 	float dim = mix(0.8, unseen, night);   // A1: by day the unseen side is only a little darker, not a shadow   // by day the unseen world is only a little dimmer (Zomboid)
 	vec3 sodium = mix(vec3(1.0), vec3(1.0, 0.78, 0.5), clamp(pool, 0.0, 1.0) * night);   // P1: lamp light is warm sodium, not grey fog
 	ALBEDO = mix(mix(grey, col, mix(0.6, 0.35, night)) * dim, col, lit) * bright * sodium;
-	EMISSION = night * (vec3(1.0, 0.72, 0.4) * pool * 0.55 * col + vec3(1.0, 0.82, 0.5) * lit_glass * 0.9 + tint * self_glow);
+	vec3 city_glow = vec3(0.26, 0.29, 0.40) * mix(unseen, 1.0, lit);   // BUG-20: LA's sky glow: shapes stay readable away from the lamps
+	EMISSION = night * (city_glow * col + vec3(1.0, 0.66, 0.32) * pool * 0.55 * col + vec3(1.0, 0.82, 0.5) * lit_glass * 0.9 + tint * self_glow);
 	ROUGHNESS = roughness;
 }
 """
