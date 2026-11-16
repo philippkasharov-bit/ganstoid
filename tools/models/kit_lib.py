@@ -38,10 +38,49 @@ def g(x: float, y: float, z: float) -> tuple[float, float, float]:
 class Part:
     """A bmesh being filled with faces, each tagged with its material slot."""
 
-    def __init__(self, name: str, bevel: bool = True) -> None:
+    def __init__(self, name: str, bevel: bool = True, bevel_m: float = BEVEL_M, segments: int = 1,
+            min_edge: float = BEVEL_MIN_EDGE_M) -> None:
         self.name = name
-        self.bevel = bevel   # windows repeat dozens of times per house: they go without
+        self.bevel = bevel
+        self.bevel_m = bevel_m      # K5 mid-poly: each part picks how soft its edges are ...
+        self.segments = segments    # ... in how many steps ...
+        self.min_edge = min_edge    # ... and from what edge length up
         self.bm = bmesh.new()
+
+    def along_x(self, profile: list[tuple[float, float]], x0: float, x1: float, mat: str, cap: bool = True) -> None:
+        """K5: a moulding: the closed (y, z) outline `profile` swept from x0 to x1."""
+        n = len(profile)
+        for k in range(n):
+            (ay, az), (by, bz) = profile[k], profile[(k + 1) % n]
+            self.quad([(x0, ay, az), (x0, by, bz), (x1, by, bz), (x1, ay, az)], mat)
+        if cap:
+            self.quad([(x1, y, z) for y, z in profile], mat)
+            self.quad([(x0, y, z) for y, z in reversed(profile)], mat)
+
+    def along_y(self, profile: list[tuple[float, float]], y0: float, y1: float, mat: str, cap: bool = True) -> None:
+        """K5: the closed (x, z) outline `profile` swept upright from y0 to y1."""
+        n = len(profile)
+        for k in range(n):
+            (ax, az), (bx, bz) = profile[k], profile[(k + 1) % n]
+            self.quad([(ax, y0, az), (bx, y0, bz), (bx, y1, bz), (ax, y1, az)], mat)
+        if cap:
+            self.quad([(x, y1, z) for x, z in reversed(profile)], mat)
+            self.quad([(x, y0, z) for x, z in profile], mat)
+
+    def ball(self, cx: float, cy: float, cz: float, r: float, mat: str, rings: int = 6, sides: int = 10) -> None:
+        """K5: a knob, a lamp globe: a small sphere."""
+        for i in range(rings):
+            a0, a1 = math.pi * i / rings - math.pi / 2, math.pi * (i + 1) / rings - math.pi / 2
+            for k in range(sides):
+                b0, b1 = 2 * math.pi * k / sides, 2 * math.pi * (k + 1) / sides
+                pts = [(cx + r * math.cos(a) * math.cos(b), cy + r * math.sin(a), cz + r * math.cos(a) * math.sin(b))
+                    for a, b in ((a0, b0), (a0, b1), (a1, b1), (a1, b0))]
+                if i == 0:
+                    pts = [pts[0], pts[2], pts[3]]
+                elif i == rings - 1:
+                    pts = [pts[0], pts[1], pts[2]]
+                verts = [self.bm.verts.new(g(*p)) for p in pts]
+                self.bm.faces.new(verts).material_index = SLOTS.index(mat)
 
     def quad(self, pts: list[tuple[float, float, float]], mat: str) -> None:
         verts = [self.bm.verts.new(g(*p)) for p in pts]
@@ -75,8 +114,9 @@ class Part:
     def finish(self) -> bpy.types.Object:
         bmesh.ops.recalc_face_normals(self.bm, faces=self.bm.faces)
         bmesh.ops.remove_doubles(self.bm, verts=self.bm.verts, dist=1e-5)   # boxes share corners: weld so edges are solid
-        solid = [e for e in self.bm.edges if self.bevel and len(e.link_faces) == 2 and e.calc_length() >= BEVEL_MIN_EDGE_M]   # mid-poly: big hard edges catch a sliver of light
-        bmesh.ops.bevel(self.bm, geom=solid, offset=BEVEL_M, segments=1, affect="EDGES", clamp_overlap=True)
+        solid = [e for e in self.bm.edges if self.bevel and len(e.link_faces) == 2 and e.calc_length() >= self.min_edge
+            and e.calc_face_angle(0.0) > 0.5]   # mid-poly: hard edges catch a sliver of light (flat seams stay as they are)
+        bmesh.ops.bevel(self.bm, geom=solid, offset=self.bevel_m, segments=self.segments, affect="EDGES", clamp_overlap=True)
         _sheet_uvs(self.bm)
         me = bpy.data.meshes.new(self.name)
         self.bm.to_mesh(me)
