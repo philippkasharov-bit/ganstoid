@@ -143,6 +143,13 @@ static var ASYNC_MAX := clampi(OS.get_processor_count() - 1, 1, 4)
 var _async_jobs := {}      # mover_id -> [task id, goal]
 var _async_done := {}      # mover_id -> plan (written by workers, under _async_lock)
 var _async_lock := Mutex.new()
+## BUG-12: walkers waiting for a free helper, first come first served. Before
+## this the first walker to ask on each tick got the free helper, and walkers
+## are asked in the same order every tick, so the last ones in that order could
+## wait for hours (it showed at fast-forward, asleep, and in the soak).
+var _queue: Array[StringName] = []
+var _queued := {}          # mover_id -> the tick they last asked (a mover that stops asking drops out)
+const QUEUE_STALE_TICKS := 60   # well over the slowest asker (npc_street FAR_EVERY = 6 ticks)
 
 func _take_async(mover_id: StringName, pos: Vector2, goal: Vector2, layer: String) -> Dictionary:
 	for id in _async_jobs.keys():   # free finished worker tasks (Godot needs each one waited on)
@@ -156,8 +163,21 @@ func _take_async(mover_id: StringName, pos: Vector2, goal: Vector2, layer: Strin
 	if not done.is_empty():
 		if done["goal"].distance_to(goal) <= REPATH_M and done["layer"] == layer:
 			return done
-	if _async_jobs.has(mover_id) or _async_jobs.size() >= ASYNC_MAX:
+	if _async_jobs.has(mover_id):
 		return {}
+	if not _queued.has(mover_id):
+		_queue.append(mover_id)
+	_queued[mover_id] = _ticks
+	var free := ASYNC_MAX - _async_jobs.size()
+	if free <= 0:
+		return {}
+	while not _queue.is_empty() and _ticks - int(_queued.get(_queue[0], -QUEUE_STALE_TICKS - 1)) > QUEUE_STALE_TICKS:
+		_queued.erase(_queue.pop_front())   # went indoors, changed plans, or was forgotten
+	var place := _queue.find(mover_id)
+	if place < 0 or place >= free:
+		return {}   # someone who asked earlier goes first
+	_queue.remove_at(place)
+	_queued.erase(mover_id)
 	var lane := lane_of(mover_id)
 	var task := WorkerThreadPool.add_task(func() -> void:
 		var plan := _plan(pos, goal, layer, lane)
@@ -175,6 +195,9 @@ func finish_async() -> void:
 
 func forget(mover_id: StringName) -> void:
 	_plans.erase(mover_id)
+	if _queued.has(mover_id):
+		_queued.erase(mover_id)
+		_queue.erase(mover_id)
 	_async_lock.lock()
 	_async_done.erase(mover_id)
 	_async_lock.unlock()

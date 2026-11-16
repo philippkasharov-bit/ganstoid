@@ -21,6 +21,10 @@ const PASS_M := 4.0                # close enough to a point one only walks past
 const NEAR_M := 150.0              # full-rate movement inside this distance of the player
 const FAR_EVERY := 6               # beyond it: one step per this many ticks
 const UNSEEN_EVERY := 30           # MAP1: past ABSTRACT_M: one step per this many ticks
+const UNSEEN_PACE_SCALE := 24.0     # BUG-11: past ABSTRACT_M people travel at game-time speed. The clock runs
+                                   # 24x (1 game day = 1 real hour), so at real walking speed a 1 km walk took
+                                   # ~4 game hours: commutes ran all night and ~4,500 people were outdoors at
+                                   # rush hour (10 ms a tick). Nobody sees them; near you nothing changes.
 const ABSTRACT_M := 520.0          # POP1: past the streamed city (CityStream3D.UNLOAD_M + margin) walkers go straight, no routes
 const PAUSE_EVERY_S := 40.0        # near the player, a walker stops about this often ...
 const PAUSE_TICKS := [90, 360]     # ... for 1.5 to 6 s (phone, shoelace, looking around)
@@ -171,7 +175,7 @@ func _move(npc: NPCData, delta: float, tick: int, player_pos: Vector2) -> bool:
 			_loiter(npc, target, step_delta, tick)   # POP1: out of sight they just stand at the door
 	elif unseen:
 		var reach := PASS_M if stay == 0 else ARRIVE_EPSILON
-		npc.position = WanderBehavior.step_toward(npc.position, target, pace_now.get(npc.id, NPCRoutine.pace(npc.id)), step_delta, reach)   # POP1: a straight line, no navmesh
+		npc.position = WanderBehavior.step_toward(npc.position, target, pace_now.get(npc.id, NPCRoutine.pace(npc.id)) * UNSEEN_PACE_SCALE, step_delta, reach)   # POP1: a straight line, no navmesh
 		if nav != null:
 			nav.forget(npc.id)
 		if npc.position.distance_to(target) <= reach:   # BUG-10: out of sight they reached the door and stood there for good

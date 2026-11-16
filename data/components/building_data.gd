@@ -8,10 +8,16 @@ extends Resource
 ## like an untouched parked car). Any field written sets it; container edits
 ## set it in Containers. Not saved itself.
 var touched := true
+## BUG-1: goes up whenever any building's type or owner changes, so counts of the
+## player's buildings can be kept until it moves (rescanning 20,000 buildings each
+## game hour was a ~20 ms hitch).
+static var ownership_serial := 0
+
 @export var building_type: GanstoidEnums.BuildingType:
 	set(v):
 		if v != building_type:
 			touched = true
+			ownership_serial += 1
 		building_type = v
 @export var position: Vector2:
 	set(v):
@@ -34,6 +40,7 @@ var touched := true
 	set(v):
 		if v != owner_npc_id:
 			touched = true
+			ownership_serial += 1
 		owner_npc_id = v
 
 ## Drives per-building economy feedback loop (Phase 2): robbed buildings

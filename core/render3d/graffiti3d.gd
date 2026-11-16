@@ -22,7 +22,7 @@ static func material() -> ShaderMaterial:
 	if _material == null:
 		_material = Cutaway.material()
 		_material.set_shader_parameter("decal_on", true)
-		var img := Image.load_from_file(ATLAS) if FileAccess.file_exists(ATLAS) else null
+		var img := SurfaceDetail.image(ATLAS)   # BUG-2: works in an exported game too
 		if img != null:
 			img.generate_mipmaps()
 			_material.set_shader_parameter("decal_tex", ImageTexture.create_from_image(img))

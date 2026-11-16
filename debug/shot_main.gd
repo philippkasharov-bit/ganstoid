@@ -173,7 +173,7 @@ func _run(main: Node, args: Dictionary) -> void:
 		for n in main.get_node("HudLayer").get_children():
 			if n is CharacterWindow:
 				n.open_tab(CharacterWindow.TAB_HEALTH)
-				n.position = Vector2(500, 60)
+				# BUG-6 was this line (500, 60): the picture put the window over the bag; the game docks it right
 				n._health._select("r_forearm")
 				if args.has("skills"):   # SK2 look: the Skills tab with melee's card
 					n._tabs.pick(1)

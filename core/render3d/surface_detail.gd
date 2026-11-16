@@ -34,12 +34,25 @@ static func textures() -> Texture2DArray:
 		_array.create_from_images(images)
 	return _array
 
+## BUG-2: a picture from art/, through Godot's import (an exported game has no
+## .png files, only the imported copies), else the raw file (a picture added
+## since the last import), else null. Image.load_from_file alone would leave an
+## exported game without its textures.
+static func image(path: String) -> Image:
+	var img: Image = null
+	if ResourceLoader.exists(path):
+		var tex := load(path) as Texture2D
+		img = tex.get_image() if tex != null else null
+		if img != null and img.is_compressed():
+			img.decompress()
+	elif FileAccess.file_exists(path):
+		img = Image.load_from_file(path)
+	return img if img != null and not img.is_empty() else null
+
 ## One map as SIZE x SIZE greyscale with mipmaps; flat grey when it is missing.
 static func _load(name: String) -> Image:
 	var path: String = DIR + name + ".png"
-	var img: Image = null
-	if FileAccess.file_exists(path):
-		img = Image.load_from_file(path)
+	var img := image(path)
 	if img == null or img.is_empty():
 		img = Image.create(SIZE, SIZE, false, Image.FORMAT_L8)
 		img.fill(Color(0.5, 0.5, 0.5))

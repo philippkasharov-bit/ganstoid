@@ -56,6 +56,8 @@ func _ready() -> void:
 	elif saved.is_empty():
 		GameRules.install(world, 1, 1)
 	(world.find_system(NPCScheduleSystem) as NPCScheduleSystem).settle_all(world.tick)
+	RankSystem.score(world, world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC),
+		world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE))   # BUG-1: build the city lists while loading, not on the first tick
 	_install_routes.call_deferred()
 
 func _install_routes() -> void:
