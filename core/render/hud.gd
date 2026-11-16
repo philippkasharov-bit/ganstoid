@@ -57,6 +57,7 @@ func _ready() -> void:
 	get_parent().add_child.call_deferred(skills)
 	var right := get_viewport().get_visible_rect().size.x
 	skills.setup(_world, Vector2(right - 340, 66))   # UIF2: docked right, like Zomboid
+	skills.dock_right = right - Moodles.TILE - 22.0   # BUG-14: its right edge stays left of the mood icons
 	var eye := DetectionEye.new()   # UIF4: who can see you, its own HUD piece
 	get_parent().add_child.call_deferred(eye)
 	eye.setup(_world)
@@ -206,3 +207,4 @@ func _gang_name(gang_id: StringName) -> String:
 		return String(gang_id)
 	var gang: GangData = gang_entity.get_component(ComponentNames.GANG)
 	return gang.display_name
+
