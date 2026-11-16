@@ -79,9 +79,10 @@ static func progress(world: World, state: PlayerStateData, key: String, amount: 
 			else:
 				Wallet.earn_dirty(world, int(h["pay"]))
 			state.last_message = "Hustle done: %s. +$%d" % [text_of(h), int(h["pay"])]
-			state.message_alert = true
+			state.message_alert = false   # UI3: the stamp says it
 			state.message_tone = 1
 			state.message_serial += 1
+			StampView.put(state, "HUSTLE DONE", "%s  +$%d" % [text_of(h), int(h["pay"])], UiTheme.GOOD)
 
 static func text_of(h: Dictionary) -> String:
 	return String(KINDS[h["kind"]][0]).replace("{n}", str(h["need"]))

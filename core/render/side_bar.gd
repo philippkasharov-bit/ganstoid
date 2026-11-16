@@ -17,6 +17,7 @@ const SIZE := Vector2(40, 40)
 
 
 var _world: World
+var below: Control   # UI2: the column hangs under the status card
 var _idle_box := UiTheme.button_box("idle")
 var _active_box := UiTheme.button_box("on")
 
@@ -39,6 +40,12 @@ func _button(label: String, key: String, action: StringName, icon: String) -> Bu
 	stack.alignment = BoxContainer.ALIGNMENT_CENTER
 	stack.add_child(art)
 	b.add_child(stack)
+	var tag := UiTheme.label(key, 10, UiTheme.ACCENT)   # UI2: the key on the icon, no hover needed
+	tag.add_theme_constant_override("outline_size", 3)
+	tag.add_theme_color_override("font_outline_color", Color.BLACK)
+	tag.position = Vector2(SIZE.x - 6.0 - 6.0 * key.length(), SIZE.y - 15.0)
+	tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	b.add_child(tag)
 	b.focus_mode = Control.FOCUS_NONE
 	b.custom_minimum_size = SIZE
 	b.add_theme_font_size_override("font_size", UiTheme.FONT_SMALL)
@@ -63,6 +70,8 @@ func _process(_delta: float) -> void:
 	visible = _world != null and GameRules.of(_world) != null
 	if not visible:
 		return
+	if below != null and below.visible:
+		position.y = below.position.y + below.size.y + UiTheme.SPACE
 	var open := _open_windows()
 	for i in get_child_count():
 		var b := get_child(i) as Button

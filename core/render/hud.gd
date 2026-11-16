@@ -33,6 +33,9 @@ func _ready() -> void:
 	var guide := GuideView.new()   # NX1/TP1: what to do next, first-day tips; first, so every window covers it
 	get_parent().add_child.call_deferred(guide)
 	guide.setup(_world)
+	var card := StatusCard.new()      # UI2: cash, rank, place; before the windows so they open over it
+	get_parent().add_child.call_deferred(card)
+	card.setup(_world)
 	var roster := CrewRoster.new()  # batch 22: Tab toggles it
 	get_parent().add_child.call_deferred(roster)
 	roster.setup(_world)
@@ -45,13 +48,21 @@ func _ready() -> void:
 	var menu := ActionMenu.new()      # UI1: E
 	get_parent().add_child.call_deferred(menu)
 	menu.setup(_world, Vector2(68, 124))
-	var card := StatusCard.new()      # UI2: bars and status
-	get_parent().add_child.call_deferred(card)
-	card.setup(_world)
 	var clock := ClockBox.new()       # UI6: Zomboid layout
 	get_parent().add_child.call_deferred(clock)
 	clock.setup(_world)
 	clock._driver = get_node(world_driver_path)   # Z2: shows the speed
+	var prompt := ContextPrompt.new()   # UI4: "E  Talk · Pickpocket" over what's in reach
+	get_parent().add_child.call_deferred(prompt)
+	prompt.setup(_world)
+	var stamps := StampView.new()   # UI3: rank-ups, hustles done, caught; money floating up
+	get_parent().add_child.call_deferred(stamps)
+	stamps.setup(_world)
+	var pager := PagerView.new()   # UI1: next step and hustles, beside the clock
+	get_parent().add_child.call_deferred(pager)
+	pager.setup(_world)
+	pager.clock = clock
+
 	var moodles := Moodles.new()
 	get_parent().add_child.call_deferred(moodles)
 	moodles.setup(_world)
@@ -64,6 +75,7 @@ func _ready() -> void:
 	var eye := DetectionEye.new()   # UIF4: who can see you, its own HUD piece
 	get_parent().add_child.call_deferred(eye)
 	eye.setup(_world)
+	pager.eye = eye   # UI2: the pager keeps clear of it
 	var hotbar := HotbarView.new()   # HB1: Zomboid's hotbar, bottom middle
 	get_parent().add_child.call_deferred(hotbar)
 	hotbar.setup(_world)
@@ -79,6 +91,10 @@ func _ready() -> void:
 	var bar := SideBar.new()
 	get_parent().add_child.call_deferred(bar)
 	bar.setup(_world)
+	bar.below = card   # UI2: the icon column hangs under the status card
+	guide.left_of = bar
+	if not Engine.has_meta("no_save"):   # the screen tests keep 100%
+		UiSettings.apply(get_tree().root, UiSettings.ui_scale())
 	_title_art = TextureRect.new()    # UI16: the title art while the streets load
 	_title_art.texture = UiTheme.image(UiTheme.STREET + "title.jpg")
 	_title_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE

@@ -37,6 +37,7 @@ func process_entities(entities: Dictionary, _delta: float, tick: int) -> void:
 			state.last_message = "You're a %s now. People talk about you." % NAMES[now]
 			state.message_alert = true
 			state.message_serial += 1
+			StampView.put(state, NAMES[now].to_upper(), "NEW RANK")   # UI3
 
 static func score(world: World, me: NPCData, state: PlayerStateData) -> int:
 	var s := me.cash / 50

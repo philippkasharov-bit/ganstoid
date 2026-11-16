@@ -91,6 +91,10 @@ func show_panel(title: String, rows: Array, hints: Array) -> void:
 		for part in [k, t, v]:
 			part.add_theme_font_size_override("font_size", UiTheme.FONT_BODY)   # UI18: compact rows
 		line.add_child(k)
+		if r.size() > 3 and String(r[3]) != "":   # UI4: an icon before the label
+			var icon := Moodles.icon_or_glyph(r[3], "", 18.0)
+			icon.modulate = Color(1, 1, 1, 0.85)
+			line.add_child(icon)
 		line.add_child(t)
 		line.add_child(v)
 		_rows.add_child(_clickable(line, numbered) if r[0] != "" else line)

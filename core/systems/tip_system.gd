@@ -13,7 +13,7 @@ const NEED := 0.35           # a need this low earns its tip (well before NextSt
 const EVENING_H := 19.0
 ## id -> the tip. The order is the priority when two apply at once.
 const TIPS := {
-	"start": "You're a Street rat with $40 to your name. The line at the top always says what to do next. Esc > Controls lists every key.",
+	"start": "You're a Street rat with $40 to your name. The pager (top right, green) always says what to do next, and your hustles for the day. Esc > Controls lists every key.",
 	"bleeding": "You're bleeding and losing health. Press H and bandage the wound.",
 	"cop": "A cop can see you. A crime in front of cops or witnesses builds a case against you: wait until nobody's looking.",
 	"fixer": "That's a fixer (purple jacket). Press E next to them and pick \"Ask for work\".",
@@ -24,7 +24,7 @@ const TIPS := {
 	"lift": "Pickpocketing: stay right behind them while the bar fills. Bump into them or get in front and they'll feel it. Crowds help.",
 	"body": "Someone's down. Press E and pick \"Search their pockets\": what they carry shows in your bag window.",
 	"door": "A front door. Press E to pick the lock or kick it in. Once you're in, walk up to cupboards and drawers: what's inside shows in your bag (I). Flats too.",
-	"job": "You're on a job. The top line shows where to go and how long you have. Miss the deadline and the fixers trust you less.",
+	"job": "You're on a job. The pager (top right) shows where to go and how long you have. Miss the deadline and the fixers trust you less.",
 }
 
 var _last := -1000000

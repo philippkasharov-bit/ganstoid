@@ -21,6 +21,8 @@ func _run(main: Node, args: Dictionary) -> void:
 		await process_frame
 	for i in 3:
 		await process_frame   # let the HUD see the streets loaded once
+	if args.has("uiscale"):   # UI2: the UI size setting
+		root.content_scale_factor = float(args["uiscale"])
 	if args.has("hour"):
 		driver.world.tick = SimClock.hours(float(args["hour"]))
 	for i in int(float(args.get("sim", "20")) * SimClock.TICKS_PER_SECOND):
@@ -113,6 +115,27 @@ func _run(main: Node, args: Dictionary) -> void:
 				n._open()
 				n._toggle_controls(true)
 		for i in 4:
+			await process_frame
+	if args.has("prompt"):   # UI4 look: someone in reach, the prompt over them
+		var pn: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
+		for e in driver.world.get_entities_with_component(ComponentNames.NPC).values():
+			var n: NPCData = e.get_component(ComponentNames.NPC)
+			if n != pn and not (n.is_cop or n.is_dealer or n.is_fixer or n.is_crew or n.is_down) and n.gang_id == &"":
+				n.position = pn.position + Vector2(1.6, 0.8)
+				n.indoors = false
+				n.is_busy = true   # stands still for the picture
+				driver.world.reindex_position(n.id)
+				break
+		for i in 4:
+			await process_frame
+	if args.has("stamp"):   # UI3 look: a rank-up stamp slammed down, money floating up
+		var st: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
+		var sn: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
+		for i in 2:
+			await process_frame
+		sn.cash += 120
+		StampView.put(st, "HUSTLER", "NEW RANK")
+		for i in 3:   # software drawing is slow (~0.1 s a frame): catch the stamp mid-slam
 			await process_frame
 	if args.has("paper"):   # NP1/DH1 look: a morning paper after a busy night, today's hustles on the pager
 		var ps: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)

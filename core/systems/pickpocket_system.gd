@@ -87,6 +87,9 @@ static func _caught(world: World, me: NPCData, mark: NPCData) -> Dictionary:
 	if schedule != null:
 		schedule.flee(mark)
 	CrimeSystem.broadcast_witnesses(world, me.position, CrimeSystem.SEVERITY_BY_TYPE[GanstoidEnums.CrimeType.PICKPOCKET] * CAUGHT_SEVERITY)
+	var p: Entity = world.entities.get(PlayerFactory.PLAYER_ENTITY_ID)
+	if p != null:
+		StampView.put(p.get_component(ComponentNames.PLAYER_STATE), "CAUGHT!", "they felt your hand", UiTheme.BAD)   # UI3
 	return {"ok": false, "reason": "lift_caught"}
 
 static func _crowd(world: World, me: NPCData) -> int:
