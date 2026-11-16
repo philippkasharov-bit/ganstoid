@@ -7,6 +7,7 @@ class_name HustleSystem
 extends SystemBase
 
 const DAY_START := 7.0
+const PHASE := 13            # PF: spread the once-a-second jobs over different ticks
 const PER_DAY := 3
 ## kind -> [text ("{n}" = how many), result keys that count, how many, pay, deadline hour, min rank, counts money?]
 const KINDS := {
@@ -31,7 +32,7 @@ func _init(world: World) -> void:
 	required_component = ComponentNames.PLAYER_STATE
 
 func process_entities(entities: Dictionary, _delta: float, tick: int) -> void:
-	if tick % SimClock.TICKS_PER_SECOND != 0:
+	if tick % SimClock.TICKS_PER_SECOND != PHASE:
 		return
 	var day := day_of(tick)
 	for p in entities.values():

@@ -10,6 +10,7 @@ const GRID := 300                 # 300 x 25 m = 7.5 km: the whole map
 const REVEAL_M := 45.0
 const KNOW_M := 20.0              # a dealer or fixer this close, in sight, is known
 const EVERY := 30
+const PHASE := 23
 const HOME_KNOWN_M := 220.0       # a new life (or a save from before MP2) knows its own neighbourhood
 
 var _world_ref: WeakRef
@@ -23,7 +24,7 @@ func _init(world: World) -> void:
 	required_component = ComponentNames.PLAYER_STATE
 
 func process_entities(entities: Dictionary, _delta: float, tick: int) -> void:
-	if tick % EVERY != 0:
+	if tick % EVERY != PHASE:
 		return
 	for p in entities.values():
 		var state: PlayerStateData = p.get_component(ComponentNames.PLAYER_STATE)

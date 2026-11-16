@@ -18,8 +18,8 @@ func _initialize() -> void:
 	var ok := true
 	var t := SimClock.hours(24.0 + 8.0)
 	t -= t % SimClock.TICKS_PER_SECOND
-	ns.process_entities(players, 0.0, t)   # first look: a new life gets no paper yet
-	hs.process_entities(players, 0.0, t)
+	ns.process_entities(players, 0.0, t + NewsSystem.PHASE)   # first look: a new life gets no paper yet
+	hs.process_entities(players, 0.0, t + HustleSystem.PHASE)
 	print("hustles: ", state.hustles.map(func(h: Dictionary) -> String: return HustleSystem.line(w, h)))
 	ok = _check(state.hustles.size() == 3 and state.paper.is_empty(), "three hustles in the morning, no paper on day one") and ok
 	var again := state.hustles.duplicate(true)
@@ -36,14 +36,14 @@ func _initialize() -> void:
 	var late := int(state.hustles[1]["deadline"]) + SimClock.TICKS_PER_SECOND
 	late -= late % SimClock.TICKS_PER_SECOND
 	if not state.hustles[1]["done"]:
-		hs.process_entities(players, 0.0, late)
+		hs.process_entities(players, 0.0, late + HustleSystem.PHASE)
 		ok = _check(state.hustles.size() == 2, "a missed hustle is gone after its deadline") and ok
 	var next := t + SimClock.hours(24.0)
-	ns.process_entities(players, 0.0, next)
+	ns.process_entities(players, 0.0, next + NewsSystem.PHASE)
 	print("paper: %s / %s" % [state.paper.get("headline"), state.paper.get("lead")])
 	ok = _check(String(state.paper.get("headline", "")).begins_with("STORE HELD UP IN") and String(state.paper.get("lead", "")).contains("$180"), "the robbery is the headline") and ok
 	ok = _check(state.news_today.is_empty() and state.paper_serial == 1, "the night's notes went to print") and ok
-	ns.process_entities(players, 0.0, next + SimClock.hours(24.0))
+	ns.process_entities(players, 0.0, next + SimClock.hours(24.0) + NewsSystem.PHASE)
 	ok = _check(state.paper.get("headline", "") == "QUIET NIGHT IN THE CITY" and state.paper_serial == 2, "a quiet night still prints") and ok
 	var fields := SaveGame._fields(state)
 	ok = _check(fields.has("hustles") and fields.has("paper") and fields.has("news_today"), "hustles and the paper are saved") and ok

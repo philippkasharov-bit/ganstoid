@@ -5,6 +5,7 @@
 class_name TipSystem
 extends SystemBase
 
+const PHASE := 7             # PF: not on the same tick as the other once-a-second jobs
 const GAP_S := 12.0          # real seconds between two tips
 const START_S := 3.0         # the welcome tip waits this long into the game
 const FIXER_M := 12.0
@@ -20,6 +21,7 @@ const TIPS := {
 	"thirsty": "You're getting thirsty. Buy a drink at a shop counter (E), then drink it from your bag (I).",
 	"tired": "You're getting tired. Press Z to sleep: a bed at home is safest.",
 	"evening": "Evening. Shops close between 8 and 11 pm and most people go home: fewer witnesses, but cops still patrol.",
+	"lift": "Pickpocketing: stay right behind them while the bar fills. Bump into them or get in front and they'll feel it. Crowds help.",
 	"body": "Someone's down. Press E and pick \"Search their pockets\": what they carry shows in your bag window.",
 	"door": "A front door. Press E to pick the lock or kick it in. Once you're in, walk up to cupboards and drawers: what's inside shows in your bag (I). Flats too.",
 	"job": "You're on a job. The top line shows where to go and how long you have. Miss the deadline and the fixers trust you less.",
@@ -37,15 +39,16 @@ func _init(world: World) -> void:
 	required_component = ComponentNames.PLAYER_STATE
 
 func process_entities(entities: Dictionary, _delta: float, tick: int) -> void:
-	if tick % SimClock.TICKS_PER_SECOND != 0:
+	if tick % SimClock.TICKS_PER_SECOND != PHASE:
 		return
 	for p in entities.values():
 		var state: PlayerStateData = p.get_component(ComponentNames.PLAYER_STATE)
 		var me: NPCData = p.get_component(ComponentNames.NPC)
 		if not state.tips_on or me.is_down or state.sleeping or tick - _last < int(GAP_S * SimClock.TICKS_PER_SECOND):
 			continue
+		var around := _around(_world, me, state)
 		for id in TIPS:
-			if not state.tips_seen.has(id) and applies(_world, id, me, state, tick):
+			if not state.tips_seen.has(id) and (around.get(id, false) if around.has(id) else applies(_world, id, me, state, tick)):
 				state.tips_seen.append(id)
 				state.tip_text = TIPS[id]
 				state.tip_serial += 1
@@ -75,11 +78,40 @@ static func applies(world: World, id: String, me: NPCData, state: PlayerStateDat
 			return not state.job.is_empty()
 		"body":
 			return _downed_near(world, me)
+		"lift":
+			return not state.lift.is_empty()
 		"door":
 			return _home_door_near(world, me)
 	return false
 
 const NEAR_M := 3.0
+
+## PF: the tips that look at who is round you, from one look (only those not yet seen).
+static func _around(world: World, me: NPCData, state: PlayerStateData) -> Dictionary:
+	var want := []
+	for id in ["cop", "body", "door"]:
+		if not state.tips_seen.has(id):
+			want.append(id)
+	var out := {}
+	if want.is_empty():
+		return out
+	for id in want:
+		out[id] = false
+	for id in world.spatial_index.query_nearby(me.position):
+		var e: Entity = world.entities.get(id)
+		if e == null:
+			continue
+		var n: NPCData = e.get_component(ComponentNames.NPC)
+		if n != null and n != me:
+			if out.has("body") and n.is_down and n.position.distance_to(me.position) <= NEAR_M:
+				out["body"] = true
+			elif out.has("cop") and n.is_cop and not n.is_down and not out["cop"] and CrimeSystem.can_see(world, n.position, me.position):
+				out["cop"] = true
+			continue
+		var b: BuildingData = e.get_component(ComponentNames.BUILDING)
+		if out.has("door") and b != null and b.building_type == GanstoidEnums.BuildingType.RESIDENCE and b.id != me.home_building_id and b.position.distance_to(me.position) <= NEAR_M:
+			out["door"] = true
+	return out
 
 static func _downed_near(world: World, me: NPCData) -> bool:
 	for id in world.spatial_index.query_nearby(me.position):

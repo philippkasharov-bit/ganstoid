@@ -460,7 +460,7 @@ func _options(npc: NPCData, state: PlayerStateData) -> Array:
 			out.append(["Mug them (%s out)" % String(state.weapon), func() -> Dictionary:
 				state.aiming = true
 				return StreetCrime.mug(_world, npc, state, p)])
-		out.append(["Pickpocket", func() -> Dictionary: return CrimeSystem.commit_crime(_world, GanstoidEnums.CrimeType.PICKPOCKET, person)])
+		out.append(["Pickpocket", func() -> Dictionary: return PickpocketSystem.start(_world, state, person)])   # PP1: stay behind them
 		out.append(["Recruit into your crew", func() -> Dictionary: return CrewSystem.recruit(_world, person)])
 	var crew := _find_nearest_crew(pos, state)
 	if crew != &"":
@@ -637,7 +637,7 @@ func _attempt_interact(player_npc: NPCData) -> Dictionary:
 	if target_id != &"":
 		if _is_dealer(target_id):
 			return _start_buy(target_id)
-		return CrimeSystem.commit_crime(_world, GanstoidEnums.CrimeType.PICKPOCKET, target_id)
+		return PickpocketSystem.start(_world, state, target_id)   # PP1: the lift is a little game now
 	var gang_building_id := _find_nearest_gang_territory_building(player_npc.position)
 	if gang_building_id != &"":
 		return CrimeSystem.do_gang_job(_world, gang_building_id)

@@ -227,6 +227,18 @@ func _arrive(npc: NPCData, at: Vector2, tick: int) -> bool:
 		on_arrived.call(npc, tick, maxi(stay, 0))
 	return true
 
+## RX1: stand still for `ticks` (hands up).
+func hold(npc: NPCData, tick: int, ticks: int) -> void:
+	_pause_until[npc.id] = tick + ticks
+
+## RX1: walk on faster for the rest of this trip (they noticed you).
+func hurry(npc: NPCData, pace: float) -> void:
+	pace_now[npc.id] = maxf(pace, pace_now.get(npc.id, 0.0))
+
+## RX1: the point they are walking to now, or null.
+func goal_of(npc_id: StringName) -> Variant:
+	return _goal.get(npc_id)
+
 func _pausing(npc: NPCData, tick: int) -> bool:
 	if tick < _pause_until.get(npc.id, 0):
 		return true

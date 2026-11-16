@@ -123,6 +123,7 @@ var job_offers: Array = []                      # JB1: offers on screen (not sav
 @export var paper_serial: int = 0
 @export var tips_seen: Array = []                 # TP1: tips already shown this life
 @export var tips_on: bool = true                  # TP1: the pause menu turns tips off
+var lift: Dictionary = {}                         # PP1: a pickpocket under way {target, f, notice, last, dir} (not saved)
 var tip_text: String = ""                         # TP1: the tip on screen (not saved)
 var tip_serial: int = 0                           # TP1: +1 per new tip (not saved)
 @export var rank: int = 0                         # RK1: highest rank earned (RankSystem.NAMES)

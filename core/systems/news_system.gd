@@ -36,6 +36,7 @@ const CITY_NEWS := [
 	"Late-night taco stand voted best in the city.",
 ]
 const STORIES_MAX := 3
+const PHASE := 19            # PF: after HustleSystem's tick, so the paper prints today's hustles
 
 var _world_ref: WeakRef
 var _world: World:
@@ -48,7 +49,7 @@ func _init(world: World) -> void:
 	required_component = ComponentNames.PLAYER_STATE
 
 func process_entities(entities: Dictionary, _delta: float, tick: int) -> void:
-	if tick % SimClock.TICKS_PER_SECOND != 0:
+	if tick % SimClock.TICKS_PER_SECOND != PHASE:
 		return
 	var day := HustleSystem.day_of(tick)
 	for p in entities.values():

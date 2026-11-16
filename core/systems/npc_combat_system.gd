@@ -60,6 +60,18 @@ func on_assaulted(event_name: StringName, payload: Dictionary) -> void:
 				npc.indoors = false
 				_world.reindex_position(id)
 
+## RX1: a gang's people within `reach` of `at` turn on the player.
+func call_gang(gang_id: StringName, at: Vector2, reach: float, tick: int) -> int:
+	var until := tick + int(HOSTILE_S * SimClock.TICKS_PER_SECOND)
+	var n := 0
+	for id in _world.spatial_index.query_nearby(at):
+		var npc := _npc(id)
+		if npc != null and npc.gang_id == gang_id and not npc.is_down and not npc.is_crew and npc.position.distance_to(at) <= reach:
+			hostile[id] = until
+			npc.is_busy = true
+			n += 1
+	return n
+
 ## RG1: a gang sends `n` of its people (standing, not already fighting) after
 ## the player. Returns how many went.
 func send_squad(gang_id: StringName, n: int, tick: int) -> int:

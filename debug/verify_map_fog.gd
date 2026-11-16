@@ -18,7 +18,7 @@ func _initialize() -> void:
 	var state: PlayerStateData = p.get_component(ComponentNames.PLAYER_STATE)
 	var ex := ExplorationSystem.new(w)
 	var players := {PlayerFactory.PLAYER_ENTITY_ID: p}
-	ex.process_entities(players, 0.0, 0)
+	ex.process_entities(players, 0.0, 0 + ExplorationSystem.PHASE)
 	var ok := true
 	var start := ExplorationSystem.count(state)
 	var far := me.position + Vector2(800, 0)
@@ -32,9 +32,9 @@ func _initialize() -> void:
 	ok = _check(shop != null and not _marked(view, shop.position), "an unexplored shop is not on the map") and ok
 	var home := me.position
 	me.position = shop.position
-	ex.process_entities(players, 0.0, 30)
+	ex.process_entities(players, 0.0, 30 + ExplorationSystem.PHASE)
 	me.position = home
-	ex.process_entities(players, 0.0, 60)
+	ex.process_entities(players, 0.0, 60 + ExplorationSystem.PHASE)
 	view._collect()
 	ok = _check(_marked(view, shop.position) and ExplorationSystem.explored(state, shop.position), "once you've been there it stays on the map") and ok
 	var dealer: NPCData = null
@@ -45,7 +45,7 @@ func _initialize() -> void:
 			break
 	me.position = dealer.position + Vector2(0.5, 0)
 	w.reindex_position(me.id)
-	ex.process_entities(players, 0.0, 90)
+	ex.process_entities(players, 0.0, 90 + ExplorationSystem.PHASE)
 	ok = _check(state.known.get(dealer.id, "") == "dealer", "a dealer you've seen is remembered") and ok
 	view._collect()
 	var t := TerritorySystem.data(w)

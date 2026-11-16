@@ -32,18 +32,18 @@ func _initialize() -> void:
 	var tips := TipSystem.new(w)
 	var players := {PlayerFactory.PLAYER_ENTITY_ID: p}
 	state.tips_on = false
-	tips.process_entities(players, 0.0, 600)
+	tips.process_entities(players, 0.0, 600 + TipSystem.PHASE)
 	ok = _check(state.tip_serial == 0, "no tips while switched off") and ok
 	state.tips_on = true
-	tips.process_entities(players, 0.0, 600)
+	tips.process_entities(players, 0.0, 600 + TipSystem.PHASE)
 	ok = _check(state.tips_seen == ["start"], "the welcome tip comes first") and ok
-	tips.process_entities(players, 0.0, 660)
+	tips.process_entities(players, 0.0, 660 + TipSystem.PHASE)
 	ok = _check(state.tip_serial == 1, "tips wait their gap") and ok
 	me.position = fixer.position + Vector2(3, 0)
 	w.reindex_position(me.id)
 	var t := 600 + int(TipSystem.GAP_S * SimClock.TICKS_PER_SECOND)
 	t -= t % SimClock.TICKS_PER_SECOND
-	tips.process_entities(players, 0.0, t + 60)
+	tips.process_entities(players, 0.0, t + 60 + TipSystem.PHASE)
 	print("tips seen: ", state.tips_seen, " | ", state.tip_text)
 	ok = _check(state.tips_seen.has("fixer") and state.tip_serial == 2, "standing by a fixer brings the fixer tip") and ok
 	var fields := SaveGame._fields(state)

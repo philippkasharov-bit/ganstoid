@@ -98,6 +98,11 @@ const LINES := {
 	"boarded_up": ["Boards up. Nobody comes through those windows."],
 	"dropped": ["Dropped it.", "Left it on the ground."],
 	"stashed": ["In the trunk.", "Stashed in the car."],
+	"lifting": ["Stay right behind them. Don't bump them.", "Close, behind them, easy...", "Fall in behind. Steady."],   # PP1
+	"lift_caught": ["\"Hey! THIEF!\" They felt it.", "They spun round. \"Get your hand off me!\"", "Busted. They're yelling."],
+	"lift_lost": ["Lost them.", "They got away from you.", "Too far back. Gone."],
+	"gang_warning": ["\"Wrong block, homie. Keep walking.\"", "\"You lost? This ain't your street.\"", "\"Walk on. Now.\""],   # RX1
+	"gang_told": ["\"We told you.\" They're coming.", "\"You don't listen, huh?\"", "They're done talking."],
 	"searching": ["Let's see what they've got.", "Going through their pockets."],   # LT3
 	"picked_up": ["Got it.", "In the bag."],
 	"no_trunk": ["No car you can open here."],
