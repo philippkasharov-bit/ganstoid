@@ -13,6 +13,11 @@ Severity: **high** = breaks a game or loses progress · **medium** = clearly wro
 
 | ID | Severity | What happens | Where | Found by |
 |----|----------|--------------|-------|----------|
+| BUG-16 | ? (Phil) | "A bug of the player placement": details still needed from Phil (where you start, or where you appear after loading/sleeping?). | ? | Phil |
+| BUG-17 | medium (Phil) | You can't catch a fleeing person: your run is 3.5 m/s, exactly their flee jog (3.5 m/s), and you're winded after ~14 s of running. | `player_input_system.gd` RUN_SPEED, `stamina.gd` | Phil |
+| BUG-18 | medium (Phil) | Hungry and thirsty too fast: hunger runs low after ~75 real minutes and thirst after ~45. | `needs_system.gd` | Phil |
+| BUG-19 | medium (Phil) | Wounded too easily: every cut bleeds, and your bleeding never stops by itself (other people's stops after 75 s). | `combat_system.gd`, `wound_system.gd` | Phil |
+| BUG-20 | low (Phil) | Dark spots where there is no light look strange and unnatural (probably the same family as BUG-7). | night lighting | Phil |
 | BUG-15 | medium | At rush hour (08:00) one tick now and then takes 20-28 ms, a small stutter. It comes from the people's daily-routine planner (`NPCScheduleSystem`, up to 27 ms in one tick) when many people re-plan at once, on top of traffic (~11 ms). `verify_sim_perf` measures a real rush hour since BUG-13, so it now passes or fails by chance (main: 19.4 ms pass, 23.5 ms fail). Spread the re-plans over more ticks. | `core/systems/npc_schedule_system.gd` | `verify_sim_perf` |
 | BUG-9 | low (to check on Phil's PC) | In the shop (`--store` picture) a dark curved band runs across the shop floor, under the player. It could be a curved wall drawn at floor height, or a drawing glitch. | shop interior / cutaway | album `shop_counter` |
 | BUG-7 | low (to check on Phil's PC) | At night (22:00) the building walls are pitch black, so only the lit windows show and they seem to float. The server draws in OpenGL mode without the screen-space lighting Phil's PC has, so it may look fine there. | night lighting, `game_view_3d.gd` | album `street_night`, `3d_night` |
