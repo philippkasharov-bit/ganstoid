@@ -211,6 +211,7 @@ const SIGHT_DARK_M := 3.0
 ## with the full perception pass; this is the honest minimum: no seeing
 ## through buildings, no reading a face at 15 m in the dark.)
 const SNEAK_SIGHT := 0.5
+const ALERT_SIGHT := 1.6   # ST2: someone actively looking for you (a cop on a call, a gang out for you) sees a bit further, darkness still wins
 
 ## B3: is the player crouched at this spot?
 static func _sneaking_at(world: World, at: Vector2) -> bool:
@@ -220,9 +221,11 @@ static func _sneaking_at(world: World, at: Vector2) -> bool:
 	var st: PlayerStateData = p.get_component(ComponentNames.PLAYER_STATE)
 	return st != null and st.sneaking and p.get_component(ComponentNames.NPC).position.distance_squared_to(at) < 1.0
 
-static func can_see(world: World, eye: Vector2, at: Vector2) -> bool:
+static func can_see(world: World, eye: Vector2, at: Vector2, searching: bool = false) -> bool:
 	var hour := SimClock.day_fraction(world.tick) * 24.0
 	var reach := lerpf(SIGHT_DARK_M, SIGHT_DAY_M, StreetLights.light_at(at, hour))
+	if searching:
+		reach *= ALERT_SIGHT
 	if _sneaking_at(world, at):
 		reach *= SNEAK_SIGHT   # B3: crouched in the shadows you are seen from half as far
 	if eye.distance_to(at) > reach:

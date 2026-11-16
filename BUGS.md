@@ -31,6 +31,7 @@ Severity: **high** = breaks a game or loses progress · **medium** = clearly wro
 
 | ID | What it was | Fix | Guarded by |
 |----|-------------|-----|-----------|
+| BUG-21 | Seen from far away in the dark: after a report, every cop within 400 m ran straight to where you were right now (live position, through walls and darkness), and armed cops and gangs shot at you from 18 m in the dark. | Police go to the crime scene, then only follow you while they can see you (the light rules; a searching eye sees 1.6x further), search where they last saw you for 25 s and give up; shooting needs sight too | `verify_stealth` |
 | BUG-7 | At night building walls were pitch black, so lit windows floated. | The BUG-20 city glow lights walls dimly | album `3d_night`, `street_night` |
 | BUG-20 | Night looked unnatural: hard-edged flat lamp discs and pitch-black everywhere else. | Lamp light now fades softly from under each head (warmer sodium), and a faint blue city glow keeps streets, palms and buildings readable | album `3d_night`, `street_night` |
 | BUG-16 | The player figure left its ring when walking and snapped back on stopping: the gangster walk (PL2) was baked with the hips ~1.3 m ahead of the feet. | `player_model_3d.gd` re-centres the Walk and Idle hips on load (now within 0.08 m) | `verify_player_model` |

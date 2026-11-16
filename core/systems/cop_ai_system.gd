@@ -123,6 +123,8 @@ const RAID_HEAT_RELIEF_FRACTION := 0.75
 
 const BROADCAST_RADIUS := 400.0   # radio call reaches cops this far away
 const ARREST_RADIUS := 2.0
+const SEARCH_S := 25.0          # ST2: at the last place they saw you (or the crime scene), they look round this long
+const SEARCH_RADIUS_M := 14.0
 ## Batch 24: share of the player's dirty money seized on arrest.
 const ARREST_SEIZE_FRACTION := 0.5
 ## If a cop never reaches the player within this many ticks of being
@@ -149,7 +151,9 @@ var _alerted: Dictionary = {}         # StringName -> bool
 const HOT_SCAN_TICKS := 15
 var _hot_buildings: Array[BuildingData] = []
 var _hot_scanned_tick := -1000000
-var _alert_set_tick: Dictionary = {}  # StringName -> int
+var _alert_set_tick: Dictionary = {}  # StringName -> int (refreshed while they can see you)
+var _last_known: Dictionary = {}      # ST2: cop id -> where they think you are (the crime, or where they last saw you)
+var _search: Dictionary = {}          # ST2: cop id -> [centre, tick the search ends]
 
 var _cops: Array[NPCData] = []
 var beat := CopBeat.new()   # S3b: foot patrol along the streets round the station
@@ -281,14 +285,34 @@ func _advance_alert(npc: NPCData, delta: float, tick: int) -> void:
 	var combat := _world.find_system(NPCCombatSystem) as NPCCombatSystem
 	if combat != null and combat.cop_engages(npc, player_npc, player_state, tick):
 		return   # C6: an armed threat in sight: hold and shoot, no walking in for the cuffs
-	if npc.position.distance_to(player_npc.position) <= ARREST_RADIUS and not CombatSystem.is_armed_threat(player_state, tick):
+	# ST2: they only know where you are while they can see you; otherwise they go
+	# where they last saw you (or to the crime scene) and look round there.
+	var sees := CrimeSystem.can_see(_world, npc.position, player_npc.position, true)
+	if sees:
+		_last_known[npc.id] = player_npc.position
+		_alert_set_tick[npc.id] = tick
+		_search.erase(npc.id)
+	if sees and npc.position.distance_to(player_npc.position) <= ARREST_RADIUS and not CombatSystem.is_armed_threat(player_state, tick):
 		_arrest(player_npc, player_state)
 		_stand_down(npc.id)
 		return
 	if tick - _alert_set_tick.get(npc.id, tick) > ALERT_TIMEOUT_TICKS:
 		_stand_down(npc.id)
 		return
-	npc.position = WanderBehavior.step_toward(npc.position, player_npc.position, RESPONSE_SPEED, delta, ARRIVE_EPSILON, npc.id)
+	var goal: Vector2 = _last_known.get(npc.id, player_npc.position)
+	if not sees and npc.position.distance_to(goal) <= ARRIVE_EPSILON * 2.0:
+		var s: Array = _search.get(npc.id, [])
+		if s.is_empty():
+			s = [goal, tick + int(SEARCH_S * SimClock.TICKS_PER_SECOND)]
+			_search[npc.id] = s
+		if tick >= int(s[1]):
+			_stand_down(npc.id)   # lost you: back to the beat
+			return
+		var rng := _world.runtime_rng
+		_last_known[npc.id] = (s[0] as Vector2) + Vector2.from_angle(rng.randf() * TAU) * rng.randf_range(3.0, SEARCH_RADIUS_M)
+		goal = _last_known[npc.id]
+	var speed := RESPONSE_SPEED if sees or not _search.has(npc.id) else PATROL_SPEED * 1.5   # searching: a quick look round, not a sprint
+	npc.position = WanderBehavior.step_toward(npc.position, goal, speed, delta, ARRIVE_EPSILON, npc.id)
 	_world.reindex_position(npc.id)
 
 ## Phase 1 "short jail stint" stub: no real jail scene/timer yet, just the
@@ -318,10 +342,15 @@ func alert(cop_id: StringName) -> void:
 	if not _alerted.has(cop_id):
 		_alerted[cop_id] = true
 		_alert_set_tick[cop_id] = _world.tick
+		var p := _get_player_entity()
+		if p != null:
+			_last_known[cop_id] = (p.get_component(ComponentNames.NPC) as NPCData).position   # they have just seen you
 
 func _stand_down(cop_id: StringName) -> void:
 	_alerted.erase(cop_id)
 	_alert_set_tick.erase(cop_id)
+	_last_known.erase(cop_id)
+	_search.erase(cop_id)
 
 func _get_player_entity() -> Entity:
 	var matches := _world.get_entities_with_component(ComponentNames.PLAYER_STATE)
@@ -345,6 +374,8 @@ func on_crime_witnessed(event_name: StringName, payload: Dictionary) -> void:
 		if npc.position.distance_to(crime_position) <= BROADCAST_RADIUS:
 			_alerted[npc.id] = true
 			_alert_set_tick[npc.id] = _world.tick
+			_last_known[npc.id] = crime_position   # ST2: the radio gives them the scene, not where you are now
+			_search.erase(npc.id)
 			# Leaving patrol for an active alert -- drop stale wander state
 			# so resuming patrol later (via _stand_down) picks a fresh drift
 			# point instead of snapping back to wherever the alert found it.
