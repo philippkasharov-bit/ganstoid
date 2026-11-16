@@ -13,6 +13,7 @@ Severity: **high** = breaks a game or loses progress · **medium** = clearly wro
 
 | ID | Severity | What happens | Where | Found by |
 |----|----------|--------------|-------|----------|
+| BUG-15 | medium | At rush hour (08:00) one tick now and then takes 20-28 ms, a small stutter. It comes from the people's daily-routine planner (`NPCScheduleSystem`, up to 27 ms in one tick) when many people re-plan at once, on top of traffic (~11 ms). `verify_sim_perf` measures a real rush hour since BUG-13, so it now passes or fails by chance (main: 19.4 ms pass, 23.5 ms fail). Spread the re-plans over more ticks. | `core/systems/npc_schedule_system.gd` | `verify_sim_perf` |
 | BUG-9 | low (to check on Phil's PC) | In the shop (`--store` picture) a dark curved band runs across the shop floor, under the player. It could be a curved wall drawn at floor height, or a drawing glitch. | shop interior / cutaway | album `shop_counter` |
 | BUG-7 | low (to check on Phil's PC) | At night (22:00) the building walls are pitch black, so only the lit windows show and they seem to float. The server draws in OpenGL mode without the screen-space lighting Phil's PC has, so it may look fine there. | night lighting, `game_view_3d.gd` | album `street_night`, `3d_night` |
 

@@ -61,6 +61,9 @@ func _ready() -> void:
 	var eye := DetectionEye.new()   # UIF4: who can see you, its own HUD piece
 	get_parent().add_child.call_deferred(eye)
 	eye.setup(_world)
+	var guide := GuideView.new()   # NX1/TP1: what to do next, first-day tips
+	get_parent().add_child.call_deferred(guide)
+	guide.setup(_world)
 	var hotbar := HotbarView.new()   # HB1: Zomboid's hotbar, bottom middle
 	get_parent().add_child.call_deferred(hotbar)
 	hotbar.setup(_world)
