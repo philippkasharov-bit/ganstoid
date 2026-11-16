@@ -13,6 +13,7 @@ Severity: **high** = breaks a game or loses progress · **medium** = clearly wro
 
 | ID | Severity | What happens | Where | Found by |
 |----|----------|--------------|-------|----------|
+| BUG-14 | low | The Character window (K) docks on the right over the column of mood icons (hunger, thirst, pain...) under the clock, so you can't see your moods while it's open. | `hud.gd` `skills.setup(..., Vector2(right - 340, 66))` vs the moodles column | album `bag_open` |
 | BUG-13 | low | `verify_sim_perf` still measures a freshly placed city without traffic (1.2-1.7 ms), while a running city costs ~3.3 ms a tick at rush hour (26-hour soak). It should run the clock forward from 07:00 with traffic, so it would catch a real slowdown. | `debug/verify_sim_perf.gd` | soak |
 | BUG-9 | low (to check on Phil's PC) | In the shop (`--store` picture) a dark curved band runs across the shop floor, under the player. It could be a curved wall drawn at floor height, or a drawing glitch. | shop interior / cutaway | album `shop_counter` |
 | BUG-7 | low (to check on Phil's PC) | At night (22:00) the building walls are pitch black, so only the lit windows show and they seem to float. The server draws in OpenGL mode without the screen-space lighting Phil's PC has, so it may look fine there. | night lighting, `game_view_3d.gd` | album `street_night`, `3d_night` |
