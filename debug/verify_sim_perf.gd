@@ -12,6 +12,7 @@ extends SceneTree
 const POPULATION := 6000         # = WorldDriver.GAME_POPULATION (PF3: SIM_POP=1500 overrides, for stress runs)
 const TICKS := 3600              # one real minute
 const AVG_BUDGET_MS := {3.0: 1.0, 8.0: 4.0, 11.0: 2.5}   # BUG-13, with traffic and a running city (4 cores): 0.4 / 3.1 / 2.0 ms
+const OVER_4MS_MAX := 150   # BUG-15: rush-hour ticks over 4 ms (a stutter); 605 before the fix, ~35 after
 const RUN_IN := {8.0: 1.0}   # BUG-13: game hours the city runs before it is measured
 const WORST_TICK_MS := 20.0   # MAP1: the whole map at 6000 people: one rush-hour wave of re-plans reaches ~17 ms on a 2-core box (PF1 had 10 for 600 people round the spawn)
 
@@ -56,6 +57,7 @@ func _initialize() -> void:
 		print("       slowest route plan %.1f ms (%s)" % [SimNav.active.slowest_plan_usec / 1000.0, SimNav.active.slowest_plan_what])
 		ok = _check(avg_ms <= AVG_BUDGET_MS[hour], "%02d:00 average tick within %.1f ms" % [int(hour), AVG_BUDGET_MS[hour]]) and ok
 		ok = _check(worst / 1000.0 <= WORST_TICK_MS, "%02d:00 no single tick over %.0f ms" % [int(hour), WORST_TICK_MS]) and ok
+		ok = _check(over <= OVER_4MS_MAX, "%02d:00 at most %d ticks over 4 ms (%d)" % [int(hour), OVER_4MS_MAX, over]) and ok
 		if hour == 3.0:
 			ok = _check(c["indoors"] >= int(c["people"] * 0.85), "at 03:00 at least 85% of civilians are indoors") and ok
 		if hour == 11.0:

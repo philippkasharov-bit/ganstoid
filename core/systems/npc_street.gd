@@ -178,11 +178,11 @@ func _move(npc: NPCData, delta: float, tick: int, player_pos: Vector2) -> bool:
 		var walk: float = pace_now.get(npc.id, NPCRoutine.pace(npc.id))
 		var next := WanderBehavior.step_toward(npc.position, target, walk * UNSEEN_PACE_SCALE, step_delta, reach)   # POP1: a straight line, no navmesh
 		if next.distance_squared_to(player_pos) <= ABSTRACT_M * ABSTRACT_M:
-			# Coming into sight: no fast step across the line, and off the straight line onto
-			# walkable ground, since a straight line out of sight goes through buildings.
+			# Coming into sight: no fast step across the line. BUG-15: no navmesh snap here
+			# (0.8 ms each, up to 6 ms, ~16k in a rush hour, several in one tick). Their route,
+			# planned off the main thread, starts at the nearest walkable point anyway, and the
+			# city is not drawn this far out, so nobody sees them step out of a wall.
 			next = WanderBehavior.step_toward(npc.position, target, walk, step_delta, reach)
-			if nav != null:
-				next = nav.snap(next, NPCRoutine.layer_at(npc, tick))
 		npc.position = next
 		if nav != null:
 			nav.forget(npc.id)
