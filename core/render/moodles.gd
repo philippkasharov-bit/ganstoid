@@ -12,10 +12,10 @@ class_name Moodles
 extends VBoxContainer
 
 const TILE := 30.0   # MD2: Zomboid-small
-const ICON := 20.0
+const ICON := 24.0   # IC1: full-colour art reads better a little bigger
+const TILE_BG := Color(0.11, 0.105, 0.1, 0.92)
 const BAD := [Color("c98a7c"), Color("c0604f"), Color("a9372b"), Color("7e1b17")]
 const GOOD := [Color("8fbf7e"), Color("6fae5b"), Color("4f9440"), Color("357a2a")]
-const ICON_INK := Color(0.1, 0.09, 0.09, 0.9)
 const CLICK_TEXT := {"food": "eat the best food you carry", "drink": "drink", "medical": "bandage the worst wound", "sleep": "sleep", "bag": "open the bag"}
 const REFRESH_S := 0.25
 
@@ -166,14 +166,16 @@ func _tile(m: Array) -> Button:
 	b.focus_mode = Control.FOCUS_NONE
 	b.custom_minimum_size = Vector2(TILE, TILE)
 	var colour: Color = (GOOD if m[3] else BAD)[m[2] - 1]
-	var face := UiTheme.box(colour, colour.darkened(0.35), 1)
+	# IC1: the icons are full-colour 3D art now: a dark tile, its border in the
+	# level's colour (worse = deeper red), instead of a coloured tile with the
+	# icon inked dark over it.
+	var face := UiTheme.box(TILE_BG, colour, 2)
 	face.set_corner_radius_all(6)
-	face.border_width_bottom = 2
+	face.border_width_bottom = 3
 	for look in ["normal", "hover", "pressed"]:
 		b.add_theme_stylebox_override(look, face)
 	var art := icon_or_glyph(m[0], m[1].left(1), ICON)
-	art.position = ((Vector2(TILE, TILE - 2) - Vector2(ICON, ICON)) * 0.5).round()   # centred above the 2px base
-	art.modulate = ICON_INK
+	art.position = ((Vector2(TILE, TILE - 1) - Vector2(ICON, ICON)) * 0.5).round()   # centred above the thicker base
 	b.add_child(art)
 	var lines: Array = [[m[6], BAD[3].lightened(0.4) if not m[3] else GOOD[1]], [m[4], UiTheme.TEXT]]
 	if m[5] != "":
