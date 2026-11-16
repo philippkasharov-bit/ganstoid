@@ -88,6 +88,71 @@ def window(name: str, w: float, h: float, split: str, glass: str = "glass") -> k
     return p
 
 
+def arc(w: float, spring: float, n: int = 12) -> list[tuple[float, float]]:
+    """K6: the half round over an arched opening, right spring point to left: (x, y)."""
+    import math
+    r = w / 2
+    return [(r * math.cos(math.pi * k / n), spring + r * math.sin(math.pi * k / n)) for k in range(n + 1)]
+
+
+def arched_opening(p: kit.Part, w: float, spring: float, depth: float = 0.28) -> None:
+    """K6: a deep plaster reveal (Spanish stucco wraps into the hole): straight jambs, then the arch."""
+    hw = w / 2
+    p.box(-hw, -hw + 0.02, 0, spring, -depth, 0, "concrete")
+    p.box(hw - 0.02, hw, 0, spring, -depth, 0, "concrete")
+    pts = arc(w, spring)
+    for (ax, ay), (bx, by) in zip(pts, pts[1:]):
+        p.quad([(ax, ay, -depth), (bx, by, -depth), (bx, by, 0.0), (ax, ay, 0.0)], "concrete")
+
+
+def arch_shape(w: float, spring: float, inset: float = 0.0) -> list[tuple[float, float]]:
+    """The outline of an arched opening (bottom left, bottom right, up and over), `inset` in from it."""
+    return [(-w / 2 + inset, inset), (w / 2 - inset, inset)] + arc(w - 2 * inset, spring)
+
+
+def window_arch() -> kit.Part:
+    """K6, Spanish: an arched window in a deep plaster reveal, a wooden frame round it, a tile sill."""
+    w, spring = 1.0, 1.0
+    p = kit.Part("kit_window_arch", bevel=False)
+    arched_opening(p, w, spring)
+    z = -0.2
+    p.quad([(x, y, z) for x, y in arch_shape(w, spring, 0.03)], "glass")
+    pts = arc(w - 0.06, spring)
+    inner = arc(w - 0.16, spring)
+    for (ax, ay), (bx, by), (cx, cy), (dx, dy) in zip(pts, pts[1:], inner[1:], inner):   # the frame follows the arch
+        p.quad([(ax, ay, z + 0.04), (bx, by, z + 0.04), (cx, cy, z + 0.04), (dx, dy, z + 0.04)], "paint")
+    p.box(-w / 2 + 0.03, -w / 2 + 0.08, 0.03, spring, z, z + 0.04, "paint")
+    p.box(w / 2 - 0.08, w / 2 - 0.03, 0.03, spring, z, z + 0.04, "paint")
+    p.box(-w / 2 + 0.03, w / 2 - 0.03, 0.03, 0.09, z, z + 0.04, "paint")
+    p.box(-0.02, 0.02, 0.09, spring + w / 2 - 0.08, z, z + 0.035, "paint")   # the cross bar
+    p.box(-w / 2 + 0.08, w / 2 - 0.08, spring - 0.02, spring + 0.02, z, z + 0.035, "paint")
+    p.along_x([(0.0, -0.28), (-0.02, 0.06), (-0.05, 0.075), (-0.07, 0.06), (-0.07, -0.28)], -w / 2 - 0.08, w / 2 + 0.08, "roof_tile")   # tile sill
+    return p
+
+
+def door_arch() -> kit.Part:
+    """K6, Spanish: an arched plank door, iron strap hinges and a ring pull, in a deep reveal."""
+    w, spring = 1.1, 1.85
+    p = kit.Part("kit_door_arch", **SOFT)
+    arched_opening(p, w, spring)
+    leaf = arch_shape(w, spring, 0.02)
+    front, back = -0.18, -0.23
+    p.quad([(x, y, front) for x, y in leaf], "door")
+    p.quad([(x, y, back) for x, y in reversed(leaf)], "door")
+    for (ax, ay), (bx, by) in zip(leaf, leaf[1:] + leaf[:1]):
+        p.quad([(ax, ay, back), (bx, by, back), (bx, by, front), (ax, ay, front)], "door")
+    for x in (-0.33, -0.11, 0.11, 0.33):   # plank joints
+        top = spring + ((w / 2 - 0.02) ** 2 - x * x) ** 0.5
+        p.box(x - 0.006, x + 0.006, 0.05, top - 0.04, front, front + 0.006, "metal")
+    for y in (0.35, 1.55):   # strap hinges
+        p.box(-w / 2 + 0.04, -0.05, y, y + 0.06, front, front + 0.012, "metal")
+        p.ball(-0.05, y + 0.03, front + 0.012, 0.025, "metal", rings=3, sides=8)
+    p.tube(0.36, front + 0.03, 1.0, 1.02, 0.06, 10, "metal")      # ring pull
+    p.box(0.33, 0.39, 1.06, 1.12, front, front + 0.02, "metal")
+    p.along_x([(0.0, 0.0), (0.0, 0.45), (-0.02, 0.47), (-0.17, 0.47), (-0.17, 0.0)], -0.75, 0.75, "concrete")   # the step
+    return p
+
+
 def door_front() -> kit.Part:
     p = kit.Part("kit_door_front", **ROUND)
     opening(p, 1.0, 2.1, 0.1)
@@ -212,7 +277,8 @@ def extras() -> list[kit.Part]:
 
 def all_parts() -> list[kit.Part]:
     return [window("kit_window_sash", 1.0, 1.3, "sash"), window("kit_window_wide", 1.8, 1.3, "mullion"),
-        window("kit_window_small", 0.6, 0.6, "none", "frosted"), door_front(), door_garage(), *trims(), porch(), *extras()]
+        window("kit_window_small", 0.6, 0.6, "none", "frosted"), door_front(), door_garage(), *trims(), porch(), *extras(),
+        window_arch(), door_arch()]
 
 
 def main(out_dir: str) -> None:

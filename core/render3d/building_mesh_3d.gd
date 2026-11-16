@@ -43,6 +43,8 @@ const CHIMNEY_SHARE := 0.35
 const DISH_SHARE := 0.22
 const PARAPET_M := 0.25
 
+const SPANISH_SHARE := 16   # K6, Part C: percent of one-storey houses built Spanish
+const SPANISH_WALLS := [Color("f4f1ea"), Color("efe8d8"), Color("f2ead2"), Color("e9e4da")]
 const WORN_BELOW := 0.4    # K6: block wealth under this: a worn house (about 1 in 3; houses run 0.32..0.53)
 const BARS_BELOW := 0.33   # and under this: bars on its windows too (about 1 in 9, the poorest)
 
@@ -71,6 +73,9 @@ static func add(st: SurfaceTool, b: Dictionary, v: Callable, tag: int = 0, kit: 
 	var surface := _wall_of(kind, col)
 	var worn := false
 	var bars := false
+	var spanish := kind == "house" and levels == 1 and absi(String(b["id"]).hash() / 3) % 100 < SPANISH_SHARE
+	if spanish:   # K6, Part C: a Spanish house: white or cream stucco
+		col = SPANISH_WALLS[absi(String(b["id"]).hash() / 5) % SPANISH_WALLS.size()]
 	if kind == "house":   # K6: a house on a poor block is worn (and the poorest have bars on the windows)
 		var wealth := wealth_at(_centroid(poly))
 		var roll := absi(String(b["id"]).hash()) % 100
@@ -82,7 +87,7 @@ static func add(st: SurfaceTool, b: Dictionary, v: Callable, tag: int = 0, kit: 
 	var style := {"win_w": rng.randf_range(0.8, 1.6), "win_h": rng.randf_range(1.0, 1.5), "gap": rng.randf_range(2.4, 4.2),
 		"shop": (kind == "commercial") and rng.randf() < 0.8, "rollup": kind in ["industrial", "garage"] and rng.randf() < 0.6,
 		"awning": AWNINGS[rng.randi() % AWNINGS.size()], "storey": storey,
-		"tag": tag, "glow": GLOW.get(kind, 0.3), "seed": rng.randi(), "ac": AC_SHARE.get(kind, 0), "bars": bars}
+		"tag": tag, "glow": GLOW.get(kind, 0.3), "seed": rng.randi(), "ac": AC_SHARE.get(kind, 0), "bars": bars, "spanish": spanish}
 	st.set_uv(Vector2(0, tag))   # R3D7: the Cutaway cuts this building whole by its tag
 	var ccw := _ccw(poly)
 	var span := InteriorSolid.door_span(poly, b.get("door", Vector2.INF))   # R3D14: the same door the sim lets you through
@@ -187,7 +192,8 @@ static func _roof(st: SurfaceTool, v: Callable, poly: PackedVector2Array, h: flo
 			tile = house["roof_tile"]
 			col = house["roof_col"]
 		var apex := _centroid(hull)
-		var top := h + clampf(sqrt(area) * 0.28, 1.2, 3.2)
+		var low: bool = not house.is_empty() and house["spanish"]   # K6: a Spanish roof is low
+		var top := h + (clampf(sqrt(area) * 0.17, 0.8, 2.0) if low else clampf(sqrt(area) * 0.28, 1.2, 3.2))
 		var peak: Vector3 = v.call(apex, top)
 		for i in hull.size():   # on the hull, eaves a little proud: notches hide under the overhang
 			var a := apex + (hull[i] - apex) * EAVES

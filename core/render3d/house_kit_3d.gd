@@ -16,7 +16,10 @@ const SIDE_KEEP := 75     # percent of side-wall window spots that get a window 
 const CORNER_GAP := 0.4
 const MIN_EDGE := 2.6
 const STEP := 0.17
-const WIDTH := {"kit_window_sash": 1.0, "kit_window_wide": 1.8, "kit_window_small": 0.6, "kit_door_front": 1.0, "kit_door_garage": 2.6}
+const WIDTH := {"kit_window_sash": 1.0, "kit_window_wide": 1.8, "kit_window_small": 0.6, "kit_door_front": 1.0, "kit_door_garage": 2.6,
+	"kit_window_arch": 1.0, "kit_door_arch": 1.1}
+const ARCH_SPRING := {"kit_window_arch": 1.0, "kit_door_arch": 1.85}   # K6: height of the straight part, a half round on top
+const SPANISH_TRIM := Color("4a3324")   # dark stained wood
 const TRIMS := [Color("f1ece2"), Color("e8dcc4"), Color("5a4636"), Color("b9c2a8"), Color("ffffff"),
 	Color("3d4a3a"), Color("6e3b2e"), Color("4a5866"), Color("c8b48a"), Color("8a7a66")]   # K6: dark green, oxblood, slate, tan, taupe
 const GUTTER_SHARE := 2   # K6, in ten: LA hardly rains, most houses have no gutters
@@ -28,14 +31,15 @@ const PORCH_SHARE := 4   # in ten
 ## What one house keeps for all its walls.
 static func context(m: CityMesh3D, poly: PackedVector2Array, col: Color, style: Dictionary, door_edge: int) -> Dictionary:
 	var seed := int(style["seed"])
-	return {"tag": style["tag"], "col": col, "seed": seed, "glow": style["glow"], "storey": style["storey"],
-		"trim": TRIMS[absi(seed) % TRIMS.size()], "door": absi(seed) % KitBatch3D.DOOR_PAINT.size(),
+	var spanish: bool = style.get("spanish", false)
+	return {"tag": style["tag"], "col": col, "seed": seed, "glow": style["glow"], "storey": style["storey"], "spanish": spanish,
+		"trim": SPANISH_TRIM if spanish else TRIMS[absi(seed) % TRIMS.size()], "door": 4 if spanish else absi(seed) % KitBatch3D.DOOR_PAINT.size(),
 		"garage": _garage(m.aprons, poly, door_edge), "porch": absi(seed / 7) % 10 < PORCH_SHARE, "door_edge": door_edge,
-		"gutters": absi(seed / 11) % 10 < GUTTER_SHARE, "bars": style.get("bars", false)}.merged(_roof_of(seed))
+		"gutters": not spanish and absi(seed / 11) % 10 < GUTTER_SHARE, "bars": style.get("bars", false)}.merged(_roof_of(seed, spanish))
 
 ## K6: the house's roof, decided up front so the porch roof can match it.
-static func _roof_of(seed: int) -> Dictionary:
-	var tile := absi(seed / 13) % 100 < TILE_SHARE
+static func _roof_of(seed: int, spanish: bool = false) -> Dictionary:
+	var tile := spanish or absi(seed / 13) % 100 < TILE_SHARE   # a Spanish house is always clay tile
 	var pick: Array = BuildingMesh3D.ROOF_TILE if tile else BuildingMesh3D.ROOF_SHINGLE
 	return {"roof_tile": tile, "roof_col": SurfaceDetail.mark(pick[absi(seed / 17) % pick.size()], SurfaceDetail.CLAY if tile else SurfaceDetail.SHINGLE)}
 
@@ -45,7 +49,10 @@ static func wall(m: CityMesh3D, st: SurfaceTool, v: Callable, a: Vector2, c: Vec
 	var dir := (c - a) / length
 	var holes: Array = []
 	if door_t >= 0.0:
-		holes.append(_hole("kit_door_front", door_t * length, STEP, STEP + 2.1))
+		if ctx["spanish"]:
+			holes.append(_hole("kit_door_arch", door_t * length, STEP, STEP + ARCH_SPRING["kit_door_arch"] + WIDTH["kit_door_arch"] * 0.5))
+		else:
+			holes.append(_hole("kit_door_front", door_t * length, STEP, STEP + 2.1))
 	if int(ctx["garage"].x) == i:
 		holes.append(_hole("kit_door_garage", ctx["garage"].y * length, 0.0, 2.1))
 	_windows(holes, length, levels, i, door_t >= 0.0, ctx)
@@ -56,7 +63,11 @@ static func wall(m: CityMesh3D, st: SurfaceTool, v: Callable, a: Vector2, c: Vec
 		_put(m, v, a + dir * float(hole["x"]), dir, out, hole["part"], float(hole["y0"]), hole.get("lit", 0.0), ctx)
 		if ctx["bars"] and String(hole["part"]).begins_with("kit_window") and float(hole["y0"]) < 2.5:
 			_bars(st, v, a + dir * float(hole["x"]), dir, out, hole)
-	if door_t >= 0.0 and ctx["porch"] and length >= 3.0:
+		if ARCH_SPRING.has(hole["part"]):
+			_spandrels(st, v, a + dir * float(hole["x"]), dir, out, hole, ctx["col"])
+	if door_t >= 0.0 and ctx["spanish"]:
+		_awning(st, v, a + dir * door_t * length, dir, out, ctx)
+	elif door_t >= 0.0 and ctx["porch"] and length >= 3.0:
 		_put(m, v, a + dir * door_t * length, dir, out, "kit_porch", 0.0, 0.0, ctx)
 		_porch_roof(st, v, a + dir * door_t * length, dir, out, ctx)
 	if i == (int(ctx["door_edge"]) + 1) and length >= 2.4:
@@ -80,6 +91,8 @@ static func eave(m: CityMesh3D, v: Callable, a: Vector2, c: Vector2, apex: Vecto
 
 ## A corner board up every corner of the footprint.
 static func corners(m: CityMesh3D, v: Callable, poly: PackedVector2Array, h: float, ctx: Dictionary) -> void:
+	if ctx["spanish"]:
+		return   # K6: smooth stucco corners on a Spanish house
 	for k in poly.size():
 		var e := poly[(k + 1) % poly.size()] - poly[k]
 		var xform := Transform3D(Basis(Vector3.UP, -e.angle()).scaled_local(Vector3(1, h, 1)), v.call(poly[k], 0.0))
@@ -100,7 +113,8 @@ static func _windows(holes: Array, length: float, levels: int, edge: int, front:
 			var part := _pick(length, lv, front, edge, k, ctx)
 			var sill := 1.5 if part == "kit_window_small" else SILL
 			var y0: float = lv * float(ctx["storey"]) + sill
-			var hole := _hole(part, x, y0, y0 + (0.6 if part == "kit_window_small" else WIN_H))
+			var tall: float = 0.6 if part == "kit_window_small" else (ARCH_SPRING[part] + WIDTH[part] * 0.5 if ARCH_SPRING.has(part) else WIN_H)
+			var hole := _hole(part, x, y0, y0 + tall)
 			if hole["x0"] < CORNER_GAP or hole["x1"] > length - CORNER_GAP or _clashes(hole, holes):
 				continue
 			if not front and k != count / 2 and absi(hash([ctx["seed"], edge, k, 3])) % 100 >= SIDE_KEEP:
@@ -109,6 +123,8 @@ static func _windows(holes: Array, length: float, levels: int, edge: int, front:
 			holes.append(hole)
 
 static func _pick(length: float, lv: int, front: bool, edge: int, k: int, ctx: Dictionary) -> String:
+	if ctx["spanish"] and lv == 0 and (front or absi(hash([ctx["seed"], edge, k])) % 3 == 0):
+		return "kit_window_arch"   # K6: arched windows on the front and on some sides
 	if lv == 0 and front and length >= 6.0 and k == 0:
 		return "kit_window_wide"
 	if lv == 0 and not front and absi(hash([ctx["seed"], edge, k])) % 4 == 0:
@@ -186,6 +202,37 @@ static func _porch_roof(st: SurfaceTool, v: Callable, at: Vector2, dir: Vector2,
 			p.call(half * sgn, PORCH_ROOF.z, PORCH_ROOF.y), p.call(half * sgn, 0.0, PORCH_ROOF.x)], nn, col.darkened(0.3))
 
 const BAR_IRON := Color("1e1d1c")
+
+## K6: the wall in the two top corners of an arched hole (the hole is cut square).
+static func _spandrels(st: SurfaceTool, v: Callable, at: Vector2, dir: Vector2, out: Vector2, hole: Dictionary, col: Color) -> void:
+	var r: float = WIDTH[hole["part"]] * 0.5
+	var spring: float = float(hole["y0"]) + ARCH_SPRING[hole["part"]]
+	var top: float = float(hole["y1"])
+	var n3 := Vector3(out.x, 0, out.y)
+	var segs := 8
+	for sgn: float in [-1.0, 1.0]:   # each quarter: a fan from the hole's corner
+		var corner: Vector3 = v.call(at + dir * r * sgn, top)
+		for k in segs:
+			var a0 := PI * 0.5 * k / segs
+			var a1 := PI * 0.5 * (k + 1) / segs
+			var p0: Vector3 = v.call(at + dir * (r * cos(a0) * sgn), spring + r * sin(a0))
+			var p1: Vector3 = v.call(at + dir * (r * cos(a1) * sgn), spring + r * sin(a1))
+			st.set_color(col)
+			st.set_normal(n3)
+			for p: Vector3 in ([corner, p1, p0] if sgn > 0.0 else [corner, p0, p1]):
+				st.add_vertex(p)
+
+## K6: a Spanish door's little tiled awning on two wooden brackets.
+static func _awning(st: SurfaceTool, v: Callable, at: Vector2, dir: Vector2, out: Vector2, ctx: Dictionary) -> void:
+	var half := 0.95
+	var top: float = STEP + ARCH_SPRING["kit_door_arch"] + WIDTH["kit_door_arch"] * 0.5 + 0.45
+	var p := func(x: float, z: float, y: float) -> Vector3: return v.call(at + dir * x + out * z, y)
+	var col: Color = ctx["roof_col"]
+	BuildingMesh3D.courses_between(st, p.call(-half, 0.75, top - 0.3), p.call(half, 0.75, top - 0.3), p.call(-half, 0.0, top), p.call(half, 0.0, top), col, 0.25)
+	var n3 := Vector3(out.x, 0, out.y)
+	BuildingMesh3D.quad(st, [p.call(-half, 0.75, top - 0.38), p.call(half, 0.75, top - 0.38), p.call(half, 0.75, top - 0.3), p.call(-half, 0.75, top - 0.3)], n3, col.darkened(0.3))
+	for x: float in [-half + 0.12, half - 0.12]:
+		BuildingDetail3D.box(st, v, at + dir * x + out * 0.35, Vector2(0.08, 0.7), top - 0.42, 0.1, SPANISH_TRIM)
 
 ## K6: iron bars over a ground-floor window (a poor block), a hand in front of the wall.
 static func _bars(st: SurfaceTool, v: Callable, at: Vector2, dir: Vector2, out: Vector2, hole: Dictionary) -> void:

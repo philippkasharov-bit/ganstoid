@@ -32,7 +32,7 @@ func _initialize() -> void:
 		var parts := _parts(m)
 		houses += 1
 		var span := InteriorSolid.door_span(CityMesh3D._open(b["poly"]), b.get("door", Vector2.INF))
-		var doors: Array = parts.get("kit_door_front", [])
+		var doors: Array = parts.get("kit_door_front", []) + parts.get("kit_door_arch", [])   # K6: Spanish houses have an arched door
 		if span.x >= 0:
 			doors_seen += 1
 			doors_ok += int(doors.size() == 1 and _on_door(doors[0][0].origin, b, span, m.origin))
