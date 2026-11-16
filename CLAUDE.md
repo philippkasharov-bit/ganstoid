@@ -53,6 +53,8 @@ Import takes about 12 s and is required before any check, otherwise class_names 
 - Compile every script: `debug/run_all.sh $G scripts_parse` (2 s). **Run this after every GDScript edit.**
 - Screenshots and perf: `debug/shot_*.gd`, `debug/bench_3d.gd`, `debug/perf_main.gd`, `debug/render_breakdown.gd`. Run them with `$G --path . -s ...`. Rendering needs a display, so prefix them with `xvfb-run -a`.
 - City data rebuild (only when roads or buildings change): `tools/city/rebuild.sh`, then run the full suite.
+- **Replacing a .glb model:** Godot extracts its texture to `<name>_Image_0.jpg` only if that file doesn't exist yet, so a new model silently wears the old texture (scrambled colours). Delete the old `<name>_Image_*.jpg` and `.godot/imported/<name>*`, re-import, and commit the newly extracted jpg too (Phil's updater imports with it).
+- Blender: `/tmp/bpyenv/bin/python` (Blender 4.5 as a Python module; install with `uv venv -p 3.11 /tmp/bpyenv` then `uv pip install "bpy>=4.4,<4.6"`). No GPU here: preview renders use Cycles on the CPU. Player rebuild: `tools/models/meshy_player.py` (see its header).
 - Python tools: `python3 -I tools/...`. They take paths as arguments, so never run them from inside a data folder.
 
 ## Architecture (load-bearing facts)
