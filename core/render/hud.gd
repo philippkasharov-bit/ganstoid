@@ -30,6 +30,9 @@ func _ready() -> void:
 	add_theme_font_size_override("font_size", 13)
 	add_theme_color_override("font_outline_color", Color.BLACK)
 	add_theme_constant_override("outline_size", 4)
+	var guide := GuideView.new()   # NX1/TP1: what to do next, first-day tips; first, so every window covers it
+	get_parent().add_child.call_deferred(guide)
+	guide.setup(_world)
 	var roster := CrewRoster.new()  # batch 22: Tab toggles it
 	get_parent().add_child.call_deferred(roster)
 	roster.setup(_world)
@@ -61,9 +64,6 @@ func _ready() -> void:
 	var eye := DetectionEye.new()   # UIF4: who can see you, its own HUD piece
 	get_parent().add_child.call_deferred(eye)
 	eye.setup(_world)
-	var guide := GuideView.new()   # NX1/TP1: what to do next, first-day tips
-	get_parent().add_child.call_deferred(guide)
-	guide.setup(_world)
 	var hotbar := HotbarView.new()   # HB1: Zomboid's hotbar, bottom middle
 	get_parent().add_child.call_deferred(hotbar)
 	hotbar.setup(_world)
