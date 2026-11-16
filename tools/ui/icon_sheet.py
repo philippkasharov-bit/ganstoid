@@ -45,7 +45,12 @@ def cut_out(cell: Image.Image) -> Image.Image:
     a[open_ground & (rows > lowest[None, :])] = 0
     alpha = Image.fromarray(a.astype(np.uint8), "L")
     alpha = alpha.filter(ImageFilter.MinFilter(3)).filter(ImageFilter.GaussianBlur(0.8))
-    out = rgb.convert("RGBA")
+    # Edge pixels are part white background: take the white back out of their colour
+    # (c = (c' - (1 - a) * 255) / a), else every icon wears a pale halo on the dark tiles.
+    al = np.asarray(alpha).astype(np.float32)[:, :, None] / 255.0
+    col = np.asarray(rgb).astype(np.float32)
+    clean = np.where(al > 0.02, (col - (1.0 - al) * 255.0) / np.maximum(al, 0.02), col)
+    out = Image.fromarray(np.clip(clean, 0, 255).astype(np.uint8), "RGB").convert("RGBA")
     out.putalpha(alpha)
     box = alpha.point(lambda a: 255 if a > 40 else 0).getbbox()
     return out.crop(box) if box else out
