@@ -98,6 +98,12 @@ const LINES := {
 	"boarded_up": ["Boards up. Nobody comes through those windows."],
 	"dropped": ["Dropped it.", "Left it on the ground."],
 	"stashed": ["In the trunk.", "Stashed in the car."],
+	"lifting": ["Stay right behind them. Don't bump them.", "Close, behind them, easy...", "Fall in behind. Steady."],   # PP1
+	"lift_caught": ["\"Hey! THIEF!\" They felt it.", "They spun round. \"Get your hand off me!\"", "Busted. They're yelling."],
+	"lift_lost": ["Lost them.", "They got away from you.", "Too far back. Gone."],
+	"gang_warning": ["\"Wrong block, homie. Keep walking.\"", "\"You lost? This ain't your street.\"", "\"Walk on. Now.\""],   # RX1
+	"gang_told": ["\"We told you.\" They're coming.", "\"You don't listen, huh?\"", "They're done talking."],
+	"searching": ["Let's see what they've got.", "Going through their pockets."],   # LT3
 	"picked_up": ["Got it.", "In the bag."],
 	"no_trunk": ["No car you can open here."],
 	"interrupted": ["Stopped.", "Cut short."],
@@ -145,10 +151,18 @@ const ALERTS := ["arrested", "arrested_seized", "grow_house_raided"]
 static func say(world: World, player_state: PlayerStateData, result: Dictionary) -> void:
 	var key := _key_for(result)
 	if key != "":
-		say_key(world, player_state, key, _amount_for(result))
+		var amount: int = result.get("amount", _amount_for(result))
+		say_key(world, player_state, key, amount)
+		_count(world, player_state, key, amount)
 		player_state.message_tone = 1 if result.get("ok", false) else -1
 		if result.has("tip"):
 			player_state.last_message = player_state.last_message.replace("<tip>", result["tip"])
+
+## DH1/NP1: a result counts toward today's hustles and may make the paper.
+## (A system's own say_key, e.g. an arrest, is counted there.)
+static func _count(world: World, player_state: PlayerStateData, key: String, amount: int) -> void:
+	HustleSystem.progress(world, player_state, key, amount)
+	NewsSystem.note(world, player_state, key, amount)
 
 static func say_key(world: World, player_state: PlayerStateData, key: String, amount: int = 0) -> void:
 	var options: Array = LINES[key]

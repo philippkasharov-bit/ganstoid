@@ -114,6 +114,15 @@ func _run(main: Node, args: Dictionary) -> void:
 				n._toggle_controls(true)
 		for i in 4:
 			await process_frame
+	if args.has("paper"):   # NP1/DH1 look: a morning paper after a busy night, today's hustles on the pager
+		var ps: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
+		HustleSystem.roll(driver.world, ps, 1)
+		ps.hustles[0]["got"] = 1
+		ps.news_today = [["robbery", 180, "Mariachi Plaza"], ["mugged", 35, "Boyle Heights"], ["tagged", 20, "Boyle Heights"]]
+		ps.paper = NewsSystem.print_paper(ps, 1)
+		ps.paper_serial += 1
+		for i in 6:
+			await process_frame
 	if args.has("sleep"):   # SL1 look: Z when tired: how long?
 		var sp: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
 		sp.fatigue = 0.2

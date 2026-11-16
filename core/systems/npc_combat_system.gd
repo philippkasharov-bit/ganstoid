@@ -17,6 +17,7 @@ const HOLD_M := 8.0                 # close to this, then stand and shoot
 const CHASE_SPEED := SimUnits.JOG
 
 var hostile: Dictionary = {}        # npc id -> tick their fight ends
+var _last_seen: Dictionary = {}     # ST2: npc id -> where they last saw the player
 var shots_fired := 0                # checks
 var _ready_at: Dictionary = {}      # npc id -> tick of their next shot
 var _world_ref: WeakRef
@@ -59,6 +60,18 @@ func on_assaulted(event_name: StringName, payload: Dictionary) -> void:
 				npc.indoors = false
 				_world.reindex_position(id)
 
+## RX1: a gang's people within `reach` of `at` turn on the player.
+func call_gang(gang_id: StringName, at: Vector2, reach: float, tick: int) -> int:
+	var until := tick + int(HOSTILE_S * SimClock.TICKS_PER_SECOND)
+	var n := 0
+	for id in _world.spatial_index.query_nearby(at):
+		var npc := _npc(id)
+		if npc != null and npc.gang_id == gang_id and not npc.is_down and not npc.is_crew and npc.position.distance_to(at) <= reach:
+			hostile[id] = until
+			npc.is_busy = true
+			n += 1
+	return n
+
 ## RG1: a gang sends `n` of its people (standing, not already fighting) after
 ## the player. Returns how many went.
 func send_squad(gang_id: StringName, n: int, tick: int) -> int:
@@ -82,9 +95,13 @@ func send_squad(gang_id: StringName, n: int, tick: int) -> int:
 ## Close in, then shoot when in range and in sight; one round per FIRE_EVERY_S.
 func _fight(npc: NPCData, target: NPCData, delta: float, tick: int) -> void:
 	var d := npc.position.distance_to(target.position)
-	var sight := d <= FIRE_RANGE_M and _in_sight(npc.position, target.position)
+	var is_player := target.id == PlayerFactory.PLAYER_ENTITY_ID
+	var sight := d <= FIRE_RANGE_M and (CrimeSystem.can_see(_world, npc.position, target.position, true) if is_player else _in_sight(npc.position, target.position))
+	if is_player and (sight or not _last_seen.has(npc.id)):
+		_last_seen[npc.id] = target.position   # ST2: they hunt where they last saw you, not where you are
+	var goal: Vector2 = _last_seen[npc.id] if is_player else target.position
 	if not sight or d > HOLD_M:
-		npc.position = WanderBehavior.step_toward(npc.position, target.position, CHASE_SPEED, delta, HOLD_M * 0.5, npc.id)
+		npc.position = WanderBehavior.step_toward(npc.position, goal, CHASE_SPEED, delta, HOLD_M * 0.5, npc.id)
 		_world.reindex_position(npc.id)
 	if sight:
 		fire_at(npc, target.position, tick)
@@ -104,13 +121,14 @@ func cop_engages(cop: NPCData, player: NPCData, state: PlayerStateData, tick: in
 	if not CombatSystem.is_armed_threat(state, tick):
 		return false
 	var d := cop.position.distance_to(player.position)
-	if d > FIRE_RANGE_M or not _in_sight(cop.position, player.position):
+	if d > FIRE_RANGE_M or not CrimeSystem.can_see(_world, cop.position, player.position, true):   # ST2: no shooting at what they can't see
 		return false
 	fire_at(cop, player.position, tick)
 	return d <= HOLD_M   # further out they keep closing while firing
 
 func _calm(id: StringName) -> void:
 	hostile.erase(id)
+	_last_seen.erase(id)
 	_ready_at.erase(id)
 	var npc := _npc(id)
 	if npc != null:

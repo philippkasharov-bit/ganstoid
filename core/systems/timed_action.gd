@@ -81,6 +81,8 @@ static func advance(world: World, npc: NPCData, state: PlayerStateData, busy: bo
 
 ## 0..1 progress and a label for the bar over the head, or {} when idle.
 static func progress(world: World, state: PlayerStateData) -> Dictionary:
+	if not state.lift.is_empty():   # PP1: the lift fills while you stay behind them
+		return {"f": clampf(float(state.lift["f"]), 0.0, 1.0), "text": "Lifting" if float(state.lift["notice"]) <= 0.0 else "Careful..."}
 	if not state.timed.is_empty() and state.timed.has("move"):
 		var mt: Dictionary = state.timed
 		var verb: String = {"take": "Taking", "take_all": "Taking all", "drop": "Dropping", "stash": "Stashing", "store": "Stashing"}.get(mt["move"].get("op", ""), "Moving")

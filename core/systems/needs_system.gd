@@ -9,8 +9,8 @@
 class_name NeedsSystem
 extends SystemBase
 
-const HUNGER_PER_DAY := 0.6
-const THIRST_PER_DAY := 1.0
+const HUNGER_PER_DAY := 0.3          # GP1: hungry after ~2.5 h of play (was 0.6, ~75 min)
+const THIRST_PER_DAY := 0.55         # GP1: thirsty after ~1.5 h (was 1.0, ~45 min)
 const TIRED_PER_DAY := 1.5            # awake: empty after ~16 hours
 const REST_PER_DAY_HOME := 3.0        # asleep in your own bed: full after ~8 hours
 const REST_PER_DAY_ROUGH := 1.8       # asleep anywhere else
@@ -60,6 +60,7 @@ func _drain(me: NPCData, state: PlayerStateData, days: float) -> void:
 		me.health = minf(1.0, me.health + HEAL_PER_DAY * days)
 	if not state.body.is_empty():   # HP2: wounds heal, bandages get dirty, open wounds fester
 		me.health = maxf(0.0, me.health - BodyParts.heal(state, days))
+		me.bleeding = BodyParts.is_bleeding(state)   # GP1: a cut that clotted stops the bleeding
 	if state.sleeping and (me.fatigue >= 0.99 or me.health < state.health_at_sleep - 0.01 or me.hunger < 0.08 or me.thirst < 0.08):
 		wake(state)   # rested, hurt, or too hungry or thirsty to sleep on
 

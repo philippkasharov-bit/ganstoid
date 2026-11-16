@@ -82,6 +82,8 @@ static func _key(p: Vector2) -> Vector2i:
 
 ## Cars too far from the player re-appear on a street nearer them.
 func _keep_near(at: Vector2) -> void:
+	if _drive.is_empty() and maxi(CARS, CARS_OVERRIDE) == 0:
+		return   # BUG-15: no background traffic: the 5k-street scan below took up to 12 ms for nothing
 	var rng := _world.runtime_rng
 	_nearby.clear()
 	for i in roads.size():   # streets around you (cheap: ~5k roads, every half second)

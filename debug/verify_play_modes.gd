@@ -23,7 +23,7 @@ func _initialize() -> void:
 	for t in SimClock.day_ticks / 2:
 		needs.process_entities(players, 1.0 / SimClock.TICKS_PER_SECOND, t)
 	print("no rules +$%d, grind +$%d; 25 melee XP -> level %d; half a day of grind: food %.2f; case per report x%.1f" % [plain, grind, Skills.level(state, &"melee"), me.hunger, GameRules.evidence(world)])
-	if not _check(plain == 100 and grind == 200 and Skills.level(state, &"melee") == 1 and absf(me.hunger - (1.0 - 0.3 * 0.3)) < 0.02 and GameRules.evidence(world) == 1.4, "style and difficulty multipliers apply"):
+	if not _check(plain == 100 and grind == 200 and Skills.level(state, &"melee") == 1 and absf(me.hunger - (1.0 - NeedsSystem.HUNGER_PER_DAY * 0.5 * 0.3)) < 0.02 and GameRules.evidence(world) == 1.4, "style and difficulty multipliers apply"):
 		return
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(HallOfFame.PATH))
 	state.rank = 1

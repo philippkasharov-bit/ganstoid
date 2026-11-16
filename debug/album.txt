@@ -29,3 +29,4 @@ new_game_screen  | debug/shot_new_game.gd |
 loading_screen   | debug/shot_loading.gd |
 3d_poor_block    | debug/shot_3d.gd     | --sim=3 --look=5206,3392 --size=24
 3d_spanish_house | debug/shot_3d.gd     | --sim=3 --look=5124,3302 --size=14 --turn=2
+morning_paper    | debug/shot_main.gd   | --paper

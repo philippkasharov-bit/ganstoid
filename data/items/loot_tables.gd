@@ -15,6 +15,9 @@ const TABLES := {
 	"bedroom": {"name": "Bedroom drawers", "rolls": [[&"weed", 0.2, 1, 4], [&"knife", 0.15, 1, 1], [&"pistol", 0.06, 1, 1], [&"ammo", 0.1, 1, 1]]},
 	"register": {"name": "Cash register", "rolls": []},
 	"stockroom": {"name": "Stockroom shelves", "rolls": [[&"water", 0.8, 2, 4], [&"soda", 0.8, 2, 4], [&"chips", 0.8, 2, 5], [&"bandage", 0.4, 1, 3]]},
+	"pockets": {"name": "Pockets", "rolls": [[&"chips", 0.2, 1, 1], [&"soda", 0.15, 1, 1], [&"bandage", 0.12, 1, 1], [&"pills", 0.08, 1, 1], [&"weed", 0.08, 1, 2], [&"knife", 0.08, 1, 1]]},   # LT3
+	"pockets_cop": {"name": "Pockets", "rolls": [[&"pistol", 0.5, 1, 1], [&"ammo", 0.7, 1, 2], [&"bandage", 0.4, 1, 2]]},
+	"pockets_dealer": {"name": "Pockets", "rolls": [[&"weed", 0.9, 2, 6], [&"pills", 0.4, 1, 3], [&"knife", 0.35, 1, 1], [&"pistol", 0.1, 1, 1]]},
 	"glovebox": {"name": "Glovebox", "rolls": [[&"cash", 0.6, 2, 40], [&"knife", 0.1, 1, 1], [&"ammo", 0.05, 1, 1], [&"chips", 0.3, 1, 1]]},
 }
 

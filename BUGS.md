@@ -15,7 +15,6 @@ Severity: **high** = breaks a game or loses progress · **medium** = clearly wro
 |----|----------|--------------|-------|----------|
 | BUG-15 | medium | At rush hour (08:00) one tick now and then takes 20-28 ms, a small stutter. It comes from the people's daily-routine planner (`NPCScheduleSystem`, up to 27 ms in one tick) when many people re-plan at once, on top of traffic (~11 ms). `verify_sim_perf` measures a real rush hour since BUG-13, so it now passes or fails by chance (main: 19.4 ms pass, 23.5 ms fail). Spread the re-plans over more ticks. | `core/systems/npc_schedule_system.gd` | `verify_sim_perf` |
 | BUG-9 | low (to check on Phil's PC) | In the shop (`--store` picture) a dark curved band runs across the shop floor, under the player. It could be a curved wall drawn at floor height, or a drawing glitch. | shop interior / cutaway | album `shop_counter` |
-| BUG-7 | low (to check on Phil's PC) | At night (22:00) the building walls are pitch black, so only the lit windows show and they seem to float. The server draws in OpenGL mode without the screen-space lighting Phil's PC has, so it may look fine there. | night lighting, `game_view_3d.gd` | album `street_night`, `3d_night` |
 
 ## Ideas (not bugs)
 
@@ -32,6 +31,13 @@ Severity: **high** = breaks a game or loses progress · **medium** = clearly wro
 
 | ID | What it was | Fix | Guarded by |
 |----|-------------|-----|-----------|
+| BUG-21 | Seen from far away in the dark: after a report, every cop within 400 m ran straight to where you were right now (live position, through walls and darkness), and armed cops and gangs shot at you from 18 m in the dark. | Police go to the crime scene, then only follow you while they can see you (the light rules; a searching eye sees 1.6x further), search where they last saw you for 25 s and give up; shooting needs sight too | `verify_stealth` |
+| BUG-7 | At night building walls were pitch black, so lit windows floated. | The BUG-20 city glow lights walls dimly | album `3d_night`, `street_night` |
+| BUG-20 | Night looked unnatural: hard-edged flat lamp discs and pitch-black everywhere else. | Lamp light now fades softly from under each head (warmer sodium), and a faint blue city glow keeps streets, palms and buildings readable | album `3d_night`, `street_night` |
+| BUG-16 | The player figure left its ring when walking and snapped back on stopping: the gangster walk (PL2) was baked with the hips ~1.3 m ahead of the feet. | `player_model_3d.gd` re-centres the Walk and Idle hips on load (now within 0.08 m) | `verify_player_model` |
+| BUG-19 | Wounded too easily: your bleeding never stopped by itself. | A laceration clots by itself after ~2 real minutes; deep and bullet wounds still need a bandage | `verify_gameplay_feel` |
+| BUG-18 | Hungry and thirsty too fast. | Hunger 0.3/day (~2.5 h of play), thirst 0.55/day (~1.5 h) | `verify_needs`, `verify_gameplay_feel` |
+| BUG-17 | You couldn't catch a fleeing person (your run = their jog, winded after ~14 s). | Run 5 m/s, a full breath ~30 s, breath comes back faster; someone you catch stops for 8 s | `verify_gameplay_feel`, `verify_stamina` |
 | BUG-13 | `verify_sim_perf` measured a freshly placed city without cars, so it missed the real rush-hour cost. | Cars are on the streets and the city runs from 07:00 to 08:00 before the rush hour is measured (now 3.1-3.3 ms, as in the soak); limits 1.0 / 4.0 / 2.5 ms | `verify_sim_perf` |
 | BUG-4 | The N map's "Find me" centred on you even at the city's edge: up to half the map was empty dark space. | `city_map_view.gd`: the view stays inside the city when centring, zooming and dragging | album `city_map` |
 | BUG-3 | The N map window opened over the top-left info panel. | `hud.gd`: opens right of the panel | album `city_map` |

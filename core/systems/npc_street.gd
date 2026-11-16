@@ -26,6 +26,8 @@ const UNSEEN_PACE_SCALE := 24.0     # BUG-11: past ABSTRACT_M people travel at g
                                    # ~4 game hours: commutes ran all night and ~4,500 people were outdoors at
                                    # rush hour (10 ms a tick). Nobody sees them; near you nothing changes.
 const ABSTRACT_M := 520.0          # POP1: past the streamed city (CityStream3D.UNLOAD_M + margin) walkers go straight, no routes
+const CAUGHT_M := 1.8               # GP2: someone running from you who is this close gives up ...
+const GIVE_UP_TICKS := 480          # ... and stands still this long (8 s): hands up, time to mug them
 const PAUSE_EVERY_S := 40.0        # near the player, a walker stops about this often ...
 const PAUSE_TICKS := [90, 360]     # ... for 1.5 to 6 s (phone, shoelace, looking around)
 ## Hanging around outside (dealers, loiterers).
@@ -164,6 +166,9 @@ func _move(npc: NPCData, delta: float, tick: int, player_pos: Vector2) -> bool:
 		if (tick + _phase(npc.id)) % every != 0:
 			return false
 		step_delta = delta * every
+	elif player_d2 <= CAUGHT_M * CAUGHT_M and pace_now.get(npc.id, 0.0) >= SimUnits.JOG:
+		_pause_until[npc.id] = tick + GIVE_UP_TICKS   # GP2: caught: they stop running
+		return false
 	elif _pausing(npc, tick):
 		return false
 	var before := npc.position
@@ -179,9 +184,11 @@ func _move(npc: NPCData, delta: float, tick: int, player_pos: Vector2) -> bool:
 		var next := WanderBehavior.step_toward(npc.position, target, walk * UNSEEN_PACE_SCALE, step_delta, reach)   # POP1: a straight line, no navmesh
 		if next.distance_squared_to(player_pos) <= ABSTRACT_M * ABSTRACT_M:
 			# Coming into sight: no fast step across the line, and off the straight line onto
-			# walkable ground, since a straight line out of sight goes through buildings.
+			# walkable ground if it ended inside a building. BUG-15: only then: the navmesh
+			# snap costs 0.8-6 ms and ran ~16k times a rush hour, several in one tick; the
+			# building test is a cheap grid lookup.
 			next = WanderBehavior.step_toward(npc.position, target, walk, step_delta, reach)
-			if nav != null:
+			if nav != null and nav.collision.blocked(next, 0.0):
 				next = nav.snap(next, NPCRoutine.layer_at(npc, tick))
 		npc.position = next
 		if nav != null:
@@ -219,6 +226,18 @@ func _arrive(npc: NPCData, at: Vector2, tick: int) -> bool:
 	if on_arrived.is_valid():
 		on_arrived.call(npc, tick, maxi(stay, 0))
 	return true
+
+## RX1: stand still for `ticks` (hands up).
+func hold(npc: NPCData, tick: int, ticks: int) -> void:
+	_pause_until[npc.id] = tick + ticks
+
+## RX1: walk on faster for the rest of this trip (they noticed you).
+func hurry(npc: NPCData, pace: float) -> void:
+	pace_now[npc.id] = maxf(pace, pace_now.get(npc.id, 0.0))
+
+## RX1: the point they are walking to now, or null.
+func goal_of(npc_id: StringName) -> Variant:
+	return _goal.get(npc_id)
 
 func _pausing(npc: NPCData, tick: int) -> bool:
 	if tick < _pause_until.get(npc.id, 0):

@@ -6,7 +6,8 @@
 ##   bat             bruise; a hard hit on an arm or leg bone: fracture
 ##   knife           laceration; a deep stab: deep wound
 ##   bullet          bullet wound (deep, bleeds hard)
-## Lacerations, deep and bullet wounds bleed until bandaged. A bandage goes on
+## Deep and bullet wounds bleed until bandaged; a laceration clots by itself
+## after CLOT_DAYS (GP1). A bandage goes on
 ## the worst bleeding wound first; a bandage left on a day gets dirty, and a
 ## dirty or missing bandage on an open wound can turn it infected (it stops
 ## healing and slowly drains health until the bandage is changed). Parts heal
@@ -38,6 +39,7 @@ const PART_DAMAGE := 2.2          # a part takes more of a hit than the whole bo
 const FRACTURE_AT := 0.3          # a blunt hit leaving a limb bone under this breaks it
 const DEEP_AT := 0.18             # a blade hit this hard goes deep
 const HEAL_PER_DAY := 0.6
+const CLOT_DAYS := 2.0 / 60.0     # GP1: a laceration stops bleeding by itself after ~2 real minutes (a game day is a real hour)
 const DIRTY_AFTER_DAYS := 1.0     # a bandage needs changing after a day
 const INFECT_PER_DAY := 0.5       # chance-free: an open wound with no clean bandage festers at this rate
 const INFECTED_DRAIN_PER_DAY := 0.15
@@ -184,6 +186,11 @@ static func heal(state: PlayerStateData, days: float) -> float:
 		if float(b["infection"]) >= 1.0:
 			drain += INFECTED_DRAIN_PER_DAY * days
 			continue   # an infected wound does not heal
+		if b["bleeding"] and b["wound"] == "laceration":   # GP1: a small cut clots; deep and bullet wounds need a bandage
+			b["bleed_days"] = float(b.get("bleed_days", 0.0)) + days
+			if float(b["bleed_days"]) >= CLOT_DAYS:
+				b["bleeding"] = false
+				b.erase("bleed_days")
 		if b["bleeding"]:
 			continue
 		var rate := HEAL_PER_DAY * (0.3 if b["wound"] == "fracture" else (1.5 if b["bandaged"] and not _dirty(b) else 1.0))
