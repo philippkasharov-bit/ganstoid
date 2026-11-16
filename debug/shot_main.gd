@@ -128,6 +128,27 @@ func _run(main: Node, args: Dictionary) -> void:
 				break
 		for i in 4:
 			await process_frame
+	if args.has("gps"):   # MM1 look: a waypoint set, the GPS line on the minimap
+		var gs: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
+		var gn: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
+		gs.waypoint = gn.position + Vector2(260, 140)
+		for i in 6:
+			await process_frame
+	if args.has("phone"):   # PH1 look: the phone open on Rivals, a message sliding in
+		var ph: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
+		RivalSystem.ensure(driver.world, ph)
+		var gs: Array = ph.rivals.keys()
+		ph.rivals[gs[0]]["grudge"] = 62.0
+		ph.rivals[gs[1]]["grudge"] = 18.0
+		ph.rivals[gs[1]]["scars"] = 1
+		PhoneSystem.push(driver.world, ph, "Unknown number", "Word on the street: %s has your name in their mouth." % ph.rivals[gs[0]]["name"])
+		for n in main.get_node("HudLayer").get_children():
+			if n is PhoneWindow:
+				n.visible = true
+				n._app = "" if String(args["phone"]) == "home" else String(args["phone"])
+				n._key = ""
+		for i in 4:
+			await process_frame
 	if args.has("stamp"):   # UI3 look: a rank-up stamp slammed down, money floating up
 		var st: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
 		var sn: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)

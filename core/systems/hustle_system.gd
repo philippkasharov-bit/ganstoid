@@ -64,6 +64,8 @@ static func roll(world: World, state: PlayerStateData, day: int) -> void:
 		var pay := int(spec[3] * (1.0 + 0.25 * state.rank))
 		state.hustles.append({"kind": k, "need": spec[2], "got": 0, "pay": pay, "done": false,
 			"deadline": int(start + (float(spec[4]) - DAY_START) / 24.0 * SimClock.day_ticks)})
+	if not state.hustles.is_empty():
+		PhoneSystem.push(world, state, "Pager", "%d new hustles today. Check the Hustles app." % state.hustles.size())
 
 ## A result came in (StreetTalk): moves any hustle it counts for; pays the finished ones.
 static func progress(world: World, state: PlayerStateData, key: String, amount: int) -> void:

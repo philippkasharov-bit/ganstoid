@@ -115,6 +115,10 @@ extends Resource
 var job_offers: Array = []                      # JB1: offers on screen (not saved)
 @export var explored: PackedByteArray = PackedByteArray()   # MP2: fog of war, one bit per ExplorationSystem cell
 @export var known: Dictionary = {}                 # MP2: dealer and fixer ids you have seen -> "dealer" / "fixer"
+@export var waypoint: Vector2 = Vector2.INF        # MM1: the GPS target (right-click the big map)
+@export var inbox: Array = []                     # PH1: phone messages [{from, text, at}]
+var ui_phone: Dictionary = {}                     # PH1: what the phone asked for (not saved)
+@export var rivals: Dictionary = {}               # RV1: gang id -> {npc, name, real, temper, grudge, level, scars, stage, down_seen}
 @export var hustles: Array = []                   # DH1: today's three [{kind, need, got, pay, done, deadline}]
 @export var hustle_day: int = -1000000
 @export var news_today: Array = []                # NP1: [key, amount, hood] the papers would print

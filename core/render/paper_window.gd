@@ -24,8 +24,8 @@ func setup(world: World, at: Vector2) -> void:
 	_page.add_theme_constant_override("separation", 6)
 	sheet.add_child(_page)
 	body.add_child(sheet)
-	body.add_child(UiTheme.label("P: paper   Esc: close", UiTheme.FONT_SMALL, UiTheme.DIM))
-	CharacterWindow._bind(ACTION, KEY_P)
+	body.add_child(UiTheme.label("Esc: close   (the phone's Paper app opens it again)", UiTheme.FONT_SMALL, UiTheme.DIM))
+	# PH1: P is the phone now; the paper opens from its Paper app (and by itself each morning)
 	visible = false
 	var state := _state()
 	_seen = state.paper_serial if state != null else 0   # a loaded game does not pop yesterday's paper
@@ -41,11 +41,6 @@ func _process(_delta: float) -> void:
 	if state.paper_serial != _seen:
 		_seen = state.paper_serial
 		show_paper(state.paper)
-	elif Input.is_action_just_pressed(ACTION):
-		if visible:
-			close_window()
-		elif not state.paper.is_empty():
-			show_paper(state.paper)
 	elif visible and Input.is_action_just_pressed("ui_cancel"):
 		close_window()
 

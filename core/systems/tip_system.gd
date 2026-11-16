@@ -22,6 +22,7 @@ const TIPS := {
 	"tired": "You're getting tired. Press Z to sleep: a bed at home is safest.",
 	"evening": "Evening. Shops close between 8 and 11 pm and most people go home: fewer witnesses, but cops still patrol.",
 	"lift": "Pickpocketing: stay right behind them while the bar fills. Bump into them or get in front and they'll feel it. Crowds help.",
+	"phone": "Your phone (P): messages, contacts (call a fixer you've met for work from anywhere), hustles, bank, and who's after you.",
 	"body": "Someone's down. Press E and pick \"Search their pockets\": what they carry shows in your bag window.",
 	"door": "A front door. Press E to pick the lock or kick it in. Once you're in, walk up to cupboards and drawers: what's inside shows in your bag (I). Flats too.",
 	"job": "You're on a job. The pager (top right) shows where to go and how long you have. Miss the deadline and the fixers trust you less.",
@@ -80,6 +81,8 @@ static func applies(world: World, id: String, me: NPCData, state: PlayerStateDat
 			return _downed_near(world, me)
 		"lift":
 			return not state.lift.is_empty()
+		"phone":
+			return not state.inbox.is_empty()
 		"door":
 			return _home_door_near(world, me)
 	return false

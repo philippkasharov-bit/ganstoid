@@ -11,6 +11,7 @@ const REVEAL_M := 45.0
 const KNOW_M := 20.0              # a dealer or fixer this close, in sight, is known
 const EVERY := 30
 const PHASE := 23
+const WAYPOINT_DONE_M := 15.0
 const HOME_KNOWN_M := 220.0       # a new life (or a save from before MP2) knows its own neighbourhood
 
 var _world_ref: WeakRef
@@ -34,6 +35,8 @@ func process_entities(entities: Dictionary, _delta: float, tick: int) -> void:
 		if state.explored.size() != GRID * GRID / 8:
 			reveal(state, me.position, HOME_KNOWN_M)
 		reveal(state, me.position, REVEAL_M)
+		if state.waypoint != Vector2.INF and state.waypoint.distance_to(me.position) <= WAYPOINT_DONE_M:
+			state.waypoint = Vector2.INF   # MM1: you got there
 		for id in _world.spatial_index.query_nearby(me.position):
 			if state.known.has(id):
 				continue

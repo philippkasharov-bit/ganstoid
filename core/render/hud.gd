@@ -62,6 +62,10 @@ func _ready() -> void:
 	get_parent().add_child.call_deferred(pager)
 	pager.setup(_world)
 	pager.clock = clock
+	var notify := NotifyView.new()   # PH1: new phone messages slide in under the pager
+	get_parent().add_child.call_deferred(notify)
+	notify.setup(_world)
+	notify.pager = pager
 
 	var moodles := Moodles.new()
 	get_parent().add_child.call_deferred(moodles)
@@ -76,6 +80,9 @@ func _ready() -> void:
 	get_parent().add_child.call_deferred(eye)
 	eye.setup(_world)
 	pager.eye = eye   # UI2: the pager keeps clear of it
+	var mini := MiniMap.new()   # MM1: minimap and GPS, bottom right
+	get_parent().add_child.call_deferred(mini)
+	mini.setup(_world, get_node(world_driver_path).city)
 	var hotbar := HotbarView.new()   # HB1: Zomboid's hotbar, bottom middle
 	get_parent().add_child.call_deferred(hotbar)
 	hotbar.setup(_world)
@@ -85,6 +92,10 @@ func _ready() -> void:
 	var paper := PaperWindow.new()   # NP1: the morning paper (P)
 	get_parent().add_child.call_deferred(paper)
 	paper.setup(_world, Vector2(300, 70))
+	var phone := PhoneWindow.new()   # PH1: P, the hub
+	get_parent().add_child.call_deferred(phone)
+	phone.setup(_world, Vector2(right - 360, 140))
+	phone.paper = paper
 	var bug := BugReportWindow.new()   # QA2: F12, report a bug with a picture and the save
 	get_parent().add_child.call_deferred(bug)
 	bug.setup(_world, get_node(world_driver_path), Vector2(160, 120))

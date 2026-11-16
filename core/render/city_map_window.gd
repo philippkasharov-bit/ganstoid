@@ -33,7 +33,7 @@ func _bar() -> Control:
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(spacer)
-	row.add_child(UiTheme.label("fog: not explored yet   dim = closed", UiTheme.FONT_SMALL, UiTheme.DIM))
+	row.add_child(UiTheme.label("right-click: GPS   fog: not explored", UiTheme.FONT_SMALL, UiTheme.DIM))
 	var find := Button.new()
 	find.text = "Find me"
 	find.pressed.connect(_view.centre_on_player)
