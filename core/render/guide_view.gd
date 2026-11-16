@@ -12,6 +12,7 @@ const REFRESH_S := 0.5
 var _world: World
 var _line := Label.new()
 var _tip_box := PanelContainer.new()
+var _pager := Label.new()   # DH1: today's hustles
 var _tip := Label.new()
 var _seen := 0
 var _tip_left := 0.0
@@ -29,7 +30,14 @@ func setup(world: World) -> void:
 	_line.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_line.custom_minimum_size.x = WIDTH
-	line_box.add_child(_line)
+	var lines := VBoxContainer.new()
+	lines.add_theme_constant_override("separation", 2)
+	lines.add_child(_line)
+	_pager.add_theme_font_size_override("font_size", 12)
+	_pager.add_theme_color_override("font_color", UiTheme.TEXT)
+	_pager.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lines.add_child(_pager)
+	line_box.add_child(lines)
 	add_child(line_box)
 	_tip_box.add_theme_stylebox_override("panel", UiPanel.card_style())
 	_tip_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -61,7 +69,12 @@ func _process(delta: float) -> void:
 	if _refresh <= 0.0:
 		_refresh = REFRESH_S
 		_line.text = NextStep.line(_world)
-	(_line.get_parent() as Control).visible = _line.text != ""
+		var hustles: PackedStringArray = []
+		for h in state.hustles:
+			hustles.append(("[x] " if h["done"] else "[ ] ") + HustleSystem.line(_world, h))
+		_pager.text = "" if hustles.is_empty() else "TODAY'S HUSTLES\n" + "\n".join(hustles)
+		_pager.visible = _pager.text != ""
+	(_line.get_parent().get_parent() as Control).visible = _line.text != "" or _pager.visible
 	visible = _line.text != "" or _tip_box.visible
 	reset_size()
 	position = Vector2(roundf((get_viewport_rect().size.x - size.x) * 0.5), TOP)

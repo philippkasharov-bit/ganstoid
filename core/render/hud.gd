@@ -70,6 +70,9 @@ func _ready() -> void:
 	var map := CityMapWindow.new()   # MP1: N, the city map with the shops on it
 	get_parent().add_child.call_deferred(map)
 	map.setup(_world, get_node(world_driver_path).city, Vector2(250, 60))   # BUG-3: right of the info panel, not over it
+	var paper := PaperWindow.new()   # NP1: the morning paper (P)
+	get_parent().add_child.call_deferred(paper)
+	paper.setup(_world, Vector2(300, 70))
 	var bug := BugReportWindow.new()   # QA2: F12, report a bug with a picture and the save
 	get_parent().add_child.call_deferred(bug)
 	bug.setup(_world, get_node(world_driver_path), Vector2(160, 120))

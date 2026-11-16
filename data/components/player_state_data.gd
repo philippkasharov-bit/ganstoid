@@ -115,6 +115,12 @@ extends Resource
 var job_offers: Array = []                      # JB1: offers on screen (not saved)
 @export var explored: PackedByteArray = PackedByteArray()   # MP2: fog of war, one bit per ExplorationSystem cell
 @export var known: Dictionary = {}                 # MP2: dealer and fixer ids you have seen -> "dealer" / "fixer"
+@export var hustles: Array = []                   # DH1: today's three [{kind, need, got, pay, done, deadline}]
+@export var hustle_day: int = -1000000
+@export var news_today: Array = []                # NP1: [key, amount, hood] the papers would print
+@export var paper: Dictionary = {}                # NP1: the latest front page
+@export var paper_day: int = -1000000
+@export var paper_serial: int = 0
 @export var tips_seen: Array = []                 # TP1: tips already shown this life
 @export var tips_on: bool = true                  # TP1: the pause menu turns tips off
 var tip_text: String = ""                         # TP1: the tip on screen (not saved)

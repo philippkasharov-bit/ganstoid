@@ -332,6 +332,7 @@ func _arrest(player_npc: NPCData, player_state: PlayerStateData) -> void:
 		return
 	var seized := Wallet.seize_dirty(_world, ARREST_SEIZE_FRACTION)  # batch 24
 	StreetTalk.say_key(_world, player_state, "arrested_seized" if seized > 0 else "arrested", seized)
+	StreetTalk._count(_world, player_state, "arrested_seized" if seized > 0 else "arrested", seized)   # NP1: it makes the paper
 	if player_npc.home_building_id != &"" and _world.entities.has(player_npc.home_building_id):
 		var home: BuildingData = _world.entities[player_npc.home_building_id].get_component(ComponentNames.BUILDING)
 		player_npc.position = home.position

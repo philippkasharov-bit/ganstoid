@@ -146,10 +146,18 @@ const ALERTS := ["arrested", "arrested_seized", "grow_house_raided"]
 static func say(world: World, player_state: PlayerStateData, result: Dictionary) -> void:
 	var key := _key_for(result)
 	if key != "":
-		say_key(world, player_state, key, _amount_for(result))
+		var amount: int = result.get("amount", _amount_for(result))
+		say_key(world, player_state, key, amount)
+		_count(world, player_state, key, amount)
 		player_state.message_tone = 1 if result.get("ok", false) else -1
 		if result.has("tip"):
 			player_state.last_message = player_state.last_message.replace("<tip>", result["tip"])
+
+## DH1/NP1: a result counts toward today's hustles and may make the paper.
+## (A system's own say_key, e.g. an arrest, is counted there.)
+static func _count(world: World, player_state: PlayerStateData, key: String, amount: int) -> void:
+	HustleSystem.progress(world, player_state, key, amount)
+	NewsSystem.note(world, player_state, key, amount)
 
 static func say_key(world: World, player_state: PlayerStateData, key: String, amount: int = 0) -> void:
 	var options: Array = LINES[key]
