@@ -28,6 +28,7 @@ static func register_all(world: World) -> void:
 	world.register_system(EconomyFlowSystem.new(world))   # E2: the daily money loop
 	world.register_system(JobSystem.new(world))
 	world.register_system(TipSystem.new(world))   # TP1
+	world.register_system(ExplorationSystem.new(world))   # MP2
 	world.register_system(TrafficSystem.new(world))
 	world.register_system(DriveSystem.new(world))
 	var case := CaseSystem.new(world)

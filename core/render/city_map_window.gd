@@ -1,6 +1,8 @@
-## MP1: the Map window (N, or the side bar), Zomboid's map: the whole city with
-## every shop and workshop on it (hover one for its trade and hours), your home
-## and your businesses, and you. Tick boxes hide a kind; "Find me" re-centres.
+## MP1: the Map window (N, or the side bar), Zomboid's map: the city with the
+## shops and workshops you have found (hover one for its trade and hours), the
+## dealers and fixers you have met, gang turf you have walked, your home and
+## businesses, and you (MP2: the rest is under fog). Tick boxes hide a kind;
+## "Find me" re-centres.
 class_name CityMapWindow
 extends UiWindow
 
@@ -25,11 +27,13 @@ func _bar() -> Control:
 	row.add_theme_constant_override("separation", UiTheme.SPACE)
 	row.add_child(_tick("Shops", CityMapView.SHOP, func(on: bool) -> void: _view.show_shops = on))
 	row.add_child(_tick("Workshops", CityMapView.WORKSHOP, func(on: bool) -> void: _view.show_workshops = on))
+	row.add_child(_tick("Dealers $ / Fixers F", CityMapView.DEALER, func(on: bool) -> void: _view.show_people = on))   # MP2
+	row.add_child(_tick("Turf", Color(0.85, 0.85, 0.85), func(on: bool) -> void: _view.show_turf = on))
 	row.add_child(_tick("Yours", CityMapView.MINE, func(on: bool) -> void: _view.show_mine = on))
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(spacer)
-	row.add_child(UiTheme.label("wheel: zoom   drag: move   dim = closed", UiTheme.FONT_SMALL, UiTheme.DIM))
+	row.add_child(UiTheme.label("fog: not explored yet   dim = closed", UiTheme.FONT_SMALL, UiTheme.DIM))
 	var find := Button.new()
 	find.text = "Find me"
 	find.pressed.connect(_view.centre_on_player)

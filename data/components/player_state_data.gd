@@ -113,6 +113,8 @@ extends Resource
 @export var fixer_rep: float = 0.0
 @export var jobs_done: int = 0
 var job_offers: Array = []                      # JB1: offers on screen (not saved)
+@export var explored: PackedByteArray = PackedByteArray()   # MP2: fog of war, one bit per ExplorationSystem cell
+@export var known: Dictionary = {}                 # MP2: dealer and fixer ids you have seen -> "dealer" / "fixer"
 @export var tips_seen: Array = []                 # TP1: tips already shown this life
 @export var tips_on: bool = true                  # TP1: the pause menu turns tips off
 var tip_text: String = ""                         # TP1: the tip on screen (not saved)
