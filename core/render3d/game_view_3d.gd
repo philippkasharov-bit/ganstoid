@@ -56,6 +56,11 @@ func setup(w: World, city: CityData, at: Vector2) -> void:
 	day_night.city = city
 	day_night.radius = CITY_M   # lamps everywhere the stream can go
 	var t0 := Time.get_ticks_msec()
+	BuildingMesh3D.wealth_by_cell = {}   # K6: block wealth for worn houses, copied here on the main thread
+	var econ := BlockEconomyData.of(w)
+	if econ != null:
+		for cell in econ.blocks:
+			BuildingMesh3D.wealth_by_cell[cell] = float(econ.blocks[cell]["wealth"])
 	stream.setup(city, centre, day_night.layout())   # OPT1: only the city round you is built
 	add_child(stream)
 	stream.prime(_player_at(at))

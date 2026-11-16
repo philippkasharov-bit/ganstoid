@@ -43,6 +43,17 @@ const CHIMNEY_SHARE := 0.35
 const DISH_SHARE := 0.22
 const PARAPET_M := 0.25
 
+const WORN_BELOW := 0.4    # K6: block wealth under this: a worn house (about 1 in 3; houses run 0.32..0.53)
+const BARS_BELOW := 0.33   # and under this: bars on its windows too (about 1 in 9, the poorest)
+
+## K6: block wealth (0 poor .. 1 rich) by turf cell, copied from the game's economy on the
+## main thread when the 3D view starts (the chunk builders run on workers and must not
+## read the live World). Empty: no economy (tools), so wear is rolled per house.
+static var wealth_by_cell: Dictionary = {}
+
+static func wealth_at(p: Vector2) -> float:
+	return float(wealth_by_cell.get(TerritoryData.cell_of(p), -1.0)) if not wealth_by_cell.is_empty() else -1.0
+
 ## Adds building `b` to SurfaceTool `st`. `v` maps a map point + height to 3D;
 ## `tag` (city index + 1) lets the Cutaway cut it whole.
 static func add(st: SurfaceTool, b: Dictionary, v: Callable, tag: int = 0, kit: CityMesh3D = null) -> void:
@@ -57,11 +68,21 @@ static func add(st: SurfaceTool, b: Dictionary, v: Callable, tag: int = 0, kit: 
 	var h := levels * storey
 	var pal: Array = PALETTES.get(kind, PALETTES["building"])
 	var col: Color = pal[rng.randi() % pal.size()].lightened(rng.randf_range(-0.04, 0.05))
-	col = SurfaceDetail.mark(col, _wall_of(kind, col))   # TX1: stucco, brick or block grain
+	var surface := _wall_of(kind, col)
+	var worn := false
+	var bars := false
+	if kind == "house":   # K6: a house on a poor block is worn (and the poorest have bars on the windows)
+		var wealth := wealth_at(_centroid(poly))
+		var roll := absi(String(b["id"]).hash()) % 100
+		worn = wealth < WORN_BELOW if wealth >= 0.0 else roll < 30
+		bars = worn and (wealth < BARS_BELOW if wealth >= 0.0 else roll < 15)
+		if worn and surface == SurfaceDetail.STUCCO:
+			surface = SurfaceDetail.STUCCO_WORN
+	col = SurfaceDetail.mark(col, surface)   # TX1: stucco, brick or block grain
 	var style := {"win_w": rng.randf_range(0.8, 1.6), "win_h": rng.randf_range(1.0, 1.5), "gap": rng.randf_range(2.4, 4.2),
 		"shop": (kind == "commercial") and rng.randf() < 0.8, "rollup": kind in ["industrial", "garage"] and rng.randf() < 0.6,
 		"awning": AWNINGS[rng.randi() % AWNINGS.size()], "storey": storey,
-		"tag": tag, "glow": GLOW.get(kind, 0.3), "seed": rng.randi(), "ac": AC_SHARE.get(kind, 0)}
+		"tag": tag, "glow": GLOW.get(kind, 0.3), "seed": rng.randi(), "ac": AC_SHARE.get(kind, 0), "bars": bars}
 	st.set_uv(Vector2(0, tag))   # R3D7: the Cutaway cuts this building whole by its tag
 	var ccw := _ccw(poly)
 	var span := InteriorSolid.door_span(poly, b.get("door", Vector2.INF))   # R3D14: the same door the sim lets you through

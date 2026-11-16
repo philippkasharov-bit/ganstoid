@@ -31,7 +31,7 @@ static func context(m: CityMesh3D, poly: PackedVector2Array, col: Color, style: 
 	return {"tag": style["tag"], "col": col, "seed": seed, "glow": style["glow"], "storey": style["storey"],
 		"trim": TRIMS[absi(seed) % TRIMS.size()], "door": absi(seed) % KitBatch3D.DOOR_PAINT.size(),
 		"garage": _garage(m.aprons, poly, door_edge), "porch": absi(seed / 7) % 10 < PORCH_SHARE, "door_edge": door_edge,
-		"gutters": absi(seed / 11) % 10 < GUTTER_SHARE}.merged(_roof_of(seed))
+		"gutters": absi(seed / 11) % 10 < GUTTER_SHARE, "bars": style.get("bars", false)}.merged(_roof_of(seed))
 
 ## K6: the house's roof, decided up front so the porch roof can match it.
 static func _roof_of(seed: int) -> Dictionary:
@@ -54,6 +54,8 @@ static func wall(m: CityMesh3D, st: SurfaceTool, v: Callable, a: Vector2, c: Vec
 	_holed(st, v, a + out * 0.02, dir, length, BuildingMesh3D.TRIM, holes, n, ctx["col"].darkened(0.3))
 	for hole in holes:
 		_put(m, v, a + dir * float(hole["x"]), dir, out, hole["part"], float(hole["y0"]), hole.get("lit", 0.0), ctx)
+		if ctx["bars"] and String(hole["part"]).begins_with("kit_window") and float(hole["y0"]) < 2.5:
+			_bars(st, v, a + dir * float(hole["x"]), dir, out, hole)
 	if door_t >= 0.0 and ctx["porch"] and length >= 3.0:
 		_put(m, v, a + dir * door_t * length, dir, out, "kit_porch", 0.0, 0.0, ctx)
 		_porch_roof(st, v, a + dir * door_t * length, dir, out, ctx)
@@ -182,6 +184,25 @@ static func _porch_roof(st: SurfaceTool, v: Callable, at: Vector2, dir: Vector2,
 		var nn: Vector3 = Vector3(dir.x, 0, dir.y) * sgn
 		BuildingMesh3D.quad(st, [p.call(half * sgn, 0.0, PORCH_ROOF.x - 0.1), p.call(half * sgn, PORCH_ROOF.z, PORCH_ROOF.y - 0.1),
 			p.call(half * sgn, PORCH_ROOF.z, PORCH_ROOF.y), p.call(half * sgn, 0.0, PORCH_ROOF.x)], nn, col.darkened(0.3))
+
+const BAR_IRON := Color("1e1d1c")
+
+## K6: iron bars over a ground-floor window (a poor block), a hand in front of the wall.
+static func _bars(st: SurfaceTool, v: Callable, at: Vector2, dir: Vector2, out: Vector2, hole: Dictionary) -> void:
+	var half: float = (float(hole["x1"]) - float(hole["x0"])) * 0.5 + 0.06
+	var y0: float = float(hole["y0"]) - 0.06
+	var y1: float = float(hole["y1"]) + 0.06
+	var off := 0.09
+	var n3 := Vector3(out.x, 0, out.y)
+	var count := maxi(3, int(half * 2.0 / 0.13))
+	for k in count + 1:
+		var x := -half + half * 2.0 * k / count
+		var p := at + dir * x + out * off
+		BuildingMesh3D.quad(st, [v.call(p - dir * 0.012, y0), v.call(p + dir * 0.012, y0), v.call(p + dir * 0.012, y1), v.call(p - dir * 0.012, y1)], n3, BAR_IRON)
+	for y in [y0 + 0.05, y1 - 0.05]:
+		var p0 := at - dir * half + out * (off + 0.01)
+		var p1 := at + dir * half + out * (off + 0.01)
+		BuildingMesh3D.quad(st, [v.call(p0, y - 0.02), v.call(p1, y - 0.02), v.call(p1, y + 0.02), v.call(p0, y + 0.02)], n3, BAR_IRON)
 
 ## One part on the wall at map point `at` (bottom-centre of its opening at height y).
 static func _put(m: CityMesh3D, v: Callable, at: Vector2, dir: Vector2, out: Vector2, part: String, y: float, lit: float, ctx: Dictionary) -> void:

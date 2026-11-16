@@ -9,11 +9,11 @@
 class_name SurfaceDetail
 extends RefCounted
 
-enum { STUCCO, BRICK, BLOCK, CLAY, SHINGLE, GRAVEL, ASPHALT, SIDEWALK, GRASS, DIRT, WOOD, TILE, CARPET }
+enum { STUCCO, BRICK, BLOCK, CLAY, SHINGLE, GRAVEL, ASPHALT, SIDEWALK, GRASS, DIRT, WOOD, TILE, CARPET, STUCCO_WORN }   # K6: worn stucco: stains and grime in the shader
 const NONE := 15   # alpha 1.0: a plain colour
-const NAMES := ["stucco", "brick", "block", "clay", "shingle", "gravel", "asphalt", "sidewalk", "grass", "dirt", "wood", "tile", "carpet"]
-const TILE_M := [2.0, 2.0, 3.0, 3.0, 3.0, 4.0, 4.0, 3.0, 2.0, 3.0, 2.0, 3.2, 2.0]   # metres one texture covers
-const STRENGTH := [0.55, 0.8, 0.7, 0.8, 0.7, 0.45, 0.5, 0.5, 0.45, 0.6, 0.8, 0.7, 0.5]   # how much of the texture shows
+const NAMES := ["stucco", "brick", "block", "clay", "shingle", "gravel", "asphalt", "sidewalk", "grass", "dirt", "wood", "tile", "carpet", "stucco"]
+const TILE_M := [2.0, 2.0, 3.0, 3.0, 3.0, 4.0, 4.0, 3.0, 2.0, 3.0, 2.0, 3.2, 2.0, 2.0]   # metres one texture covers
+const STRENGTH := [0.55, 0.8, 0.7, 0.8, 0.7, 0.45, 0.5, 0.5, 0.45, 0.6, 0.8, 0.7, 0.5, 0.65]   # how much of the texture shows
 const DIR := "res://art/textures/"
 const SIZE := 512
 const SLOTS := 15   # the shader's arrays (ids 0..14; 15 is NONE)
