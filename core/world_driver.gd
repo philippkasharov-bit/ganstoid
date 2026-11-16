@@ -26,13 +26,14 @@ const SPEEDS := {KEY_F3: 1, KEY_F4: 5, KEY_F5: 20, KEY_F6: 40}
 var _health_seen := -1.0
 var slowed_because := ""       # Z2: why fast-forward dropped back to 1x (the HUD says it once)
 var _saved_hour := 0
+var _save_task := -1           # QA4: the hourly autosave running on a worker, or -1
 var _dead_handled := false
 
 func _ready() -> void:
 	UserDirMove.run()   # UI17: saves from before the rename to Tagged
 	city = CityData.load_file()
-	var saved := SaveGame.read()   # SL1: carry on where the last session ended, if alive
-	seed_used = saved["seed"] if not saved.is_empty() else randi()
+	var saved := {} if Engine.has_meta("no_save") else SaveGame.read()   # SL1: carry on where the last session ended, if alive (QA4: not in the screenshot tools)
+	seed_used = saved["seed"] if not saved.is_empty() else (int(Engine.get_meta("seed")) if Engine.has_meta("seed") else randi())   # QA4: the screenshot tools fix the seed so pictures compare
 	SystemRegistry.register_all(world)
 	TrafficSystem.roads = city.roads   # V2: traffic drives the real streets
 	TrafficSystem.junctions = Junctions.load_file()   # MP3a: lights and stop signs
@@ -55,6 +56,8 @@ func _ready() -> void:
 	elif saved.is_empty():
 		GameRules.install(world, 1, 1)
 	(world.find_system(NPCScheduleSystem) as NPCScheduleSystem).settle_all(world.tick)
+	RankSystem.score(world, world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC),
+		world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE))   # BUG-1: build the city lists while loading, not on the first tick
 	_install_routes.call_deferred()
 
 func _install_routes() -> void:
@@ -101,9 +104,19 @@ func _keep_save() -> void:
 			SaveGame.delete()
 		return
 	var hour := world.tick / SimClock.hours(1.0)
-	if hour != _saved_hour:
+	if hour != _saved_hour and not Engine.has_meta("no_save"):   # the screenshot tools never save
+		if _save_task != -1 and not WorkerThreadPool.is_task_completed(_save_task):
+			return   # the last hour's save is still being written: try again next tick
+		finish_save()
 		_saved_hour = hour
-		SaveGame.write_in_background(world, seed_used)
+		_save_task = SaveGame.write_in_background(world, seed_used)
+
+## QA4: waits for a running autosave. Quitting while it wrote crashed the game on
+## exit, and the quit save could write the same file at the same time.
+func finish_save() -> void:
+	if _save_task != -1:
+		WorkerThreadPool.wait_for_task_completion(_save_task)
+		_save_task = -1
 
 ## O1 Casual: someone found you and got you home. It cost you half your cash.
 func _rescue(player: Entity) -> void:
@@ -122,7 +135,8 @@ func _rescue(player: Entity) -> void:
 	StreetTalk.say_key(world, st, "rescued")
 
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_WM_CLOSE_REQUEST and not _dead_handled and SimNav.active != null:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST and not _dead_handled and SimNav.active != null and not Engine.has_meta("no_save"):
+		finish_save()
 		SaveGame.write(world, seed_used)   # quitting saves, like Zomboid
 
 ## Z2: F2 pauses (no menu), F3-F6 set the speed, like Zomboid's single player.
@@ -181,6 +195,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_tree().reload_current_scene()
 
 func _exit_tree() -> void:
+	finish_save()
 	SimNav.uninstall()
 
 static func _dead(npc: NPCData) -> bool:

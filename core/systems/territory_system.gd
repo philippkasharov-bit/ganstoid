@@ -253,10 +253,8 @@ func _player_sources(t: TerritoryData) -> void:
 			var n: NPCData = e.get_component(ComponentNames.NPC) if e != null else null
 			if n != null and not n.is_down and n.crew_role in [GanstoidEnums.CrewRole.LOOKOUT, GanstoidEnums.CrewRole.DEALER, GanstoidEnums.CrewRole.MUSCLE]:
 				add_influence(t, TerritoryData.turf_of(n.position), PLAYER, PLAYER_CREW_PER_HOUR)
-	for b in _world.get_entities_with_component(ComponentNames.BUILDING).values():
-		var bd: BuildingData = b.get_component(ComponentNames.BUILDING)
-		if BusinessSystem.owned_by_player(bd):
-			add_influence(t, TerritoryData.turf_of(bd.position), PLAYER, PLAYER_SHOP_PER_HOUR)
+	for bd in BusinessSystem.player_owned(_world):   # BUG-1: was a scan of all 20,000 buildings every game hour
+		add_influence(t, TerritoryData.turf_of(bd.position), PLAYER, PLAYER_SHOP_PER_HOUR)
 
 ## Each morning: street tax from every cell you hold (dirty money).
 func _tax(t: TerritoryData, player: Entity, tick: int) -> void:

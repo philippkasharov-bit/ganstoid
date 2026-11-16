@@ -73,11 +73,7 @@ static func grow_all(world: World) -> int:
 	return grown
 
 static func count_grow_houses(world: World) -> int:
-	var n := 0
-	for building in BusinessSystem.all_buildings(world):
-		if is_grow_house(building):
-			n += 1
-	return n
+	return BusinessSystem._player_counts(world).y   # BUG-1: shared, cached count
 
 static func buy(world: World, building_id: StringName) -> Dictionary:
 	var building: BuildingData = world.entities[building_id].get_component(ComponentNames.BUILDING)

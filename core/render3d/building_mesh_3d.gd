@@ -11,7 +11,8 @@ extends RefCounted
 
 const STOREY_M := 3.2
 const PALETTES := {
-	"house": [Color("efe3c8"), Color("f2d2b6"), Color("dfe8d2"), Color("f0c9b3"), Color("d6e1e6"), Color("f6f1e7"), Color("e8d3a9"), Color("cfdcc4")],
+	"house": [Color("efe3c8"), Color("f2d2b6"), Color("dfe8d2"), Color("f0c9b3"), Color("d6e1e6"), Color("f6f1e7"), Color("e8d3a9"), Color("cfdcc4"),
+		Color("e9c7c0"), Color("d9b8b0"), Color("b8d4c4"), Color("c9d6d0"), Color("d2d0c8"), Color("e6dcc8"), Color("f3e6c4"), Color("cdbfa8")],   # K6: pinks, mints, greys, sand
 	"apartments": [Color("e3d2b0"), Color("d9c3a0"), Color("efe6d6"), Color("cdbfa7"), Color("e6cfc0"), Color("d8d6cc")],
 	"commercial": [Color("b5654a"), Color("c9b9a4"), Color("e7dccb"), Color("8f9a9c"), Color("d4b483"), Color("a85a3c")],
 	"industrial": [Color("b4b8bc"), Color("a9aaa4"), Color("c2bfb6"), Color("9ea6ab")],
@@ -42,6 +43,19 @@ const CHIMNEY_SHARE := 0.35
 const DISH_SHARE := 0.22
 const PARAPET_M := 0.25
 
+const SPANISH_SHARE := 16   # K6, Part C: percent of one-storey houses built Spanish
+const SPANISH_WALLS := [Color("f4f1ea"), Color("efe8d8"), Color("f2ead2"), Color("e9e4da")]
+const WORN_BELOW := 0.4    # K6: block wealth under this: a worn house (about 1 in 3; houses run 0.32..0.53)
+const BARS_BELOW := 0.33   # and under this: bars on its windows too (about 1 in 9, the poorest)
+
+## K6: block wealth (0 poor .. 1 rich) by turf cell, copied from the game's economy on the
+## main thread when the 3D view starts (the chunk builders run on workers and must not
+## read the live World). Empty: no economy (tools), so wear is rolled per house.
+static var wealth_by_cell: Dictionary = {}
+
+static func wealth_at(p: Vector2) -> float:
+	return float(wealth_by_cell.get(TerritoryData.cell_of(p), -1.0)) if not wealth_by_cell.is_empty() else -1.0
+
 ## Adds building `b` to SurfaceTool `st`. `v` maps a map point + height to 3D;
 ## `tag` (city index + 1) lets the Cutaway cut it whole.
 static func add(st: SurfaceTool, b: Dictionary, v: Callable, tag: int = 0, kit: CityMesh3D = null) -> void:
@@ -56,11 +70,24 @@ static func add(st: SurfaceTool, b: Dictionary, v: Callable, tag: int = 0, kit: 
 	var h := levels * storey
 	var pal: Array = PALETTES.get(kind, PALETTES["building"])
 	var col: Color = pal[rng.randi() % pal.size()].lightened(rng.randf_range(-0.04, 0.05))
-	col = SurfaceDetail.mark(col, _wall_of(kind, col))   # TX1: stucco, brick or block grain
+	var surface := _wall_of(kind, col)
+	var worn := false
+	var bars := false
+	var spanish := kind == "house" and levels == 1 and absi(String(b["id"]).hash() / 3) % 100 < SPANISH_SHARE
+	if spanish:   # K6, Part C: a Spanish house: white or cream stucco
+		col = SPANISH_WALLS[absi(String(b["id"]).hash() / 5) % SPANISH_WALLS.size()]
+	if kind == "house":   # K6: a house on a poor block is worn (and the poorest have bars on the windows)
+		var wealth := wealth_at(_centroid(poly))
+		var roll := absi(String(b["id"]).hash()) % 100
+		worn = wealth < WORN_BELOW if wealth >= 0.0 else roll < 30
+		bars = worn and (wealth < BARS_BELOW if wealth >= 0.0 else roll < 15)
+		if worn and surface == SurfaceDetail.STUCCO:
+			surface = SurfaceDetail.STUCCO_WORN
+	col = SurfaceDetail.mark(col, surface)   # TX1: stucco, brick or block grain
 	var style := {"win_w": rng.randf_range(0.8, 1.6), "win_h": rng.randf_range(1.0, 1.5), "gap": rng.randf_range(2.4, 4.2),
 		"shop": (kind == "commercial") and rng.randf() < 0.8, "rollup": kind in ["industrial", "garage"] and rng.randf() < 0.6,
 		"awning": AWNINGS[rng.randi() % AWNINGS.size()], "storey": storey,
-		"tag": tag, "glow": GLOW.get(kind, 0.3), "seed": rng.randi(), "ac": AC_SHARE.get(kind, 0)}
+		"tag": tag, "glow": GLOW.get(kind, 0.3), "seed": rng.randi(), "ac": AC_SHARE.get(kind, 0), "bars": bars, "spanish": spanish}
 	st.set_uv(Vector2(0, tag))   # R3D7: the Cutaway cuts this building whole by its tag
 	var ccw := _ccw(poly)
 	var span := InteriorSolid.door_span(poly, b.get("door", Vector2.INF))   # R3D14: the same door the sim lets you through
@@ -99,6 +126,58 @@ static func flat(st: SurfaceTool, v: Callable, poly: PackedVector2Array, h: floa
 	for k in tris:
 		st.add_vertex(v.call(poly[k], h))
 
+const COURSE_TILE := 0.34      # K6: clay tile rows, measured up the slope
+const COURSE_SHINGLE := 0.22   # shingle rows are narrower
+const COURSE_LIP := 0.03       # each row's lower edge stands this proud of the one under it: the roof steps
+const CAP_R := 0.07
+const CAP_SIDES := 4           # a half-round cap on a clay roof; 2 = a flat ridge board on shingle
+
+## K6: the roof face a..c..peak as rows that step like overlapping tiles. Each row
+## tilts a little more than the roof (its lower edge raised by COURSE_LIP) and shows
+## its front edge, a shade darker: the shadow line that reads as tile from far off.
+static func courses(st: SurfaceTool, a: Vector3, c: Vector3, peak: Vector3, col: Color, course: float) -> void:
+	courses_between(st, a, c, peak, peak, col, course)
+
+## The same on a four-sided face: eave a..c, top edge ta..tc (a porch roof, a shed).
+static func courses_between(st: SurfaceTool, a: Vector3, c: Vector3, ta: Vector3, tc: Vector3, col: Color, course: float) -> void:
+	var w := (c - a).cross(ta - a)
+	if w.y > 0.0:   # the mesh lights a face by its winding (Godot's front faces wind clockwise): turn it over, don't just flip n
+		courses_between(st, c, a, tc, ta, col, course)
+		return
+	var n := -w.normalized()
+	var rows := maxi(1, int(((a + c) * 0.5).distance_to((ta + tc) * 0.5) / course))
+	var lip := n * COURSE_LIP
+	var down := ((a + c) * 0.5 - (ta + tc) * 0.5) * Vector3(1, 0, 1)
+	var front := down.normalized() if down.length() > 0.001 else n
+	var edge := col.darkened(0.3)
+	for k in rows:
+		var t0 := float(k) / rows
+		var t1 := float(k + 1) / rows
+		var la := a.lerp(ta, t0)
+		var lc := c.lerp(tc, t0)
+		var ha := a.lerp(ta, t1)
+		var hc := c.lerp(tc, t1)
+		quad(st, [la + lip, lc + lip, hc, ha], n, col)
+		quad(st, [la, lc, lc + lip, la + lip], front, edge)
+
+## K6: a cap along the hip a..b, `sides` facets round its top (2: a flat board).
+static func cap(st: SurfaceTool, a: Vector3, b: Vector3, col: Color, sides: int) -> void:
+	var d := (b - a).normalized()
+	var side := d.cross(Vector3.UP)
+	if side.length() < 0.001:
+		return
+	side = side.normalized()
+	var up := side.cross(d).normalized()
+	if up.y < 0.0:
+		up = -up
+	for k in sides:
+		var t0 := PI * k / sides
+		var t1 := PI * (k + 1) / sides
+		var o0 := side * cos(t0) * CAP_R + up * (sin(t0) * CAP_R + COURSE_LIP)
+		var o1 := side * cos(t1) * CAP_R + up * (sin(t1) * CAP_R + COURSE_LIP)
+		var nn := (side * cos((t0 + t1) * 0.5) + up * sin((t0 + t1) * 0.5)).normalized()
+		quad(st, [a + o1, b + o1, b + o0, a + o0], nn, col)   # this winding faces out (the mesh takes its normals from the winding)
+
 ## A hipped roof on a small convex house; otherwise flat with a parapet and rooftop boxes.
 static func _roof(st: SurfaceTool, v: Callable, poly: PackedVector2Array, h: float, kind: String, levels: int, rng: RandomNumberGenerator, house: Dictionary = {}, kit: CityMesh3D = null) -> void:
 	var area := absf(_area(poly))
@@ -106,24 +185,27 @@ static func _roof(st: SurfaceTool, v: Callable, poly: PackedVector2Array, h: flo
 	var big := HIP_MAX_HOUSE if kind == "house" else HIP_MAX_AREA   # A2b: LA houses almost all have pitched roofs
 	var fill := HULL_FILL_HOUSE if kind == "house" else HULL_FILL
 	if kind in ["house", "apartments"] and levels <= 2 and area < big and area > fill * absf(_area(hull)):
-		var tiles: Array = ROOF_TILE if rng.randf() < 0.65 else ROOF_SHINGLE
-		var col := SurfaceDetail.mark(tiles[rng.randi() % tiles.size()], SurfaceDetail.CLAY if tiles == ROOF_TILE else SurfaceDetail.SHINGLE)
+		var tile := rng.randf() < 0.65
+		var col := SurfaceDetail.mark(ROOF_TILE[rng.randi() % ROOF_TILE.size()] if tile else ROOF_SHINGLE[rng.randi() % ROOF_SHINGLE.size()],
+			SurfaceDetail.CLAY if tile else SurfaceDetail.SHINGLE)
+		if not house.is_empty():   # K6: a house decided its roof up front, so its porch roof matches
+			tile = house["roof_tile"]
+			col = house["roof_col"]
 		var apex := _centroid(hull)
-		var top := h + clampf(sqrt(area) * 0.28, 1.2, 3.2)
+		var low: bool = not house.is_empty() and house["spanish"]   # K6: a Spanish roof is low
+		var top := h + (clampf(sqrt(area) * 0.17, 0.8, 2.0) if low else clampf(sqrt(area) * 0.28, 1.2, 3.2))
+		var peak: Vector3 = v.call(apex, top)
 		for i in hull.size():   # on the hull, eaves a little proud: notches hide under the overhang
 			var a := apex + (hull[i] - apex) * EAVES
 			var c := apex + (hull[(i + 1) % hull.size()] - apex) * EAVES
-			var tri: Array = [v.call(a, h), v.call(c, h), v.call(apex, top)]
-			var n: Vector3 = (tri[1] - tri[0]).cross(tri[2] - tri[0]).normalized()
-			st.set_color(col)
-			st.set_normal(n if n.y > 0.0 else -n)   # real slope normal: each face catches the sun differently
-			for p in tri:
-				st.add_vertex(p)
+			courses(st, v.call(a, h), v.call(c, h), peak, col, COURSE_TILE if tile else COURSE_SHINGLE)   # K6: rows of tile, not a flat sheet
+			cap(st, v.call(a, h), peak, col, CAP_SIDES if tile else 2)                     # K6: a cap up every hip
 			BuildingDetail3D.fascia(st, v, a, c, h)   # G1: the board under the eaves
-			if not house.is_empty():
+			if not house.is_empty() and house["gutters"]:
 				HouseKit3D.eave(kit, v, a, c, apex, h, i % 2 == 0, house)   # A2b: a gutter along it, a downspout at every other corner
 		if rng.randf() < CHIMNEY_SHARE:
-			BuildingDetail3D.chimney(st, v, apex + (hull[0] - apex) * 0.45, h, top + 0.5)
+			var stucco: Color = house.get("col", BuildingDetail3D.CHIMNEY_BRICK)   # K6, LA: a house's chimney is stucco in its wall colour
+			BuildingDetail3D.chimney(st, v, apex + (hull[0] - apex) * 0.45, h, top + 0.5, stucco)
 		if rng.randf() < DISH_SHARE:   # G4: a satellite dish low on the slope
 			BuildingDetail3D.dish(st, v, apex + (hull[1] - apex) * 0.8, h + (top - h) * 0.2)
 		return

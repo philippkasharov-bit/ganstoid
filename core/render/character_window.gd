@@ -17,6 +17,10 @@ var _info := VBoxContainer.new()
 var _tabs := UiTabs.new()
 var _health := HealthPanel.new()
 var _key := ""
+## BUG-14: where the window's right edge stays while the player hasn't moved it
+## (left of the mood icons). Each tab has its own width; growing against the
+## screen edge it used to cover the moods.
+var dock_right := -1.0
 
 func setup(world: World, at: Vector2) -> void:
 	_world = world
@@ -29,7 +33,7 @@ func setup(world: World, at: Vector2) -> void:
 	_tabs.add_tab("Health", _health)
 	_tabs.changed.connect(func(_i: int) -> void:   # fit each tab (Health is the wide one) and stay on screen
 		reset_size()
-		_keep_on_screen.call_deferred())
+		_keep_docked.call_deferred())
 	_tabs.pick(TAB_INFO)
 	_bind(ACTION, KEY_K)
 	_bind(HEALTH_ACTION, KEY_H)
@@ -51,6 +55,7 @@ func open_tab(tab: int) -> void:
 		return
 	visible = true
 	_tabs.pick(tab)
+	_keep_docked.call_deferred()
 
 func showing_health() -> bool:
 	return visible and _tabs.current == TAB_HEALTH
@@ -104,3 +109,8 @@ static func _stat_row(name: String, value: String) -> HBoxContainer:
 	row.add_child(n)
 	row.add_child(v)
 	return row
+
+func _keep_docked() -> void:
+	if dock_right > 0.0 and not UiWindow._positions.has(window_id):
+		position.x = dock_right - size.x
+	_keep_on_screen()

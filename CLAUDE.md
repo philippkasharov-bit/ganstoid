@@ -44,10 +44,17 @@ Import takes about 12 s and is required before any check, otherwise class_names 
 - One check: `$G --headless --path . -s debug/verify_<name>.gd 2>&1 | tail -20`
 - Checks by name filter: `debug/run_all.sh $G <filter>`, e.g. `economy`, `phase3`, `save`
 - Full suite: `debug/run_all.sh $G`. Prints one PASS/FAIL line each and exits with the number of failures. Slow, so run it in the background.
+- **Error catcher (QA1):** `run_all.sh` fails a check that printed PASS but logged an engine/script error. Full logs go to `/tmp/qa_logs/<check>.log`. A check that causes an error on purpose declares it with `## QA_EXPECT: <regex>`. Never silence an error any other way: fix it.
+- **Robot playthrough (QA3):** `verify_soak` (2 game hours, in the suite). Full soak: `SOAK_HOURS=72 SOAK_POP=6000 $G --headless --path . -s debug/verify_soak.gd` (about 70 min alone: run it in the background and **alone**, because its speed numbers are wall-clock; day 1 is a warm-up, days 3+ are compared with day 2). Run the full soak after any sim, NPC, economy or nav change.
+- **Photo album (QA4):** `debug/album.sh $G [regex]` takes the ~28 pictures in `debug/album.txt` (about 15 min, under xvfb) and compares them with the approved ones in `debug/album/`. Read `/tmp/qa_album/report.txt`, then **look at** every FAIL and every `changed/<name>.png` (approved | now | difference). Run it after any visual or UI change; for a small change, filter it (`debug/album.sh $G "street|map"`). When the changes are intended and Phil has seen them, `APPROVE=1 debug/album.sh $G` updates the approved set. Add a line to `album.txt` for every new screen or window. The pictures come from a software renderer (no GPU) in OpenGL mode, so judge shapes, layout and missing things, not exact colours or lighting.
+- **Phil's bug reports (QA2):** F12 in the game writes `bug_<time>.zip` in his `Ganstoid/bugs` folder (note, screenshot, `save.txt` of that moment, log). When he uploads one, unzip it into its own folder, read the note and look at the picture, then reproduce: load `save.txt` with `SaveGame.apply` in a check, as `verify_bug_report.gd` does. Every fixed report becomes a check.
+- **`BUGS.md`** is the shared bug list for both accounts. Add every bug you find but don't fix right away. Move a bug to "Being fixed" with your branch name before starting on it, and to "Fixed" with the guarding check when done.
 - `verify_sim_perf` is timing-based and fails (a tick over 20 ms) when anything else heavy runs at the same time. Before treating a failure as real, re-run it alone. Baseline on 4 cores: 1.7 ms/tick average, worst tick about 12 ms.
 - Compile every script: `debug/run_all.sh $G scripts_parse` (2 s). **Run this after every GDScript edit.**
 - Screenshots and perf: `debug/shot_*.gd`, `debug/bench_3d.gd`, `debug/perf_main.gd`, `debug/render_breakdown.gd`. Run them with `$G --path . -s ...`. Rendering needs a display, so prefix them with `xvfb-run -a`.
 - City data rebuild (only when roads or buildings change): `tools/city/rebuild.sh`, then run the full suite.
+- **Replacing a .glb model:** Godot extracts its texture to `<name>_Image_0.jpg` only if that file doesn't exist yet, so a new model silently wears the old texture (scrambled colours). Delete the old `<name>_Image_*.jpg` and `.godot/imported/<name>*`, re-import, and commit the newly extracted jpg too (Phil's updater imports with it).
+- Blender: `/tmp/bpyenv/bin/python` (Blender 4.5 as a Python module; install with `uv venv -p 3.11 /tmp/bpyenv` then `uv pip install "bpy>=4.4,<4.6"`). No GPU here: preview renders use Cycles on the CPU. Player rebuild: `tools/models/meshy_player.py` (see its header).
 - Python tools: `python3 -I tools/...`. They take paths as arguments, so never run them from inside a data folder.
 
 ## Architecture (load-bearing facts)
@@ -63,8 +70,9 @@ Import takes about 12 s and is required before any check, otherwise class_names 
 1. `scripts_parse` passes.
 2. The `verify_*` checks for every system you touched pass, plus `save` if state changed and `sim_perf` if a HOT/WARM system or crowd/nav changed.
 3. A new feature or system gets its own `debug/verify_<name>.gd`. It is a `SceneTree` script that prints `<NAME>_VERIFY: PASS` or `FAIL - reason` and then calls `quit(0/1)`, following an existing one (`verify_save.gd`). A bug fix adds the failing case to an existing check.
-4. The full suite has no new failures compared with before your change. Note any failure that predates your change and say so; don't hide it.
-5. Code style matches the surrounding code: static types (`:=`, `-> void`), `##` doc comment on each class and on non-obvious functions, tabs, and `const` for tunables.
+4. Visual or UI change: the album pictures it touches are run and looked at. Sim, NPC, economy or nav change: the full soak is run.
+5. The full suite has no new failures compared with before your change. Note any failure that predates your change and say so; don't hide it.
+6. Code style matches the surrounding code: static types (`:=`, `-> void`), `##` doc comment on each class and on non-obvious functions, tabs, and `const` for tunables.
 
 ## Security gate (before every push)
 - No secrets in the repo, ever. `github_token.txt`, `export.cfg` and `export_presets.cfg` are gitignored, so keep them that way. Any tool that calls an API (Meshy, Tripo, Magnific/Freepik) must read its key from an environment variable or a cloud network secret. Never hard-code or commit keys.

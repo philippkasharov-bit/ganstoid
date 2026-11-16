@@ -8,7 +8,7 @@ class_name KitBatch3D
 extends RefCounted
 
 const PARTS := ["kit_window_sash", "kit_window_wide", "kit_window_small", "kit_door_front", "kit_door_garage", "kit_trim_corner",
-	"kit_porch", "kit_meter", "kit_gutter", "kit_downspout"]
+	"kit_porch", "kit_meter", "kit_gutter", "kit_downspout", "kit_window_arch", "kit_door_arch"]   # K6: the Spanish house's arches
 const MODEL := "res://art/models/kit/%s.obj"
 const ATLAS := "res://art/textures/kit_atlas.png"
 const DOOR_PAINT := [   # the Cutaway shader holds the same eight as DOOR_PAINT; keep them in step
@@ -31,7 +31,7 @@ static func material() -> ShaderMaterial:
 	if _material == null:
 		_material = Cutaway.material()
 		_material.set_shader_parameter("kit_on", true)
-		var img := Image.load_from_file(ATLAS) if FileAccess.file_exists(ATLAS) else null
+		var img := SurfaceDetail.image(ATLAS)   # BUG-2: works in an exported game too
 		if img != null:
 			img.generate_mipmaps()
 			_material.set_shader_parameter("kit_atlas", ImageTexture.create_from_image(img))

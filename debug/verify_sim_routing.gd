@@ -32,7 +32,8 @@ func _initialize() -> void:
 			for id in movers:
 				var p: Vector2 = movers[id].position
 				inside += int(col.blocked(p, 0.0) and p.distance_to(me.position) <= NPCStreet.ABSTRACT_M)   # POP1: out of sight they walk straight
-				fastest = maxf(fastest, p.distance_to(last[id]) / (float(SAMPLE_EVERY) / SimClock.TICKS_PER_SECOND))
+				if p.distance_to(me.position) <= NPCStreet.ABSTRACT_M and last[id].distance_to(me.position) <= NPCStreet.ABSTRACT_M:   # BUG-11: out of sight they travel at game-time speed on purpose
+					fastest = maxf(fastest, p.distance_to(last[id]) / (float(SAMPLE_EVERY) / SimClock.TICKS_PER_SECOND))
 				last[id] = p
 	var ms_per_tick := float(Time.get_ticks_msec() - t0) / TICKS
 	var moved := 0
@@ -80,5 +81,6 @@ func _movers(world: World) -> Dictionary:
 func _check(ok: bool, what: String) -> bool:
 	if not ok:
 		print("SIM_ROUTING_VERIFY: FAIL - ", what)
+		SimNav.uninstall()   # waits for the route helpers: quitting with one still working crashed on exit
 		quit(1)
 	return ok

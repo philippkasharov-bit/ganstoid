@@ -76,10 +76,12 @@ func _hood_names() -> void:
 	if h == null:
 		return
 	var px := 1.0 / maxf(get_viewport_transform().get_scale().x, 0.001)
-	for name in h.hood_centres():
-		var at: Vector2 = h.hood_centres()[name]
-		draw_string(ThemeDB.fallback_font, at, name.to_upper(), HORIZONTAL_ALIGNMENT_CENTER, -1, int(16 * px), Color(1, 1, 1, 0.85))
-		draw_string(ThemeDB.fallback_font, at + Vector2(0, 14 * px), h.districts.get(name, ""), HORIZONTAL_ALIGNMENT_CENTER, -1, int(11 * px), Color(1, 1, 1, 0.6))
+	var centres := h.hood_centres()
+	for name in centres:
+		var at: Vector2 = centres[name]
+		# QA1: zoomed right in, 11 * px rounds to a 0 px font, which logs an engine error
+		draw_string(ThemeDB.fallback_font, at, name.to_upper(), HORIZONTAL_ALIGNMENT_CENTER, -1, maxi(1, int(16 * px)), Color(1, 1, 1, 0.85))
+		draw_string(ThemeDB.fallback_font, at + Vector2(0, 14 * px), h.districts.get(name, ""), HORIZONTAL_ALIGNMENT_CENTER, -1, maxi(1, int(11 * px)), Color(1, 1, 1, 0.6))
 
 const POOR := Color("c0392b")
 const MIDDLE := Color("d4ac0d")

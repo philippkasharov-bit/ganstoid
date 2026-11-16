@@ -146,6 +146,7 @@ func find_system(script: Script) -> SystemBase:
 ## PF1: when true, step() keeps each system's slowest single run (usec) in `slowest_usec` (checks only).
 var profiling := false
 var slowest_usec: Dictionary = {}   # system class name -> usec
+var total_usec := {}     # QA3: system name -> all its time while profiling, in usec
 
 func step(delta: float) -> void:
 	tick += 1
@@ -165,6 +166,7 @@ func _run(system: SystemBase, delta: float) -> void:
 	var took := Time.get_ticks_usec() - t0
 	var key: String = system.get_script().get_global_name()
 	slowest_usec[key] = maxi(slowest_usec.get(key, 0), took)
+	total_usec[key] = total_usec.get(key, 0) + took   # QA3: where a run's time goes, not just its worst tick
 
 ## Event-triggered systems (economy raid aftermath, save/load) never run from
 ## step() — callers invoke them explicitly when the triggering event occurs.

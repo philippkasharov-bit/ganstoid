@@ -56,6 +56,11 @@ func setup(w: World, city: CityData, at: Vector2) -> void:
 	day_night.city = city
 	day_night.radius = CITY_M   # lamps everywhere the stream can go
 	var t0 := Time.get_ticks_msec()
+	BuildingMesh3D.wealth_by_cell = {}   # K6: block wealth for worn houses, copied here on the main thread
+	var econ := BlockEconomyData.of(w)
+	if econ != null:
+		for cell in econ.blocks:
+			BuildingMesh3D.wealth_by_cell[cell] = float(econ.blocks[cell]["wealth"])
 	stream.setup(city, centre, day_night.layout())   # OPT1: only the city round you is built
 	add_child(stream)
 	stream.prime(_player_at(at))
@@ -104,6 +109,9 @@ func show_3d(yes: bool) -> void:
 ## U in 3D opens the map view (2D map with the turf / money overlay); when
 ## the overlay is cycled off again, back to 3D.
 func _process(_delta: float) -> void:
+	if sun != null and absf(rig.camera.size - _shadow_size) > _shadow_size * 0.08:   # SH1: refit when the zoom moves
+		_shadow_size = rig.camera.size
+		fit_shadows(sun, _shadow_size)
 	_follow()
 	if on and InputMap.has_action(&"turf_map") and Input.is_action_just_pressed(&"turf_map"):
 		turf_map.cycle()   # T3: turf, money, off, laid over the 3D city
@@ -154,14 +162,29 @@ static func _shadows(light: DirectionalLight3D) -> void:
 	light.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
 	light.directional_shadow_max_distance = SHADOW_M
 	light.directional_shadow_blend_splits = true
-	var near := (CameraRig3D.BACK_M - 140.0) / SHADOW_M   # the splits sit where the city is, not in the empty air in front of it
-	light.directional_shadow_split_1 = near
-	light.directional_shadow_split_2 = near + (1.0 - near) * 0.3
-	light.directional_shadow_split_3 = near + (1.0 - near) * 0.6
+	fit_shadows(light, CameraRig3D.START_SIZE)
 	light.shadow_blur = 1.0
 	light.shadow_bias = 0.04
 	light.shadow_normal_bias = 1.2
 	light.light_angular_distance = 0.35   # a soft penumbra, sharper near the caster
+
+## SH1: the shadow map covers what the camera sees at this zoom, not a fixed
+## 410 m. It used to: zoomed in, each shadow texel was ~10x bigger than it had
+## to be (blurry, blocky shadows), and the first of the four splits covered the
+## empty air between the camera and the city. Now the splits start where the
+## ground does and end just past the far edge of the view.
+static func fit_shadows(light: DirectionalLight3D, view_size: float) -> void:
+	var reach := view_size * SHADOW_VIEW_DEPTH + SHADOW_MARGIN_M   # metres of ground (and roofs) in view, along the camera
+	var far := CameraRig3D.BACK_M + reach
+	var near := clampf((CameraRig3D.BACK_M - reach) / far, 0.0, 0.9)
+	light.directional_shadow_max_distance = far
+	light.directional_shadow_split_1 = near + (1.0 - near) * 0.1
+	light.directional_shadow_split_2 = near + (1.0 - near) * 0.3
+	light.directional_shadow_split_3 = near + (1.0 - near) * 0.6
+
+const SHADOW_VIEW_DEPTH := 1.6   # an ortho view `size` m tall, 30 degrees down, shows about this many sizes of depth
+const SHADOW_MARGIN_M := 40.0    # tall buildings just off screen still cast into it
+var _shadow_size := -1.0
 
 ## OPT1: the stream and the ground go where the player is.
 func _follow() -> void:

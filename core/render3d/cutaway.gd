@@ -120,6 +120,26 @@ vec3 lin(vec3 c) {
 }
 
 // TX1: the material's grain here, 1.0 = no change (top-down on flats, along the wall on walls).
+// K6: cheap value noise for the worn stucco's stains
+float hash2(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float vnoise(vec2 p) {
+	vec2 i = floor(p);
+	vec2 f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(hash2(i), hash2(i + vec2(1.0, 0.0)), f.x), mix(hash2(i + vec2(0.0, 1.0)), hash2(i + vec2(1.0, 1.0)), f.x), f.y);
+}
+
+// K6: a poor house's stucco: water stains run down from the top in blotches, grime
+// near the ground, a few lighter patched spots.
+float wear(vec3 wp) {
+	float along = wp.x * 0.7 + wp.z * 0.7;
+	float stain = vnoise(vec2(along * 0.9, wp.y * 0.32)) * 0.65 + vnoise(vec2(along * 2.3, wp.y * 0.9)) * 0.35;
+	float w = 1.0 - 0.24 * smoothstep(0.52, 0.8, stain);
+	w *= mix(0.74, 1.0, smoothstep(0.0, 0.85, wp.y));
+	w *= 1.0 + 0.09 * step(0.86, vnoise(vec2(along * 0.55 + 17.0, wp.y * 0.55)));
+	return w;
+}
+
 float grain(int id, vec3 wp) {
 	vec2 uv = wp.xz;
 	if (abs(wnormal.y) < 0.5) {
@@ -192,6 +212,9 @@ void fragment() {
 	if (surface < 15) {
 		float g = grain(surface, wp);
 		col *= OUTPUT_IS_SRGB ? g : pow(g, 2.2);   // A2b: in a linear renderer the same grain must be stronger to look the same
+	}
+	if (surface == 13) {
+		col *= wear(wp);
 	}
 	if (cut && wp.y > cut_h - cap_m) {
 		col *= 0.45;   // the cap: the cut reads as a wall top, not a hole

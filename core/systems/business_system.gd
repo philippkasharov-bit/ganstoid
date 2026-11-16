@@ -83,11 +83,33 @@ static func collect_all(world: World) -> int:
 
 ## Owned legit shops (grow houses are counted by ProductionSystem).
 static func count_owned(world: World) -> int:
-	var n := 0
-	for building in all_buildings(world):
-		if owned_by_player(building) and building.building_type == GanstoidEnums.BuildingType.LEGIT_BUSINESS:
-			n += 1
-	return n
+	return _player_counts(world).x
+
+## BUG-1: (businesses, grow houses) the player owns, in one pass over the city,
+## kept until a building changes hands or type (BuildingData.ownership_serial).
+static func _player_counts(world: World) -> Vector2i:
+	var key := "%d|%d|%d" % [world.get_instance_id(), all_buildings(world).size(), BuildingData.ownership_serial]
+	if key != _counts_for:
+		_counts_for = key
+		_counts = Vector2i.ZERO
+		_owned.clear()
+		for building in _all:
+			if owned_by_player(building):
+				_owned.append(building)
+				if building.building_type == GanstoidEnums.BuildingType.LEGIT_BUSINESS:
+					_counts.x += 1
+				elif building.building_type == GanstoidEnums.BuildingType.SAFEHOUSE:
+					_counts.y += 1
+	return _counts
+
+static var _counts_for := ""
+static var _counts := Vector2i.ZERO
+static var _owned: Array[BuildingData] = []
+
+## Every building the player owns (any type), from the same cached pass.
+static func player_owned(world: World) -> Array[BuildingData]:
+	_player_counts(world)
+	return _owned
 
 ## PF1: every building as a plain list, kept between calls (2,400 component
 ## lookups an hour cost several ms; the set of buildings never changes in a run).

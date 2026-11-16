@@ -6,6 +6,8 @@ func _initialize() -> void:
 	for a in OS.get_cmdline_user_args():
 		var kv := a.trim_prefix("--").split("=")
 		args[kv[0]] = kv[1] if kv.size() > 1 else ""
+	Engine.set_meta("seed", int(OS.get_environment("SHOT_SEED")) if OS.has_environment("SHOT_SEED") else 4242)   # QA4: same city every run
+	Engine.set_meta("no_save", true)   # QA4: a picture never writes (or reads back) a save
 	var preview: Node3D = load("res://core/render3d/city3d_preview.gd").new()
 	if args.has("radius"):
 		preview.radius_m = float(args["radius"])

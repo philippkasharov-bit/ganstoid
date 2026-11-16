@@ -57,6 +57,7 @@ func _ready() -> void:
 	get_parent().add_child.call_deferred(skills)
 	var right := get_viewport().get_visible_rect().size.x
 	skills.setup(_world, Vector2(right - 340, 66))   # UIF2: docked right, like Zomboid
+	skills.dock_right = right - Moodles.TILE - 22.0   # BUG-14: its right edge stays left of the mood icons
 	var eye := DetectionEye.new()   # UIF4: who can see you, its own HUD piece
 	get_parent().add_child.call_deferred(eye)
 	eye.setup(_world)
@@ -65,7 +66,10 @@ func _ready() -> void:
 	hotbar.setup(_world)
 	var map := CityMapWindow.new()   # MP1: N, the city map with the shops on it
 	get_parent().add_child.call_deferred(map)
-	map.setup(_world, get_node(world_driver_path).city, Vector2(120, 70))
+	map.setup(_world, get_node(world_driver_path).city, Vector2(250, 60))   # BUG-3: right of the info panel, not over it
+	var bug := BugReportWindow.new()   # QA2: F12, report a bug with a picture and the save
+	get_parent().add_child.call_deferred(bug)
+	bug.setup(_world, get_node(world_driver_path), Vector2(160, 120))
 	var bar := SideBar.new()
 	get_parent().add_child.call_deferred(bar)
 	bar.setup(_world)
@@ -203,3 +207,4 @@ func _gang_name(gang_id: StringName) -> String:
 		return String(gang_id)
 	var gang: GangData = gang_entity.get_component(ComponentNames.GANG)
 	return gang.display_name
+

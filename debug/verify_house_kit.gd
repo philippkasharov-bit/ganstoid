@@ -6,9 +6,10 @@
 extends SceneTree
 
 const RADIUS := 120.0
-const BASE := 2000         # triangles of kit parts per house (walls and roof are extra)
-const PER_STOREY := 2500
-const AVERAGE := 4500   # A2b: gutters and downspouts added ~0.9k; the spec allows 2-5k
+const BASE := 4500         # triangles of kit parts per house (walls and roof are extra). K6: the mid-poly
+                           # kit (profiled casings, sashes, a six-panel door) is about twice the old one
+const PER_STOREY := 5500
+const AVERAGE := 9000   # K6: mid-poly; was 4500   # A2b: gutters and downspouts added ~0.9k; the spec allows 2-5k
 
 func _initialize() -> void:
 	KitBatch3D.prime()
@@ -25,11 +26,13 @@ func _initialize() -> void:
 			continue
 		var m := CityMesh3D.new()
 		m.origin = city.spawn
-		BuildingMesh3D.add(SurfaceTool.new(), b, m._v, i + 1, m)
+		var st := SurfaceTool.new()
+		st.begin(Mesh.PRIMITIVE_TRIANGLES)   # QA1: an unstarted tool logged 52k errors per run
+		BuildingMesh3D.add(st, b, m._v, i + 1, m)
 		var parts := _parts(m)
 		houses += 1
 		var span := InteriorSolid.door_span(CityMesh3D._open(b["poly"]), b.get("door", Vector2.INF))
-		var doors: Array = parts.get("kit_door_front", [])
+		var doors: Array = parts.get("kit_door_front", []) + parts.get("kit_door_arch", [])   # K6: Spanish houses have an arched door
 		if span.x >= 0:
 			doors_seen += 1
 			doors_ok += int(doors.size() == 1 and _on_door(doors[0][0].origin, b, span, m.origin))
