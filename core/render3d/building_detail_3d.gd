@@ -41,10 +41,18 @@ static func fascia(st: SurfaceTool, v: Callable, a: Vector2, c: Vector2, h: floa
 	var e := c - a
 	BuildingMesh3D.quad(st, [v.call(a, h), v.call(c, h), v.call(c, h - 0.22), v.call(a, h - 0.22)], Vector3(e.y, 0, -e.x).normalized(), FASCIA)
 
-## A brick chimney at `at` from `base` up past the ridge to `top`.
-static func chimney(st: SurfaceTool, v: Callable, at: Vector2, base: float, top: float) -> void:
-	box(st, v, at, Vector2(0.75, 0.6), base, top - base, SurfaceDetail.mark(CHIMNEY, SurfaceDetail.BRICK))
-	box(st, v, at, Vector2(0.9, 0.75), top, 0.12, Color("8a8580"))   # its cap
+const CHIMNEY_BRICK := Color(0, 0, 0, 0)   # K6: "no wall colour given": a brick chimney (apartments)
+
+## A chimney at `at` from `base` up past the ridge to `top`: brick, or (K6, an LA
+## house) slim stucco in `stucco`, the house's own wall colour, with a two-step cap.
+static func chimney(st: SurfaceTool, v: Callable, at: Vector2, base: float, top: float, stucco: Color = CHIMNEY_BRICK) -> void:
+	if stucco == CHIMNEY_BRICK:
+		box(st, v, at, Vector2(0.75, 0.6), base, top - base, SurfaceDetail.mark(CHIMNEY, SurfaceDetail.BRICK))
+		box(st, v, at, Vector2(0.9, 0.75), top, 0.12, Color("8a8580"))   # its cap
+		return
+	box(st, v, at, Vector2(0.5, 0.42), base, top - base, stucco)
+	box(st, v, at, Vector2(0.62, 0.54), top, 0.08, stucco.darkened(0.2))
+	box(st, v, at, Vector2(0.32, 0.26), top + 0.08, 0.16, stucco.darkened(0.2))
 
 ## G4: a satellite dish on a short mast at `at`, standing on `y`, looking south and up.
 static func dish(st: SurfaceTool, v: Callable, at: Vector2, y: float) -> void:

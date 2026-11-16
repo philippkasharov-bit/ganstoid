@@ -69,8 +69,9 @@ def sash(p: kit.Part, x0: float, x1: float, y0: float, y1: float, z: float, bars
 
 
 def window(name: str, w: float, h: float, split: str, glass: str = "glass") -> kit.Part:
-    """A window: lining, casing, crown, sill, glass, and its sashes ('sash', 'mullion' or 'none')."""
-    p = kit.Part(name, **SOFT)
+    """A window: lining, casing, crown, sill, glass, and its sashes ('sash', 'mullion' or 'none').
+    No bevel: a house has 10-15 of them and the profiles already catch the light (K6 budget)."""
+    p = kit.Part(name, bevel=False)
     opening(p, w, h)
     sill(p, w)
     p.quad([(-w / 2, 0.03, -0.15), (w / 2, 0.03, -0.15), (w / 2, h - 0.03, -0.15), (-w / 2, h - 0.03, -0.15)], glass)
@@ -169,10 +170,7 @@ def porch() -> kit.Part:
         p.box(x - 0.1, x + 0.1, 2.45, 2.5, 1.55, 1.75, "paint")      # capital
         p.box(x - 0.12, x + 0.12, 2.5, 2.55, 1.53, 1.77, "paint")
     p.along_x([(2.55, 1.56), (2.55, 1.74), (2.62, 1.76), (2.72, 1.76), (2.72, 1.56)], -1.25, 1.25, "paint")   # beam, moulded front
-    p.slab((0, 3.0, 0.0), (0, 2.8, 2.0), 1.35, 0.09, "roof_tile")
-    p.along_x([(2.62, 1.98), (2.62, 2.02), (2.66, 2.04), (2.8, 2.04), (2.8, 1.98)], -1.35, 1.35, "paint")    # fascia
-    for x in (-0.9, -0.3, 0.3, 0.9):   # rafter tails under the roof
-        p.box(x - 0.03, x + 0.03, 2.72, 2.8, 1.76, 2.0, "rafter")
+    p.box(-1.3, 1.3, 2.72, 2.8, 0.0, 1.98, "rafter")   # the roof's frame; K6: the game lays the roof on it in the house's own roof
     return p
 
 

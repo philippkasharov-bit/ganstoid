@@ -17,7 +17,11 @@ const CORNER_GAP := 0.4
 const MIN_EDGE := 2.6
 const STEP := 0.17
 const WIDTH := {"kit_window_sash": 1.0, "kit_window_wide": 1.8, "kit_window_small": 0.6, "kit_door_front": 1.0, "kit_door_garage": 2.6}
-const TRIMS := [Color("f1ece2"), Color("e8dcc4"), Color("5a4636"), Color("b9c2a8"), Color("ffffff")]
+const TRIMS := [Color("f1ece2"), Color("e8dcc4"), Color("5a4636"), Color("b9c2a8"), Color("ffffff"),
+	Color("3d4a3a"), Color("6e3b2e"), Color("4a5866"), Color("c8b48a"), Color("8a7a66")]   # K6: dark green, oxblood, slate, tan, taupe
+const GUTTER_SHARE := 2   # K6, in ten: LA hardly rains, most houses have no gutters
+const TILE_SHARE := 65    # percent of houses with a clay tile roof (the rest grey shingle)
+const PORCH_ROOF := Vector3(3.02, 2.82, 2.05)   # K6: porch roof: height at the wall, height at the front, depth out
 const GARAGE_REACH := 6.0
 const PORCH_SHARE := 4   # in ten
 
@@ -26,7 +30,14 @@ static func context(m: CityMesh3D, poly: PackedVector2Array, col: Color, style: 
 	var seed := int(style["seed"])
 	return {"tag": style["tag"], "col": col, "seed": seed, "glow": style["glow"], "storey": style["storey"],
 		"trim": TRIMS[absi(seed) % TRIMS.size()], "door": absi(seed) % KitBatch3D.DOOR_PAINT.size(),
-		"garage": _garage(m.aprons, poly, door_edge), "porch": absi(seed / 7) % 10 < PORCH_SHARE, "door_edge": door_edge}
+		"garage": _garage(m.aprons, poly, door_edge), "porch": absi(seed / 7) % 10 < PORCH_SHARE, "door_edge": door_edge,
+		"gutters": absi(seed / 11) % 10 < GUTTER_SHARE}.merged(_roof_of(seed))
+
+## K6: the house's roof, decided up front so the porch roof can match it.
+static func _roof_of(seed: int) -> Dictionary:
+	var tile := absi(seed / 13) % 100 < TILE_SHARE
+	var pick: Array = BuildingMesh3D.ROOF_TILE if tile else BuildingMesh3D.ROOF_SHINGLE
+	return {"roof_tile": tile, "roof_col": SurfaceDetail.mark(pick[absi(seed / 17) % pick.size()], SurfaceDetail.CLAY if tile else SurfaceDetail.SHINGLE)}
 
 ## One wall a..c (edge `i`), facing `out`, `h` tall: holed, trimmed, its parts placed.
 static func wall(m: CityMesh3D, st: SurfaceTool, v: Callable, a: Vector2, c: Vector2, out: Vector2, i: int, levels: int, h: float, door_t: float, ctx: Dictionary) -> void:
@@ -45,6 +56,7 @@ static func wall(m: CityMesh3D, st: SurfaceTool, v: Callable, a: Vector2, c: Vec
 		_put(m, v, a + dir * float(hole["x"]), dir, out, hole["part"], float(hole["y0"]), hole.get("lit", 0.0), ctx)
 	if door_t >= 0.0 and ctx["porch"] and length >= 3.0:
 		_put(m, v, a + dir * door_t * length, dir, out, "kit_porch", 0.0, 0.0, ctx)
+		_porch_roof(st, v, a + dir * door_t * length, dir, out, ctx)
 	if i == (int(ctx["door_edge"]) + 1) and length >= 2.4:
 		_put(m, v, a + dir * 0.6, dir, out, "kit_meter", 0.0, 0.0, ctx)
 
@@ -154,6 +166,22 @@ static func _garage(aprons: PackedVector2Array, poly: PackedVector2Array, door_e
 				best_d = near.distance_to(p)
 				best = Vector2(k, t)
 	return best
+
+## K6: the porch's roof in the house's own roof, in rows like the house roof, on the kit porch's frame.
+static func _porch_roof(st: SurfaceTool, v: Callable, at: Vector2, dir: Vector2, out: Vector2, ctx: Dictionary) -> void:
+	var half := 1.4
+	var p := func(x: float, z: float, y: float) -> Vector3: return v.call(at + dir * x + out * z, y)
+	var col: Color = ctx["roof_col"]
+	var course: float = BuildingMesh3D.COURSE_TILE if ctx["roof_tile"] else BuildingMesh3D.COURSE_SHINGLE
+	BuildingMesh3D.courses_between(st, p.call(-half, PORCH_ROOF.z, PORCH_ROOF.y), p.call(half, PORCH_ROOF.z, PORCH_ROOF.y),
+		p.call(-half, 0.0, PORCH_ROOF.x), p.call(half, 0.0, PORCH_ROOF.x), col, course)
+	var front := Vector3(out.x, 0, out.y)
+	BuildingMesh3D.quad(st, [p.call(-half, PORCH_ROOF.z, PORCH_ROOF.y - 0.1), p.call(half, PORCH_ROOF.z, PORCH_ROOF.y - 0.1),
+		p.call(half, PORCH_ROOF.z, PORCH_ROOF.y), p.call(-half, PORCH_ROOF.z, PORCH_ROOF.y)], front, col.darkened(0.3))   # its edge
+	for sgn: float in [-1.0, 1.0]:   # and its two sides
+		var nn: Vector3 = Vector3(dir.x, 0, dir.y) * sgn
+		BuildingMesh3D.quad(st, [p.call(half * sgn, 0.0, PORCH_ROOF.x - 0.1), p.call(half * sgn, PORCH_ROOF.z, PORCH_ROOF.y - 0.1),
+			p.call(half * sgn, PORCH_ROOF.z, PORCH_ROOF.y), p.call(half * sgn, 0.0, PORCH_ROOF.x)], nn, col.darkened(0.3))
 
 ## One part on the wall at map point `at` (bottom-centre of its opening at height y).
 static func _put(m: CityMesh3D, v: Callable, at: Vector2, dir: Vector2, out: Vector2, part: String, y: float, lit: float, ctx: Dictionary) -> void:
