@@ -113,6 +113,10 @@ extends Resource
 @export var fixer_rep: float = 0.0
 @export var jobs_done: int = 0
 var job_offers: Array = []                      # JB1: offers on screen (not saved)
+@export var tips_seen: Array = []                 # TP1: tips already shown this life
+@export var tips_on: bool = true                  # TP1: the pause menu turns tips off
+var tip_text: String = ""                         # TP1: the tip on screen (not saved)
+var tip_serial: int = 0                           # TP1: +1 per new tip (not saved)
 @export var rank: int = 0                         # RK1: highest rank earned (RankSystem.NAMES)
 @export var skills: Dictionary = {}                 # S1: skill -> XP
 @export var vehicle_id: StringName = &""

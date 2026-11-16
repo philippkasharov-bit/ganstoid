@@ -30,6 +30,9 @@ func _ready() -> void:
 	add_theme_font_size_override("font_size", 13)
 	add_theme_color_override("font_outline_color", Color.BLACK)
 	add_theme_constant_override("outline_size", 4)
+	var guide := GuideView.new()   # NX1/TP1: what to do next, first-day tips; first, so every window covers it
+	get_parent().add_child.call_deferred(guide)
+	guide.setup(_world)
 	var roster := CrewRoster.new()  # batch 22: Tab toggles it
 	get_parent().add_child.call_deferred(roster)
 	roster.setup(_world)
