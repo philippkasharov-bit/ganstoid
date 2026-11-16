@@ -2,7 +2,8 @@
 ## Runs the real city with the GAME's population on the REAL clock (1 game day =
 ## 1 real hour) at three times of day, one real minute each:
 ##   03:00  the streets are empty: nearly everyone is indoors, and the sim idles
-##   08:00  rush hour: the busiest minute of the day must still fit the frame
+##   08:00  rush hour: the busiest minute of the day must still fit the frame. BUG-13:
+##          with traffic, after the city has run from 07:00, as in the game
 ##   11:00  working day: most people with a job are at work, indoors
 ## A sim tick has 16.6 ms; the sim may use a fraction of that on average and must
 ## never eat a whole frame in one tick.
@@ -10,13 +11,17 @@ extends SceneTree
 
 const POPULATION := 6000         # = WorldDriver.GAME_POPULATION (PF3: SIM_POP=1500 overrides, for stress runs)
 const TICKS := 3600              # one real minute
-const AVG_BUDGET_MS := {3.0: 1.0, 8.0: 3.0, 11.0: 2.0}   # MAP1, whole map at 6000: measured 0.2 / 1.7 / 1.3 in the sandbox
+const AVG_BUDGET_MS := {3.0: 1.0, 8.0: 4.0, 11.0: 2.5}   # BUG-13, with traffic and a running city (4 cores): 0.4 / 3.1 / 2.0 ms
+const RUN_IN := {8.0: 1.0}   # BUG-13: game hours the city runs before it is measured
 const WORST_TICK_MS := 20.0   # MAP1: the whole map at 6000 people: one rush-hour wave of re-plans reaches ~17 ms on a 2-core box (PF1 had 10 for 600 people round the spawn)
 
 func _initialize() -> void:
 	var saved := SimClock.day_ticks
 	SimClock.day_ticks = SimClock.DEFAULT_DAY_TICKS
 	var city := CityData.load_file()
+	TrafficSystem.roads = city.roads   # BUG-13: cars on the streets, as in the game
+	TrafficSystem.junctions = Junctions.load_file()
+	DriveSystem.graph = RoadGraph.build(city.roads)
 	var ok := true
 	for hour in [3.0, 8.0, 11.0]:
 		var world := World.new()
@@ -26,9 +31,10 @@ func _initialize() -> void:
 		print("generated in %d ms: %d entities, %d MB static" % [Time.get_ticks_msec() - gen0, world.entities.size(), OS.get_static_memory_usage() / 1048576])
 		SimNav.install(city, city.spawn, minf(_radius(), TestWorlds.DISTRICT_RADIUS))
 		await TestWorlds.wait_nav(self, [SimNav.active])
-		world.tick = SimClock.hours(hour)
+		var warm: float = RUN_IN.get(hour, 0.0)   # BUG-13: a city that has been running, not one just placed
+		world.tick = SimClock.hours(hour - warm)
 		(world.find_system(NPCScheduleSystem) as NPCScheduleSystem).settle_all(world.tick)
-		for i in SimClock.real_seconds(20):
+		for i in SimClock.hours(warm) + SimClock.real_seconds(20):
 			world.step(1.0 / SimClock.TICKS_PER_SECOND)
 		world.profiling = true   # PF1: which system makes the worst tick
 		var worst := 0

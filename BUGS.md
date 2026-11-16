@@ -13,7 +13,6 @@ Severity: **high** = breaks a game or loses progress · **medium** = clearly wro
 
 | ID | Severity | What happens | Where | Found by |
 |----|----------|--------------|-------|----------|
-| BUG-13 | low | `verify_sim_perf` still measures a freshly placed city without traffic (1.2-1.7 ms), while a running city costs ~3.3 ms a tick at rush hour (26-hour soak). It should run the clock forward from 07:00 with traffic, so it would catch a real slowdown. | `debug/verify_sim_perf.gd` | soak |
 | BUG-9 | low (to check on Phil's PC) | In the shop (`--store` picture) a dark curved band runs across the shop floor, under the player. It could be a curved wall drawn at floor height, or a drawing glitch. | shop interior / cutaway | album `shop_counter` |
 | BUG-7 | low (to check on Phil's PC) | At night (22:00) the building walls are pitch black, so only the lit windows show and they seem to float. The server draws in OpenGL mode without the screen-space lighting Phil's PC has, so it may look fine there. | night lighting, `game_view_3d.gd` | album `street_night`, `3d_night` |
 
@@ -32,6 +31,7 @@ Severity: **high** = breaks a game or loses progress · **medium** = clearly wro
 
 | ID | What it was | Fix | Guarded by |
 |----|-------------|-----|-----------|
+| BUG-13 | `verify_sim_perf` measured a freshly placed city without cars, so it missed the real rush-hour cost. | Cars are on the streets and the city runs from 07:00 to 08:00 before the rush hour is measured (now 3.1-3.3 ms, as in the soak); limits 1.0 / 4.0 / 2.5 ms | `verify_sim_perf` |
 | BUG-4 | The N map's "Find me" centred on you even at the city's edge: up to half the map was empty dark space. | `city_map_view.gd`: the view stays inside the city when centring, zooming and dragging | album `city_map` |
 | BUG-3 | The N map window opened over the top-left info panel. | `hud.gd`: opens right of the panel | album `city_map` |
 | BUG-14 | The Character window (K) covered the mood icons: it was docked for a 340 px width but its Health tab is ~385 px, and growing against the screen edge it slid over the column. | `character_window.gd`: its right edge stays left of the moods (`dock_right`), whatever the tab's width, until you move it | album `bag_open` |
