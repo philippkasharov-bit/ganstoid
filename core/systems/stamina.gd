@@ -6,10 +6,10 @@
 class_name Stamina
 extends RefCounted
 
-const RUN_COST_PER_S := 0.07       # about 14 s of running from full
+const RUN_COST_PER_S := 0.033      # GP1: about 30 s of running from full (was 14 s)
 const SWING_COST := 0.04           # one melee swing
-const BACK_WALKING_PER_S := 0.03
-const BACK_RESTING_PER_S := 0.08
+const BACK_WALKING_PER_S := 0.05   # GP1: was 0.03
+const BACK_RESTING_PER_S := 0.12   # GP1: was 0.08
 const OUT_AT := 0.1
 const CATCH_AT := 0.35
 const HEAVY_SPEED := 0.75          # over the carry limit you walk at three quarters

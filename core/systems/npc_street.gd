@@ -26,6 +26,8 @@ const UNSEEN_PACE_SCALE := 24.0     # BUG-11: past ABSTRACT_M people travel at g
                                    # ~4 game hours: commutes ran all night and ~4,500 people were outdoors at
                                    # rush hour (10 ms a tick). Nobody sees them; near you nothing changes.
 const ABSTRACT_M := 520.0          # POP1: past the streamed city (CityStream3D.UNLOAD_M + margin) walkers go straight, no routes
+const CAUGHT_M := 1.8               # GP2: someone running from you who is this close gives up ...
+const GIVE_UP_TICKS := 480          # ... and stands still this long (8 s): hands up, time to mug them
 const PAUSE_EVERY_S := 40.0        # near the player, a walker stops about this often ...
 const PAUSE_TICKS := [90, 360]     # ... for 1.5 to 6 s (phone, shoelace, looking around)
 ## Hanging around outside (dealers, loiterers).
@@ -164,6 +166,9 @@ func _move(npc: NPCData, delta: float, tick: int, player_pos: Vector2) -> bool:
 		if (tick + _phase(npc.id)) % every != 0:
 			return false
 		step_delta = delta * every
+	elif player_d2 <= CAUGHT_M * CAUGHT_M and pace_now.get(npc.id, 0.0) >= SimUnits.JOG:
+		_pause_until[npc.id] = tick + GIVE_UP_TICKS   # GP2: caught: they stop running
+		return false
 	elif _pausing(npc, tick):
 		return false
 	var before := npc.position

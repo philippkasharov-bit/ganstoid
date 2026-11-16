@@ -60,6 +60,19 @@ func covering(you: Vector2, view: Vector2) -> PackedInt32Array:
 			out.append(entry[1])
 	return out
 
+## CV1: footprint entries with a point of their outline within `r` of `p`.
+func near_point(p: Vector2, r: float) -> Array:
+	var out: Array = []
+	for entry in _near(Rect2(p - Vector2(r, r), Vector2(r, r) * 2.0)):
+		if out.has(entry):
+			continue
+		var poly: PackedVector2Array = entry[0]
+		for i in poly.size():
+			if Geometry2D.get_closest_point_to_segment(p, poly[i], poly[(i + 1) % poly.size()]).distance_to(p) <= r:
+				out.append(entry)
+				break
+	return out
+
 ## The building with Cutaway tag `tag` ({} when not known here).
 func building_of(tag: int) -> Dictionary:
 	return _by_tag.get(tag, {})

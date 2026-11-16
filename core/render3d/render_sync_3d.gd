@@ -54,6 +54,7 @@ const CONE_COS := 0.34          # matches the Cutaway shader
 const NEAR_M := 3.5
 var _delta := 0.016
 var _cut_insides := CutInteriors3D.new()
+var _door_marks := DoorMarks3D.new()   # CV1: the way in
 var _blobs := BlobShadows3D.layer(MAX_PEOPLE + MAX_CARS)   # A2a: a dark patch under everyone and every car
 var _blob_n := 0
 var _figure := PlayerModel3D.new()   # M2: the player, rigged and animated
@@ -63,7 +64,8 @@ func _ready() -> void:
 	_rig.origin = origin
 	_car_rig.origin = origin
 	_cut_insides.origin = origin
-	for layer in [_rig, _car_rig, _ghost, _cut_insides, _blobs, _figure]:
+	_door_marks.origin = origin
+	for layer in [_rig, _car_rig, _ghost, _cut_insides, _blobs, _figure, _door_marks]:
 		add_child(layer)
 
 func _process(delta: float) -> void:
@@ -101,6 +103,8 @@ func _see_player() -> void:
 		Cutaway.cut(tags)
 		_cut_insides.footprints = footprints
 		_cut_insides.show_for(tags, _inside_id)   # A1b: a cut building shows its rooms
+		_door_marks.footprints = footprints
+		_door_marks.show_for(_player_at, tags)
 	_ghost.position = chest
 	_ghost.visible = false   # P1: the clean cut already shows you; the see-through box only covered your figure
 	Cutaway.facing(_player_face)

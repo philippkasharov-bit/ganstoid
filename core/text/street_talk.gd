@@ -98,6 +98,7 @@ const LINES := {
 	"boarded_up": ["Boards up. Nobody comes through those windows."],
 	"dropped": ["Dropped it.", "Left it on the ground."],
 	"stashed": ["In the trunk.", "Stashed in the car."],
+	"searching": ["Let's see what they've got.", "Going through their pockets."],   # LT3
 	"picked_up": ["Got it.", "In the bag."],
 	"no_trunk": ["No car you can open here."],
 	"interrupted": ["Stopped.", "Cut short."],

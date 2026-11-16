@@ -20,6 +20,8 @@ const TIPS := {
 	"thirsty": "You're getting thirsty. Buy a drink at a shop counter (E), then drink it from your bag (I).",
 	"tired": "You're getting tired. Press Z to sleep: a bed at home is safest.",
 	"evening": "Evening. Shops close between 8 and 11 pm and most people go home: fewer witnesses, but cops still patrol.",
+	"body": "Someone's down. Press E and pick \"Search their pockets\": what they carry shows in your bag window.",
+	"door": "A front door. Press E to pick the lock or kick it in. Once you're in, walk up to cupboards and drawers: what's inside shows in your bag (I). Flats too.",
 	"job": "You're on a job. The top line shows where to go and how long you have. Miss the deadline and the fixers trust you less.",
 }
 
@@ -71,6 +73,29 @@ static func applies(world: World, id: String, me: NPCData, state: PlayerStateDat
 			return SimClock.day_fraction(tick) * 24.0 >= EVENING_H
 		"job":
 			return not state.job.is_empty()
+		"body":
+			return _downed_near(world, me)
+		"door":
+			return _home_door_near(world, me)
+	return false
+
+const NEAR_M := 3.0
+
+static func _downed_near(world: World, me: NPCData) -> bool:
+	for id in world.spatial_index.query_nearby(me.position):
+		var e: Entity = world.entities.get(id)
+		var n: NPCData = e.get_component(ComponentNames.NPC) if e != null else null
+		if n != null and n != me and n.is_down and n.position.distance_to(me.position) <= NEAR_M:
+			return true
+	return false
+
+## Someone else's home or flat, its front door right here.
+static func _home_door_near(world: World, me: NPCData) -> bool:
+	for id in world.spatial_index.query_nearby(me.position):
+		var e: Entity = world.entities.get(id)
+		var b: BuildingData = e.get_component(ComponentNames.BUILDING) if e != null else null
+		if b != null and b.building_type == GanstoidEnums.BuildingType.RESIDENCE and b.id != me.home_building_id and b.position.distance_to(me.position) <= NEAR_M:
+			return true
 	return false
 
 static func _cop_sees(world: World, at: Vector2) -> bool:

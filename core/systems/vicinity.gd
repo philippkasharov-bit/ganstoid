@@ -2,7 +2,8 @@
 ## piles on the ground (things you dropped; kept in PlayerStateData.ground so
 ## they save), the trunk and glovebox of a car next to you that you own or
 ## that stands unlocked, and the containers of the building you are inside
-## (Containers: after a break-in, or your own place).
+## (Containers: after a break-in, or your own place), and LT3 the pockets of
+## anyone knocked out or dead next to you (their cash and a seeded roll).
 ## Moves between the bag and a source go through BagGrid's room rules.
 class_name Vicinity
 extends RefCounted
@@ -24,6 +25,16 @@ static func near(world: World, npc: NPCData, state: PlayerStateData) -> Array:
 		var box := Containers.glovebox(world, car)
 		for id in box:
 			out.append({"kind": "glovebox", "car": car.id, "id": id, "n": int(box[id])})
+	for id in world.spatial_index.query_nearby(npc.position):   # LT3: someone down at your feet
+		var e: Entity = world.entities.get(id)
+		var other: NPCData = e.get_component(ComponentNames.NPC) if e != null else null
+		if other == null or other == npc or not other.is_down or other.position.distance_to(npc.position) > REACH_M:
+			continue
+		_roll_pockets(other)
+		for item in other.pockets:
+			out.append({"kind": "body", "npc": other.id, "who": other.display_name, "id": item, "n": int(other.pockets[item])})
+		if other.cash > 0:
+			out.append({"kind": "body", "npc": other.id, "who": other.display_name, "id": &"cash", "n": other.cash})
 	var inside := _building(world, state.inside_id)
 	if inside != null:
 		for kind in Containers.open(world, npc, inside):
@@ -36,6 +47,16 @@ static func near(world: World, npc: NPCData, state: PlayerStateData) -> Array:
 			if cash > 0 and not Containers.is_yours(npc, inside):
 				out.append({"kind": "container", "building": inside.id, "cont": kind, "id": &"cash", "n": cash})
 	return out
+
+## LT3: what a person carries, rolled once (seeded by who they are, so a reload gives the same).
+static func _roll_pockets(other: NPCData) -> void:
+	if other.pockets_rolled:
+		return
+	other.pockets_rolled = true
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(String(other.id) + "pockets")
+	var kind := "pockets_cop" if other.is_cop else ("pockets_dealer" if other.is_dealer else "pockets")
+	other.pockets = LootTables.roll(kind, rng)
 
 ## LT1: you are inside a place while you stay at its door: after a break-in,
 ## or any time at your own. Call every player tick.
@@ -108,7 +129,7 @@ static func take(world: World, state: PlayerStateData, src: Dictionary, n: int) 
 	n = mini(n, BagGrid.room_for(state, id))
 	if n <= 0:
 		return {"ok": false, "reason": "no_room"}
-	if src["kind"] in ["container", "glovebox"]:
+	if src["kind"] in ["container", "glovebox", "body"]:
 		n = _take_from(world, src, n)
 	elif src["kind"] == "ground":
 		var at := _ground_index(state, src)   # B4: a queued take may come after other piles moved
@@ -147,6 +168,17 @@ static func _take_from(world: World, src: Dictionary, n: int) -> int:
 		return Containers.take_cash(world, _building(world, src["building"]), n)
 	if src["kind"] == "container":
 		return Containers.take(world, _building(world, src["building"]), src["cont"], src["id"], n)
+	if src["kind"] == "body":   # LT3
+		var other: NPCData = world.entities[src["npc"]].get_component(ComponentNames.NPC)
+		if src["id"] == &"cash":
+			var cash := mini(n, other.cash)
+			other.cash -= cash
+			return cash
+		var got := mini(n, int(other.pockets.get(src["id"], 0)))
+		other.pockets[src["id"]] = int(other.pockets[src["id"]]) - got
+		if other.pockets[src["id"]] <= 0:
+			other.pockets.erase(src["id"])
+		return got
 	if src["kind"] == "glovebox":
 		var car: VehicleData = world.entities[src["car"]].get_component(ComponentNames.VEHICLE)
 		var got := mini(n, int(car.glovebox.get(src["id"], 0)))
@@ -167,6 +199,8 @@ static func _remove_from_bag(state: PlayerStateData, id: StringName, n: int) -> 
 ## INV7: Zomboid's container buttons. Each source has a key: "ground",
 ## "trunk", "glovebox", or "container:<kind>" for a cupboard, drawer, stash.
 static func key_of(src: Dictionary) -> String:
+	if src["kind"] == "body":
+		return "body:%s|%s" % [src["npc"], src["who"]]   # LT3: one per person; the name for the title
 	return "container:" + String(src["cont"]) if src["kind"] == "container" else String(src["kind"])
 
 ## The containers within reach, each once, in the order they are found.
@@ -186,6 +220,8 @@ static func only(near: Array, key: String) -> Array:
 static func title_of(key: String) -> String:
 	if key.begins_with("container:"):
 		return Containers.title(key.substr(10))
+	if key.begins_with("body:"):
+		return "%s's pockets" % key.get_slice("|", 1)
 	return {"ground": "Floor", "trunk": "Trunk", "glovebox": "Glovebox"}.get(key, key.capitalize())
 
 ## Zomboid's "Loot all": takes every pile of a container that fits. Ground
