@@ -114,9 +114,11 @@ static func courses(st: SurfaceTool, a: Vector3, c: Vector3, peak: Vector3, col:
 
 ## The same on a four-sided face: eave a..c, top edge ta..tc (a porch roof, a shed).
 static func courses_between(st: SurfaceTool, a: Vector3, c: Vector3, ta: Vector3, tc: Vector3, col: Color, course: float) -> void:
-	var n := (c - a).cross(ta - a).normalized()
-	if n.y < 0.0:
-		n = -n
+	var w := (c - a).cross(ta - a)
+	if w.y > 0.0:   # the mesh lights a face by its winding (Godot's front faces wind clockwise): turn it over, don't just flip n
+		courses_between(st, c, a, tc, ta, col, course)
+		return
+	var n := -w.normalized()
 	var rows := maxi(1, int(((a + c) * 0.5).distance_to((ta + tc) * 0.5) / course))
 	var lip := n * COURSE_LIP
 	var down := ((a + c) * 0.5 - (ta + tc) * 0.5) * Vector3(1, 0, 1)
