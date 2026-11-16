@@ -175,7 +175,15 @@ func _move(npc: NPCData, delta: float, tick: int, player_pos: Vector2) -> bool:
 			_loiter(npc, target, step_delta, tick)   # POP1: out of sight they just stand at the door
 	elif unseen:
 		var reach := PASS_M if stay == 0 else ARRIVE_EPSILON
-		npc.position = WanderBehavior.step_toward(npc.position, target, pace_now.get(npc.id, NPCRoutine.pace(npc.id)) * UNSEEN_PACE_SCALE, step_delta, reach)   # POP1: a straight line, no navmesh
+		var walk: float = pace_now.get(npc.id, NPCRoutine.pace(npc.id))
+		var next := WanderBehavior.step_toward(npc.position, target, walk * UNSEEN_PACE_SCALE, step_delta, reach)   # POP1: a straight line, no navmesh
+		if next.distance_squared_to(player_pos) <= ABSTRACT_M * ABSTRACT_M:
+			# Coming into sight: no fast step across the line, and off the straight line onto
+			# walkable ground, since a straight line out of sight goes through buildings.
+			next = WanderBehavior.step_toward(npc.position, target, walk, step_delta, reach)
+			if nav != null:
+				next = nav.snap(next, NPCRoutine.layer_at(npc, tick))
+		npc.position = next
 		if nav != null:
 			nav.forget(npc.id)
 		if npc.position.distance_to(target) <= reach:   # BUG-10: out of sight they reached the door and stood there for good
