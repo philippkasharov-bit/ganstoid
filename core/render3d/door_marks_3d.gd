@@ -7,9 +7,9 @@ extends Node3D
 
 const NEAR_M := 18.0
 const MAX := 24
-const SIZE := Vector3(1.3, 0.03, 0.8)    # along the wall, height, out from it
-const OUT_M := 0.7                        # how far in front of the door
-const COLOR := Color(1.0, 0.78, 0.3, 0.75)
+const SIZE := Vector3(1.8, 0.03, 1.1)    # along the wall, height, out from it
+const OUT_M := 0.75                       # from the wall to the mat's middle
+const COLOR := Color(1.0, 0.72, 0.18, 0.92)
 
 var origin := Vector2.ZERO
 var footprints: Footprints
@@ -49,13 +49,29 @@ func _add(picked: Array, b: Dictionary) -> void:
 	if picked.size() < MAX and not b.is_empty() and b.has("door") and not picked.has(b):
 		picked.append(b)
 
-## The mat's transform: on the ground just outside `door`, turned along the wall.
+## The mat's transform: on the ground against the wall nearest `door` (the
+## city's door point stands a little out on the path), lying along that wall.
 static func place(door: Vector2, poly: PackedVector2Array, at: Vector2) -> Transform3D:
 	var c := Vector2.ZERO
 	for p in poly:
 		c += p
 	c /= maxf(1.0, poly.size())
-	var out := (door - c).normalized() if door != c else Vector2.RIGHT
-	var p := door + out * OUT_M - at
-	var basis := Basis(Vector3.UP, -out.angle() + PI * 0.5)
+	var best := door
+	var along := Vector2.RIGHT
+	var best_d := INF
+	for i in poly.size():
+		var a := poly[i]
+		var b := poly[(i + 1) % poly.size()]
+		if a == b:
+			continue
+		var q := Geometry2D.get_closest_point_to_segment(door, a, b)
+		if q.distance_to(door) < best_d:
+			best_d = q.distance_to(door)
+			best = q
+			along = (b - a).normalized()
+	var out := Vector2(-along.y, along.x)
+	if out.dot(best - c) < 0.0:
+		out = -out
+	var p := best + out * OUT_M - at
+	var basis := Basis(Vector3.UP, -along.angle())
 	return Transform3D(basis, Vector3(p.x, 0.04, p.y))

@@ -9,12 +9,12 @@ func _run(st: PlayerStateData, seconds: float, running: bool, moving: bool) -> v
 
 func _initialize() -> void:
 	var st := PlayerStateData.new()
-	_run(st, 10.0, true, true)
+	_run(st, 22.0, true, true)   # GP1: a full breath is ~30 s of running now (was ~14)
 	var ok := st.endurance < 0.4 and not st.winded and Stamina.can_run(st)
-	_run(st, 5.0, true, true)
+	_run(st, 6.0, true, true)
 	ok = ok and st.winded and not Stamina.can_run(st) and is_equal_approx(Stamina.damage_mult(st), Stamina.WINDED_DAMAGE)
 	var low := st.endurance
-	_run(st, 2.0, false, false)
+	_run(st, 1.0, false, false)   # GP1: breath comes back faster now
 	ok = ok and st.endurance > low + 0.1 and st.winded   # recovering, still winded under CATCH_AT
 	_run(st, 3.0, false, false)
 	ok = ok and not st.winded and Stamina.can_run(st)
@@ -22,8 +22,8 @@ func _initialize() -> void:
 	var heavy := PlayerStateData.new()
 	heavy.inventory = {&"bat": 20}   # 20 kg
 	ok = ok and Stamina.heavy(heavy) and is_equal_approx(Stamina.speed_mult(heavy), Stamina.HEAVY_SPEED) and not Stamina.heavy(light)
-	_run(light, 5.0, true, true)
-	_run(heavy, 5.0, true, true)
+	_run(light, 14.0, true, true)   # GP1: longer breath, longer run to tire
+	_run(heavy, 14.0, true, true)
 	ok = ok and heavy.endurance < light.endurance
 	Stamina.swing(light)
 	var npc := NPCData.new()

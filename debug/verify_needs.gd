@@ -14,7 +14,7 @@ func _initialize() -> void:
 	for t in day / 2:   # half a game day awake
 		needs.process_entities(players, 1.0 / SimClock.TICKS_PER_SECOND, t)
 	print("after 12 game hours: food %.2f water %.2f rest %.2f" % [me.hunger, me.thirst, me.fatigue])
-	if not _check(absf(me.hunger - 0.7) < 0.02 and absf(me.thirst - 0.5) < 0.02 and absf(me.fatigue - 0.25) < 0.02, "needs drain at the daily rates"):
+	if not _check(absf(me.hunger - (1.0 - NeedsSystem.HUNGER_PER_DAY * 0.5)) < 0.02 and absf(me.thirst - (1.0 - NeedsSystem.THIRST_PER_DAY * 0.5)) < 0.02 and absf(me.fatigue - 0.25) < 0.02, "needs drain at the daily rates"):
 		return
 	me.hunger = 0.1
 	print("hungry: speed x%.2f, spread x%.2f" % [NeedsSystem.speed_factor(me), NeedsSystem.spread_factor(me)])

@@ -189,8 +189,8 @@ void fragment() {
 	// compatibility renderer MODEL_MATRIX leaves out each copy's own transform)
 	vec3 wp = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	bool cut = in_front(wp);
-	bool kit_door = kit_on && int(floor(UV.y * 4.0)) * 4 + int(floor(UV.x * 4.0)) == 1;   // CV1: a cut house keeps its door, so the way in reads
-	if (cut_room(wp) || (cut && wp.y > cut_h && !kit_door)) {
+	bool keep_door = kit_on && int(floor(UV.y * 4.0)) * 4 + int(floor(UV.x * 4.0)) == 1;   // CV1: a cut house keeps its door, so the way in reads
+	if (cut_room(wp) || (cut && wp.y > cut_h && !keep_door)) {
 		discard;
 	}
 	vec3 col = use_vertex ? lin(COLOR.rgb) : tint * lin(COLOR.rgb);   // G3: a MultiMesh may tint each instance

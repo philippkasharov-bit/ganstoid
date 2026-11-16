@@ -14,9 +14,6 @@ Severity: **high** = breaks a game or loses progress · **medium** = clearly wro
 | ID | Severity | What happens | Where | Found by |
 |----|----------|--------------|-------|----------|
 | BUG-16 | ? (Phil) | "A bug of the player placement": details still needed from Phil (where you start, or where you appear after loading/sleeping?). | ? | Phil |
-| BUG-17 | medium (Phil) | You can't catch a fleeing person: your run is 3.5 m/s, exactly their flee jog (3.5 m/s), and you're winded after ~14 s of running. | `player_input_system.gd` RUN_SPEED, `stamina.gd` | Phil |
-| BUG-18 | medium (Phil) | Hungry and thirsty too fast: hunger runs low after ~75 real minutes and thirst after ~45. | `needs_system.gd` | Phil |
-| BUG-19 | medium (Phil) | Wounded too easily: every cut bleeds, and your bleeding never stops by itself (other people's stops after 75 s). | `combat_system.gd`, `wound_system.gd` | Phil |
 | BUG-20 | low (Phil) | Dark spots where there is no light look strange and unnatural (probably the same family as BUG-7). | night lighting | Phil |
 | BUG-15 | medium | At rush hour (08:00) one tick now and then takes 20-28 ms, a small stutter. It comes from the people's daily-routine planner (`NPCScheduleSystem`, up to 27 ms in one tick) when many people re-plan at once, on top of traffic (~11 ms). `verify_sim_perf` measures a real rush hour since BUG-13, so it now passes or fails by chance (main: 19.4 ms pass, 23.5 ms fail). Spread the re-plans over more ticks. | `core/systems/npc_schedule_system.gd` | `verify_sim_perf` |
 | BUG-9 | low (to check on Phil's PC) | In the shop (`--store` picture) a dark curved band runs across the shop floor, under the player. It could be a curved wall drawn at floor height, or a drawing glitch. | shop interior / cutaway | album `shop_counter` |
@@ -37,6 +34,9 @@ Severity: **high** = breaks a game or loses progress · **medium** = clearly wro
 
 | ID | What it was | Fix | Guarded by |
 |----|-------------|-----|-----------|
+| BUG-19 | Wounded too easily: your bleeding never stopped by itself. | A laceration clots by itself after ~2 real minutes; deep and bullet wounds still need a bandage | `verify_gameplay_feel` |
+| BUG-18 | Hungry and thirsty too fast. | Hunger 0.3/day (~2.5 h of play), thirst 0.55/day (~1.5 h) | `verify_needs`, `verify_gameplay_feel` |
+| BUG-17 | You couldn't catch a fleeing person (your run = their jog, winded after ~14 s). | Run 5 m/s, a full breath ~30 s, breath comes back faster; someone you catch stops for 8 s | `verify_gameplay_feel`, `verify_stamina` |
 | BUG-13 | `verify_sim_perf` measured a freshly placed city without cars, so it missed the real rush-hour cost. | Cars are on the streets and the city runs from 07:00 to 08:00 before the rush hour is measured (now 3.1-3.3 ms, as in the soak); limits 1.0 / 4.0 / 2.5 ms | `verify_sim_perf` |
 | BUG-4 | The N map's "Find me" centred on you even at the city's edge: up to half the map was empty dark space. | `city_map_view.gd`: the view stays inside the city when centring, zooming and dragging | album `city_map` |
 | BUG-3 | The N map window opened over the top-left info panel. | `hud.gd`: opens right of the panel | album `city_map` |
