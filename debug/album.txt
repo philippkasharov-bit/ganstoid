@@ -59,3 +59,7 @@ phone_jobs       | debug/shot_main.gd   | --phone=Jobs
 phone_crib       | debug/shot_main.gd   | --phone=Crib
 prison           | debug/shot_main.gd   | --jail
 phone_gang       | debug/shot_main.gd   | --phone=Gang
+3d_grey          | debug/shot_3d.gd     | --sim=10 --grey
+3d_grey_half     | debug/shot_3d.gd     | --sim=10 --grey --half
+3d_golden_dusk   | debug/shot_3d.gd     | --look=5206,3392 --size=40 --hour=19
+3d_golden_shops  | debug/shot_3d.gd     | --look=5140,3550 --size=40 --hour=22

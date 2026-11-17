@@ -1,4 +1,4 @@
-## R3D screenshot: the 3D look test. godot --path . -s debug/shot_3d.gd -- --out=<png> [--size=<ortho m>] [--radius=<m>] [--sim=<seconds of sim to run first>] [--behind (R3D4: stand the player behind the nearest tall building)] [--inside (R3D5: in the nearest house)] [--turn=<quarters>] [--hour=<0-24> (R3D10)] [--home (R3D14: walk in through your own front door)]
+## R3D screenshot: the 3D look test. godot --path . -s debug/shot_3d.gd -- --out=<png> [--size=<ortho m>] [--radius=<m>] [--sim=<seconds of sim to run first>] [--behind (R3D4: stand the player behind the nearest tall building)] [--inside (R3D5: in the nearest house)] [--turn=<quarters>] [--hour=<0-24> (R3D10)] [--home (R3D14: walk in through your own front door)] [--look=<x,y>] [--breakdown] [--grey] [--half] (VS2-0 readability test)
 extends SceneTree
 
 func _initialize() -> void:
@@ -43,10 +43,7 @@ func _initialize() -> void:
 	var t0 := Time.get_ticks_usec()
 	for i in 60:
 		await process_frame
-	print("A2b: %d primitives, %d draw calls in view" % [Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME), Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)])
 	print("R3D: built in %d ms, %d chunk meshes, %.1f ms a frame" % [preview.build_ms, preview.get_children().filter(func(n: Node) -> bool: return n.name.begins_with("Chunk")).size(), (Time.get_ticks_usec() - t0) / 60000.0])
-	if args.has("breakdown"):   # PF3: triangles by layer
-		RenderBreakdown.report(preview)
 	if args.has("look"):   # G4: frame a map point (x,y) instead of the player
 		var xy: PackedStringArray = args["look"].split(",")
 		var me3: NPCData = preview.driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
@@ -64,8 +61,26 @@ func _initialize() -> void:
 			await process_frame
 		await process_frame
 		await process_frame
-	root.get_viewport().get_texture().get_image().save_png(args.get("out", "/tmp/3d.png"))
+	# VS2-0: measured here, after --look/--turn/--size, so it counts the view in the picture
+	print("A2b: %d primitives, %d draw calls in view" % [Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME), Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)])
+	if args.has("breakdown"):   # PF3: triangles by layer
+		RenderBreakdown.report(preview)
+	var img := root.get_viewport().get_texture().get_image()
+	if args.has("grey"):   # VS2-0 readability test: no colour to lean on
+		img = _grey(img)
+	if args.has("half"):   # VS2-0 readability test: half size, like a small screen
+		img.resize(img.get_width() / 2, img.get_height() / 2, Image.INTERPOLATE_BILINEAR)
+	img.save_png(args.get("out", "/tmp/3d.png"))
 	quit()
+
+## The picture in greyscale (perceived brightness).
+static func _grey(img: Image) -> Image:
+	img.convert(Image.FORMAT_RGB8)
+	for y in img.get_height():
+		for x in img.get_width():
+			var l := img.get_pixel(x, y).get_luminance()
+			img.set_pixel(x, y, Color(l, l, l))
+	return img
 
 ## Just past the far (north-west, away from the camera) side of the nearest 2+ storey building.
 func _behind_building(near: Vector2) -> Vector2:

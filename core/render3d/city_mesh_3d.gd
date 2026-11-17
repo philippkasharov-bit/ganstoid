@@ -29,6 +29,7 @@ var only := ALL    # OPT1: the one chunk being built (ALL: every chunk)
 var _tools := {}   # chunk Vector2i -> SurfaceTool
 var _decals := {}  # B2: chunk Vector2i -> graffiti SurfaceTool
 var _kits := {}    # K4: chunk Vector2i -> KitBatch3D
+var _ao := {}      # VS2-0: chunk Vector2i -> contact shading SurfaceTool (ContactAO3D)
 var aprons := PackedVector2Array()   # K4: driveway aprons near the build
 var space: RoadSpace     # B1: where other roads cross (the centre line stops there)
 var _sink: SurfaceTool   # geometry for other chunks lands here and is thrown away
@@ -102,6 +103,17 @@ func decal_tool(at: Vector2) -> SurfaceTool:
 		_decals[k] = st
 	return _decals[k]
 
+## VS2-0: the chunk's contact shading mesh (ContactAO3D), or null for another chunk.
+func ao_tool(at: Vector2) -> SurfaceTool:
+	var k := Vector2i(((at - origin) / CHUNK_M).floor())
+	if only != ALL and k != only:
+		return null
+	if not _ao.has(k):
+		var st := SurfaceTool.new()
+		st.begin(Mesh.PRIMITIVE_TRIANGLES)
+		_ao[k] = st
+	return _ao[k]
+
 func _tri(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, n: Vector3, col: Color) -> void:
 	st.set_color(col)
 	st.set_normal(n)
@@ -173,6 +185,7 @@ static func _ccw(poly: PackedVector2Array) -> bool:
 func _building(b: Dictionary, tag: int) -> void:
 	var poly: PackedVector2Array = b["poly"]
 	BuildingMesh3D.add(_tool(poly[0]), b, _v, tag, self)
+	ContactAO3D.building(self, poly)   # VS2-0: the ground is darker at its foot
 
 ## K4: one copy of a kit part (HouseKit3D) in the chunk that holds `at`.
 func kit_put(at: Vector2, part: String, xform: Transform3D, paint: Color, custom: Color) -> void:
@@ -198,6 +211,13 @@ func _commit() -> Array[Node3D]:
 		tags.material_override = Graffiti3D.material()
 		tags.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		out.append(tags)
+	for k in _ao:   # VS2-0
+		var shade := MeshInstance3D.new()
+		shade.mesh = _ao[k].commit()
+		shade.material_override = ContactAO3D.material()
+		shade.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		shade.name = "ContactAO_%d_%d" % [k.x, k.y]
+		out.append(shade)
 	for k in _kits:
 		out.append_array(_kits[k].commit())
 	return out

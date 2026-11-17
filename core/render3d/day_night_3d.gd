@@ -19,6 +19,23 @@ const SKY_NIGHT := Color("0d1018")
 const SUN_DAY := Color("fff4e0")   # V1: warm LA sun
 const SUN_LOW := Color(1.0, 0.72, 0.5)
 
+## VS2-0: the colour grade by time of day (docs/ART_RULES.md). Each key: the hour,
+## then shadow, mid and highlight colours of the 1D grading curve (cool shadows,
+## warm highlights; never pure black or white), contrast, saturation, haze colour
+## and haze amount (smog at the far, top edge of the view). Blended by the hour.
+const GRADES := [
+	[0.0, Color(0.06, 0.075, 0.15), Color(0.48, 0.51, 0.60), Color(0.97, 0.90, 0.80), 1.12, 0.92, Color(0.10, 0.12, 0.20), 0.30],   # night
+	[5.0, Color(0.06, 0.075, 0.15), Color(0.48, 0.51, 0.60), Color(0.97, 0.90, 0.80), 1.12, 0.92, Color(0.10, 0.12, 0.20), 0.30],
+	[6.5, Color(0.05, 0.04, 0.08), Color(0.53, 0.49, 0.48), Color(1.0, 0.90, 0.78), 1.18, 1.04, Color(0.93, 0.76, 0.66), 0.24],      # dawn
+	[9.0, Color(0.04, 0.045, 0.065), Color(0.50, 0.49, 0.475), Color(0.975, 0.95, 0.885), 1.22, 1.06, Color(0.92, 0.88, 0.79), 0.15], # noon
+	[16.0, Color(0.04, 0.045, 0.065), Color(0.50, 0.49, 0.475), Color(0.975, 0.95, 0.885), 1.22, 1.06, Color(0.92, 0.88, 0.79), 0.15],
+	[19.0, Color(0.06, 0.04, 0.08), Color(0.55, 0.47, 0.44), Color(1.0, 0.86, 0.70), 1.2, 1.1, Color(0.97, 0.68, 0.50), 0.26],        # dusk
+	[21.0, Color(0.06, 0.075, 0.15), Color(0.48, 0.51, 0.60), Color(0.97, 0.90, 0.80), 1.12, 0.92, Color(0.10, 0.12, 0.20), 0.30],
+	[24.0, Color(0.06, 0.075, 0.15), Color(0.48, 0.51, 0.60), Color(0.97, 0.90, 0.80), 1.12, 0.92, Color(0.10, 0.12, 0.20), 0.30],
+]
+const HAZE_FROM := 230.0        # metres from the camera (it sits CameraRig3D.BACK_M back): the near view stays clear
+const HAZE_TO := 900.0
+
 static var night := 0.0         # 0 full day .. 1 full night
 static var _near: PackedVector3Array = PackedVector3Array()   # x, y map; z radius: lights round the player now
 
@@ -30,6 +47,8 @@ var hour_override := -1.0       # checks and screenshots: a fixed hour
 var city: CityData              # streets to light (set by the view)
 var radius := 300.0             # lamps placed this far round origin
 var _lights: StreetLights
+var _grade_hour := -100.0
+var _curve: Gradient
 
 func _ready() -> void:
 	if _lights == null:
@@ -97,6 +116,40 @@ func _sky(hour: float) -> void:
 		env.ambient_light_energy = lerpf(0.42, 0.55, night)   # day: shaded walls readable, but darker than the sunlit ones
 	if sun != null:
 		sun.light_color = sun.light_color.lerp(Color(0.6, 0.68, 0.95), night)   # moonlight blue
+	if env != null and absf(hour - _grade_hour) > 0.05:
+		_grade_hour = hour
+		_grade(grade_at(hour))
+
+## VS2-0: the blended grade at `hour`: [shadow, mid, high, contrast, saturation, haze colour, haze].
+static func grade_at(hour: float) -> Array:
+	hour = fposmod(hour, 24.0)
+	for i in GRADES.size() - 1:
+		var a: Array = GRADES[i]
+		var b: Array = GRADES[i + 1]
+		if hour <= float(b[0]):
+			var t := smoothstep(float(a[0]), float(b[0]), hour)
+			return [(a[1] as Color).lerp(b[1], t), (a[2] as Color).lerp(b[2], t), (a[3] as Color).lerp(b[3], t),
+				lerpf(a[4], b[4], t), lerpf(a[5], b[5], t), (a[6] as Color).lerp(b[6], t), lerpf(a[7], b[7], t)]
+	return GRADES[0].slice(1)
+
+func _grade(g: Array) -> void:
+	if _curve == null:
+		_curve = Gradient.new()
+		_curve.offsets = PackedFloat32Array([0.0, 0.5, 1.0])
+		var lut := GradientTexture1D.new()
+		lut.gradient = _curve
+		env.adjustment_enabled = true
+		env.adjustment_color_correction = lut
+		env.fog_enabled = true
+		env.fog_mode = Environment.FOG_MODE_DEPTH
+		env.fog_depth_begin = HAZE_FROM
+		env.fog_depth_end = HAZE_TO
+		env.fog_sky_affect = 0.0
+	_curve.colors = PackedColorArray([g[0], g[1], g[2]])
+	env.adjustment_contrast = g[3]
+	env.adjustment_saturation = g[4]
+	env.fog_light_color = g[5]
+	env.fog_density = g[6]
 
 ## The lamps and headlights near `p`, nearest first, at most MAX_LIGHTS.
 func _gather(p: Vector2) -> void:

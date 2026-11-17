@@ -67,6 +67,7 @@ static func _barrier(m: CityMesh3D, pts: PackedVector2Array, spec: Array) -> voi
 			continue
 		var n := (b - a).orthogonal().normalized() * float(spec[1]) * 0.5
 		_prism(m, [a - n, b - n, b + n, a + n], spec[0], spec[2])
+	ContactAO3D.line(m, pts, float(spec[1]) * 0.5)   # VS2-0: shade at its foot
 
 ## Zebra stripes across the road: white bars along the traffic, a metre apart.
 static func _zebra(m: CityMesh3D, pts: PackedVector2Array) -> void:
