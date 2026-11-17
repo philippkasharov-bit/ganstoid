@@ -4,7 +4,7 @@
 ##     needs are filled by what they did, habits are kept, nobody is stranded
 ##   - the same person, day and quarter hour plan the same trip
 ##   - a stay on the stoop holds them at their own door
-##   - 6,000 minds keep the save small and quick
+##   - 6,000 minds keep the save small (NB2d: under 1 MB)
 extends SceneTree
 
 const POPULATION := 600
@@ -90,10 +90,10 @@ func _check_save_size() -> bool:
 	var mind := NPCMind.make(w.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC), w.tick)
 	mind.habit_slots.resize(NPCMind.HABIT_SLOTS)
 	mind.habit_slots[2] = "eat"
-	var one := var_to_str({ComponentNames.NPC_MIND: SaveGame._fields(mind)}).length()
+	var one := var_to_str({ComponentNames.NPC_MIND: MindPack.pack(mind)}).length()
 	var kb := one * 6000 / 1024
 	print("save: %d KB now; one mind %d bytes, so 6,000 minds add about %d KB" % [base / 1024, one, kb])
-	return _check(kb < 4096, "6,000 minds add under 4 MB to the save")
+	return _check(kb < 1024, "6,000 minds add under 1 MB to the save")
 
 func _check(good: bool, what: String) -> bool:
 	if not good:

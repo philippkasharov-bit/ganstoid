@@ -39,7 +39,7 @@ static func snapshot(world: World, seed: int) -> Dictionary:
 			var comp: Resource = entity.components[name]
 			if (comp is VehicleData or comp is BuildingData) and not comp.touched:
 				continue   # PF1: a parked car or a building nobody touched is rebuilt as seeded
-			comps[name] = _fields(comp)
+			comps[name] = MindPack.pack(comp) if comp is NPCMindData else _fields(comp)   # NB2d: minds written small
 		entities[id] = comps
 	var goods := {}
 	for good in world.economy_items:
@@ -81,8 +81,11 @@ static func apply(world: World, data: Dictionary) -> int:
 				comp = NPCMindData.new()   # NB1: minds are made lazily, so a fresh city has none yet
 				entity.add_component(comp)
 				gained = true
-			if comp != null:
-				_restore(comp, data["entities"][id][name])
+			var saved: Variant = data["entities"][id][name]
+			if comp is NPCMindData and saved is Dictionary and saved.has(MindPack.KEY):
+				MindPack.unpack(comp, saved)
+			elif comp != null:
+				_restore(comp, saved)
 			if comp is NPCMindData:
 				NPCMind.sanitize(comp)
 		if gained:

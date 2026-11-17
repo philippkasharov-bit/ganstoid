@@ -163,6 +163,7 @@ One line per script: what it is for. Read the file only when you need it; find s
 | file | class | what it is |
 |---|---|---|
 | `hall_of_fame.gd` | HallOfFame | Hall of Fame (O1): every run that ends in death is written down. Records only: nothing carries over to the next run. |
+| `mind_pack.gd` | MindPack | NB2d: an NPCMindData written small. Every person who chose their free time has a mind, so a save can hold 6,000 of them; written field by field with full-precision decimals each took about 540 bytes. Here the needs, mood and trait changes are whole numbers 0.. |
 | `save_game.gd` | SaveGame | Save/load (SL1), Zomboid-style: one save per city, written when you quit and every in-game hour, deleted when you die (permadeath). The city is rebuilt from the saved seed (world generation is deterministic, so every entity gets the same id), then every compon |
 | `user_dir_move.gd` | UserDirMove | UI17: the game is now called Tagged. Its saves live in the "Ganstoid" user folder (project setting), which is a new place, so on first start this copies the save and hall of fame over from Godot's old default folder. Never overwrites: a file already in the new |
 

@@ -5,7 +5,8 @@
 ##   - the archetypes people get match what they are (cops, gangs, homeless, jobs)
 ##   - needs run down and stop at 0; feelings fade back to calm
 ##   - memory keeps the 12 that matter most
-##   - minds survive save and load, and a broken saved mind is made safe
+##   - minds survive save and load (NB2d: written small, old saves still load),
+##     and a broken saved mind is made safe
 extends SceneTree
 
 const PATH := "user://verify_npc_mind.txt"
@@ -119,30 +120,44 @@ func _check_save(a: World, people: Array) -> bool:
 	NPCMind.nudge_trait(mind, GanstoidEnums.MindTrait.PARANOID, 0.2)
 	NPCMind.remember(mind, GanstoidEnums.MindMemory.WAS_ROBBED, PlayerFactory.PLAYER_ENTITY_ID, Vector2(5, 6), a.tick, 0.9)
 	NPCMind.feel(mind, GanstoidEnums.MindMood.ANGRY, 0.7, a.tick)
+	mind.habit_slots = PackedStringArray(["", "", "eat", "", "stroll", ""])
 	var broken: Entity = a.entities[people[2]]
 	NPCMind.get_or_make(a, broken)
-	if not _check(a.get_entities_with_component(ComponentNames.NPC_MIND).size() == 2, "a written mind is indexed"):
+	var old: Entity = a.entities[people[3]]
+	var old_mind := NPCMind.get_or_make(a, old)
+	NPCMind.feel(old_mind, GanstoidEnums.MindMood.HAPPY, 0.4, a.tick)
+	if not _check(a.get_entities_with_component(ComponentNames.NPC_MIND).size() == 3, "a written mind is indexed"):
 		return false
 	var data := SaveGame.snapshot(a, SEED)
-	var bad_saved: Dictionary = data["entities"][broken.id][ComponentNames.NPC_MIND]
-	bad_saved["archetype"] = &"alien"
-	bad_saved["drives"] = PackedFloat32Array([NAN, 7.0])
-	bad_saved["mem_kind"] = PackedByteArray([200, 1, 2])
-	bad_saved["mem_weight"] = PackedFloat32Array([0.5])
+	data["entities"][broken.id][ComponentNames.NPC_MIND] = {MindPack.KEY: "%%not base64%%", "t": ["x", 5], "a": "alien",
+		"h": "|".repeat(5000), "m": [1, 2, 3, 4, 5], "f": PackedStringArray(["a", "b", "c", "d", "e", "f"])}
+	data["entities"][old.id][ComponentNames.NPC_MIND] = SaveGame._fields(old_mind)   # NB1's field-by-field form
 	SaveGame._store(data, PATH)
 	var b := _city()
 	SaveGame.apply(b, SaveGame.read(PATH))
 	var m2: NPCMindData = b.entities[touched.id].get_component(ComponentNames.NPC_MIND)
 	var b2: NPCMindData = b.entities[broken.id].get_component(ComponentNames.NPC_MIND)
-	var size := FileAccess.get_file_as_bytes(PATH).size()
-	print("save with 2 minds: %d KB; fixed broken mind: %s drives %s, %d memories" % [size / 1024, b2.archetype, b2.drives, b2.mem_kind.size()])
-	var ok := m2 != null and NPCMind.traits(touched.id, m2) == NPCMind.traits(touched.id, mind)
-	ok = ok and m2.mem_who == mind.mem_who and m2.mem_weight == mind.mem_weight and m2.mood == mind.mood
-	ok = ok and b.get_entities_with_component(ComponentNames.NPC_MIND).size() == 2
-	if not _check(ok, "a mind read back is the mind written"):
+	var o2: NPCMindData = b.entities[old.id].get_component(ComponentNames.NPC_MIND)
+	print("one mind written: %s" % var_to_str(data["entities"][touched.id][ComponentNames.NPC_MIND]).replace("\n", " "))
+	print("fixed broken mind: %s drives %s, %d habits, %d friends, %d memories" % [b2.archetype, b2.drives, b2.habit_slots.size(), b2.friends.size(), b2.mem_kind.size()])
+	var ok := m2 != null and _close(NPCMind.traits(touched.id, m2), NPCMind.traits(touched.id, mind))
+	ok = ok and m2.mem_who == mind.mem_who and _close(m2.mem_weight, mind.mem_weight) and _close(m2.mood, mind.mood)
+	ok = ok and _close(m2.drives, mind.drives) and m2.habit_slots == mind.habit_slots and m2.drives_tick == mind.drives_tick
+	ok = ok and b.get_entities_with_component(ComponentNames.NPC_MIND).size() == 3
+	if not _check(ok, "a mind read back is the mind written (to within 0.004)"):
 		return false
-	return _check(b2.archetype == Archetypes.DEFAULT and b2.drives.size() == NPCMind.DRIVES and b2.drives[0] == 1.0 \
-		and b2.drives[1] == 1.0 and b2.mem_kind.size() == 0, "a broken saved mind is made safe")
+	if not _check(o2 != null and _close(o2.mood, old_mind.mood), "a mind saved the old way still loads"):
+		return false
+	return _check(b2.archetype == Archetypes.DEFAULT and b2.drives.size() == NPCMind.DRIVES and b2.mem_kind.size() == 0 \
+		and b2.habit_slots.size() == NPCMind.HABIT_SLOTS and b2.friends.size() == NPCMind.FRIENDS_CAP, "a broken saved mind is made safe")
+
+func _close(a: PackedFloat32Array, b: PackedFloat32Array) -> bool:
+	if a.size() != b.size():
+		return false
+	for i in a.size():
+		if absf(a[i] - b[i]) > 0.004:
+			return false
+	return true
 
 func _check(good: bool, what: String) -> bool:
 	if not good:
