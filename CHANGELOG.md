@@ -5,6 +5,7 @@ Newest first. The in-game admin panel (F11, Bugs & updates) shows the top of it.
 
 ## 2026-11-17
 
+- NB1a: every person gets a character, needs, mood and memory (data only)
 - BZ5b: a stolen-goods ring, gambling dens and gun running
 - BZ5: loan sharking, fake money and the chop shop
 - CA1 fix: the crew loyalty check uses loyal crew

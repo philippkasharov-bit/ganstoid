@@ -1,6 +1,7 @@
 ## AD1: the admin panel (F11, once "Admin" is on in the pause menu). Tabs:
 ##   Player   money, heal, god mode, items, reputation, rank, police, teleport
 ##   World    time of day, reveal the map, start a push / new hustles / the paper, angry rivals
+##   People   NB1b: middle-click someone to see who they are (NPCInspectorView)
 ##   Tests    the bug test (AdminTests): quick checks on the running game
 ##   Bugs & updates  open and fixed bugs (BUGS.md), what changed (CHANGELOG.md),
 ##            how many F12 reports wait, and your own notes (saved)
@@ -10,7 +11,7 @@ extends UiWindow
 
 const ACTION := &"admin"
 const NOTES := "user://admin_notes.txt"
-const TABS := ["Player", "World", "Tests", "Bugs & updates"]
+const TABS := ["Player", "World", "People", "Tests", "Bugs & updates"]
 
 var _world: World
 var _tab := "Player"
@@ -72,6 +73,8 @@ func _show(tab: String) -> void:
 			_row([["Reveal the map", "reveal_map", null], ["Corner push now", "push_now", null], ["New hustles", "hustles_new", null]])
 			_row([["Print the paper", "paper_now", null], ["Every rival angry", "rival_max", null], ["Trial now", "trial_now", null]])
 			_row([["Score: store", "heist_now", 1], ["Score: stash house", "heist_now", 2], ["Score: armoured van", "heist_now", 3]])
+		"People":
+			_page.add_child(NPCInspectorView.new(_world, reset_size))
 		"Tests":
 			var results := AdminTests.run_all(_world)
 			var fails := results.filter(func(r: Array) -> bool: return not r[1]).size()

@@ -313,6 +313,9 @@ func _run(main: Node, args: Dictionary) -> void:
 		for n in main.get_node("HudLayer").get_children():
 			if n is AdminWindow:
 				n.visible = true
+				if String(args["admin"]) == "People":   # NB1b: someone near you picked
+					var me: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
+					NPCInspectorView.pinned = NPCInspectorModel.person_at(driver.world, me.position, 60.0)
 				n._show(String(args["admin"]))
 		for i in 4:
 			await process_frame
