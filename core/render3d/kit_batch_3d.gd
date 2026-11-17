@@ -11,8 +11,8 @@ const PARTS := ["kit_window_sash", "kit_window_wide", "kit_window_small", "kit_d
 	"kit_porch", "kit_meter", "kit_gutter", "kit_downspout", "kit_window_arch", "kit_door_arch"]   # K6: the Spanish house's arches
 const MODEL := "res://art/models/kit/%s.obj"
 const ATLAS := "res://art/textures/kit_atlas.png"
-const DOOR_PAINT := [   # the Cutaway shader holds the same eight as DOOR_PAINT; keep them in step
-Color("2f4a3a"), Color("8a2a24"), Color("1f2d4a"), Color("1c1c1e"), Color("6b4a2e"), Color("efeae0"), Color("2a6b6b"), Color("b8892e")]
+const DOOR_PAINT := [   # the Cutaway shader holds the same eight as DOOR_PAINT; keep them in step (DR1: light enough to read in the shade: colours go much darker once lit)
+Color("5fae86"), Color("c8574a"), Color("5a7fc4"), Color("7d8a9a"), Color("b8875a"), Color("efeae0"), Color("4fb0b0"), Color("e0b44f")]
 
 static var _meshes: Dictionary = {}
 static var _material: ShaderMaterial

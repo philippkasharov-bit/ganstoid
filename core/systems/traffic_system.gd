@@ -24,6 +24,8 @@ const CHASE_SPEED := 18.0
 const LOSE_M := 220.0
 const LOSE_S := 15.0
 const CATCH_M := 7.0
+const SIGHT_M := 180.0           # CH1: a chasing car keeps you in sight this far, with nothing in between
+const LOST_SIGHT_S := 8.0        # CH1: out of their sight this long (it counts double) and they've lost you
 const DRIVER := &"traffic"
 const COP_DRIVER := &"cop_car"
 
@@ -292,8 +294,10 @@ func _pursuit(me: NPCData, state: PlayerStateData, delta: float, tick: int) -> v
 	if mine != null and tick - _block_tick > int(BLOCK_EVERY_S * SimClock.TICKS_PER_SECOND) and mine.speed > 8.0:
 		_roadblock(mine)
 		_block_tick = tick
-	_far_ticks = _far_ticks + 1 if gap > LOSE_M else 0
-	if _far_ticks > int(LOSE_S * SimClock.TICKS_PER_SECOND):
+	# CH1: break their line of sight (a corner, a building) and they start losing you
+	var seen := gap <= SIGHT_M and (SimNav.active == null or SimNav.active.collision.line_clear(cop.position, me.position, 0.0))
+	_far_ticks = _far_ticks + (2 if not seen else 1) if gap > LOSE_M or not seen else 0
+	if _far_ticks > int((LOSE_S if seen else LOST_SIGHT_S) * SimClock.TICKS_PER_SECOND):
 		_end_chase(state, "lost")
 
 func _start_chase(state: PlayerStateData) -> void:
@@ -352,6 +356,11 @@ func _end_chase(state: PlayerStateData, how: String) -> void:
 	if how == "lost":
 		state.law_tier = GanstoidEnums.LawTier.CLEAN
 		StreetTalk.say_key(_world, state, "chase_lost")
+
+## CH1: where the chasing car is (for the minimap), or INF.
+func chaser_at() -> Vector2:
+	var cop := _car(_chaser) if _chaser != &"" else null
+	return cop.position if cop != null else Vector2.INF
 
 func chasing() -> bool:
 	return _chaser != &""

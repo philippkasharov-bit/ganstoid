@@ -56,8 +56,8 @@ uniform bool decal_on = false;       // B2: a graffiti mesh: colour and cut-out 
 uniform sampler2D decal_tex : source_color, filter_linear_mipmap;
 uniform bool kit_on = false;          // K4: house-kit parts (MultiMesh): the baked sheet, painted by its alpha mask
 uniform sampler2D kit_atlas : source_color, filter_linear_mipmap, repeat_disable;
-const vec3 DOOR_PAINT[8] = vec3[8](vec3(0.184, 0.29, 0.227), vec3(0.541, 0.165, 0.141), vec3(0.122, 0.176, 0.29), vec3(0.11, 0.11, 0.118),
-	vec3(0.42, 0.29, 0.18), vec3(0.937, 0.918, 0.878), vec3(0.165, 0.42, 0.42), vec3(0.722, 0.537, 0.18));   // = KitBatch3D.DOOR_PAINT (a uniform array here upset the others in the compatibility renderer)
+const vec3 DOOR_PAINT[8] = vec3[8](vec3(0.373, 0.682, 0.525), vec3(0.784, 0.341, 0.290), vec3(0.353, 0.498, 0.769), vec3(0.490, 0.541, 0.604),
+	vec3(0.722, 0.529, 0.353), vec3(0.937, 0.918, 0.878), vec3(0.310, 0.690, 0.690), vec3(0.878, 0.706, 0.310));   // = KitBatch3D.DOOR_PAINT (a uniform array here upset the others in the compatibility renderer)
 varying flat float kit_door;
 uniform int plain_surface = 15;       // TX3: a one-colour mesh's material (the ground)
 uniform float contact = 0.45;         // A1: how dark an upright surface gets where it meets the ground

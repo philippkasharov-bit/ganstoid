@@ -125,6 +125,7 @@ func _draw() -> void:
 			draw_circle(s, 5.0, m[1])
 			if m[2] != "":
 				draw_string(get_theme_default_font(), s + Vector2(-3.5, 4), m[2], HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color.BLACK)
+	var hot := _draw_police(me, turn, c, r)   # CH1
 	var goal: Variant = gps_goal(_world, state)
 	if goal != null:
 		var s := _to_mini(goal, me.position, turn)
@@ -144,7 +145,35 @@ func _draw() -> void:
 	var face := (state.aim_point - me.position).rotated(turn).angle() if state.aim_point != me.position else -PI * 0.5
 	var tip := c + Vector2.from_angle(face) * 9.0
 	draw_colored_polygon(PackedVector2Array([tip, c + Vector2.from_angle(face + 2.5) * 6.0, c + Vector2.from_angle(face - 2.5) * 6.0]), Color(0.95, 0.3, 0.25))
-	draw_arc(c, r, 0.0, TAU, 48, Color(1, 1, 1, 0.18), 1.5)
+	var rim := Color(1, 1, 1, 0.18)
+	if hot:   # CH1: they're after you: the rim flashes red and blue
+		rim = Color(0.9, 0.15, 0.15) if int(Time.get_ticks_msec() / 300) % 2 == 0 else Color(0.2, 0.35, 0.95)
+	draw_arc(c, r, 0.0, TAU, 48, rim, 3.0 if hot else 1.5)
+
+## CH1: police after you: a red circle where they are searching, flashing
+## red/blue dots for the officers and the chasing car. True if anyone is.
+func _draw_police(me: NPCData, turn: float, c: Vector2, r: float) -> bool:
+	var cops := _world.find_system(CopAISystem) as CopAISystem
+	var traffic := _world.find_system(TrafficSystem) as TrafficSystem
+	var flash := Color(0.9, 0.15, 0.15) if int(Time.get_ticks_msec() / 300) % 2 == 0 else Color(0.2, 0.35, 0.95)
+	var any := false
+	var k := SIZE * 0.5 / RANGE_M
+	if cops != null:
+		for h in cops.hunters():
+			any = true
+			if h[2]:
+				var z := _to_mini(h[1], me.position, turn)
+				if z.distance_to(c) < r + CopAISystem.SEARCH_RADIUS_M * k:
+					draw_circle(z, CopAISystem.SEARCH_RADIUS_M * k * 1.4, Color(0.9, 0.15, 0.15, 0.22))
+			var s := _to_mini(h[0], me.position, turn)
+			if s.distance_to(c) <= r - 4.0:
+				draw_circle(s, 4.0, flash)
+	if traffic != null and traffic.chasing():
+		any = true
+		var s := _to_mini(traffic.chaser_at(), me.position, turn)
+		if s.distance_to(c) <= r - 4.0:
+			draw_rect(Rect2(s - Vector2(5, 3), Vector2(10, 6)), flash)
+	return any
 
 ## [point, colour, letter] of what you know near you.
 func _marks(state: PlayerStateData, me: NPCData) -> Array:
