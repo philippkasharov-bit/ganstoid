@@ -457,6 +457,9 @@ func _options(npc: NPCData, state: PlayerStateData) -> Array:
 		var good := _best_to_sell(state)
 		if state.inventory.get(good, 0) > 0:
 			out.append(["Sell %s" % String(good), func() -> Dictionary: return DealSystem.start_handoff(_world, person, good, "sell")])
+	if p != null and p.gang_id != &"" and state.gang_member == &"":   # RP3
+		var gang_id: StringName = p.gang_id
+		out.append(["Ask to join %s" % GangLifeSystem.gang_name(_world, gang_id), func() -> Dictionary: return GangLifeSystem.join(_world, state, gang_id)])
 	if p != null and not p.is_dealer and p.gang_id != &"" and ShopSystem.owned_weapons(state).has(&"pistol"):
 		out.append(["Sell them a gun", func() -> Dictionary: return GunTrade.sell(_world, npc, state, p)])
 	if p != null and p.is_cop:

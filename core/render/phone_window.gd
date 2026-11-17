@@ -10,7 +10,7 @@ const ACTION := &"phone"
 const SCREEN := Color(0.62, 0.74, 0.47)
 const INK := Color(0.08, 0.12, 0.06)
 const W := 300.0
-const APPS := [["Messages", "Messages"], ["Contacts", "Contacts"], ["Hustles", "Hustles"], ["Bank", "Bank"], ["Rivals", "Rivals"], ["Score", "Score"], ["Crib", "Crib"], ["Jobs", "Jobs"], ["Property", "Property"], ["Paper", "Paper"]]
+const APPS := [["Messages", "Messages"], ["Contacts", "Contacts"], ["Hustles", "Hustles"], ["Bank", "Bank"], ["Rivals", "Rivals"], ["Score", "Score"], ["Crib", "Crib"], ["Jobs", "Jobs"], ["Property", "Property"], ["Gang", "Gang"], ["Paper", "Paper"]]
 
 var paper: PaperWindow
 var _world: World
@@ -149,6 +149,24 @@ func _show(state: PlayerStateData) -> void:
 			_text("LAST 7 MORNINGS", 14, true)
 			_screen.add_child(_spark(state.cash_history + [me2.cash]))
 			_text("Dirty money draws the police when they search you. Clean it through a business you own.", 14)
+		"Gang":   # RP3
+			if state.gang_member == &"":
+				_text("You're on your own.", 16, true)
+				_text("To join a gang: do business with them (deals, gun sales, gang jobs) until they like you, get known on the street, then E by one of theirs on their turf: Ask to join.", 14)
+			else:
+				_text("%s  ·  %s" % [GangLifeSystem.gang_name(_world, state.gang_member).to_upper(), GangLifeSystem.RANKS[state.gang_rank]], 17, true)
+				var nxt := state.gang_rank + 1
+				if nxt < GangLifeSystem.RANKS.size():
+					_text("gang rep %d / %d to %s" % [state.gang_rep, GangLifeSystem.RANK_AT[nxt], GangLifeSystem.RANKS[nxt]], 15)
+					_screen.add_child(_progress(clampf(float(state.gang_rep) / float(GangLifeSystem.RANK_AT[nxt]), 0.0, 1.0)))
+				else:
+					_text("You run their corners.", 15)
+				_rule()
+				_text("TODAY", 15, true)
+				for m in state.gang_missions:
+					_text(GangLifeSystem.mission_text(m), 14)
+				_rule()
+				_screen.add_child(_button("Leave the gang", func() -> void: state.ui_gang = "leave", Vector2(W, 34)))
 		"Jobs":   # RP2
 			if not state.gig.is_empty():
 				_text(GigSystem.line(_world, state), 16, true)

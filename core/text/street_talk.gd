@@ -103,6 +103,14 @@ const LINES := {
 	"lift_lost": ["Lost them.", "They got away from you.", "Too far back. Gone."],
 	"rival_coming": ["{n} of them, coming your way.", "Here they come: {n}.", "{n} shapes coming fast."],   # RV1
 	"rival_new": ["New man on those corners. He knows your name already.", "Someone stepped up. He's heard about you."],
+	"gang_joined": ["You're in. Don't make them regret it.", "Jumped in. You've got a set now."],   # RP3
+	"gang_left": ["You walked. They won't forget.", "Out. Watch your back."],
+	"gang_already": ["You've already got a set.", "You're already claimed."],
+	"gang_not_here": ["Ask on their own turf.", "Not here. Their corners."],
+	"gang_standing": ["\"We don't know you like that.\" Do business with them first.", "\"Prove yourself. Deal with us, do a job.\""],
+	"gang_unknown": ["\"Who are you?\" Get a name first.", "\"Nobody's heard of you.\""],
+	"gang_grudge": ["\"After what you did? No.\"", "\"You've got some nerve.\""],
+	"gang_none": ["You're not in a gang.", "Nothing to leave."],
 	"gig_taken": ["Gig's yours. Check the GPS.", "Easy money. Go."],   # RP2
 	"gig_busy": ["Finish the one you've got first.", "One gig at a time."],
 	"gig_need_car": ["You need a car and a licence for that.", "Taxi work needs wheels and papers."],
@@ -180,6 +188,7 @@ static func say(world: World, player_state: PlayerStateData, result: Dictionary)
 static func _count(world: World, player_state: PlayerStateData, key: String, amount: int) -> void:
 	HustleSystem.progress(world, player_state, key, amount)
 	RivalSystem.note(world, player_state, key)
+	GangLifeSystem.progress(world, player_state, key)
 	NewsSystem.note(world, player_state, key, amount)
 
 static func say_key(world: World, player_state: PlayerStateData, key: String, amount: int = 0) -> void:

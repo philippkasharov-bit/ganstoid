@@ -115,6 +115,12 @@ extends Resource
 var job_offers: Array = []                      # JB1: offers on screen (not saved)
 @export var explored: PackedByteArray = PackedByteArray()   # MP2: fog of war, one bit per ExplorationSystem cell
 @export var known: Dictionary = {}                 # MP2: dealer and fixer ids you have seen -> "dealer" / "fixer"
+@export var gang_member: StringName = &""          # RP3: the gang you are in
+@export var gang_rank: int = 0                    # RP3: GangLifeSystem.RANKS
+@export var gang_rep: int = 0
+@export var gang_missions: Array = []
+@export var gang_day: int = -1000000
+var ui_gang: String = ""                          # RP3: a phone request ("leave") (not saved)
 @export var gig: Dictionary = {}                  # RP2: the legal gig you are on
 @export var gigs: Array = []                      # RP2: today's offers
 @export var gig_day: int = -1000000
