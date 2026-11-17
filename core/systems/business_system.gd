@@ -42,6 +42,7 @@ func process_entities(entities: Dictionary, _delta: float, tick: int) -> void:
 		var state: PlayerStateData = player.get_component(ComponentNames.PLAYER_STATE)
 		var paid := collect_all(_world)
 		var washed: int = Wallet.launder(_world, laundering_capacity(_world), LAUNDER_FEE)["washed"]
+		state.books["washed"] = int(state.books.get("washed", 0)) + washed   # BZ6
 		if washed > 0:
 			StreetTalk.say_key(_world, state, "laundered", washed)
 		elif paid > 0:
@@ -56,7 +57,11 @@ static func laundering_capacity(world: World) -> int:
 			total += building.daily_revenue
 	var p: Entity = world.entities.get(PlayerFactory.PLAYER_ENTITY_ID)
 	if p != null:
-		total += VenueSystem.wash_capacity(p.get_component(ComponentNames.PLAYER_STATE))   # BZ3: a cash business washes more
+		var ps: PlayerStateData = p.get_component(ComponentNames.PLAYER_STATE)
+		total += VenueSystem.wash_capacity(ps)   # BZ3: a cash business washes more
+		total += FrontSystem.wash_bonus(world, ps)   # BZ6: car washes and laundromats
+		if FrontSystem.frozen(world, ps):
+			return 0   # BZ6: the IRS froze it
 	return total
 
 static func owned_by_player(building: BuildingData) -> bool:
@@ -82,12 +87,14 @@ static func collect_all(world: World) -> int:
 		if owned_by_player(building) and spare(building) > 0:
 			if state != null and state.venues.has(building.id):
 				continue   # BZ3: a night spot earns at closing time (VenueSystem)
-			total += StaffSystem.managed(state, building.id, spare(building)) if state != null else spare(building)   # BZ2: a manager
+			var take := roundi(spare(building) * FrontSystem.takings_mult(world, state, building)) if state != null else spare(building)   # BZ6: kind, upgrades, rivals
+			total += StaffSystem.managed(state, building.id, take) if state != null else take   # BZ2: a manager
 			building.bank = mini(building.bank, building.daily_revenue * RESERVE_DAYS)
 			building.cash_on_hand = 0
 	Wallet.earn_clean(world, total)
 	if state != null:
 		state.biz_day["shops"] = total
+		state.books["earned"] = int(state.books.get("earned", 0)) + total   # BZ6: the week's books
 	return total
 
 ## Owned legit shops (grow houses are counted by ProductionSystem).

@@ -315,6 +315,8 @@ func _show(state: PlayerStateData) -> void:
 		"Business":   # BZ2: your places, your staff, who you could hire
 			var me: NPCData = _world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
 			_text("Yesterday: shops paid $%d · wages $%d" % [int(state.biz_day.get("shops", 0)), int(state.biz_day.get("wages", 0))], 15, true)
+			var risk := FrontSystem.audit_chance(state)   # BZ6: the books
+			_text("This week: earned $%d · washed $%d · tax %d%% on Sunday · audit risk %s%s" % [int(state.books.get("earned", 0)), int(state.books.get("washed", 0)), roundi(FrontSystem.TAX * 100.0), "low" if risk < 0.15 else ("medium" if risk < 0.4 else "HIGH"), " · washing frozen" if FrontSystem.frozen(_world, state) else ""], 13, risk >= 0.4)
 			_rule()
 			var places: Array = []   # [label, place id, role, where]
 			var home: Entity = _world.entities.get(me.home_building_id)
@@ -324,7 +326,14 @@ func _show(state: PlayerStateData) -> void:
 			for b in BusinessSystem.player_owned(_world):
 				var v: Dictionary = state.venues.get(b.id, {})
 				if v.is_empty():
-					places.append(["%s · %s" % [String(b.trade if b.trade != &"" else &"shop").capitalize(), NextStep.where(me.position, b.position)], b.id, "manager", b.position])
+					var label: String = FrontSystem.KINDS[state.fronts[b.id]][0] if state.fronts.has(b.id) else String(b.trade if b.trade != &"" else &"shop").capitalize()
+					var extra := ""
+					if int(state.upgrades.get(b.id, 0)) > 0:
+						extra += " · upgraded x%d" % int(state.upgrades[b.id])
+					var rv := 0 if state.fronts.has(b.id) else FrontSystem.rivals(_world, b)   # a front has no rivals of its old trade
+					if rv > 0:
+						extra += " · %d rival%s nearby" % [rv, "" if rv == 1 else "s"]
+					places.append(["%s · %s%s" % [label, NextStep.where(me.position, b.position), extra], b.id, "manager", b.position])
 					continue
 				var night := "last night $%d%s%s" % [int(v.get("last", 0)), " + back room $%d" % int(v.get("back", 0)) if int(v.get("back", 0)) > 0 else "", " · a fight" if v.get("fight", false) else ""]
 				places.append(["%s (%s) · %s · %s" % [VenueSystem.KINDS[v["kind"]][0], Grades.venue(VenueSystem.stars(state, b.id)), NextStep.where(me.position, b.position), night], b.id, "manager", b.position])
