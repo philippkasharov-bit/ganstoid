@@ -125,6 +125,12 @@ static func run(world: World, cmd: String, arg: Variant, tick: int) -> String:
 		"crib_up":
 			state.crib = mini(state.crib + 1, CribSystem.TIERS.size() - 1)
 			return "crib: %s" % CribSystem.TIERS[state.crib]
+		"jail":
+			var days := CaseSystem.sentence(world, me, state) if state.case_evidence >= CaseSystem.PRISON_FROM else 0
+			if days == 0:
+				state.case_evidence = CaseSystem.PRISON_FROM * 3.0
+				days = CaseSystem.sentence(world, me, state)
+			return "sentenced: %d days" % days
 		"paper_now":
 			state.paper = NewsSystem.print_paper(state, HustleSystem.day_of(tick))
 			state.paper_serial += 1

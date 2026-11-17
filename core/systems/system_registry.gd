@@ -37,6 +37,7 @@ static func register_all(world: World) -> void:
 	world.register_system(HeistSystem.new(world))         # HS1
 	world.register_system(CribSystem.new(world))          # CR1
 	world.register_system(GigSystem.new(world))           # RP2
+	world.register_system(PrisonSystem.new(world))        # JL1
 	var gang_life := GangLifeSystem.new(world)            # RP3
 	world.register_system(gang_life)
 	world.event_bus.subscribe(gang_life.on_assaulted)

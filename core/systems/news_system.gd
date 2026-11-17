@@ -27,6 +27,7 @@ const STORIES := {
 	"heist_store": [10, "JEWELLERY STORE HIT IN {HOOD}", "Thieves cleared out a jewellery store in {hood}. Police put the take at {n}."],
 	"heist_stash": [10, "GANG STASH HOUSE ROBBED IN {HOOD}", "Word in {hood} is someone walked off with a gang's stash, {n}. Expect trouble."],
 	"heist_van": [11, "ARMOURED VAN HELD UP IN {HOOD}", "An armoured van was robbed in broad daylight in {hood}. {n} gone."],
+	"released": [4, "LOCAL MAN WALKS FREE", "Released from county jail yesterday. Neighbours in {hood} are not thrilled."],
 	"business_bought": [3, "NEW OWNER FOR {HOOD} BUSINESS", "A {hood} business changed hands for ${n}. The buyer paid cash."],
 }
 const CITY_NEWS := [

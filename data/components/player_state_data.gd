@@ -115,6 +115,11 @@ extends Resource
 var job_offers: Array = []                      # JB1: offers on screen (not saved)
 @export var explored: PackedByteArray = PackedByteArray()   # MP2: fog of war, one bit per ExplorationSystem cell
 @export var known: Dictionary = {}                 # MP2: dealer and fixer ids you have seen -> "dealer" / "fixer"
+@export var prison_choice: String = "head_down"   # JL1: how you spend prison days
+@export var prison_day: int = -1000000
+@export var prison_good: int = 0
+@export var prison_connections: int = 0
+var ui_prison: String = ""                        # JL1: a click on the prison panel (not saved)
 @export var gang_member: StringName = &""          # RP3: the gang you are in
 @export var gang_rank: int = 0                    # RP3: GangLifeSystem.RANKS
 @export var gang_rep: int = 0

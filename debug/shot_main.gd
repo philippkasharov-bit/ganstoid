@@ -128,6 +128,10 @@ func _run(main: Node, args: Dictionary) -> void:
 				break
 		for i in 4:
 			await process_frame
+	if args.has("jail"):   # JL1 look: inside, the prison panel
+		AdminSystem.run(driver.world, "jail", null, driver.world.tick)
+		for i in 4:
+			await process_frame
 	if args.has("admin"):   # AD1 look: the admin panel on a tab
 		for n in main.get_node("HudLayer").get_children():
 			if n is AdminWindow:

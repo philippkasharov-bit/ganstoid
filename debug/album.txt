@@ -42,3 +42,5 @@ admin_bugs       | debug/shot_main.gd   | --admin=Bugs
 phone_score      | debug/shot_main.gd   | --phone=Score
 phone_jobs       | debug/shot_main.gd   | --phone=Jobs
 phone_crib       | debug/shot_main.gd   | --phone=Crib
+prison           | debug/shot_main.gd   | --jail
+phone_gang       | debug/shot_main.gd   | --phone=Gang

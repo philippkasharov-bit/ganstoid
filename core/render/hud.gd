@@ -100,6 +100,9 @@ func _ready() -> void:
 	get_parent().add_child.call_deferred(layout)
 	layout.setup()
 	layout.panels = {"card": card, "pager": pager, "minimap": mini, "tips": guide, "eye": eye, "notify": notify}
+	var prison := PrisonWindow.new()   # JL1: the days inside
+	get_parent().add_child.call_deferred(prison)
+	prison.setup(_world)
 	var admin := AdminWindow.new()   # AD1: F11 (Admin on in the pause menu)
 	get_parent().add_child.call_deferred(admin)
 	admin.setup(_world, Vector2(320, 90))

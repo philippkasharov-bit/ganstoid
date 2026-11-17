@@ -47,6 +47,7 @@ Status: [x] done, [~] partly, [ ] not started.
 - [x] CR1 your crib: Mattress, Pad, Spot, Stash house; rest, safe, workbench, crew hangout, trophies, home laundering
 - [x] RP2 legal gigs (delivery, taxi, night security), driving licence, buying homes, rent
 - [x] RP3 join a gang: Prospect to Lieutenant, daily missions, a cut, leaving
+- [x] JL1 prison days: head down, yard, connections, appeal, escape; the crew slips outside
 - [x] AD1 admin panel (F11) with bug test, bugs and updates · QA6 test index and code map
 
 ## Next batches (in order unless Phil says otherwise)
@@ -60,7 +61,7 @@ Status: [x] done, [~] partly, [ ] not started.
 | B5 | **Visuals: streets (VS2)** | Parked cars, clutter, fences, graffiti, kerbs, worn ground; flats and shops less boxy | 2 |
 | B6 | ~~RP jobs and property (RP2)~~ **done** · | A list of legal jobs (delivery, taxi, security), buy a flat or house, a driving licence | 2 |
 | B7 | ~~Join a gang (RP3)~~ **done** · | Join a gang and rise in its ranks instead of only fighting them | 2 |
-| B8 | **Prison (JL1)** | Real jail time: crew and business run without you, a way out | 1-2 |
+| B8 | ~~Prison (JL1)~~ **done** · | Real jail time: crew and business run without you, a way out | 1-2 |
 | B9 | **Pacing robot (F3)** | Measures time to first money, rank, chase; tune the pace with numbers | 1 |
 | B10 | **Sound (AU1)** | City ambience, footsteps, cars, guns, 90s radio in cars | 2 |
 

@@ -59,7 +59,7 @@ func _show(tab: String) -> void:
 	match tab:
 		"Player":
 			_row([["+$1,000", "cash", 1000], ["+$10,000", "cash", 10000], ["Heal all", "heal", null], ["God mode", "god", null]])
-			_row([["Crib up", "crib_up", null]])
+			_row([["Crib up", "crib_up", null], ["Go to jail", "jail", null]])
 			_row([["+10 rep", "fame", 10], ["Rank up", "rank_up", null], ["Police forget you", "wanted_clear", null], ["Teleport to waypoint", "teleport", null]])
 			_page.add_child(UiTheme.label("Give an item:", UiTheme.FONT_SMALL, UiTheme.DIM))
 			var items: Array = []
