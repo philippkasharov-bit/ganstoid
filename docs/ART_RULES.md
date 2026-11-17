@@ -60,7 +60,7 @@ highlight), contrast, saturation, and distance haze.
 
 | Hour | Shadows | Highlights | Feel | Haze |
 |------|---------|------------|------|------|
-| night (21-5) | deep blue, lifted to 0.06-0.15 | warm (lamp light) | moody, less colour (0.92) | blue-grey, 0.30 |
+| night (21-5) | deep blue, lifted to 0.06-0.15 | warm (lamp light); mid-tones neutral, so sodium pools stay orange | moody, less colour (0.92) | blue-grey, 0.30 |
 | dawn (6.5) | violet | warm peach | soft | peach, 0.24 |
 | noon (9-16) | cool | warm, capped below white | contrast 1.22 | sandy smog, 0.15 |
 | dusk (19) | violet | orange | most colour (1.1) | orange, 0.26 |
