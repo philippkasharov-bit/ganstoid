@@ -156,7 +156,7 @@ static func night(world: World, state: PlayerStateData) -> void:
 			if b == null:
 				book.erase(id)
 				continue
-			var raid := (DEN_RAID if den else RING_RAID) * (0.5 if VenueSystem.has_bouncer(state, id) else 1.0)
+			var raid := (DEN_RAID if den else RING_RAID) * (0.5 if VenueSystem.has_bouncer(state, id) else 1.0) * FrontSystem.guard_mult(state)
 			if rng.randf() < raid:
 				r["open"] = false
 				r["raided"] = int(r.get("raided", 0)) + 1

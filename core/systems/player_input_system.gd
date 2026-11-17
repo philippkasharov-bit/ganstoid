@@ -659,6 +659,14 @@ func _venue_options(out: Array, state: PlayerStateData, building_id: StringName)
 		return
 	var v: Dictionary = state.venues.get(building_id, {})
 	if v.is_empty():
+		var tier := int(state.upgrades.get(building_id, 0))   # BZ6: upgrades and fronts
+		if tier < FrontSystem.UPGRADE_COST.size():
+			out.append(["Upgrade the place ($%d, more takings)" % FrontSystem.UPGRADE_COST[tier], func() -> Dictionary: return FrontSystem.upgrade(_world, state, b)])
+		if not state.fronts.has(building_id):
+			for fk in FrontSystem.KINDS:
+				var fspec: Array = FrontSystem.KINDS[fk]
+				var fkind: String = fk
+				out.append(["Make it a %s ($%d)" % [String(fspec[0]).to_lower(), int(fspec[1])], func() -> Dictionary: return FrontSystem.convert(_world, state, b, fkind)])
 		for kind in VenueSystem.KINDS:
 			var spec: Array = VenueSystem.KINDS[kind]
 			var k: String = kind

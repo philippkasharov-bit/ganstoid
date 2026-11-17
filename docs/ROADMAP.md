@@ -66,6 +66,7 @@ prints busts.
 - [x] UI7 a modern phone (dark, app tiles with badges, scrolls); rings at people's feet for who they are to you (crew, police, gang, friend, scared, enemy; strangers none) and a name card on hover; a deal window (your price, the odds, Offer) and a pawn / fence window (sell one or all) · UP1 the updater no longer sticks on a locked file
 - [x] BZ5 (part 1) loan sharking (Phone > Loans: lend at interest, daily repayments, collect / lean on / make an example), fake money (printing press, paper and ink, graded bills, pass for real change or sell to dealers), the chop shop (sell a stolen car parked outside); forgery skill
 - [x] BZ5 (part 2) a stolen-goods ring in a pawn shop you own (nightly dirty money, buys your loot at 70%), gambling dens in flats you own (nightly, no rent), gun crates from the connect (six pistols to sell to the gangs); raids shut rings and dens (a bouncer halves the risk)
+- [x] BZ6 the legal side: make a shop you own a car wash or laundromat (washes far more), restaurant (best on rich blocks), trucking company (imports half as often a sting) or security firm (fewer raids and fights); three upgrades for any shop (+25% takings each); rivals shown; a 15% weekly tax and IRS audits when you wash more than you earn
 
 ## Indie mistakes we design against (Phil, 2026-11: "doesn't it look boring and repetitive?")
 
@@ -119,7 +120,7 @@ Each mistake below is checked against the game and owned by a batch.
 | BZ3 | ~~**Nightlife: clubs, strip clubs, casinos**~~ **done** (card rooms, not casinos: 1990s LA) · | Buy and run them: licence, bouncers, DJ, staff, VIP rooms; nights earn by hood; launder through them; a back-room card game; play blackjack and slots yourself | 3 |
 | BZ4 | ~~**The drug chain**~~ **done** · | Weed to pills (press) to a cook lab (a short cook mini-game, fire risk) to imports; your own corners, delivery, your clubs; prices by hood | 2-3 |
 | BZ5 | ~~**Big illegal side**~~ **done** (loans, fake money, chop shop, stolen-goods ring, gun running, gambling dens) · | Chop shop, counterfeit cash, fencing ring, gun running, loan sharking, gambling dens; laundering through your legal fronts with limits and audits | 3 |
-| BZ6 | **Big legal side** (proposed) | Car wash, laundromat, restaurant, shop chain, flats to rent, trucking, security firm; upgrades, competition, taxes and audits | 2-3 |
+| BZ6 | ~~**Big legal side**~~ **done** (car wash, laundromat, restaurant, trucking, security firm; upgrades; taxes and audits) · | Car wash, laundromat, restaurant, shop chain, flats to rent, trucking, security firm; upgrades, competition, taxes and audits | 2-3 |
 | BZ7 | **Empire view** (proposed) | A map layer of everything you own, the daily ledger, raids and robberies by rivals on your places | 1 |
 | FX1 | **Game feel** | Hit reactions and knockdowns, camera shake, muzzle flash, blood, slow-mo on a knockout, screen pulses on big moments | 1-2 |
 | LV1 | **Living streets** | People say things (barks), street events (fights, arrests, crashes, parties, dealers busted), more traffic, people with jobs you can see | 2 |
