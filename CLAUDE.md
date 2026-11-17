@@ -21,6 +21,14 @@ Phil uses two Claude accounts on this game. Treat the other one as a teammate yo
 - Push your branch at the end of every reply that changed files, so the other account can see it and nothing is lost when the container closes.
 - The cloud environment ("Phil's games", which installs Godot) belongs to one account only. On the other account, use the Setup commands below by hand, or create the same environment there.
 
+## Where to look first (QA6: read these, not the whole code)
+- `docs/ROADMAP.md`: the batches plan for the whole game, what is done and what is next. Tick a batch in the commit that finishes it.
+- `docs/CODEMAP.md`: one line per script (what it is for). Find the file there, then `rg` the symbol.
+- `debug/TESTS.md`: every check by area, one line each, and how to run them.
+- `CHANGELOG.md`: what changed (also shown in the game's admin panel).
+- The code map, the test list and the changelog are generated: run `python3 -I tools/qa/index.py` before every commit that adds or changes a script or a check.
+- In the game: Admin on in the pause menu, then F11: cheats, world controls, a bug test on the running game, bugs and updates, notes.
+
 ## Working rules (token budget)
 - Act, don't narrate. No option surveys, no restating the task, no recap of unchanged code. Final report: what changed, check results, anything left open. A few lines.
 - Read narrowly: `rg` for the symbol, then read only the function or range you need. Never cat a whole large file (`player_input_system.gd`, `city_renderer.gd`, `data/city/*.json` are MBs or hundreds of lines). Never open `data/city/*.json` or `tools/city/*.json` in full. Query them with `python3 -I -c` or `jq`.

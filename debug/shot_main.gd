@@ -128,6 +128,13 @@ func _run(main: Node, args: Dictionary) -> void:
 				break
 		for i in 4:
 			await process_frame
+	if args.has("admin"):   # AD1 look: the admin panel on a tab
+		for n in main.get_node("HudLayer").get_children():
+			if n is AdminWindow:
+				n.visible = true
+				n._show(String(args["admin"]))
+		for i in 4:
+			await process_frame
 	if args.has("layout"):   # UI6 look: F10 layout mode, the panels outlined
 		HudLayout.editing = true
 		for i in 4:

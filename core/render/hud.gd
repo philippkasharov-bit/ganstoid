@@ -100,6 +100,9 @@ func _ready() -> void:
 	get_parent().add_child.call_deferred(layout)
 	layout.setup()
 	layout.panels = {"card": card, "pager": pager, "minimap": mini, "tips": guide, "eye": eye, "notify": notify}
+	var admin := AdminWindow.new()   # AD1: F11 (Admin on in the pause menu)
+	get_parent().add_child.call_deferred(admin)
+	admin.setup(_world, Vector2(320, 90))
 	var bug := BugReportWindow.new()   # QA2: F12, report a bug with a picture and the save
 	get_parent().add_child.call_deferred(bug)
 	bug.setup(_world, get_node(world_driver_path), Vector2(160, 120))

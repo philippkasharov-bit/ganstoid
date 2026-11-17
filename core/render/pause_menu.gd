@@ -37,12 +37,12 @@ func refresh() -> void:
 	_clear_before = _nothing_open()
 	if not visible:
 		return
-	show_panel("Paused", [["1", "Resume", ""], ["2", "Hide controls" if _showing_controls else "Controls", ""], ["3", "Tips: on" if _tips_on() else "Tips: off", "first-day hints"], ["4", "UI size: %d%%" % roundi(UiSettings.ui_scale() * 100.0), "bigger or smaller text"], ["5", "Reset HUD layout", "F10 moves panels"], ["6", "Save and quit", "saved hourly too"]], [["Esc", "resume"]])
+	show_panel("Paused", [["1", "Resume", ""], ["2", "Hide controls" if _showing_controls else "Controls", ""], ["3", "Tips: on" if _tips_on() else "Tips: off", "first-day hints"], ["4", "UI size: %d%%" % roundi(UiSettings.ui_scale() * 100.0), "bigger or smaller text"], ["5", "Reset HUD layout", "F10 moves panels"], ["6", "Admin: %s" % ("on" if UiSettings.admin() else "off"), "F11 opens the admin panel"], ["7", "Save and quit", "saved hourly too"]], [["Esc", "resume"]])
 	var screen := get_viewport_rect().size
 	position = ((screen - size) * 0.5).round()
 	_dim.position = Vector2.ZERO
 	_dim.size = screen
-	for i in 6:
+	for i in 7:
 		if Input.is_action_just_pressed(PlayerInputSystem.SLOT_ACTIONS[i]):
 			_on_row(i)
 
@@ -53,7 +53,8 @@ func _on_row(index: int) -> void:
 		2: _toggle_tips()
 		3: UiSettings.cycle(get_tree().root)
 		4: HudLayout.reset()
-		5: _save_and_quit()
+		5: UiSettings.set_admin(not UiSettings.admin())
+		6: _save_and_quit()
 
 ## TP1: the player's tips switch (saved with the game).
 func _tips_on() -> bool:

@@ -30,6 +30,17 @@ static func auto_scale(screen_h: int) -> float:
 static func apply(root: Window, scale: float) -> void:
 	root.content_scale_factor = scale
 
+## AD1: admin tools on (pause menu)? Off unless switched on.
+static func admin() -> bool:
+	var cfg := ConfigFile.new()
+	return cfg.load(PATH) == OK and cfg.get_value("admin", "on", false) == true
+
+static func set_admin(on: bool) -> void:
+	var cfg := ConfigFile.new()
+	cfg.load(PATH)
+	cfg.set_value("admin", "on", on)
+	cfg.save(PATH)
+
 ## The next size up (wrapping round), applied and saved.
 static func cycle(root: Window) -> float:
 	var now := ui_scale()
