@@ -50,7 +50,61 @@ Status: [x] done, [~] partly, [ ] not started.
 - [x] JL1 prison days: head down, yard, connections, appeal, escape; the crew slips outside
 - [x] AD1 admin panel (F11) with bug test, bugs and updates · QA6 test index and code map
 
-## Next batches (in order unless Phil says otherwise)
+## Indie mistakes we design against (Phil, 2026-11: "doesn't it look boring and repetitive?")
+
+Honest status: wide but thin. Many systems, but most are menus and text;
+no sound; everyone looks alike; the city doesn't show what the sim knows.
+Each mistake below is checked against the game and owned by a batch.
+
+| # | Mistake | Us now | Fix (batch) |
+|---|---|---|---|
+| 1 | No sound or music | none at all | AU1 |
+| 2 | Menus instead of doing (E, pick a line) | most crimes | SK1 skill moments |
+| 3 | Weak game feel: no impact, shake, reactions | flat | FX1 juice |
+| 4 | Lifeless crowds: same people, no voices, no events | yes | LV1 living streets |
+| 5 | Deep sim nobody can see | yes | LV1 (barks, events), MP3 overlays |
+| 6 | Wide but shallow, everything half-done | yes | finish before adding (ROADMAP rule) |
+| 7 | Same loop forever, no escalation | partly | ST1 story arc, LG1 late game |
+| 8 | No story, characters or ending | none | ST1 |
+| 9 | Late game turns into passive income | likely | LG1 threats to an empire |
+| 10 | Huge empty map instead of a dense one | 6 km, sparse | DN1 density first |
+| 11 | No art direction, generic low-poly | partly | VS1, VS2, ART1 look bible |
+| 12 | Nothing worth sharing (clips, stories) | paper only | SH1 photo mode, highlights |
+| 13 | Weak first 10 minutes | improved | B9 pacing, TU1 tutorial |
+| 14 | Grind and money inflation | unmeasured | B9 pacing robot |
+| 15 | Permadeath that feels unfair | possible | B9 tuning, clear warnings |
+| 16 | Dumb enemy AI | basic | AI1 cover, flanking, search |
+| 17 | Places that are only a panel (prison, crib) | yes | ART1 interiors that show it |
+| 18 | Too many keys, hidden controls | many | UX1 one input map, controller |
+| 19 | Text walls instead of showing | some | UX1, TU1 |
+| 20 | Bugs and broken saves at launch | guarded | QA (keep), REL1 |
+| 21 | Runs badly on normal PCs | unknown | REL1 quality settings, min-spec test |
+| 22 | English only | yes | REL1 localisation |
+| 23 | No accessibility options | few | REL1 subtitles, colours, remap |
+| 24 | Hook not clear in one sentence | unclear | MK1 pitch |
+| 25 | Marketing starts at launch | not started | MK1 store page, devlog, demo early |
+| 26 | Legal: map credit, AI assets, real brands, music | open | REL1 credits, AI disclosure, own music |
+| 27 | Never tested by strangers | yes | PT1 outside playtests |
+| 28 | Early access with too little | risk | MK1 demo first |
+
+## Next batches (re-ordered by the list above)
+
+| # | Batch | What the player gets | Size |
+|---|---|---|---|
+| AU1 | **Sound and music** | City ambience by area and hour, footsteps, doors, cars, guns, crowd voices, a 90s radio in cars, UI sounds | 2 |
+| FX1 | **Game feel** | Hit reactions and knockdowns, camera shake, muzzle flash, blood, slow-mo on a knockout, screen pulses on big moments | 1-2 |
+| LV1 | **Living streets** | People say things (barks), street events (fights, arrests, crashes, parties, dealers busted), more traffic, people with jobs you can see | 2 |
+| SK1 | **Skill moments** | Lockpicking, hotwiring, hold-ups, safe-cracking as short hands-on mini-games instead of menu lines | 2 |
+| VS1/VS2 | **People and streets** | Varied people (models, clothes), parked cars, clutter, graffiti, worn ground | 4 |
+| ST1 | **Story arc** | Named characters, chapters from Street rat to City boss, an ending (and play on after) | 3 |
+| LG1 | **Late game** | An empire under pressure: federal case, raids, betrayal, gang wars over your business | 2 |
+| B9/TU1 | **Pacing and first hour** | Pacing robot, tuning, a real tutorial | 2 |
+| DN1 | **Density first** | Start in one dense district; the rest opens as you rise | 1 |
+| ART1 | **Look bible** | One art direction, interiors for crib, prison, stores | 2 |
+| REL1 | **Release-ready** | Settings, quality levels, languages, accessibility, credits, legal | 3 |
+| MK1 | **Marketing** | One-line hook, store page, trailer, demo, devlog | ongoing |
+
+## Older batch list (kept for reference)
 
 | # | Batch | What the player gets | Size |
 |---|---|---|---|
