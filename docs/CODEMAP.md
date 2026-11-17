@@ -336,6 +336,7 @@ One line per script: what it is for. Read the file only when you need it; find s
 
 | file | class | what it is |
 |---|---|---|
+| `activities.gd` | Activities | NB2a: what people do with their free time, as data. A new activity is a new entry here, not new code. Nothing reads this in play until NB2c. Each activity: label what the People tab and reports call it place where it happens: "shop" (a business whose trade is  |
 | `archetypes.gd` | Archetypes | NB1: kinds of people, as data. Each archetype gives the range every trait is rolled in (order of GanstoidEnums.MindTrait: bold, sociable, lawful, greedy, curious, patient, paranoid, energetic) and how fast each need runs down per game hour (order of GanstoidEn |
 
 ## data/schemas
