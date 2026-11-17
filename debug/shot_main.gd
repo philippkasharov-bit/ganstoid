@@ -313,9 +313,14 @@ func _run(main: Node, args: Dictionary) -> void:
 		for n in main.get_node("HudLayer").get_children():
 			if n is AdminWindow:
 				n.visible = true
-				if String(args["admin"]) == "People":   # NB1b: someone near you picked
+				if String(args["admin"]) == "People":   # NB1b: the person nearest you picked
 					var me: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
-					NPCInspectorView.pinned = NPCInspectorModel.person_at(driver.world, me.position, 60.0)
+					var best := INF
+					for e in driver.world.get_entities_with_component(ComponentNames.NPC).values():
+						var p: NPCData = e.get_component(ComponentNames.NPC)
+						if p != me and p.position.distance_to(me.position) < best:
+							best = p.position.distance_to(me.position)
+							NPCInspectorView.pinned = p.id
 				n._show(String(args["admin"]))
 		for i in 4:
 			await process_frame

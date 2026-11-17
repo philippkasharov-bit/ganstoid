@@ -5,6 +5,7 @@ Newest first. The in-game admin panel (F11, Bugs & updates) shows the top of it.
 
 ## 2026-11-17
 
+- NB1c: the Living City and Crew Command plans on the roadmap
 - NB1: add the Godot id files for the BZ5 rackets checks
 - NB1b: the F11 People tab shows who a person is
 - NB1a: every person gets a character, needs, mood and memory (data only)

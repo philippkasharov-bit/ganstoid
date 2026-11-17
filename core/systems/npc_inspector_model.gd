@@ -89,7 +89,7 @@ static func links(world: World, npc: NPCData, mind: NPCMindData) -> Array:
 		if other == null or other.id == npc.id:
 			continue
 		if npc.home_building_id != &"" and other.home_building_id == npc.home_building_id:
-			home.append(other.display_name)
+			home.append(_who(world, other.id))   # the player shows as "you"
 		if npc.work_building_id != &"" and other.work_building_id == npc.work_building_id:
 			work.append(other.display_name)
 	var friends := []
