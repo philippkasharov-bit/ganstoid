@@ -30,6 +30,11 @@ func _initialize() -> void:
 		return
 	if not _check(w.get_entities_with_component(ComponentNames.NPC_MIND).is_empty() and w.tick == tick, "looking changes nothing"):
 		return
+	var me: NPCData = w.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
+	me.home_building_id = npc.home_building_id
+	var home_line: String = NPCInspectorModel.describe(w, id)["links"][0][1]
+	if not _check(home_line.contains("you") and not home_line.contains(me.display_name), "the player living there shows as you"):
+		return
 	if not _check(not NPCInspectorModel.describe(w, id, false).has("links"), "links can be skipped on refresh"):
 		return
 	var mind := NPCMind.get_or_make(w, w.entities[id])
