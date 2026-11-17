@@ -42,9 +42,13 @@ static func _ensure(world: World, building: BuildingData, kind: String) -> void:
 				roll[id] = roll.get(id, 0) + r[id]
 		if c["filled"] and not _pay_restock(building, LootTables.value(roll)):
 			return   # E3: they could not afford to stock it again; it stays empty
+		var restock: bool = c["filled"]
 		c["items"] = roll
 		c["filled"] = true
-		c["searched"] = false   # LT4: refilled: it has to be gone through again
+		if roll.is_empty():
+			c["emptied_tick"] = world.tick   # LT4: an empty roll (a register, a bare drawer) waits for the next restock, not every look
+		if restock and not roll.is_empty():
+			c["searched"] = false   # LT4: new things in it: it has to be gone through again
 
 ## LT4: has this container been gone through? (Your own place: always.)
 static func searched(me: NPCData, building: BuildingData, kind: String) -> bool:

@@ -22,22 +22,25 @@ func _initialize() -> void:
 	st.inside_id = house.id
 	var city_before := EconomyFlow.total_money(world) + me.cash
 	var had := house.cash_on_hand
+	Containers.open(world, me, house)
+	for kind in house.containers:
+		house.containers[kind]["searched"] = true   # LT4: gone through already
 	var cash_src: Array = Vicinity.near(world, me, st).filter(func(s: Dictionary) -> bool: return s["id"] == &"cash")
-	ok = ok and cash_src.size() == 1 and cash_src[0]["n"] == had and cash_src[0]["cont"] == "bedroom"
+	ok = ok and cash_src.size() == 1 and cash_src[0]["n"] == had and cash_src[0]["cont"] == "drawers"
 	Vicinity.take(world, st, cash_src[0], 999)
 	ok = ok and house.cash_on_hand == 0 and EconomyFlow.total_money(world) + me.cash == city_before   # moved, not made
 	ok = ok and Vicinity.near(world, me, st).filter(func(s: Dictionary) -> bool: return s["id"] == &"cash").is_empty()
 	# Emptied drawers do not refill for free: a broke household cannot restock.
-	var drawers: Dictionary = house.containers["kitchen"]
+	var drawers: Dictionary = house.containers["cabinet"]
 	drawers["items"] = {}
 	drawers["emptied_tick"] = world.tick - SimClock.day_ticks * 10
 	house.bank = 0
 	Containers.open(world, me, house)
-	ok = ok and house.containers["kitchen"]["items"].is_empty()
+	ok = ok and house.containers["cabinet"]["items"].is_empty()
 	house.bank = 500
 	Containers.open(world, me, house)
-	var restock := LootTables.value(house.containers["kitchen"]["items"])
-	ok = ok and (house.containers["kitchen"]["items"].is_empty() or house.bank == 500 - restock)
+	var restock := LootTables.value(house.containers["cabinet"]["items"])
+	ok = ok and (house.containers["cabinet"]["items"].is_empty() or house.bank == 500 - restock)
 	# A shop's register is its till.
 	var shop: BuildingData = null
 	for b in BusinessSystem.all_buildings(world):
@@ -48,6 +51,9 @@ func _initialize() -> void:
 	shop.security = 0   # no camera: the whole till is in reach (E4)
 	me.position = shop.position
 	st.inside_id = shop.id
+	Containers.open(world, me, shop)
+	for kind in shop.containers:
+		shop.containers[kind]["searched"] = true   # LT4
 	var reg: Array = Vicinity.near(world, me, st).filter(func(s: Dictionary) -> bool: return s["id"] == &"cash")
 	ok = ok and reg.size() == 1 and reg[0]["n"] == 140 and reg[0]["cont"] == "register"
 	Vicinity.take(world, st, reg[0], 999)

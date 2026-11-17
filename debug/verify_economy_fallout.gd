@@ -67,7 +67,7 @@ func _initialize() -> void:
 	for d in 15:
 		var got := 0
 		for s in BusinessSystem.all_buildings(world):
-			var c := Containers.cash_shown(s, "register" if s.building_type == GanstoidEnums.BuildingType.LEGIT_BUSINESS else "bedroom")
+			var c := Containers.cash_shown(s, "register" if s.building_type == GanstoidEnums.BuildingType.LEGIT_BUSINESS else "drawers")
 			if c > 0:
 				got += Containers.take_cash(world, s, c)
 				if s.building_type == GanstoidEnums.BuildingType.LEGIT_BUSINESS:

@@ -63,6 +63,20 @@ func _initialize() -> void:
 	house.cash_on_hand = 100000
 	Containers.open(w, me, house)
 	ok = _check(not Containers.searched(me, house, "drawers") or house.containers["drawers"]["items"].is_empty(), "restocked drawers have to be searched again") and ok
+	# furniture that rolled nothing (a register holds only the till's cash) stays searched
+	var shop: BuildingData = null
+	for b in BusinessSystem.all_buildings(w):
+		if b.building_type == GanstoidEnums.BuildingType.LEGIT_BUSINESS:
+			shop = b
+			break
+	me.position = shop.position
+	state.inside_id = shop.id
+	Containers.open(w, me, shop)
+	Vicinity.mark_searched(w, {"kind": "container", "building": shop.id, "cont": "register"})
+	Vicinity.near(w, me, state)
+	ok = _check(Containers.searched(me, shop, "register"), "an empty register stays searched (it used to reset on every look)") and ok
+	me.position = house.position
+	state.inside_id = house.id
 	# pockets
 	var down: NPCData = null
 	for e in w.get_entities_with_component(ComponentNames.NPC).values():

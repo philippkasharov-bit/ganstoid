@@ -49,6 +49,7 @@ func _initialize() -> void:
 	victim.position = me.position + Vector2(1.0, 0)
 	victim.cash = 37
 	victim.is_down = true
+	victim.pockets_searched = true   # LT4: searched already (verify_loot_search covers the search)
 	w.reindex_position(victim.id)
 	var near := Vicinity.near(w, me, state)
 	var cash_src: Dictionary = {}

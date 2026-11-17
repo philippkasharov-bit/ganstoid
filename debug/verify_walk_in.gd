@@ -63,7 +63,7 @@ func _house(city: CityData) -> Dictionary:
 	for b in city.buildings:
 		if b["kind"] == "house" and b["poly"][0].distance_to(city.spawn) < 150.0:
 			var l := InteriorLayout.of(b)
-			if l.door_a != l.door_b and l.furniture.any(func(f: Dictionary) -> bool: return f["container"] == "kitchen"):
+			if l.door_a != l.door_b and l.furniture.any(func(f: Dictionary) -> bool: return f["container"] == "cabinet"):
 				return b
 	return {}
 
@@ -87,17 +87,17 @@ func _walk(world: World, npc: NPCData, st: PlayerStateData, from: Vector2, dir: 
 
 func _reach(l: InteriorLayout) -> bool:
 	for f in l.furniture:
-		if f["container"] == "kitchen":
+		if f["container"] == "cabinet":
 			var by: Vector2 = l.to_map((f["rect"] as Rect2).get_center())
 			var far := _far_point(l, f["rect"])
-			return not Indoors.out_of_reach(by, "kitchen") and (far == Vector2.INF or Indoors.out_of_reach(far, "kitchen"))
+			return not Indoors.out_of_reach(by, "cabinet") and (far == Vector2.INF or Indoors.out_of_reach(far, "cabinet"))
 	return false
 
 ## A point inside the house well away from every kitchen piece (INF if the house is too small).
 func _far_point(l: InteriorLayout, near: Rect2) -> Vector2:
 	for p in l.local:
 		var q := p.lerp(InteriorLayout._box(l.local).get_center(), 0.15)
-		var clear := l.furniture.all(func(f: Dictionary) -> bool: return f["container"] != "kitchen" or not (f["rect"] as Rect2).grow(Indoors.REACH_M + 0.2).has_point(q))
+		var clear := l.furniture.all(func(f: Dictionary) -> bool: return f["container"] != "cabinet" or not (f["rect"] as Rect2).grow(Indoors.REACH_M + 0.2).has_point(q))
 		if clear and Geometry2D.is_point_in_polygon(q, l.local):
 			return l.to_map(q)
 	return Vector2.INF
