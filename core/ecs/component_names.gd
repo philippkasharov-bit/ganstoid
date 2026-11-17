@@ -13,3 +13,4 @@ const ECONOMY_TRANSACTION := &"EconomyTransactionData"
 const PLAYER_STATE := &"PlayerStateData"
 const VEHICLE := &"VehicleData"
 const BLOCK_ECONOMY := &"BlockEconomyData"   # E1
+const NPC_MIND := &"NPCMindData"           # NB1

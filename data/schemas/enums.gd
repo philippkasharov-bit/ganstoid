@@ -87,3 +87,43 @@ enum CrimeType {
 	## TR: spraying a gang tag.
 	GRAFFITI,
 }
+
+## NB1: a person's character, 0..1 each. Index into NPCMindData / NPCMind traits.
+enum MindTrait {
+	BOLD,
+	SOCIABLE,
+	LAWFUL,
+	GREEDY,
+	CURIOUS,
+	PATIENT,
+	PARANOID,
+	ENERGETIC,
+}
+
+## NB1: what a person needs, 1 = satisfied, 0 = urgent (same sense as NPCData.hunger).
+enum MindDrive {
+	ENERGY,
+	FOOD,
+	MONEY,
+	SOCIAL,
+	SAFETY,
+	FUN,
+}
+
+## NB1: how a person feels right now, 0..1 each, fading back to their calm baseline.
+enum MindMood {
+	CALM,
+	CURIOUS,
+	AFRAID,
+	ANGRY,
+	HAPPY,
+}
+
+## NB1: kinds of things a person can remember.
+enum MindMemory {
+	SAW_CRIME,
+	WAS_ROBBED,
+	GOT_HELPED,
+	SAW_BODY,
+	MET_PLAYER,
+}

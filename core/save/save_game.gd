@@ -74,10 +74,19 @@ static func apply(world: World, data: Dictionary) -> int:
 		var entity: Entity = world.entities.get(id)
 		if entity == null:
 			continue   # the city changed since this save (a map update): skip what is gone
+		var gained := false
 		for name in data["entities"][id]:
 			var comp: Resource = entity.components.get(name)
+			if comp == null and name == ComponentNames.NPC_MIND and entity.has_component(ComponentNames.NPC):
+				comp = NPCMindData.new()   # NB1: minds are made lazily, so a fresh city has none yet
+				entity.add_component(comp)
+				gained = true
 			if comp != null:
 				_restore(comp, data["entities"][id][name])
+			if comp is NPCMindData:
+				NPCMind.sanitize(comp)
+		if gained:
+			world.reindex_components(id)
 		world.reindex_position(id)
 		restored += 1
 	for good in data.get("goods", {}):

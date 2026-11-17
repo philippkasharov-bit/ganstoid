@@ -228,6 +228,7 @@ One line per script: what it is for. Read the file only when you need it; find s
 | `news_system.gd` | NewsSystem | NP1: the morning paper. What you do that the papers would print (a mugging, a store hit, a break-in, a job done, an arrest...) is noted with the hood it happened in (StreetTalk passes every result here). At DAY_START the day's notes become a front page: the wo |
 | `next_step.gd` | NextStep | NX1: the one line (on the pager, UI1) that always says what to do next, so a new player is never left wondering. Read-only: it only looks at the world. The first thing that applies wins: a job under way where to go and how long is left an urgent need bleeding, |
 | `npc_combat_system.gd` | NPCCombatSystem | Combat C6: people who fight back. - Gang members: hurt one and every member of that gang within GANG_CALL_M comes for you for HOSTILE_S: they close in and fire from the hip. - Cops: CopAISystem asks fire_at_player() while responding; they shoot only at an arme |
+| `npc_mind.gd` | NPCMind | NB1: rolls, reads and writes NPCMindData. Pure functions, engine-free, no per-tick work: nothing calls this in play yet (NB2+ will), so the city runs exactly as before. Every roll is seeded from the person's id, never from a global random order, so the same ci |
 | `npc_outings.gd` | NPCOutings | S2: what civilians do with their free time, and why no two walks look alike. A life of home -> work -> home leaves the streets empty at midday and in the evening, and gives the player nobody to watch, follow or rob. So people also: run an errand walk to a near |
 | `npc_routine.gd` | NPCRoutine | The rules of a civilian's day, as pure functions of who they are and what time it is (S1, split out of NPCScheduleSystem in S3c). No state: everything is rolled from the person's id, so the same person keeps the same habits. - Shifts on the real clock: most pe |
 | `npc_schedule_system.gd` | NPCScheduleSystem | Civilian daily life: decides where each person should be and when that next changes. Split in S3c into three parts: NPCRoutine the rules (shifts, loiterers, pace, dark routes): pure functions NPCScheduleSystem this: the calendar and the day's decisions NPCStre |
@@ -311,6 +312,7 @@ One line per script: what it is for. Read the file only when you need it; find s
 | `game_rules.gd` | GameRules | How this run plays (O1), chosen at new game, saved with it. difficulty 0 Casual / 1 Normal / 2 Hardcore style 0 Roleplay / 1 Street life / 2 Grind Every tuned number that changes with them is a multiplier read from here. |
 | `gang_data.gd` | GangData | Data contract for a rival gang faction. influence is the stat the player degrades by attacking turf/members/business (Phase 4 Beef Ladder) — reaching 0 zeroes out any standing CONTRACT tier against the player. Decay/combat logic lives in the heat system, not h |
 | `npc_data.gd` | NPCData | Data contract for any NPC (civilian, crew member, cop, rival). Pure data — no behavior. Systems (Phase 0 batch 2) read/write these fields; this resource never decides anything about what happens to them. |
+| `npc_mind_data.gd` | NPCMindData | NB1: who a person is inside, next to NPCData. Pure data, no behaviour: NPCMind (core/systems/npc_mind.gd) rolls, reads and writes it. Made lazily, only for people something has happened to, so 6,000 untouched people cost nothing and are not in the save. Traits |
 | `player_state_data.gd` | PlayerStateData | Data contract for state that exists exactly once in the sim — the player's escalation standing. Split out of NPCData (hardening pass): law_tier and beef_tiers used to live on every NPC with a doc comment saying "only meaningful for the player character" — mean |
 | `territory_data.gd` | TerritoryData | Turf (TR1): the district cut into CELL_M squares; each holds every gang's influence there (0-100). The player's own outfit is the gang id &"player". One entity carries it, so a save keeps the map of who holds what. |
 | `vehicle_data.gd` | VehicleData | A car (V1). Parked along the kerbs at new game; the player can take one. Metres, radians, m/s. Pure data. |
@@ -327,6 +329,12 @@ One line per script: what it is for. Read the file only when you need it; find s
 |---|---|---|
 | `item_catalog.gd` | ItemCatalog | Items (G1): every thing the player can carry, as one data table. Pure data: systems read it; nothing here changes state. kind food / drink / medical / weapon / ammo / gear / seed (BZ1: growing) / chem (BZ4: the lab) / valuable (LT4: loot to pawn or fence; no s |
 | `loot_tables.gd` | LootTables | LT1: what each kind of container holds. A container is filled when you first open it (a seeded roll, so a save reloads the same contents) and refills RESTOCK_DAYS after it was emptied, if the people there can pay for it (E3). Entries: [item, chance, min, max]. |
+
+## data/npc
+
+| file | class | what it is |
+|---|---|---|
+| `archetypes.gd` | Archetypes | NB1: kinds of people, as data. Each archetype gives the range every trait is rolled in (order of GanstoidEnums.MindTrait: bold, sociable, lawful, greedy, curious, patient, paranoid, energetic) and how fast each need runs down per game hour (order of GanstoidEn |
 
 ## data/schemas
 
