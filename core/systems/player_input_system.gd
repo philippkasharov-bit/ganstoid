@@ -420,6 +420,8 @@ func _options(npc: NPCData, state: PlayerStateData) -> Array:
 	var p: NPCData = _world.entities[person].get_component(ComponentNames.NPC) if person != &"" else null
 	if counter != &"":
 		out.append(["Shop here", func() -> Dictionary:
+			if MemorySystem.refuses(state, counter):
+				return {"ok": false, "reason": "store_refused"}   # ME1: you robbed them
 			state.store_id = counter
 			return {}])
 		var fix := WeaponWear.held(state)

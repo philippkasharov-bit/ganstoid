@@ -141,6 +141,9 @@ func _ready() -> void:
 	get_parent().add_child.call_deferred(flash)
 	flash.setup(_world)
 	get_parent().move_child.call_deferred(flash, 0)   # under every HUD piece: it is the world that flashes
+	var barks := BarkView.new()        # ME1: people who know you say so
+	get_parent().add_child.call_deferred(barks)
+	barks.setup(_world)
 	var halo := HaloText.new()         # HT1: short lines float over your head
 	get_parent().add_child.call_deferred(halo)
 	halo.setup(_world)

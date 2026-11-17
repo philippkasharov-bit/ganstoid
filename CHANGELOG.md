@@ -5,6 +5,7 @@ Newest first. The in-game admin panel (F11, Bugs & updates) shows the top of it.
 
 ## 2026-11-17
 
+- AU1: the city has sound, all made by code
 - ROADMAP: the indie mistakes we design against, batches re-ordered
 - JL1: prison you live through (B8)
 - RP3: join a gang and rise in it (B7)

@@ -32,6 +32,7 @@ loading_screen   | debug/shot_loading.gd |
 morning_paper    | debug/shot_main.gd   | --paper
 rank_up_stamp    | debug/shot_main.gd   | --stamp
 action_prompt    | debug/shot_main.gd   | --prompt
+bark_robbed      | debug/shot_main.gd   | --bark
 phone_rivals     | debug/shot_main.gd   | --phone=Rivals
 phone_home       | debug/shot_main.gd   | --phone=home
 minimap_gps      | debug/shot_main.gd   | --gps

@@ -73,6 +73,7 @@ const LINES := {
 	"shift_start": ["Clocking in. Four hours.", "Apron on. Shift started."],
 	"shift_done": ["Shift's over. ${n}, clean.", "Clocked out: ${n} in your pocket, legit."],
 	"bought": ["Paid ${n}.", "${n}, bagged.", "Done. ${n} lighter."],
+	"store_refused": ["\"Get out of my store. I remember you.\"", "\"You! Out, before I call the cops.\""],
 	"closed": ["Shutters down. Opens at seven.", "Closed for the night."],
 	"not_sold_here": ["They don't carry that here."],
 	"no_counter": ["Nobody selling anything here."],

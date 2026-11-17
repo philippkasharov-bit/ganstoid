@@ -96,6 +96,7 @@ static func willingness(world: World, npc: NPCData) -> float:
 	var p: Entity = world.entities.get(PlayerFactory.PLAYER_ENTITY_ID)
 	if p != null:
 		w += Rep.RECRUIT_BONUS[Rep.tier(p.get_component(ComponentNames.PLAYER_STATE))]   # RP1: people want in
+	w += MemorySystem.recruit_bonus(world, npc.id)   # ME1: someone who owes you
 	return minf(w, MAX_WILLINGNESS)
 
 static func recruit(world: World, npc_id: StringName) -> Dictionary:

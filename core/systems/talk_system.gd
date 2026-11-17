@@ -19,6 +19,7 @@ const REFUSED_ADDS := 20.0
 static func small_talk(world: World, me: NPCData, who: NPCData) -> Dictionary:
 	who.trust = minf(1.0, who.trust + 0.1)
 	Traits.deed(world, _state(world), &"talks")
+	MemorySystem.remember(world, _state(world), who.id, "talked")   # ME1
 	if who.trust < 0.3:
 		return {"ok": true, "effect": "talk_cold"}
 	var tip := _tip(world, who)
@@ -45,6 +46,7 @@ static func threaten(world: World, me: NPCData, who: NPCData) -> Dictionary:
 	who.trust = maxf(0.0, who.trust - 0.2)
 	CrimeSystem.broadcast_witnesses(world, me.position, 0.15)
 	_silence(world, who)
+	MemorySystem.remember(world, st, who.id, "threatened")   # ME1
 	return {"ok": true, "effect": "threatened"}
 
 static func pay_off(world: World, me: NPCData, who: NPCData) -> Dictionary:
@@ -54,6 +56,7 @@ static func pay_off(world: World, me: NPCData, who: NPCData) -> Dictionary:
 	Wallet.spend(world, price)
 	who.trust = minf(1.0, who.trust + 0.15)
 	_silence(world, who)
+	MemorySystem.remember(world, _state(world), who.id, "paid")   # ME1
 	return {"ok": true, "effect": "paid_off", "amount": PAYOFF}
 
 ## They forget your face, and a call they were about to make never happens.

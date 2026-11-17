@@ -128,6 +128,22 @@ func _run(main: Node, args: Dictionary) -> void:
 				break
 		for i in 4:
 			await process_frame
+	if args.has("bark"):   # ME1 look: someone you robbed knows you again
+		var bp: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
+		var bs: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
+		for e in driver.world.get_entities_with_component(ComponentNames.NPC).values():
+			var n: NPCData = e.get_component(ComponentNames.NPC)
+			if n != bp and not (n.is_cop or n.is_dealer or n.is_fixer or n.is_crew or n.is_down) and n.gang_id == &"":
+				n.position = bp.position + Vector2(3.0, 1.0)
+				n.indoors = false
+				n.is_busy = true
+				driver.world.reindex_position(n.id)
+				MemorySystem.remember(driver.world, bs, n.id, "robbed")
+				MemorySystem.bark(driver.world, bs, n.id, "That's him! He robbed me!", -1)
+				bs.barks[-1]["until"] = driver.world.tick + 100000
+				break
+		for i in 4:
+			await process_frame
 	if args.has("jail"):   # JL1 look: inside, the prison panel
 		AdminSystem.run(driver.world, "jail", null, driver.world.tick)
 		for i in 4:

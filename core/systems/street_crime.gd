@@ -30,11 +30,13 @@ static func mug(world: World, me: NPCData, state: PlayerStateData, victim: NPCDa
 	if schedule != null:
 		schedule.flee(victim)
 	if brave:
+		MemorySystem.remember(world, state, victim.id, "threatened")   # ME1
 		return {"ok": false, "reason": "victim_ran"}
 	var take := victim.cash
 	victim.cash = 0
 	Wallet.earn_dirty(world, take)
 	Skills.train(world, state, &"theft", 4.0)
+	MemorySystem.remember(world, state, victim.id, "robbed")   # ME1: they won't forget your face
 	return {"ok": true, "effect": "mugged", "amount": take}
 
 ## Enter at a house door: starts the break-in (or says why not).
