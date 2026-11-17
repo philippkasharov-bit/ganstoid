@@ -289,6 +289,22 @@ func _run(main: Node, args: Dictionary) -> void:
 		ps.trade = {"mode": "pawn", "who": pp.home_building_id, "line": "", "tone": 0}
 		for i in 6:
 			await process_frame
+	if args.has("loans"):   # BZ5 look: two people asking, three on the book (one late)
+		var lp: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
+		var ls: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
+		var ids := []
+		for e in driver.world.get_entities_with_component(ComponentNames.NPC).values():
+			var n: NPCData = e.get_component(ComponentNames.NPC)
+			if n != lp and not (n.is_cop or n.is_crew or n.is_dealer or n.is_down) and n.gang_id == &"" and n.position.distance_to(lp.position) < 300.0:
+				ids.append(n.id)
+			if ids.size() == 5:
+				break
+		ls.loan_asks = [{"who": ids[0], "amount": 300, "rate": 0.25}, {"who": ids[1], "amount": 800, "rate": 0.4}]
+		ls.loans = [{"who": ids[2], "principal": 200, "total": 260, "owed": 150, "paid": 110, "day": 0, "due": 7, "status": "paying"},
+			{"who": ids[3], "principal": 500, "total": 650, "owed": 650, "paid": 0, "day": 0, "due": 1, "status": "late"},
+			{"who": ids[4], "principal": 100, "total": 125, "owed": 0, "paid": 125, "day": 0, "due": 7, "status": "paid off"}]
+		for i in 4:
+			await process_frame
 	if args.has("jail"):   # JL1 look: inside, the prison panel
 		AdminSystem.run(driver.world, "jail", null, driver.world.tick)
 		for i in 4:

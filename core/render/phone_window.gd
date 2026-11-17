@@ -17,9 +17,9 @@ const SCREEN_H := 470.0
 const TILES := {"Messages": ["4c9be8", "Ms"], "Contacts": ["5aa469", "Co"], "Hustles": ["e0a33a", "Hu"], "Bank": ["3fae8f", "$"],
 	"Rivals": ["d0544b", "Rv"], "Score": ["8c62d6", "Sc"], "Crib": ["c98a4b", "Cr"], "Jobs": ["4f86c6", "Jb"], "Property": ["8a9aa8", "Pr"],
 	"Gang": ["b2443e", "Gg"], "Crew": ["3f7fd0", "Cw"], "Grow": ["4caf50", "Gr"], "Business": ["2f9c9c", "Bz"], "Connect": ["9c6ad0", "Cn"],
-	"Prices": ["d9a440", "Px"], "Case": ["7a8592", "Cs"], "Paper": ["b8b0a0", "Pa"]}
+	"Prices": ["d9a440", "Px"], "Loans": ["c0603a", "Ln"], "Case": ["7a8592", "Cs"], "Paper": ["b8b0a0", "Pa"]}
 const W := 300.0
-const APPS := [["Messages", "Messages"], ["Contacts", "Contacts"], ["Hustles", "Hustles"], ["Bank", "Bank"], ["Rivals", "Rivals"], ["Score", "Score"], ["Crib", "Crib"], ["Jobs", "Jobs"], ["Property", "Property"], ["Gang", "Gang"], ["Crew", "Crew"], ["Grow", "Grow"], ["Business", "Business"], ["Connect", "Connect"], ["Prices", "Prices"], ["Case", "Case"], ["Paper", "Paper"]]
+const APPS := [["Messages", "Messages"], ["Contacts", "Contacts"], ["Hustles", "Hustles"], ["Bank", "Bank"], ["Rivals", "Rivals"], ["Score", "Score"], ["Crib", "Crib"], ["Jobs", "Jobs"], ["Property", "Property"], ["Gang", "Gang"], ["Crew", "Crew"], ["Grow", "Grow"], ["Business", "Business"], ["Connect", "Connect"], ["Prices", "Prices"], ["Loans", "Loans"], ["Case", "Case"], ["Paper", "Paper"]]
 
 var paper: PaperWindow
 var _world: World
@@ -83,7 +83,7 @@ func _process(delta: float) -> void:
 		return
 	_refresh = 0.4
 	var key := _app + str(state.inbox.size()) + str(state.job_offers.size()) + str(state.hustles) + str(state.rivals.size()) + str(state.known.size())
-	if _app in ["Bank", "Rivals", "Case", "Crew", "Grow", "Business", "Prices"]:
+	if _app in ["Bank", "Rivals", "Case", "Crew", "Grow", "Business", "Prices", "Loans"]:
 		key += str(_world.tick / 60)
 	if key == _key:
 		return
@@ -251,6 +251,25 @@ func _show(state: PlayerStateData) -> void:
 				_rule()
 				_text(HeistSystem.plan_line(_world, state), 16, true)
 				_screen.add_child(_progress(clampf(float(h["work"]) / float(spec[2]), 0.0, 1.0) if h["stage"] in ["working", "getaway"] else clampf(float(h["cased"]) / HeistSystem.CASE_S, 0.0, 1.0)))
+		"Loans":   # BZ5: who wants money, who owes you
+			var me: NPCData = _world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
+			_text("WANT TO BORROW", 13, true)
+			if state.loan_asks.is_empty():
+				_text("Nobody today. People near you ask in the morning.", 13)
+			for i in state.loan_asks.size():
+				var a: Dictionary = state.loan_asks[i]
+				var idx := i
+				_screen.add_child(_button("%s · $%d at %d%% · %s" % [_who(a["who"]), int(a["amount"]), roundi(float(a["rate"]) * 100.0), "pays on time" if LoanSystem.reliability(a["who"]) >= 0.66 else ("usually pays" if LoanSystem.reliability(a["who"]) >= 0.33 else "a risk")], func() -> void: state.ui_loan = {"ask": idx}, Vector2(W, 30)))
+			_rule()
+			_text("THE BOOK", 13, true)
+			if state.loans.is_empty():
+				_text("Nobody owes you.", 13)
+			for l in state.loans:
+				var e: Entity = _world.entities.get(l["who"])
+				var n: NPCData = e.get_component(ComponentNames.NPC) if e != null else null
+				var where := NextStep.where(me.position, n.position) if n != null and int(l["owed"]) > 0 else ""
+				_text("%s · owes $%d of $%d · %s%s" % [_who(l["who"]), int(l["owed"]), int(l["total"]), l["status"], "  ·  " + where if where != "" else ""], 13, String(l["status"]) == "late")
+			_text("Late? Find them and press E.", 12)
 		"Prices":   # QL3: your asking price, what it's worth, how fast it'll move
 			var me: NPCData = _world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
 			_text("Your corners and door staff sell at your price: ask more, fewer bite.", 13)
@@ -516,6 +535,9 @@ func _badge(state: PlayerStateData, app: String) -> String:
 			return str(n) if n > 0 else ""
 		"Crew":
 			return str(state.crew_asks.size()) if not state.crew_asks.is_empty() else ""
+		"Loans":
+			var late := state.loans.filter(func(l: Dictionary) -> bool: return String(l["status"]) == "late").size()
+			return str(late) if late > 0 else (str(state.loan_asks.size()) if not state.loan_asks.is_empty() else "")
 		"Case":
 			return "!" if not state.trial.is_empty() else ""
 		"Grow":

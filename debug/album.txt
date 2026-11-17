@@ -46,6 +46,7 @@ phone_prices     | debug/shot_main.gd   | --connect --grow --phone=Prices
 who_is_who       | debug/shot_main.gd   | --rings --zoom=1.6
 deal_window      | debug/shot_main.gd   | --deal
 pawn_window      | debug/shot_main.gd   | --pawn
+phone_loans      | debug/shot_main.gd   | --loans --phone=Loans
 phone_rivals     | debug/shot_main.gd   | --phone=Rivals
 phone_home       | debug/shot_main.gd   | --phone=home
 minimap_gps      | debug/shot_main.gd   | --gps

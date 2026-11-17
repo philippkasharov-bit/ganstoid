@@ -5,6 +5,8 @@ Newest first. The in-game admin panel (F11, Bugs & updates) shows the top of it.
 
 ## 2026-11-17
 
+- CA1 fix: the crew loyalty check uses loyal crew
+- LT4 fix: empty furniture no longer has to be searched over and over
 - UI7: a modern phone, who's who on the street, deal and pawn windows
 - LT4: search the furniture, a real loot list, deal it yourself
 - QL3: quality in street words, strains that differ, your own prices

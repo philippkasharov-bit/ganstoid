@@ -108,8 +108,8 @@ static func press(world: World, state: PlayerStateData) -> Dictionary:
 ## Moves press and glassware from the bag into the lab at home.
 static func install(_world: World, state: PlayerStateData) -> Dictionary:
 	var put := 0
-	for id in [&"pill_press", &"lab_glass"]:
-		var slot := "press" if id == &"pill_press" else "glass"
+	for id in [&"pill_press", &"lab_glass", &"print_press"]:
+		var slot: String = {&"pill_press": "press", &"lab_glass": "glass", &"print_press": "printer"}[id]
 		if state.inventory.has(id) and not state.lab.get(slot, false):
 			state.lab[slot] = true
 			state.inventory[id] = int(state.inventory[id]) - 1

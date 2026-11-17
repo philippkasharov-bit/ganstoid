@@ -32,6 +32,8 @@ const STORIES := {
 	"den_raided": [8, "VICE RAIDS GAMBLING DEN IN {HOOD}", "Police shut down an after-hours game behind a {hood} night spot. The owners say they knew nothing."],
 	"lab_sting": [9, "DRUG STING AT {HOOD} WAREHOUSE", "Undercover officers sprang a trap at a {hood} warehouse last night. A buyer fled on foot."],
 	"lab_fire": [7, "CHEMICAL FIRE IN {HOOD}", "Firefighters in {hood} found lab glassware in the ashes of a small blaze."],
+	"fake_spotted": [7, "FAKE BILLS TURN UP IN {HOOD}", "A {hood} clerk caught a counterfeit hundred at the register. Police warn shopkeepers to check."],
+	"loan_example": [8, "MAN BEATEN OVER DEBT IN {HOOD}", "A {hood} resident was badly beaten in the street. Neighbours whisper about money owed."],
 	"released": [4, "LOCAL MAN WALKS FREE", "Released from county jail yesterday. Neighbours in {hood} are not thrilled."],
 	"business_bought": [3, "NEW OWNER FOR {HOOD} BUSINESS", "A {hood} business changed hands for ${n}. The buyer paid cash."],
 }

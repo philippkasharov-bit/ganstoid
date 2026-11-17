@@ -474,6 +474,11 @@ func _options(npc: NPCData, state: PlayerStateData) -> Array:
 		out.append(["Talk", func() -> Dictionary: return TalkSystem.small_talk(_world, npc, p)])
 		out.append(["Threaten them into silence", func() -> Dictionary: return TalkSystem.threaten(_world, npc, p)])
 		out.append(["Pay them to forget you ($%d)" % TalkSystem.PAYOFF, func() -> Dictionary: return TalkSystem.pay_off(_world, npc, p)])
+		if LoanSystem.owes(state, p.id):   # BZ5: they owe you
+			var debt := LoanSystem.loan_of(state, p.id)
+			out.append(["Collect what they owe ($%d)" % int(debt["owed"]), func() -> Dictionary: return LoanSystem.collect(_world, state, p)])
+			out.append(["Lean on them (they'll pay double)", func() -> Dictionary: return LoanSystem.lean_on(_world, npc, state, p)])
+			out.append(["Make an example of them", func() -> Dictionary: return LoanSystem.make_example(_world, npc, state, p)])
 		if not p.is_dealer and [&"weed", &"pills", &"meth", &"coke", &"heroin"].any(func(g: StringName) -> bool: return int(state.inventory.get(g, 0)) > 0):
 			var buyer_id: StringName = p.id
 			out.append(["Deal... (sell them something)", func() -> Dictionary: return TradeSystem.open(state, "deal", buyer_id)])   # LT4/UI7
@@ -623,10 +628,16 @@ func _find_counter(position: Vector2) -> StringName:
 func _venue_options(out: Array, state: PlayerStateData, building_id: StringName) -> void:
 	var counter_e: Entity = _world.entities.get(building_id)
 	if counter_e == null or counter_e.get_component(ComponentNames.BUILDING) == null:   # a dealer, not a building
+		if state.inventory.has(&"fake_bill"):   # BZ5
+			out.append(["Sell your fake bills (%d)" % int(state.inventory[&"fake_bill"]), func() -> Dictionary: return Rackets.sell_fakes(_world, state)])
 		if Fence.worth(state, Fence.FENCE_SHARE) > 0:
 			out.append(["Fence your stolen goods... (up to $%d, dirty)" % Fence.worth(state, Fence.FENCE_SHARE), func() -> Dictionary: return TradeSystem.open(state, "fence", building_id)])
 		return
 	var cb: BuildingData = counter_e.get_component(ComponentNames.BUILDING)
+	if state.inventory.has(&"fake_bill") and ShopSystem.is_open(_world, building_id):   # BZ5
+		out.append(["Break a fake $100 here", func() -> Dictionary: return Rackets.pass_bill(_world, _world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC), state, building_id), "%d%% they spot it" % roundi(Rackets.spot_chance(DrugLabSystem.stars(state, &"fake_bill")) * 100.0)])
+	if cb.trade == &"chop shop" and Rackets.chop_car(_world, cb) != null:
+		out.append(["Sell them the car outside ($%d)" % Rackets.chop_price(Rackets.chop_car(_world, cb)), func() -> Dictionary: return Rackets.chop(_world, state, cb)])
 	if cb.trade == &"pawn shop" and ShopSystem.is_open(_world, building_id) and Fence.worth(state, Fence.PAWN_SHARE) > 0:   # LT4
 		out.append(["Pawn your valuables... (up to $%d, clean)" % Fence.worth(state, Fence.PAWN_SHARE), func() -> Dictionary: return TradeSystem.open(state, "pawn", building_id)])
 	if DrugLabSystem.can_pick_up(_world, state, building_id):   # BZ4
@@ -676,7 +687,9 @@ func _grow_options(out: Array, state: PlayerStateData) -> void:
 	var stash := int(g.get("stash", {}).get("units", 0))
 	if stash > 0:
 		out.append(["Pick up %d bags from the stash" % stash, func() -> Dictionary: return GrowSystem.pick_up(_world, state)])
-	if state.inventory.has(&"pill_press") or state.inventory.has(&"lab_glass"):   # BZ4: the lab
+	if state.lab.get("printer", false) and state.inventory.has(&"ink_paper"):   # BZ5
+		out.append(["Print fake money (%d paper)" % int(state.inventory[&"ink_paper"]), func() -> Dictionary: return Rackets.print_money(_world, state)])
+	if state.inventory.has(&"pill_press") or state.inventory.has(&"lab_glass") or state.inventory.has(&"print_press"):   # BZ4: the lab
 		out.append(["Set up your lab gear", func() -> Dictionary: return DrugLabSystem.install(_world, state)])
 	if state.lab.get("press", false) and state.inventory.has(&"pill_powder"):
 		out.append(["Press pills (%d powder)" % int(state.inventory[&"pill_powder"]), func() -> Dictionary: return DrugLabSystem.press(_world, state)])

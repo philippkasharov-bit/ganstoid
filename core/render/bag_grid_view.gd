@@ -108,7 +108,8 @@ const SHORT := {&"water": "H2O", &"soda": "SODA", &"coffee": "JOE", &"chips": "C
 	&"pill_press": "PRESS", &"lab_glass": "GLASS", &"pill_powder": "POWDR", &"cold_meds": "MEDS",   # BZ4
 	&"walkman": "WLKMN", &"pager": "PAGER", &"cd_player": "DISC", &"brick_phone": "PHONE", &"camcorder": "CAM", &"vcr": "VCR", &"tv": "TV",
 	&"boombox": "BOOM", &"game_console": "GAME", &"gold_chain": "CHAIN", &"ring": "RING", &"watch": "WATCH", &"pearls": "PEARL",
-	&"jordans": "JRDNS", &"leather_jacket": "JACKT", &"baseball_cards": "CARDS", &"cigarettes": "CIGS", &"liquor": "BOOZE", &"cash_tin": "CAN$"}   # LT4
+	&"jordans": "JRDNS", &"leather_jacket": "JACKT", &"baseball_cards": "CARDS", &"cigarettes": "CIGS", &"liquor": "BOOZE", &"cash_tin": "CAN$",   # LT4
+	&"print_press": "PRESS", &"ink_paper": "INK", &"fake_bill": "$100?"}   # BZ5
 
 static func _short(id: StringName) -> String:
 	return SHORT.get(id, String(id).left(5).to_upper())

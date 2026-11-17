@@ -12,6 +12,7 @@ const DRUGS := {
 	&"meth": ["Garbage", "Dirty", "Clear", "Glass", "Pure glass"],
 	&"coke": ["Baking soda", "Stepped-on", "Street", "Fishscale", "Uncut"],
 	&"heroin": ["Garbage", "Cut", "Brown", "Tar", "China white"],
+	&"fake_bill": ["Monopoly money", "Obvious", "Passable", "Good paper", "Superbill"],   # BZ5
 }
 const STAFF := ["Green", "Handy", "Solid", "Skilled", "A pro"]
 const VENUE := ["Dive", "Decent", "Nice", "Hot spot", "The place to be"]

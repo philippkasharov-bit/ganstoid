@@ -60,6 +60,9 @@ const ITEMS := {
 	&"cigarettes": {"size": Vector2i(1, 1), "stack": 5, "weight": 0.2, "name": "Carton of cigarettes", "kind": "valuable", "price": 25},
 	&"liquor":     {"size": Vector2i(1, 2), "stack": 1, "weight": 1.0, "name": "Bottle of liquor", "kind": "valuable", "price": 22},
 	&"cash_tin":   {"size": Vector2i(1, 1), "stack": 1, "weight": 0.3, "name": "Coffee can of cash", "kind": "valuable", "price": 160},
+	&"print_press": {"size": Vector2i(2, 2), "stack": 1, "weight": 8.0, "name": "Printing press", "kind": "gear", "price": 1800, "sold_at": "dealer"},
+	&"ink_paper":  {"size": Vector2i(1, 1), "stack": 10, "weight": 0.4, "name": "Paper and ink", "kind": "chem", "price": 40, "sold_at": "workshop"},
+	&"fake_bill":  {"size": Vector2i(1, 1), "stack": 50, "weight": 0.0, "name": "Fake $100 bill", "kind": "fake", "price": 0},
 	&"ammo":    {"size": Vector2i(1, 1), "stack": 1, "weight": 0.3, "name": "Box of 9 mm (12)", "kind": "ammo", "price": 40, "sold_at": "dealer", "rounds": 12},
 }
 
