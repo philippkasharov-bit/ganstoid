@@ -115,6 +115,10 @@ extends Resource
 var job_offers: Array = []                      # JB1: offers on screen (not saved)
 @export var explored: PackedByteArray = PackedByteArray()   # MP2: fog of war, one bit per ExplorationSystem cell
 @export var known: Dictionary = {}                 # MP2: dealer and fixer ids you have seen -> "dealer" / "fixer"
+@export var crib: int = 0                         # CR1: home tier (CribSystem.TIERS)
+@export var crib_day: int = -1000000
+@export var trophies: Array = []                  # CR1: finished scores [{what, take, day}]
+var ui_crib: bool = false                         # CR1: the phone or the door asked for an upgrade (not saved)
 @export var heist: Dictionary = {}                # HS1: the score you are on {kind, at, target, where, take, guards, complication, stage, cased, known, from, until, work, alarm}
 @export var heist_day: int = -1000000              # HS1: the day the last score was offered
 @export var turf_push: Dictionary = {}            # CW1: a gang's push on one of your blocks {cell, gang, until, sent, ko, seen_down, squad}

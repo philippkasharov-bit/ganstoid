@@ -10,7 +10,7 @@ const ACTION := &"phone"
 const SCREEN := Color(0.62, 0.74, 0.47)
 const INK := Color(0.08, 0.12, 0.06)
 const W := 300.0
-const APPS := [["Messages", "Messages"], ["Contacts", "Contacts"], ["Hustles", "Hustles"], ["Bank", "Bank"], ["Rivals", "Rivals"], ["Score", "Score"], ["Paper", "Paper"]]
+const APPS := [["Messages", "Messages"], ["Contacts", "Contacts"], ["Hustles", "Hustles"], ["Bank", "Bank"], ["Rivals", "Rivals"], ["Score", "Score"], ["Crib", "Crib"], ["Paper", "Paper"]]
 
 var paper: PaperWindow
 var _world: World
@@ -149,6 +149,23 @@ func _show(state: PlayerStateData) -> void:
 			_text("LAST 7 MORNINGS", 14, true)
 			_screen.add_child(_spark(state.cash_history + [me2.cash]))
 			_text("Dirty money draws the police when they search you. Clean it through a business you own.", 14)
+		"Crib":   # CR1
+			_text("YOUR CRIB: %s" % CribSystem.TIERS[state.crib].to_upper(), 17, true)
+			for t in range(1, state.crib + 1):
+				for perk in CribSystem.perks(t):
+					_text("+ " + perk, 14)
+			if state.crib + 1 < CribSystem.TIERS.size():
+				var n := state.crib + 1
+				_rule()
+				_text("NEXT: %s  $%d%s" % [CribSystem.TIERS[n], CribSystem.COST[n], "  (needs %s)" % RankSystem.name_of(CribSystem.RANK[n]) if CribSystem.RANK[n] > state.rank else ""], 16, true)
+				for perk in CribSystem.perks(n):
+					_text("  " + perk, 14)
+				_screen.add_child(_button("Upgrade", func() -> void: state.ui_crib = true, Vector2(W, 34)))
+			if not state.trophies.is_empty():
+				_rule()
+				_text("TROPHIES", 15, true)
+				for tr in state.trophies.slice(-5):
+					_text("%s  $%d  (day %d)" % [tr["what"], tr["take"], int(tr["day"]) + 1], 14)
 		"Score":   # HS1: the plan
 			var h := state.heist
 			if h.is_empty():

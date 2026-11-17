@@ -103,6 +103,9 @@ const LINES := {
 	"lift_lost": ["Lost them.", "They got away from you.", "Too far back. Gone."],
 	"rival_coming": ["{n} of them, coming your way.", "Here they come: {n}.", "{n} shapes coming fast."],   # RV1
 	"rival_new": ["New man on those corners. He knows your name already.", "Someone stepped up. He's heard about you."],
+	"crib_up": ["Moved up. ${n} well spent.", "The place looks like something now."],   # CR1
+	"crib_rank": ["Nobody rents that to a nobody. Rank up first.", "Not with your name. Not yet."],
+	"crib_max": ["Can't get bigger than this.", "This is as big as it gets."],
 	"heist_started": ["Go. Fast and quiet.", "Doing it. Watch the street.", "Clock's running."],   # HS1
 	"heist_not_yet": ["Not yet. Wait for the window.", "Too early. It's not on yet."],
 	"no_heist": ["Nothing on here.", "No score here."],

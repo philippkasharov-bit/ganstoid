@@ -122,6 +122,9 @@ static func run(world: World, cmd: String, arg: Variant, tick: int) -> String:
 			if got:
 				state.heist["from"] = tick   # on right now
 			return "score offered" if got else "no target found"
+		"crib_up":
+			state.crib = mini(state.crib + 1, CribSystem.TIERS.size() - 1)
+			return "crib: %s" % CribSystem.TIERS[state.crib]
 		"paper_now":
 			state.paper = NewsSystem.print_paper(state, HustleSystem.day_of(tick))
 			state.paper_serial += 1

@@ -176,6 +176,7 @@ static func advance(world: World, state: PlayerStateData, me: NPCData, tick: int
 				var take := int(h["take"])
 				Wallet.earn_dirty(world, take)
 				Rep.add(state, 15.0)
+				CribSystem.add_trophy(state, String(KINDS[h["kind"]][0]), take, HustleSystem.day_of(tick))   # CR1
 				NewsSystem.note_story(state, "heist_" + String(h["kind"]), "$%d" % take, at)
 				PhoneSystem.push(world, state, "Fixer", "Clean. $%d. People will talk about this one." % take)
 				StampView.put(state, "SCORE!", "+$%d" % take, UiTheme.GOOD)

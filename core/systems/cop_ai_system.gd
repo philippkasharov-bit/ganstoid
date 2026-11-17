@@ -330,7 +330,7 @@ func _arrest(player_npc: NPCData, player_state: PlayerStateData) -> void:
 		for id in _alerted.keys():
 			_stand_down(id)
 		return
-	var seized := Wallet.seize_dirty(_world, ARREST_SEIZE_FRACTION)  # batch 24
+	var seized := Wallet.seize_dirty(_world, ARREST_SEIZE_FRACTION * (0.5 if player_state.crib >= CribSystem.SAFE_TIER else 1.0))  # batch 24; CR1: the safe
 	StreetTalk.say_key(_world, player_state, "arrested_seized" if seized > 0 else "arrested", seized)
 	StreetTalk._count(_world, player_state, "arrested_seized" if seized > 0 else "arrested", seized)   # NP1: it makes the paper
 	if player_npc.home_building_id != &"" and _world.entities.has(player_npc.home_building_id):

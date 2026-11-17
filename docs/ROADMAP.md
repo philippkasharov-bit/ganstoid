@@ -44,6 +44,7 @@ Status: [x] done, [~] partly, [ ] not started.
 - [x] RV1 rivals with names · RP1 street reputation · CW1 corner war and pushes
 - [x] UI1-UI6: pager, status card, stamps, prompts, title screen, layout mode (F10), motion and charts
 - [x] HS1 the big score: store, stash house, armoured van; case it, crew roles, alarm, getaway
+- [x] CR1 your crib: Mattress, Pad, Spot, Stash house; rest, safe, workbench, crew hangout, trophies, home laundering
 - [x] AD1 admin panel (F11) with bug test, bugs and updates · QA6 test index and code map
 
 ## Next batches (in order unless Phil says otherwise)
@@ -51,7 +52,7 @@ Status: [x] done, [~] partly, [ ] not started.
 | # | Batch | What the player gets | Size |
 |---|---|---|---|
 | B1 | ~~The big score (HS1)~~ **done** · | Rumours lead to heists (armoured van, stash house, jewellery store); case it, pick crew roles, get a car and gear, do it live | 2-3 sessions |
-| B2 | **Your crib (CR1)** | Upgrade home from mattress to stash house: safe, workbench, trophies, crew hanging out | 1-2 |
+| B2 | ~~Your crib (CR1)~~ **done** · | Upgrade home from mattress to stash house: safe, workbench, trophies, crew hanging out | 1-2 |
 | B3 | **Camera (CM1)** | Over-the-shoulder view on a key (Phil: no first person) | 1 |
 | B4 | **Visuals: people (VS1)** | Better NPC figures (shared rigged models, variety), the biggest visual gap | 2 |
 | B5 | **Visuals: streets (VS2)** | Parked cars, clutter, fences, graffiti, kerbs, worn ground; flats and shops less boxy | 2 |

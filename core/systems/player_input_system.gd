@@ -431,6 +431,14 @@ func _options(npc: NPCData, state: PlayerStateData) -> Array:
 			out.append(["Work a %d-hour shift ($%d/h, clean)" % [SHIFT_HOURS, SHIFT_PAY_PER_HOUR], func() -> Dictionary:
 				state.work_until_tick = _world.tick + SimClock.hours(SHIFT_HOURS)
 				return {"ok": true, "effect": "shift_start"}])
+	if npc.home_building_id != &"" and _world.entities.has(npc.home_building_id) and pos.distance_to((_world.entities[npc.home_building_id].get_component(ComponentNames.BUILDING) as BuildingData).position) <= CrimeSystem.INTERACT_RADIUS:   # CR1
+		if state.crib + 1 < CribSystem.TIERS.size():
+			out.append(["Upgrade your crib to %s ($%d)" % [CribSystem.TIERS[state.crib + 1], CribSystem.COST[state.crib + 1]], func() -> Dictionary: return CribSystem.upgrade(_world, state)])
+		var worn := WeaponWear.held(state)
+		if state.crib >= CribSystem.BENCH_TIER and worn != &"" and WeaponWear.repair_cost(state, worn) > 0:
+			out.append(["Fix your %s at the bench" % ItemCatalog.item(worn)["name"].to_lower(), func() -> Dictionary:
+				state.wear[worn] = 1.0
+				return {"ok": true, "effect": "repaired", "amount": 0}])
 	if not state.heist.is_empty() and state.heist["stage"] in ["rumour", "cased"] and pos.distance_to(state.heist["at"]) <= HeistSystem.WORK_M:   # HS1
 		out.append(["Start the score", func() -> Dictionary: return HeistSystem.start(_world, state, npc)])
 	if _downed_within(pos, Vicinity.REACH_M) != null:   # LT3: their pockets show in Nearby (I)

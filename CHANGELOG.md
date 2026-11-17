@@ -5,6 +5,7 @@ Newest first. The in-game admin panel (F11, Bugs & updates) shows the top of it.
 
 ## 2026-11-17
 
+- HS1: the big score (B1)
 - AD1/QA6: admin panel, test and code indexes, the roadmap
 - DR1/CH1: doors you can see; lose police by breaking line of sight
 - UI6: keys and layout mode for the HUD, motion and charts, calmer pushes
@@ -108,8 +109,3 @@ Newest first. The in-game admin panel (F11, Bugs & updates) shows the top of it.
 - TX3: carpet, bigger kitchen tiles, filmic light, a real ground
 - TX2: the city's textures
 - TX1: surface materials and world-mapped detail textures
-- T3: turf and money maps over the 3D city
-- T2: capture points are streets
-- Fix: zebras and lamps where they belong; the player as a person
-- P1 polish: warm lamp light, closer camera, no box over the player
-- uid files for the new scripts
