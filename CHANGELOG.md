@@ -5,6 +5,7 @@ Newest first. The in-game admin panel (F11, Bugs & updates) shows the top of it.
 
 ## 2026-11-17
 
+- LT4: search the furniture, a real loot list, deal it yourself
 - QL3: quality in street words, strains that differ, your own prices
 - BZ4: the drug chain: press, cook, import
 - BZ3: night spots, back rooms and a seat at the table

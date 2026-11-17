@@ -80,7 +80,7 @@ static func stack_of(id: StringName) -> int:
 static func stock(sold_at: String) -> Array[StringName]:
 	var out: Array[StringName] = []
 	for id in ITEMS:
-		if ITEMS[id]["sold_at"] == sold_at:
+		if ITEMS[id].get("sold_at", "") == sold_at:   # LT4: valuables are sold nowhere
 			out.append(id)
 	return out
 

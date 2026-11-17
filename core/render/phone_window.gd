@@ -1,4 +1,7 @@
-## PH1: the phone (P): a 90s brick phone, the hub for everything. Home screen
+## PH1/UI7: the phone (P), the hub for everything. UI7 (Phil: "a more
+## modern phone, break the 90s a little so it's easy to read"): a dark
+## screen that scrolls, a status bar, an app grid of coloured tiles with red
+## badges for what needs you (messages, crew asks, a trial, the grow). Home screen
 ## of apps: Messages (the inbox), Contacts (fixers and dealers you have met:
 ## call a fixer for work from anywhere), Hustles, Bank, Rivals (who wants
 ## you and how badly), Paper. It only reads the world; a call or taking a
@@ -7,8 +10,14 @@ class_name PhoneWindow
 extends UiWindow
 
 const ACTION := &"phone"
-const SCREEN := Color(0.62, 0.74, 0.47)
-const INK := Color(0.08, 0.12, 0.06)
+const SCREEN := Color("10131a")
+const INK := Color("e9edf2")
+const SCREEN_H := 470.0
+## UI7: each app's tile colour and its two-letter mark.
+const TILES := {"Messages": ["4c9be8", "Ms"], "Contacts": ["5aa469", "Co"], "Hustles": ["e0a33a", "Hu"], "Bank": ["3fae8f", "$"],
+	"Rivals": ["d0544b", "Rv"], "Score": ["8c62d6", "Sc"], "Crib": ["c98a4b", "Cr"], "Jobs": ["4f86c6", "Jb"], "Property": ["8a9aa8", "Pr"],
+	"Gang": ["b2443e", "Gg"], "Crew": ["3f7fd0", "Cw"], "Grow": ["4caf50", "Gr"], "Business": ["2f9c9c", "Bz"], "Connect": ["9c6ad0", "Cn"],
+	"Prices": ["d9a440", "Px"], "Case": ["7a8592", "Cs"], "Paper": ["b8b0a0", "Pa"]}
 const W := 300.0
 const APPS := [["Messages", "Messages"], ["Contacts", "Contacts"], ["Hustles", "Hustles"], ["Bank", "Bank"], ["Rivals", "Rivals"], ["Score", "Score"], ["Crib", "Crib"], ["Jobs", "Jobs"], ["Property", "Property"], ["Gang", "Gang"], ["Crew", "Crew"], ["Grow", "Grow"], ["Business", "Business"], ["Connect", "Connect"], ["Prices", "Prices"], ["Case", "Case"], ["Paper", "Paper"]]
 
@@ -19,6 +28,7 @@ var _hiring := ""   # BZ2/BZ3: the one job on the Business page whose candidates
 var _app := ""
 var _key := ""
 var _refresh := 0.0
+var _seen_inbox := 0   # UI7: messages read (the badge counts the rest)
 
 func setup(world: World, at: Vector2) -> void:
 	setup_window("phone", "Phone", at, Vector2(W + 24, 0))
@@ -26,12 +36,18 @@ func setup(world: World, at: Vector2) -> void:
 	var lcd := PanelContainer.new()
 	var box := StyleBoxFlat.new()
 	box.bg_color = SCREEN
-	box.set_corner_radius_all(4)
-	box.set_content_margin_all(10)
+	box.set_corner_radius_all(18)
+	box.set_content_margin_all(12)
+	box.border_color = Color("2a2f3a")
+	box.set_border_width_all(2)
 	lcd.add_theme_stylebox_override("panel", box)
-	_screen.add_theme_constant_override("separation", 4)
-	_screen.custom_minimum_size = Vector2(W, 360)
-	lcd.add_child(_screen)
+	_screen.add_theme_constant_override("separation", 6)
+	_screen.custom_minimum_size = Vector2(W, 0)
+	var scroll := ScrollContainer.new()   # UI7: long pages scroll instead of running off the screen
+	scroll.custom_minimum_size = Vector2(W + 10, SCREEN_H)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.add_child(_screen)
+	lcd.add_child(scroll)
 	body.add_child(lcd)
 	body.add_child(UiTheme.label("P: phone   Esc: back / close", UiTheme.FONT_SMALL, UiTheme.DIM))
 	CharacterWindow._bind(ACTION, KEY_P)
@@ -83,21 +99,20 @@ func _show(state: PlayerStateData) -> void:
 	tw.tween_property(_screen, "modulate:a", 1.0, 0.18)
 	tw.tween_property(_screen, "position:x", 0.0, 0.18).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 	var hours := SimClock.day_fraction(_world.tick) * 24.0
-	_text("%s     %02d:%02d   ▮▮▮" % ["HOME" if _app == "" else _app.to_upper(), int(hours), int(fmod(hours, 1.0) * 60.0)], 16)
-	_rule()
+	_status_bar(hours)
+	if _app != "":
+		_app_title(_app)
 	match _app:
 		"":
 			var grid := GridContainer.new()
-			grid.columns = 2
-			grid.add_theme_constant_override("h_separation", 6)
-			grid.add_theme_constant_override("v_separation", 6)
+			grid.columns = 4
+			grid.add_theme_constant_override("h_separation", 10)
+			grid.add_theme_constant_override("v_separation", 12)
 			for a in APPS:
-				var label: String = a[0]
-				if a[0] == "Messages" and not state.inbox.is_empty():
-					label += " (%d)" % state.inbox.size()
-				grid.add_child(_button(label, func() -> void: _open(a[1]), Vector2(W * 0.5 - 4, 48)))
+				grid.add_child(_tile(a[0], a[1], _badge(state, a[0])))
 			_screen.add_child(grid)
 		"Messages":
+			_seen_inbox = state.inbox.size()
 			if state.inbox.is_empty():
 				_text("No messages.")
 			for i in range(state.inbox.size() - 1, maxi(-1, state.inbox.size() - 9), -1):
@@ -390,9 +405,6 @@ func _show(state: PlayerStateData) -> void:
 				_text("%s  (%s)" % [r["name"], _gang(g)], 16, true)
 				_screen.add_child(_grudge(float(r["grudge"])))   # UI6: a real bar, the stages marked
 				_text("%s  ·  %s%s" % [["calm", "talking", "hunting you", "watching your home", "coming for you"][int(r["stage"])], r["temper"], "  ·  scars %d" % int(r["scars"]) if int(r["scars"]) > 0 else ""], 14)
-	if _app != "":
-		_rule()
-		_screen.add_child(_button("< Back", func() -> void: _open(""), Vector2(80, 30)))
 	reset_size()
 
 ## BZ2: someone's name.
@@ -476,14 +488,96 @@ func _gang(g: StringName) -> String:
 	var e: Entity = _world.entities.get(g)
 	return e.get_component(ComponentNames.GANG).display_name if e != null else String(g)
 
+## UI7: time on the left, signal and battery on the right.
+func _status_bar(hours: float) -> void:
+	var row := HBoxContainer.new()
+	row.custom_minimum_size.x = W
+	var t := _label("%02d:%02d" % [int(hours), int(fmod(hours, 1.0) * 60.0)], 12, true)
+	t.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(t)
+	row.add_child(_label("▂▄▆█  ■■■▢", 11))
+	_screen.add_child(row)
+
+## UI7: the open app's name with a way back.
+func _app_title(app: String) -> void:
+	var row := HBoxContainer.new()
+	var back := _button("‹", func() -> void: _open(""), Vector2(30, 28))
+	row.add_child(back)
+	var l := _label(app, 18, true)
+	l.add_theme_color_override("font_color", Color(TILES.get(app, ["e9edf2"])[0]).lightened(0.35))
+	row.add_child(l)
+	_screen.add_child(row)
+
+## UI7: what needs you in an app: a count, "!" or "".
+func _badge(state: PlayerStateData, app: String) -> String:
+	match app:
+		"Messages":
+			var n := state.inbox.size() - _seen_inbox
+			return str(n) if n > 0 else ""
+		"Crew":
+			return str(state.crew_asks.size()) if not state.crew_asks.is_empty() else ""
+		"Case":
+			return "!" if not state.trial.is_empty() else ""
+		"Grow":
+			return "!" if GrowSystem.need_line(_world, state) != "" else ""
+		"Connect":
+			return "!" if not state.shipment.is_empty() else ""
+		"Jobs":
+			return str(state.job_offers.size()) if not state.job_offers.is_empty() else ""
+	return ""
+
+## UI7: an app tile: a coloured rounded square with its mark, the name under it, a red badge.
+func _tile(name: String, app: String, badge: String) -> Control:
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 3)
+	var spec: Array = TILES.get(name, ["5a6472", name.left(2)])
+	var b := Button.new()
+	b.text = spec[1]
+	b.custom_minimum_size = Vector2(60, 56)
+	b.focus_mode = Control.FOCUS_NONE
+	b.add_theme_font_size_override("font_size", 20)
+	var face := StyleBoxFlat.new()
+	face.bg_color = Color(spec[0])
+	face.set_corner_radius_all(16)
+	var hover := face.duplicate()
+	hover.bg_color = Color(spec[0]).lightened(0.15)
+	b.add_theme_stylebox_override("normal", face)
+	b.add_theme_stylebox_override("hover", hover)
+	b.add_theme_stylebox_override("pressed", hover)
+	for c in ["font_color", "font_hover_color", "font_pressed_color"]:
+		b.add_theme_color_override(c, Color.WHITE)
+	b.pressed.connect(func() -> void: _open(app))
+	if badge != "":
+		var dot := Label.new()
+		dot.text = badge
+		dot.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		dot.add_theme_font_size_override("font_size", 11)
+		dot.add_theme_color_override("font_color", Color.WHITE)
+		var red := StyleBoxFlat.new()
+		red.bg_color = Color("e5483e")
+		red.set_corner_radius_all(9)
+		red.set_content_margin_all(2)
+		dot.add_theme_stylebox_override("normal", red)
+		dot.custom_minimum_size = Vector2(18, 18)
+		dot.position = Vector2(46, -6)
+		b.add_child(dot)
+	col.add_child(b)
+	var l := Label.new()
+	l.text = name
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.add_theme_font_size_override("font_size", 11)
+	l.add_theme_color_override("font_color", Color(INK, 0.85))
+	l.custom_minimum_size.x = 60
+	col.add_child(l)
+	return col
+
 func _label(t: String, size: int = 15, bold := false) -> Label:
 	var l := Label.new()
 	l.text = t
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	l.custom_minimum_size.x = 120
-	l.add_theme_font_override("font", UiTheme.font("lcd"))
-	l.add_theme_font_size_override("font_size", size + 3)
-	l.add_theme_color_override("font_color", INK if not bold else Color(0.02, 0.05, 0.02))
+	l.add_theme_font_size_override("font_size", size - 1)
+	l.add_theme_color_override("font_color", INK if bold else Color(INK, 0.78))
 	return l
 
 func _text(t: String, size: int = 15, bold := false) -> void:
@@ -493,7 +587,7 @@ func _text(t: String, size: int = 15, bold := false) -> void:
 
 func _rule() -> void:
 	var r := ColorRect.new()
-	r.color = Color(INK, 0.5)
+	r.color = Color(INK, 0.12)
 	r.custom_minimum_size = Vector2(W, 1)
 	_screen.add_child(r)
 
@@ -502,15 +596,13 @@ func _button(t: String, on: Callable, min_size: Vector2) -> Button:
 	b.text = t
 	b.custom_minimum_size = min_size
 	b.focus_mode = Control.FOCUS_NONE
-	b.add_theme_font_override("font", UiTheme.font("lcd"))
-	b.add_theme_font_size_override("font_size", 18)
-	var flat := StyleBoxFlat.new()
-	flat.bg_color = Color(INK, 0.12)
-	flat.border_color = Color(INK, 0.6)
-	flat.set_border_width_all(1)
-	flat.set_corner_radius_all(3)
+	b.add_theme_font_size_override("font_size", 14)
+	var flat := StyleBoxFlat.new()   # UI7: soft cards, not LCD boxes
+	flat.bg_color = Color(INK, 0.08)
+	flat.set_corner_radius_all(10)
+	flat.set_content_margin_all(6)
 	var hover := flat.duplicate()
-	hover.bg_color = Color(INK, 0.25)
+	hover.bg_color = Color(INK, 0.16)
 	b.add_theme_stylebox_override("normal", flat)
 	b.add_theme_stylebox_override("hover", hover)
 	b.add_theme_stylebox_override("pressed", hover)

@@ -247,6 +247,48 @@ func _run(main: Node, args: Dictionary) -> void:
 		cs2.prices = {&"coke": 140}
 		for i in 4:
 			await process_frame
+	if args.has("rings") or args.has("deal"):   # UI7 look: people around you marked by who they are to you; --deal: selling to one
+		var rp: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
+		var rs: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
+		var spots := [Vector2(3, 1), Vector2(-3, 2), Vector2(2, -3), Vector2(-2, -2), Vector2(5, 3)]
+		var deeds := ["helped", "robbed", "", "good_product", "threatened"]
+		var placed := []
+		for e in driver.world.get_entities_with_component(ComponentNames.NPC).values():
+			var n: NPCData = e.get_component(ComponentNames.NPC)
+			if placed.size() >= spots.size():
+				break
+			if n != rp and not (n.is_cop or n.is_dealer or n.is_fixer or n.is_crew or n.is_down) and n.gang_id == &"":
+				var i := placed.size()
+				n.position = rp.position + spots[i]
+				n.indoors = false
+				n.is_busy = true
+				driver.world.reindex_position(n.id)
+				if deeds[i] == "":
+					n.is_crew = true
+				else:
+					MemorySystem.remember(driver.world, rs, n.id, deeds[i])
+					if deeds[i] == "good_product":
+						MemorySystem.remember(driver.world, rs, n.id, deeds[i])
+				placed.append(n)
+		if args.has("deal"):
+			rs.inventory[&"weed"] = 14
+			rs.inventory[&"pills"] = 8
+			rs.product = {"q": 4.3, "strain": "seeds_kush"}
+			rs.products = {&"pills": 2.8, "pills_kind": "pill_powder"}
+			placed[3].position = rp.position + Vector2(1.2, 0.4)
+			driver.world.reindex_position(placed[3].id)
+			TradeSystem.open(rs, "deal", placed[3].id)
+			rs.trade["line"] = "Hand to hand: $41."
+			rs.trade["tone"] = 1
+		for i in 6:
+			await process_frame
+	if args.has("pawn"):   # UI7 look: the pawn window with a haul from a house
+		var pp: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
+		var ps: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
+		ps.inventory = {&"watch": 2, &"gold_chain": 1, &"vcr": 1, &"walkman": 1, &"jordans": 1}
+		ps.trade = {"mode": "pawn", "who": pp.home_building_id, "line": "", "tone": 0}
+		for i in 6:
+			await process_frame
 	if args.has("jail"):   # JL1 look: inside, the prison panel
 		AdminSystem.run(driver.world, "jail", null, driver.world.tick)
 		for i in 4:

@@ -85,14 +85,14 @@ func _initialize() -> void:
 		state.grow["plants"].append({"strain": &"seeds_mids", "at": w.tick, "watered": w.tick, "fed": 0, "care": 1.0})
 	state.grow["filter"] = false
 	state.case_evidence = 0.0
-	for i in 60:
+	for i in 300:
 		w.tick += SimClock.hours(0.2)
 		GrowSystem.water(w, state)
 		GrowSystem.tend_hour(w, me, state, w.tick)
 	var open_case := state.case_evidence
 	state.grow["filter"] = true
 	state.case_evidence = 0.0
-	for i in 60:
+	for i in 300:
 		w.tick += SimClock.hours(0.2)
 		GrowSystem.water(w, state)
 		GrowSystem.tend_hour(w, me, state, w.tick)

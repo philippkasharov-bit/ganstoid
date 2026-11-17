@@ -63,6 +63,7 @@ prints busts.
 - [x] BZ4 drug chain: a pill press (pill powder from dealers), a hands-on meth cook (keep the heat in the green; past the red it burns), imports from Soldier rank (cash up front, a warehouse pick-up window, sometimes a sting); stars on every drug set its price; step on coke and heroin; your clubs' door staff sell your pills; new chemistry skill; Phone > Connect
 - [x] QL3 quality in street words (Schwag to Chronic, Baking soda to Uncut; workers Green to A pro; night spots Dive to The place to be); six weed strains with their own high, smell, speed, yield and best market; doves and speedy whites; you set your own prices (Phone > Prices): all buyers bite at its worth, half at 1.5x
 - [x] LT4 looting by searching: every piece of furniture its own container (fridge, cabinets, medicine cabinet, drawers, wardrobe, under the bed, shelf, sofa, TV stand, a wall safe in rich homes), each searched with a timed bar (moving breaks it off), pockets too; 19 new valuables and business supplies in the tables; pawn (clean) or fence (dirty); deal hand to hand at your own price
+- [x] UI7 a modern phone (dark, app tiles with badges, scrolls); rings at people's feet for who they are to you (crew, police, gang, friend, scared, enemy; strangers none) and a name card on hover; a deal window (your price, the odds, Offer) and a pawn / fence window (sell one or all) · UP1 the updater no longer sticks on a locked file
 
 ## Indie mistakes we design against (Phil, 2026-11: "doesn't it look boring and repetitive?")
 
