@@ -7,6 +7,7 @@ extends PanelContainer
 
 const W := 420.0
 const GOODS := [&"weed", &"pills", &"meth", &"coke", &"heroin"]
+const ICON := 32.0
 
 var _world: World
 var _col := VBoxContainer.new()
@@ -70,7 +71,11 @@ func _deal(state: PlayerStateData, me: NPCData, t: Dictionary) -> void:
 		if have <= 0:
 			continue
 		var q := DrugLabSystem.stars(state, good)
-		_col.add_child(UiTheme.label("%s · %s · you carry %d" % [String(good).capitalize(), Grades.drug_text(good, q), have], UiTheme.FONT_BODY, UiTheme.TEXT))
+		var head := HBoxContainer.new()
+		head.add_theme_constant_override("separation", 6)
+		head.add_child(_icon(good))
+		head.add_child(UiTheme.label("%s · %s · you carry %d" % [String(good).capitalize(), Grades.drug_text(good, q), have], UiTheme.FONT_BODY, UiTheme.TEXT))
+		_col.add_child(head)
 		var about := Grades.about(state, good)
 		if about != "":
 			_col.add_child(UiTheme.label(about, UiTheme.FONT_SMALL, UiTheme.DIM))
@@ -99,6 +104,8 @@ func _pawn(state: PlayerStateData, t: Dictionary) -> void:
 			continue
 		any = true
 		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 6)
+		row.add_child(_icon(id))
 		var l := UiTheme.label("%s ×%d · $%d each" % [it["name"], int(state.inventory[id]), roundi(int(it["price"]) * share)], UiTheme.FONT_SMALL, UiTheme.TEXT)
 		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(l)
@@ -108,6 +115,15 @@ func _pawn(state: PlayerStateData, t: Dictionary) -> void:
 		_col.add_child(UiTheme.label("Nothing they'd buy. Valuables come from searching homes and pockets.", UiTheme.FONT_SMALL, UiTheme.DIM))
 	else:
 		_row([["Sell everything ($%d)" % Fence.worth(state, share), {"op": "sell_all"}]], state)
+
+## IC2: the item's bag picture, small, at the start of a row.
+func _icon(id: StringName) -> Control:
+	var art := Control.new()
+	art.custom_minimum_size = Vector2(ICON, ICON)
+	art.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var colour: Color = InventoryWindow.KIND_COLOURS.get(ItemCatalog.item(id).get("kind", "goods"), UiTheme.DIM)
+	art.draw.connect(func() -> void: ItemArt.draw(art, id, Rect2(Vector2.ZERO, Vector2(ICON, ICON)), colour, false))
+	return art
 
 func _head(title: String, sub: String) -> void:
 	var l := UiTheme.label(title, 22, UiTheme.ACCENT)
