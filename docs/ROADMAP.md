@@ -60,6 +60,7 @@ prints busts.
 - [x] BZ1 grow it yourself: gear from a hardware counter, seeds from a dealer, tents at home (more with a bigger crib), water, feed, harvest, dry, bag; 1-5 stars (strain, lamp, fan, care, growing skill); your stamp and its name on the street; regulars on your corners; cutting; the smell is the risk (a filter helps); Phone > Grow
 - [x] BZ2 staff: hire a grower (runs the grow from a stock of seeds and food, bags into a stash) or a shop manager (+ up to 40% takings); skill stars, a daily wage, honesty you can only guess (shifty ones skim); unpaid or fired without severance, a grower becomes a witness; Phone > Business
 - [x] BZ3 nightlife: turn a shop you own into a nightclub, gentlemen's club or card room (licence, clean money); fit-out and a good manager add stars; takings at closing by hood and stars; a bouncer stops fights; washes more dirty money; an illegal back room pays big until vice raids it; back-room blackjack and dice at night at pawn shops and liquor stores
+- [x] BZ4 drug chain: a pill press (pill powder from dealers), a hands-on meth cook (keep the heat in the green; past the red it burns), imports from Soldier rank (cash up front, a warehouse pick-up window, sometimes a sting); stars on every drug set its price; step on coke and heroin; your clubs' door staff sell your pills; new chemistry skill; Phone > Connect
 
 ## Indie mistakes we design against (Phil, 2026-11: "doesn't it look boring and repetitive?")
 
@@ -111,7 +112,7 @@ Each mistake below is checked against the game and owned by a batch.
 | BZ1 | ~~**Grow it yourself**~~ **done** · | Buy gear at a grow shop (tent, lights, fan, filter, seeds), set it up in a place you own, tend the plants (water, feed, light), harvest, dry and bag, sell; more tents, then hydro; smell and neighbours are the risk | 2 |
 | BZ2 | ~~**Workers and the Business app**~~ **done** · | Hire staff for any business (wage, skill, loyalty; they can steal or talk), shifts, one Business app: money in and out, stock, staff, heat | 1-2 |
 | BZ3 | ~~**Nightlife: clubs, strip clubs, casinos**~~ **done** (card rooms, not casinos: 1990s LA) · | Buy and run them: licence, bouncers, DJ, staff, VIP rooms; nights earn by hood; launder through them; a back-room card game; play blackjack and slots yourself | 3 |
-| BZ4 | **The drug chain** (proposed) | Weed to pills (press) to a cook lab (a short cook mini-game, fire risk) to imports; your own corners, delivery, your clubs; prices by hood | 2-3 |
+| BZ4 | ~~**The drug chain**~~ **done** · | Weed to pills (press) to a cook lab (a short cook mini-game, fire risk) to imports; your own corners, delivery, your clubs; prices by hood | 2-3 |
 | BZ5 | **Big illegal side** (proposed) | Chop shop, counterfeit cash, fencing ring, gun running, loan sharking, gambling dens; laundering through your legal fronts with limits and audits | 3 |
 | BZ6 | **Big legal side** (proposed) | Car wash, laundromat, restaurant, shop chain, flats to rent, trucking, security firm; upgrades, competition, taxes and audits | 2-3 |
 | BZ7 | **Empire view** (proposed) | A map layer of everything you own, the daily ledger, raids and robberies by rivals on your places | 1 |

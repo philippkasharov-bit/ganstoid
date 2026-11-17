@@ -5,6 +5,7 @@ Newest first. The in-game admin panel (F11, Bugs & updates) shows the top of it.
 
 ## 2026-11-17
 
+- BZ3: night spots, back rooms and a seat at the table
 - BZ2: hire people to work for you
 - BZ1: grow your own weed, with stars, your stamp and regulars
 - QL1: quality on everything, and ideas in that direction, on the roadmap

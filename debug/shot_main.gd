@@ -230,6 +230,22 @@ func _run(main: Node, args: Dictionary) -> void:
 			driver.world.reindex_position(tp.id)
 		for i in 4:
 			await process_frame
+	if args.has("cook"):   # BZ4 look: a cook under way, the heat in the green
+		var ks: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
+		ks.cook = {"heat": 0.66, "t": 8.0, "green": 6.0, "boxes": 5}
+		driver.paused = true   # held still for the picture
+		for i in 4:
+			await process_frame
+	if args.has("connect"):   # BZ4 look: a Soldier with drugs of every grade, the connect's offers
+		var cs2: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
+		AdminSystem.run(driver.world, "rank_up", null, driver.world.tick)
+		AdminSystem.run(driver.world, "rank_up", null, driver.world.tick)
+		cs2.inventory[&"pills"] = 24
+		cs2.inventory[&"meth"] = 10
+		cs2.inventory[&"coke"] = 20
+		cs2.products = {&"pills": 2.7, &"meth": 4.8, &"coke": 4.0}
+		for i in 4:
+			await process_frame
 	if args.has("jail"):   # JL1 look: inside, the prison panel
 		AdminSystem.run(driver.world, "jail", null, driver.world.tick)
 		for i in 4:
@@ -258,7 +274,7 @@ func _run(main: Node, args: Dictionary) -> void:
 		ph.rivals[gs[0]]["grudge"] = 62.0
 		ph.rivals[gs[1]]["grudge"] = 18.0
 		ph.rivals[gs[1]]["scars"] = 1
-		ph.rank = 1   # HS1: a score on, for the Score app
+		ph.rank = maxi(ph.rank, 1)   # HS1: a score on, for the Score app
 		var pn: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
 		if HeistSystem.offer(driver.world, ph, pn, driver.world.tick, "store"):
 			ph.heist["known"] = true

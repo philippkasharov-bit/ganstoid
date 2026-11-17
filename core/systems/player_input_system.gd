@@ -616,6 +616,8 @@ func _find_counter(position: Vector2) -> StringName:
 
 ## BZ3: a night spot of yours, or a back-room game.
 func _venue_options(out: Array, state: PlayerStateData, building_id: StringName) -> void:
+	if DrugLabSystem.can_pick_up(_world, state, building_id):   # BZ4
+		out.append(["Pick up the shipment", func() -> Dictionary: return DrugLabSystem.pick_up(_world, _world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC), state)])
 	if GambleSystem.game_at(_world, state, building_id):
 		out.append(["Back-room game (cards, dice)", func() -> Dictionary: return GambleSystem.sit(_world, state, building_id)])
 	var b: BuildingData = _world.entities[building_id].get_component(ComponentNames.BUILDING)
@@ -630,6 +632,8 @@ func _venue_options(out: Array, state: PlayerStateData, building_id: StringName)
 		return
 	if int(v["decor"]) < VenueSystem.DECOR_COST.size():
 		out.append(["Fit it out ($%d, a star)" % VenueSystem.DECOR_COST[int(v["decor"])], func() -> Dictionary: return VenueSystem.decorate(_world, state, building_id)])
+	if state.inventory.has(&"pills"):
+		out.append(["Leave pills with the door staff (%d)" % int(state.inventory[&"pills"]), func() -> Dictionary: return VenueSystem.stock_pills(_world, state, building_id)])
 	if not v["back_room"]:
 		out.append(["Open a back room ($%d, illegal)" % VenueSystem.BACK_ROOM_COST, func() -> Dictionary: return VenueSystem.open_back_room(_world, state, building_id)])
 
@@ -659,6 +663,16 @@ func _grow_options(out: Array, state: PlayerStateData) -> void:
 	var stash := int(g.get("stash", {}).get("units", 0))
 	if stash > 0:
 		out.append(["Pick up %d bags from the stash" % stash, func() -> Dictionary: return GrowSystem.pick_up(_world, state)])
+	if state.inventory.has(&"pill_press") or state.inventory.has(&"lab_glass"):   # BZ4: the lab
+		out.append(["Set up your lab gear", func() -> Dictionary: return DrugLabSystem.install(_world, state)])
+	if state.lab.get("press", false) and state.inventory.has(&"pill_powder"):
+		out.append(["Press pills (%d powder)" % int(state.inventory[&"pill_powder"]), func() -> Dictionary: return DrugLabSystem.press(_world, state)])
+	if state.lab.get("glass", false) and state.inventory.has(&"cold_meds") and state.cook.is_empty():
+		out.append(["Cook a batch (%d boxes)" % int(state.inventory[&"cold_meds"]), func() -> Dictionary: return DrugLabSystem.start_cook(_world, state)])
+	for good in DrugLabSystem.CUTTABLE:
+		if int(state.inventory.get(good, 0)) >= 2:
+			var gd: StringName = good
+			out.append(["Step on your %s (+50%%, a star off)" % String(good), func() -> Dictionary: return DrugLabSystem.cut(_world, state, gd), GrowSystem.stars_text(DrugLabSystem.stars(state, good))])
 	if int(state.inventory.get(GrowSystem.GOOD_ID, 0)) >= 2:
 		out.append(["Cut your weed (+50%%, a star off)", func() -> Dictionary: return GrowSystem.cut(_world, state), GrowSystem.stars_text(GrowSystem.stars_carried(state))])
 

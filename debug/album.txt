@@ -40,6 +40,8 @@ phone_grow       | debug/shot_main.gd   | --grow --phone=Grow
 phone_business   | debug/shot_main.gd   | --biz --phone=Business
 phone_club       | debug/shot_main.gd   | --biz --club --phone=Business
 back_room_table  | debug/shot_main.gd   | --table
+the_cook         | debug/shot_main.gd   | --cook
+phone_connect    | debug/shot_main.gd   | --connect --phone=Connect
 phone_rivals     | debug/shot_main.gd   | --phone=Rivals
 phone_home       | debug/shot_main.gd   | --phone=home
 minimap_gps      | debug/shot_main.gd   | --gps

@@ -109,6 +109,9 @@ func _ready() -> void:
 	var table := GambleWindow.new()   # BZ3: the back-room table
 	get_parent().add_child.call_deferred(table)
 	table.setup(_world)
+	var cook := CookWindow.new()   # BZ4: the cook
+	get_parent().add_child.call_deferred(cook)
+	cook.setup(_world)
 	var admin := AdminWindow.new()   # AD1: F11 (Admin on in the pause menu)
 	get_parent().add_child.call_deferred(admin)
 	admin.setup(_world, Vector2(320, 90))

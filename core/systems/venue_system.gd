@@ -34,6 +34,10 @@ const FIGHT_KEEP := 0.7
 const BOUNCER_RAID_CUT := 0.03
 const RAID_CASE := 15.0
 const VENUE_WASH := 1.5
+const PILLS_BASE := 8            # pills a night the door staff move, plus PILLS_PER_STAR a star
+const PILLS_PER_STAR := 4
+const PILL_RAID := 0.04          # a night with pills: vice may find them
+const PILL_CASE := 10.0
 
 var _world_ref: WeakRef
 var _world: World:
@@ -94,6 +98,16 @@ static func open_back_room(world: World, state: PlayerStateData, building_id: St
 	v["back_room"] = true
 	return {"ok": true, "effect": "venue_back_room", "amount": BACK_ROOM_COST}
 
+## BZ4: leave every pill you carry with the door staff to sell.
+static func stock_pills(_world: World, state: PlayerStateData, building_id: StringName) -> Dictionary:
+	var v: Dictionary = state.venues.get(building_id, {})
+	var n: int = state.inventory.get(&"pills", 0)
+	if v.is_empty() or n <= 0:
+		return {"ok": false, "reason": "nothing_to_sell"}
+	state.inventory.erase(&"pills")
+	v["pills"] = int(v.get("pills", 0)) + n
+	return {"ok": true, "effect": "grow_stocked", "amount": n}
+
 ## 1 to 5: the fit-out, plus a good manager.
 static func stars(state: PlayerStateData, building_id: StringName) -> int:
 	var v: Dictionary = state.venues.get(building_id, {})
@@ -129,6 +143,20 @@ static func close_night(world: World, state: PlayerStateData) -> void:
 		Wallet.earn_clean(world, clean)
 		v["last"] = clean
 		v["back"] = 0
+		v["sold"] = 0
+		var pills := int(v.get("pills", 0))
+		if pills > 0:   # BZ4: the door staff move your pills
+			if rng.randf() < PILL_RAID:
+				v["pills"] = 0
+				state.case_evidence += PILL_CASE
+				PhoneSystem.push(world, state, String(spec[0]), "Vice searched the door staff. They found the pills.")
+			else:
+				var n := mini(pills, PILLS_BASE + PILLS_PER_STAR * stars(state, id))
+				var item: EconomyItemData = world.economy_items.get(&"pills")
+				var each := (item.current_price if item != null else 40) * DrugLabSystem.price_mult(state, &"pills")
+				Wallet.earn_dirty(world, roundi(n * each))
+				v["pills"] = pills - n
+				v["sold"] = n
 		if v["back_room"]:
 			if rng.randf() < maxf(0.0, float(spec[3]) - (BOUNCER_RAID_CUT if bouncer else 0.0)):
 				v["back_room"] = false

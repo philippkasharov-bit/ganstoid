@@ -71,6 +71,7 @@ One line per script: what it is for. Read the file only when you need it; find s
 | `city_renderer.gd` | CityRenderer | City map renderer (C1, MP1, perf pass): draws a CityData (areas, river, rail, sidewalks, streets, buildings, elevated freeways) in world metres. Render layer only: reads the data, never changes it. Performance: the map is split into layers x 12x12 tiles (~500  |
 | `clock_box.gd` | ClockBox | UI6: top-right clock and day, Zomboid-style (moodles hang below it). |
 | `context_prompt.gd` | ContextPrompt | UI4: what you can do right here, shown over the thing you can do it to: a small pill with the key ("E Talk · Pickpocket", "E Search their pockets", "E Break in", "F Get in"), so you never open a menu just to find out. The nearest thing wins: someone down, a fi |
+| `cook_window.gd` | CookWindow | BZ4: the cook. A heat gauge that creeps up on its own: the green band is where the good stuff comes from, the red line is a fire. Heat and Cool (the buttons, or the left and right arrow keys) nudge it; the clock shows what's left. Read-only: the buttons only a |
 | `court_window.gd` | CourtWindow | CT1: the day in court, after the court sits: each witness and what they said (or why they didn't), then the verdict. Read-only: Close only asks (ui_court). Shown over the prison panel until closed. |
 | `crew_roster.gd` | CrewRoster | Phase 3 batch 22: crew roster panel, toggled with Tab (Godot's built-in ui_focus_next, so no input-map edit). Read-only view, same relationship to World as Hud: one line per crew member -- name, job, loyalty, what they're holding -- plus a controls reminder. C |
 | `damage_flash.gd` | DamageFlash | A3: a hit you take flashes the screen edges red, Zomboid-style: strong at the border, clear in the middle, gone in about half a second. Harder hits flash stronger. Read-only. |
@@ -199,6 +200,7 @@ One line per script: what it is for. Read the file only when you need it; find s
 | `deal_system.gd` | DealSystem | The drug-deal buy/sell action -- the player-facing feature the Phase 2 economy core was built to support. Static utility, same shape as CrimeSystem (discrete player-triggered action, not a per-tick process). Only one good is wired to the interaction this phase |
 | `district_control.gd` | DistrictControl | T3: districts are the big prize. A district is held by whoever holds more than SHARE of its blocks (each block is its own capture point); holding one pays DISTRICT_TAX on top of the block taxes every morning. |
 | `drive_system.gd` | DriveSystem | Commuting by car (V4). Some people own a car (CarOwnership at new game: a car parked near home). When they set off on a long trip and their car is close, they drive: the real streets, the right-hand lane, one-way streets respected, stopping for lights, stop si |
+| `drug_lab_system.gd` | DrugLabSystem | BZ4: the drug chain beyond weed, made or brought in by you. pills a pill press at home (from a dealer) turns pill powder into PILLS_PER_POWDER pills each, a press at a time meth lab glassware (a hardware counter) and boxes of cold medicine (a dealer): the cook |
 | `economy_fallout.gd` | EconomyFallout | E4: what crime and hard times do to a block, once a game day after the money has moved (EconomyFlow). A shop that keeps getting hit buys security (a camera, then a guard, then an armed guard), which leaves less in reach of a robber. A shop that cannot cover it |
 | `economy_flow.gd` | EconomyFlow | E2: the city's daily money loop. Once a game day, in this order: 1. Households pay rent (to landlords outside the district: it leaves) and spend on food and goods at the open shops near home (it goes into their tills), from wallets, then the cash at home, then |
 | `economy_flow_system.gd` | EconomyFlowSystem | E2: runs the city's money day (EconomyFlow.run_day) once a game day, in the evening after the shops shut, on its own tick. |
@@ -314,7 +316,7 @@ One line per script: what it is for. Read the file only when you need it; find s
 
 | file | class | what it is |
 |---|---|---|
-| `item_catalog.gd` | ItemCatalog | Items (G1): every thing the player can carry, as one data table. Pure data: systems read it; nothing here changes state. kind food / drink / medical / weapon / ammo / gear / seed (BZ1: growing) price dollars at a counter (black-market goods: at a dealer) sold_ |
+| `item_catalog.gd` | ItemCatalog | Items (G1): every thing the player can carry, as one data table. Pure data: systems read it; nothing here changes state. kind food / drink / medical / weapon / ammo / gear / seed (BZ1: growing) / chem (BZ4: the lab) price dollars at a counter (black-market goo |
 | `loot_tables.gd` | LootTables | LT1: what each kind of container holds. A container is filled when you first open it (a seeded roll, so a save reloads the same contents) and refills RESTOCK_DAYS after it was emptied, if the people there can pay for it (E3). Entries: [item, chance, min, max]. |
 
 ## data/schemas

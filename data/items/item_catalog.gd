@@ -1,6 +1,6 @@
 ## Items (G1): every thing the player can carry, as one data table. Pure data:
 ## systems read it; nothing here changes state.
-##   kind     food | drink | medical | weapon | ammo | gear | seed (BZ1: growing)
+##   kind     food | drink | medical | weapon | ammo | gear | seed (BZ1: growing) | chem (BZ4: the lab)
 ##   price    dollars at a counter (black-market goods: at a dealer)
 ##   sold_at  shop | workshop | dealer   (who has it on the shelf)
 ##   hunger / thirst / tired  how much one use restores (0..1 of the need)
@@ -33,6 +33,10 @@ const ITEMS := {
 	&"seeds_mids": {"size": Vector2i(1, 1), "stack": 20, "weight": 0.0, "name": "Seeds: street mids", "kind": "seed", "price": 10, "sold_at": "dealer"},
 	&"seeds_kush": {"size": Vector2i(1, 1), "stack": 20, "weight": 0.0, "name": "Seeds: OG Kush", "kind": "seed", "price": 35, "sold_at": "dealer"},
 	&"seeds_haze": {"size": Vector2i(1, 1), "stack": 20, "weight": 0.0, "name": "Seeds: Purple Haze", "kind": "seed", "price": 60, "sold_at": "dealer"},
+	&"pill_press": {"size": Vector2i(2, 2), "stack": 1, "weight": 6.0, "name": "Pill press", "kind": "gear", "price": 1200, "sold_at": "dealer"},
+	&"lab_glass":  {"size": Vector2i(2, 2), "stack": 1, "weight": 3.0, "name": "Lab glassware", "kind": "gear", "price": 600, "sold_at": "workshop"},
+	&"pill_powder": {"size": Vector2i(1, 1), "stack": 20, "weight": 0.1, "name": "Pill powder", "kind": "chem", "price": 30, "sold_at": "dealer"},
+	&"cold_meds":  {"size": Vector2i(1, 1), "stack": 20, "weight": 0.1, "name": "Cold medicine (box)", "kind": "chem", "price": 9, "sold_at": "shop"},
 	&"ammo":    {"size": Vector2i(1, 1), "stack": 1, "weight": 0.3, "name": "Box of 9 mm (12)", "kind": "ammo", "price": 40, "sold_at": "dealer", "rounds": 12},
 }
 

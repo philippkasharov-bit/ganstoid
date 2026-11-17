@@ -10,7 +10,7 @@ const ACTION := &"phone"
 const SCREEN := Color(0.62, 0.74, 0.47)
 const INK := Color(0.08, 0.12, 0.06)
 const W := 300.0
-const APPS := [["Messages", "Messages"], ["Contacts", "Contacts"], ["Hustles", "Hustles"], ["Bank", "Bank"], ["Rivals", "Rivals"], ["Score", "Score"], ["Crib", "Crib"], ["Jobs", "Jobs"], ["Property", "Property"], ["Gang", "Gang"], ["Crew", "Crew"], ["Grow", "Grow"], ["Business", "Business"], ["Case", "Case"], ["Paper", "Paper"]]
+const APPS := [["Messages", "Messages"], ["Contacts", "Contacts"], ["Hustles", "Hustles"], ["Bank", "Bank"], ["Rivals", "Rivals"], ["Score", "Score"], ["Crib", "Crib"], ["Jobs", "Jobs"], ["Property", "Property"], ["Gang", "Gang"], ["Crew", "Crew"], ["Grow", "Grow"], ["Business", "Business"], ["Connect", "Connect"], ["Case", "Case"], ["Paper", "Paper"]]
 
 var paper: PaperWindow
 var _world: World
@@ -236,6 +236,22 @@ func _show(state: PlayerStateData) -> void:
 				_rule()
 				_text(HeistSystem.plan_line(_world, state), 16, true)
 				_screen.add_child(_progress(clampf(float(h["work"]) / float(spec[2]), 0.0, 1.0) if h["stage"] in ["working", "getaway"] else clampf(float(h["cased"]) / HeistSystem.CASE_S, 0.0, 1.0)))
+		"Connect":   # BZ4: imports, and what you carry
+			if state.rank < DrugLabSystem.IMPORT_RANK:
+				_text("Nobody big will sell to you until you're a %s." % RankSystem.NAMES[DrugLabSystem.IMPORT_RANK])
+			elif not state.shipment.is_empty():
+				_text("A %s shipment is on its way: %d units." % [String(state.shipment["good"]), int(state.shipment["units"])], 15, true)
+				_text(NextStep.line(_world), 14)
+			else:
+				_text("A load, cash up front. It waits at a warehouse tomorrow night. Some loads are a setup.", 14)
+				for good in DrugLabSystem.IMPORTS:
+					var spec: Array = DrugLabSystem.IMPORTS[good]
+					var gd: StringName = good
+					_screen.add_child(_button("%d %s for $%d" % [int(spec[0]), String(good), int(spec[1])], func() -> void: state.ui_lab = {"order": gd}, Vector2(W, 30)))
+			_rule()
+			for good in [&"weed", &"pills", &"meth", &"coke", &"heroin"]:
+				if int(state.inventory.get(good, 0)) > 0:
+					_text("%s  %d  %s" % [String(good), int(state.inventory[good]), GrowSystem.stars_text(DrugLabSystem.stars(state, good))], 14)
 		"Business":   # BZ2: your places, your staff, who you could hire
 			var me: NPCData = _world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
 			_text("Yesterday: shops paid $%d · wages $%d" % [int(state.biz_day.get("shops", 0)), int(state.biz_day.get("wages", 0))], 15, true)

@@ -30,6 +30,8 @@ const STORIES := {
 	"verdict_free": [8, "CASE COLLAPSES IN COURT", "Witnesses went quiet and a {hood} suspect walked out free yesterday."],
 	"verdict_guilty": [6, "{HOOD} CASE ENDS IN JAIL TIME", "A jury heard the witnesses and sent a {hood} local down for {n} days."],
 	"den_raided": [8, "VICE RAIDS GAMBLING DEN IN {HOOD}", "Police shut down an after-hours game behind a {hood} night spot. The owners say they knew nothing."],
+	"lab_sting": [9, "DRUG STING AT {HOOD} WAREHOUSE", "Undercover officers sprang a trap at a {hood} warehouse last night. A buyer fled on foot."],
+	"lab_fire": [7, "CHEMICAL FIRE IN {HOOD}", "Firefighters in {hood} found lab glassware in the ashes of a small blaze."],
 	"released": [4, "LOCAL MAN WALKS FREE", "Released from county jail yesterday. Neighbours in {hood} are not thrilled."],
 	"business_bought": [3, "NEW OWNER FOR {HOOD} BUSINESS", "A {hood} business changed hands for ${n}. The buyer paid cash."],
 }

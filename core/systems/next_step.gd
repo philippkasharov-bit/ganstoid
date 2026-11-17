@@ -36,6 +36,9 @@ static func line(world: World) -> String:
 			return "Trial in %dh: %d witness%s will talk. Scare them, pay them, or get a lawyer (Phone > Case)" % [ceili(h), talk, "" if talk == 1 else "es"]
 	if not state.crew_asks.is_empty():
 		return CrewAmbitionSystem.ask_text(world, state, state.crew_asks[0]) + " Answer on Phone > Crew"
+	if not state.shipment.is_empty() and state.shipment.get("from") is int:   # BZ4
+		var hrs := float(int(state.shipment["from"]) - world.tick) / SimClock.hours(1.0)
+		return ("Shipment at the warehouse in %dh (the GPS shows it)" % ceili(hrs)) if hrs > 0.0 else "Shipment's waiting at the warehouse now: E at the door"
 	var grow := GrowSystem.need_line(world, state)   # BZ1
 	if grow != "":
 		return grow

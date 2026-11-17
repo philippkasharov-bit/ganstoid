@@ -104,7 +104,8 @@ func _over_other() -> bool:
 const SHORT := {&"water": "H2O", &"soda": "SODA", &"coffee": "JOE", &"chips": "CHIPS", &"burrito": "BURR",
 	&"bandage": "BNDG", &"bat": "BAT", &"knife": "KNIFE", &"pistol": "9MM", &"pistol_clean": "9MM+", &"ammo": "AMMO",
 	&"grow_tent": "TENT", &"shop_light": "LIGHT", &"hps_lamp": "HPS", &"grow_fan": "FAN", &"carbon_filter": "FILTR", &"plant_food": "FOOD",
-	&"seeds_mids": "MIDS", &"seeds_kush": "KUSH", &"seeds_haze": "HAZE"}   # BZ1
+	&"seeds_mids": "MIDS", &"seeds_kush": "KUSH", &"seeds_haze": "HAZE",   # BZ1
+	&"pill_press": "PRESS", &"lab_glass": "GLASS", &"pill_powder": "POWDR", &"cold_meds": "MEDS"}   # BZ4
 
 static func _short(id: StringName) -> String:
 	return SHORT.get(id, String(id).left(5).to_upper())
