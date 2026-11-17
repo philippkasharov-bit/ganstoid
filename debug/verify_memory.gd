@@ -38,6 +38,11 @@ func _initialize() -> void:
 			robbed = true
 			break
 	state.aiming = false
+	for n in people:   # bystanders out of the way; the friend is someone not mugged
+		if n != victim:
+			n.position = me.position + Vector2(500, 0)
+			w.reindex_position(n.id)
+	friend = people.filter(func(n: NPCData) -> bool: return n != victim and not state.memories.has(n.id))[0]
 	ok = _check(robbed and state.memories.has(victim.id) and state.memories[victim.id]["deed"] == "robbed" and MemorySystem.feel_of(state, victim.id) <= -0.7, "a mugging is remembered (feel %.2f)" % MemorySystem.feel_of(state, victim.id)) and ok
 	# they see you again: they shout and report it
 	var t := SimClock.hours(36.0)   # noon, day 2

@@ -7,7 +7,7 @@ extends RefCounted
 
 ## MG1a: new game on the REAL city. Only buildings within `radius` metres of
 ## `centre` are simulated (the active district); positions are metres.
-const STARTING_CASH := 40   # G1: broke on day one: enough for a few meals
+const STARTING_CASH := 150   # G1/B9: broke on day one, but enough to start something in the first hour (was 40)
 
 static func generate_real_city_game(world: World, seed: int, city: CityData, centre: Vector2, radius: float, population_count: int) -> void:
 	var building_ids := CityRoles.generate(world, seed, city, centre, radius)

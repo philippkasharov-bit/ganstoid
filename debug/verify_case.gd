@@ -22,7 +22,7 @@ func _initialize() -> void:
 	Wallet.earn_clean(world, 600)
 	var law := CaseSystem.lawyer(world, me, state)
 	print("case %.0f, an hour later %.0f, after a lawyer %.0f (%s)" % [built, cooled, state.case_evidence, law.get("effect")])
-	if not _check(built == 40.0 and cooled == 38.5 and state.case_evidence == 8.5, "reports build, time cools, a lawyer thins"):
+	if not _check(built == 40.0 and is_equal_approx(cooled, built - CaseSystem.COLD_PER_HOUR) and is_equal_approx(state.case_evidence, cooled - CaseSystem.LAWYER_CUT), "reports build, time cools, a lawyer thins"):
 		return
 	state.case_evidence = 90.0
 	Wallet.earn_dirty(world, 300)

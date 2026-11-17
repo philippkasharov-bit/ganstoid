@@ -8,7 +8,7 @@ class_name RankSystem
 extends SystemBase
 
 const NAMES := ["Street rat", "Hustler", "Soldier", "Lieutenant", "Boss", "Kingpin", "City boss"]
-const THRESHOLDS := [0, 30, 90, 200, 400, 800, 1500]
+const THRESHOLDS := [0, 30, 70, 200, 400, 800, 1500]   # B9: Soldier at 70 (was 90): imports and gun crates come sooner
 const GUN_RANK := 1
 
 var _last_hour := -1

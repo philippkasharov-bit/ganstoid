@@ -11,6 +11,8 @@ Severity: **high** = breaks a game or loses progress · **medium** = clearly wro
 
 ## Open
 
+- **BUG-22** (found by the pacing robot): buying a shop that is nearly broke pays nothing for days (it refills its bank first); the buy option and Phone > Business should warn "struggling" first. Guard: debug/pace_robot.gd.
+
 | ID | Severity | What happens | Where | Found by |
 |----|----------|--------------|-------|----------|
 | BUG-9 | low (to check on Phil's PC) | In the shop (`--store` picture) a dark curved band runs across the shop floor, under the player. It could be a curved wall drawn at floor height, or a drawing glitch. | shop interior / cutaway | album `shop_counter` |

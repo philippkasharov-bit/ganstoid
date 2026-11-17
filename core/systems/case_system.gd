@@ -12,8 +12,8 @@ class_name CaseSystem
 extends SystemBase
 
 const EVIDENCE_PER := 20.0
-const COLD_PER_HOUR := 1.5
-const COLD_AT_HOME_PER_HOUR := 4.0
+const COLD_PER_HOUR := 0.5           # B9: was 1.5: a witnessed robbery was forgotten in 8 hours, so crime never caught up with you
+const COLD_AT_HOME_PER_HOUR := 1.5   # B9: was 4.0
 const WARRANT_AT := 40.0
 const PRISON_FROM := 20.0
 const DAYS_PER := 20.0

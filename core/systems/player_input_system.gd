@@ -480,6 +480,8 @@ func _options(npc: NPCData, state: PlayerStateData) -> Array:
 		out.append(["Talk", func() -> Dictionary: return TalkSystem.small_talk(_world, npc, p)])
 		out.append(["Threaten them into silence", func() -> Dictionary: return TalkSystem.threaten(_world, npc, p)])
 		out.append(["Pay them to forget you ($%d)" % TalkSystem.PAYOFF, func() -> Dictionary: return TalkSystem.pay_off(_world, npc, p)])
+		if p.is_fixer and state.known.has(p.id) and state.dirty_cash > 0:   # B9: wash dirty money with a fixer
+			out.append(["Wash dirty money (30%% cut, $%d left today)" % Rackets.wash_left(_world, state), func() -> Dictionary: return Rackets.fixer_wash(_world, state)])
 		if LoanSystem.owes(state, p.id):   # BZ5: they owe you
 			var debt := LoanSystem.loan_of(state, p.id)
 			out.append(["Collect what they owe ($%d)" % int(debt["owed"]), func() -> Dictionary: return LoanSystem.collect(_world, state, p)])
@@ -659,6 +661,14 @@ func _venue_options(out: Array, state: PlayerStateData, building_id: StringName)
 		return
 	var v: Dictionary = state.venues.get(building_id, {})
 	if v.is_empty():
+		var tier := int(state.upgrades.get(building_id, 0))   # BZ6: upgrades and fronts
+		if tier < FrontSystem.UPGRADE_COST.size():
+			out.append(["Upgrade the place ($%d, more takings)" % FrontSystem.UPGRADE_COST[tier], func() -> Dictionary: return FrontSystem.upgrade(_world, state, b)])
+		if not state.fronts.has(building_id):
+			for fk in FrontSystem.KINDS:
+				var fspec: Array = FrontSystem.KINDS[fk]
+				var fkind: String = fk
+				out.append(["Make it a %s ($%d)" % [String(fspec[0]).to_lower(), int(fspec[1])], func() -> Dictionary: return FrontSystem.convert(_world, state, b, fkind)])
 		for kind in VenueSystem.KINDS:
 			var spec: Array = VenueSystem.KINDS[kind]
 			var k: String = kind

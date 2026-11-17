@@ -56,6 +56,7 @@ static func reliability(id: StringName) -> float:
 ## Each morning: payments come in, late ones are marked, new people ask.
 static func new_day(world: World, me: NPCData, state: PlayerStateData, day: int) -> void:
 	var rng := world.runtime_rng
+	var paid_today := 0
 	for loan in state.loans:
 		if int(loan["owed"]) <= 0:
 			continue
@@ -70,6 +71,7 @@ static func new_day(world: World, me: NPCData, state: PlayerStateData, day: int)
 		if rng.randf() < willing:
 			var pay := mini(int(due), int(loan["owed"]))
 			Wallet.earn_dirty(world, pay)
+			paid_today += pay
 			loan["owed"] = int(loan["owed"]) - pay
 			loan["paid"] = int(loan.get("paid", 0)) + pay
 			loan["status"] = "paid off" if int(loan["owed"]) <= 0 else "paying"
@@ -77,6 +79,7 @@ static func new_day(world: World, me: NPCData, state: PlayerStateData, day: int)
 			loan["status"] = "late"
 		else:
 			loan["status"] = "missed a day"
+	state.biz_day["loans"] = paid_today   # BZ7: the Empire page
 	state.loans = state.loans.filter(func(l: Dictionary) -> bool: return int(l["owed"]) > 0 or day - int(l["day"]) < TERM_DAYS + 3)
 	state.loan_asks = []
 	if state.loans.filter(func(l: Dictionary) -> bool: return int(l["owed"]) > 0).size() >= MAX_LOANS:

@@ -149,14 +149,14 @@ static func night(world: World, state: PlayerStateData) -> void:
 		var den: bool = book == state.dens
 		for id in book.keys():
 			var r: Dictionary = book[id]
-			if not r.get("open", false):
+			if not r.get("open", false) or EmpireSystem.closed(world, r):   # BZ7: robbed by a rival: nothing tonight
 				continue
 			var e: Entity = world.entities.get(id)
 			var b: BuildingData = e.get_component(ComponentNames.BUILDING) if e != null else null
 			if b == null:
 				book.erase(id)
 				continue
-			var raid := (DEN_RAID if den else RING_RAID) * (0.5 if VenueSystem.has_bouncer(state, id) else 1.0)
+			var raid := (DEN_RAID if den else RING_RAID) * (0.5 if VenueSystem.has_bouncer(state, id) else 1.0) * FrontSystem.guard_mult(state)
 			if rng.randf() < raid:
 				r["open"] = false
 				r["raided"] = int(r.get("raided", 0)) + 1
@@ -174,3 +174,21 @@ static func night(world: World, state: PlayerStateData) -> void:
 				take = rng.randi_range(int(RING_TAKE.x), int(RING_TAKE.y))
 			Wallet.earn_dirty(world, take)
 			r["last"] = take
+
+## B9: a fixer you know washes dirty money for a cut, off the books (no IRS,
+## no business needed): up to WASH_DAY_CAP a day. The first way to clean
+## money before you own anything.
+const WASH_CUT := 0.3
+const WASH_DAY_CAP := 1000
+
+static func wash_left(world: World, state: PlayerStateData) -> int:
+	return maxi(0, WASH_DAY_CAP - int(state.passed.get("wash|%d" % HustleSystem.day_of(world.tick), 0)))
+
+static func fixer_wash(world: World, state: PlayerStateData) -> Dictionary:
+	var amount := mini(state.dirty_cash, wash_left(world, state))
+	if amount <= 0:
+		return {"ok": false, "reason": "wash_none" if state.dirty_cash <= 0 else "wash_cap"}
+	var key := "wash|%d" % HustleSystem.day_of(world.tick)
+	state.passed[key] = int(state.passed.get(key, 0)) + amount
+	var r := Wallet.launder(world, amount, WASH_CUT)
+	return {"ok": true, "effect": "washed_fixer", "amount": int(r["washed"]) - int(r["fee"])}
