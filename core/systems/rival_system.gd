@@ -179,6 +179,7 @@ func _check_down(state: PlayerStateData, g: StringName, r: Dictionary) -> void:
 	r["down_seen"] = true
 	if lt.ko_until_tick >= 0:   # knocked out: he will get up, scarred and angrier
 		r["scars"] = int(r["scars"]) + 1
+		Rep.add(state, 8.0)   # RP1
 		var old: String = r["name"]
 		r["name"] = "%s %s" % [SCARRED[(int(r["scars"]) - 1) % SCARRED.size()], old.split(" ")[-1]]
 		r["grudge"] = minf(PERSONAL, float(r["grudge"]) + 25.0)
@@ -188,6 +189,7 @@ func _check_down(state: PlayerStateData, g: StringName, r: Dictionary) -> void:
 	var gang_e: Entity = _world.entities.get(g)
 	var next := _pick(_world, gang_e.get_component(ComponentNames.GANG), int(hash(String(g))) + int(r["level"])) if gang_e != null else null
 	NewsSystem.note_story(state, "rival_killed", r["name"], lt.position)
+	Rep.add(state, 12.0)   # RP1
 	StampView.put(state, "%s IS DEAD" % String(r["name"]).to_upper(), "someone will take those corners")
 	if next != null:
 		var lvl := int(r["level"]) + 1

@@ -32,6 +32,7 @@ static func register_all(world: World) -> void:
 	world.register_system(PickpocketSystem.new(world))    # PP1
 	world.register_system(ReactionSystem.new(world))      # RX1
 	world.register_system(PhoneSystem.new(world))         # PH1
+	world.register_system(CornerWarSystem.new(world))     # CW1
 	var rivals := RivalSystem.new(world)                  # RV1
 	world.register_system(rivals)
 	world.event_bus.subscribe(rivals.on_assaulted)

@@ -23,6 +23,7 @@ const STORIES := {
 	"grow_house_raided": [8, "GROW HOUSE BUSTED", "Police raided a house full of plants and lamps in {hood}."],
 	"rival_scarred": [9, "GANG LIEUTENANT BEATEN IN {HOOD}", "Police say a known gang figure was left on the pavement. On the street they go by '{n}' now."],
 	"rival_killed": [10, "GANG FIGURE SHOT DEAD IN {HOOD}", "A gang figure known on the street as '{n}' died last night. Police fear reprisals."],
+	"corner_held": [6, "STREET BATTLE IN {HOOD}", "Residents of {hood} say {n} came for a corner and were sent packing."],
 	"business_bought": [3, "NEW OWNER FOR {HOOD} BUSINESS", "A {hood} business changed hands for ${n}. The buyer paid cash."],
 }
 const CITY_NEWS := [

@@ -61,7 +61,7 @@ static func roll(world: World, state: PlayerStateData, day: int) -> void:
 	while state.hustles.size() < PER_DAY and not pool.is_empty():
 		var k: String = pool.pop_at(rng.randi() % pool.size())
 		var spec: Array = KINDS[k]
-		var pay := int(spec[3] * (1.0 + 0.25 * state.rank))
+		var pay := int(spec[3] * (1.0 + 0.25 * state.rank) * Rep.HUSTLE_PAY[Rep.tier(state)])   # RP1
 		state.hustles.append({"kind": k, "need": spec[2], "got": 0, "pay": pay, "done": false,
 			"deadline": int(start + (float(spec[4]) - DAY_START) / 24.0 * SimClock.day_ticks)})
 	if not state.hustles.is_empty():
@@ -84,6 +84,7 @@ static func progress(world: World, state: PlayerStateData, key: String, amount: 
 			state.message_alert = false   # UI3: the stamp says it
 			state.message_tone = 1
 			state.message_serial += 1
+			Rep.add(state, 3.0)   # RP1
 			StampView.put(state, "HUSTLE DONE", "%s  +$%d" % [text_of(h), int(h["pay"])], UiTheme.GOOD)
 
 static func text_of(h: Dictionary) -> String:

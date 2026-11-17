@@ -93,6 +93,9 @@ static func willingness(world: World, npc: NPCData) -> float:
 	if home != null and home.get_component(ComponentNames.BUILDING).zone == GanstoidEnums.CityZone.EDGE:
 		w += EDGE_ZONE_BONUS
 	w += npc.recognition_chance * SEEN_YOU_WORK_WEIGHT
+	var p: Entity = world.entities.get(PlayerFactory.PLAYER_ENTITY_ID)
+	if p != null:
+		w += Rep.RECRUIT_BONUS[Rep.tier(p.get_component(ComponentNames.PLAYER_STATE))]   # RP1: people want in
 	return minf(w, MAX_WILLINGNESS)
 
 static func recruit(world: World, npc_id: StringName) -> Dictionary:

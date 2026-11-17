@@ -130,7 +130,7 @@ func _gang(n: NPCData, me: NPCData, state: PlayerStateData, tick: int) -> void:
 	if t == null or TerritorySystem.controller(t, TerritoryData.turf_of(me.position)) != n.gang_id:
 		return
 	var standing: float = state.gang_standing.get(n.gang_id, 0.5)
-	if standing >= FRIENDLY or not state.pending_deal.is_empty():
+	if standing >= FRIENDLY or not state.pending_deal.is_empty() or Rep.tier(state) >= Rep.GANG_LETS_PASS:   # RP1: they know who you are
 		return
 	var d := n.position.distance_to(me.position)
 	var combat := _world.find_system(NPCCombatSystem) as NPCCombatSystem
