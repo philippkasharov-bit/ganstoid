@@ -210,6 +210,15 @@ func _run(main: Node, args: Dictionary) -> void:
 		bs.biz_day = {"shops": 240, "wages": 55}
 		for i in 4:
 			await process_frame
+	if args.has("front"):   # BZ6 look (with --biz): the shop is a car wash, upgraded once; this week's books
+		var fs: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
+		for b in BusinessSystem.player_owned(driver.world):
+			fs.fronts[b.id] = "car_wash"
+			fs.upgrades[b.id] = 1
+			break
+		fs.books = {"earned": 1840, "washed": 2600}
+		for i in 4:
+			await process_frame
 	if args.has("club"):   # BZ3 look (with --biz): the shop turned into a two-star club with a back room
 		var vs: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
 		for b in BusinessSystem.player_owned(driver.world):

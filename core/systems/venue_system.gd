@@ -132,12 +132,16 @@ static func close_night(world: World, state: PlayerStateData) -> void:
 			state.venues.erase(id)
 			continue
 		var v: Dictionary = state.venues[id]
+		if EmpireSystem.closed(world, v):   # BZ7: smashed up by a rival: shut tonight
+			v["last"] = 0
+			v["back"] = 0
+			continue
 		var spec: Array = KINDS[v["kind"]]
 		var wealth := float(BlockEconomyData.block_at(world, b.position).get("wealth", 0.5))
 		var take := float(spec[2]) * (0.5 + wealth) * (0.5 + 0.25 * stars(state, id)) * rng.randf_range(0.85, 1.15)
 		var bouncer := has_bouncer(state, id)
 		v["fight"] = false
-		if not bouncer and rng.randf() < FIGHT_CHANCE:
+		if not bouncer and rng.randf() < FIGHT_CHANCE * FrontSystem.guard_mult(state):
 			take *= FIGHT_KEEP
 			v["fight"] = true
 		var clean := StaffSystem.managed(state, id, roundi(take))
@@ -159,7 +163,7 @@ static func close_night(world: World, state: PlayerStateData) -> void:
 				v["pills"] = pills - n
 				v["sold"] = n
 		if v["back_room"]:
-			if rng.randf() < maxf(0.0, float(spec[3]) - (BOUNCER_RAID_CUT if bouncer else 0.0)):
+			if rng.randf() < maxf(0.0, float(spec[3]) - (BOUNCER_RAID_CUT if bouncer else 0.0)) * FrontSystem.guard_mult(state):
 				v["back_room"] = false
 				v["raided"] = int(v.get("raided", 0)) + 1
 				state.case_evidence += RAID_CASE
