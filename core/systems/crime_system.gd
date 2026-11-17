@@ -134,6 +134,7 @@ static func rob_building(world: World, building_id: StringName) -> Dictionary:
 	EconomySystem.apply_robbery(building, taken)
 	Wallet.earn_dirty(world, taken)  # batch 24
 	broadcast_witnesses(world, building.position, SEVERITY_BY_TYPE[GanstoidEnums.CrimeType.ARMED_ROBBERY])
+	MemorySystem.remember(world, player_entity.get_component(ComponentNames.PLAYER_STATE), building_id, "store_robbed")   # ME1: they won't serve you
 	return {"ok": true, "effect": "robbery", "taken": taken}
 
 ## Batch 9 (locked): the minimal gang-job action -- a small paid errand on

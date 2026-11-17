@@ -21,8 +21,27 @@ static func line(world: World) -> String:
 	var state: PlayerStateData = player.get_component(ComponentNames.PLAYER_STATE)
 	if me.is_down or state.sleeping:
 		return ""
+	if not state.heist.is_empty():
+		return HeistSystem.plan_line(world, state)   # HS1: a score comes first
 	if not state.job.is_empty():
 		return _job(world, me, state)
+	if not state.gig.is_empty():
+		return GigSystem.line(world, state)   # RP2
+	if not state.trial.is_empty() and state.trial.get("at") is int:
+		var h := maxf(0.0, float(int(state.trial["at"]) - world.tick) / SimClock.hours(1.0))
+		var talk := 0
+		for id in state.trial.get("witnesses", []):
+			talk += 1 if CourtSystem.stand_of(world, state, id) == "talks" else 0
+		if talk > 0 or CourtSystem.score(world, state) >= CourtSystem.GUILTY_AT:
+			return "Trial in %dh: %d witness%s will talk. Scare them, pay them, or get a lawyer (Phone > Case)" % [ceili(h), talk, "" if talk == 1 else "es"]
+	if not state.crew_asks.is_empty():
+		return CrewAmbitionSystem.ask_text(world, state, state.crew_asks[0]) + " Answer on Phone > Crew"
+	if not state.shipment.is_empty() and state.shipment.get("from") is int:   # BZ4
+		var hrs := float(int(state.shipment["from"]) - world.tick) / SimClock.hours(1.0)
+		return ("Shipment at the warehouse in %dh (the GPS shows it)" % ceili(hrs)) if hrs > 0.0 else "Shipment's waiting at the warehouse now: E at the door"
+	var grow := GrowSystem.need_line(world, state)   # BZ1
+	if grow != "":
+		return grow
 	if me.bleeding:
 		return "You're bleeding: press H and bandage the wound"
 	if me.hunger < URGENT:

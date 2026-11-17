@@ -23,6 +23,7 @@ extends Resource
 @export var cash: int = 0
 @export var pockets: Dictionary = {}               # LT3: item id -> count, rolled the first time someone searches them
 @export var pockets_rolled: bool = false
+@export var pockets_searched: bool = false   # LT4: someone has gone through them
 @export var job: StringName = &""                # E1: "cashier", "mechanic"... (empty: out of work)
 @export var wage: int = 0
 @export var camp: Vector2 = Vector2.ZERO         # E1: where a homeless person sleeps rough (no home_building_id)                       # E1: a day's pay, paid by the workplace each payday
@@ -33,6 +34,9 @@ extends Resource
 @export var is_crew: bool = false
 @export var crew_role: GanstoidEnums.CrewRole = GanstoidEnums.CrewRole.UNASSIGNED
 @export_range(0.0, 1.0) var loyalty: float = 0.5
+@export var ambition: StringName = &""   # CA1: loyal, greedy, climber or rat (rolled when they first work for you)
+@export var crew_rank: int = 0          # CA1: 1 = lieutenant, runs a corner
+@export var crew_days: int = 0          # CA1: days in your crew
 ## Batch 17: where a LOOKOUT was posted (only meaningful for that role).
 @export var post_position: Vector2 = Vector2.ZERO
 ## Batch 18: a crew DEALER's consignment (weed units) and the cash from

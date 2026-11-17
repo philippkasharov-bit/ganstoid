@@ -153,7 +153,7 @@ static func buy(world: World, dealer_id: StringName, good_id: StringName) -> Dic
 	var ripped_off := world.runtime_rng.randf() < ripoff_chance(_relationship(dealer_npc, player_state))
 	Wallet.spend(world, cost)  # batch 24: dirty money first
 	if not ripped_off:
-		player_state.inventory[good_id] = player_state.inventory.get(good_id, 0) + TRADE_QUANTITY
+		DrugLabSystem.add_drug(player_state, good_id, TRADE_QUANTITY, 2.0)   # BZ4: street stuff is 2 stars
 		BagGrid.sync(player_state)
 	EconomySystem.record_trade(item, BUY_PRESSURE, 0.0)
 	item.player_market_reputation += (1.0 - item.player_market_reputation) * REPUTATION_GAIN_PER_TRADE
@@ -182,6 +182,7 @@ static func sell(world: World, dealer_id: StringName, good_id: StringName) -> Di
 	var dealer_npc: NPCData = ctx["dealer_npc"]
 	var mult := _sell_price_multiplier(item.player_market_reputation) * _relationship_sell_multiplier(_relationship(dealer_npc, player_state)) * (1.0 + HUSTLE_EDGE * Skills.level(player_state, &"hustle")) * Traits.edge(player_state, &"dealer", 1.1) * (0.9 if Traits.has(player_state, &"ghost") else 1.0)
 	mult *= street_mult(world, dealer_npc.position)   # E4: a strong street market pays more
+	mult *= DrugLabSystem.price_mult(player_state, good_id)   # BZ1/BZ4: stars (and the weed's brand)
 	var proceeds: int = maxi(1, int(round(item.current_price * TRADE_QUANTITY * mult)))
 	var ripped_off := world.runtime_rng.randf() < ripoff_chance(_relationship(dealer_npc, player_state))
 	if ripped_off:
@@ -189,6 +190,8 @@ static func sell(world: World, dealer_id: StringName, good_id: StringName) -> Di
 
 	player_state.inventory[good_id] = held - TRADE_QUANTITY
 	Wallet.earn_dirty(world, proceeds)  # batch 24
+	if good_id == GrowSystem.GOOD_ID:
+		GrowSystem.sold(world, player_state)
 	item.supply += (1.0 - item.supply) * SELL_SUPPLY_BUMP
 	item.demand -= item.demand * SELL_DEMAND_EASE
 	item.player_market_reputation += (1.0 - item.player_market_reputation) * REPUTATION_GAIN_PER_TRADE

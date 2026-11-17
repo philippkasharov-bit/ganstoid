@@ -24,6 +24,17 @@ const STORIES := {
 	"rival_scarred": [9, "GANG LIEUTENANT BEATEN IN {HOOD}", "Police say a known gang figure was left on the pavement. On the street they go by '{n}' now."],
 	"rival_killed": [10, "GANG FIGURE SHOT DEAD IN {HOOD}", "A gang figure known on the street as '{n}' died last night. Police fear reprisals."],
 	"corner_held": [6, "STREET BATTLE IN {HOOD}", "Residents of {hood} say {n} came for a corner and were sent packing."],
+	"heist_store": [10, "JEWELLERY STORE HIT IN {HOOD}", "Thieves cleared out a jewellery store in {hood}. Police put the take at {n}."],
+	"heist_stash": [10, "GANG STASH HOUSE ROBBED IN {HOOD}", "Word in {hood} is someone walked off with a gang's stash, {n}. Expect trouble."],
+	"heist_van": [11, "ARMOURED VAN HELD UP IN {HOOD}", "An armoured van was robbed in broad daylight in {hood}. {n} gone."],
+	"verdict_free": [8, "CASE COLLAPSES IN COURT", "Witnesses went quiet and a {hood} suspect walked out free yesterday."],
+	"verdict_guilty": [6, "{HOOD} CASE ENDS IN JAIL TIME", "A jury heard the witnesses and sent a {hood} local down for {n} days."],
+	"den_raided": [8, "VICE RAIDS GAMBLING DEN IN {HOOD}", "Police shut down an after-hours game behind a {hood} night spot. The owners say they knew nothing."],
+	"lab_sting": [9, "DRUG STING AT {HOOD} WAREHOUSE", "Undercover officers sprang a trap at a {hood} warehouse last night. A buyer fled on foot."],
+	"lab_fire": [7, "CHEMICAL FIRE IN {HOOD}", "Firefighters in {hood} found lab glassware in the ashes of a small blaze."],
+	"fake_spotted": [7, "FAKE BILLS TURN UP IN {HOOD}", "A {hood} clerk caught a counterfeit hundred at the register. Police warn shopkeepers to check."],
+	"loan_example": [8, "MAN BEATEN OVER DEBT IN {HOOD}", "A {hood} resident was badly beaten in the street. Neighbours whisper about money owed."],
+	"released": [4, "LOCAL MAN WALKS FREE", "Released from county jail yesterday. Neighbours in {hood} are not thrilled."],
 	"business_bought": [3, "NEW OWNER FOR {HOOD} BUSINESS", "A {hood} business changed hands for ${n}. The buyer paid cash."],
 }
 const CITY_NEWS := [

@@ -413,13 +413,18 @@ func _options(npc: NPCData, state: PlayerStateData) -> Array:
 				state.job_offers = []
 				return JobSystem.take(_world, state, job)])
 		return out
+	if not state.trial.is_empty():
+		out.append(["Lawyer for your trial ($%d, case -%d)" % [CourtSystem.LAWYER_FEE, int(CourtSystem.LAWYER_CUT)], func() -> Dictionary: return CourtSystem.lawyer(_world, state)])
 	if state.case_evidence > 0.0:
 		out.append(["Call a lawyer ($%d, case -%d)" % [CaseSystem.LAWYER_FEE, int(CaseSystem.LAWYER_CUT)], func() -> Dictionary: return CaseSystem.lawyer(_world, npc, state)])
 	var counter := _find_counter(pos)
 	var person := _find_nearest_npc(pos)
 	var p: NPCData = _world.entities[person].get_component(ComponentNames.NPC) if person != &"" else null
 	if counter != &"":
+		_venue_options(out, state, counter)   # BZ3
 		out.append(["Shop here", func() -> Dictionary:
+			if MemorySystem.refuses(state, counter):
+				return {"ok": false, "reason": "store_refused"}   # ME1: you robbed them
 			state.store_id = counter
 			return {}])
 		var fix := WeaponWear.held(state)
@@ -431,6 +436,23 @@ func _options(npc: NPCData, state: PlayerStateData) -> Array:
 			out.append(["Work a %d-hour shift ($%d/h, clean)" % [SHIFT_HOURS, SHIFT_PAY_PER_HOUR], func() -> Dictionary:
 				state.work_until_tick = _world.tick + SimClock.hours(SHIFT_HOURS)
 				return {"ok": true, "effect": "shift_start"}])
+	if npc.home_building_id != &"" and _world.entities.has(npc.home_building_id) and pos.distance_to((_world.entities[npc.home_building_id].get_component(ComponentNames.BUILDING) as BuildingData).position) <= CrimeSystem.INTERACT_RADIUS:   # CR1
+		if state.crib + 1 < CribSystem.TIERS.size():
+			out.append(["Upgrade your crib to %s ($%d)" % [CribSystem.TIERS[state.crib + 1], CribSystem.COST[state.crib + 1]], func() -> Dictionary: return CribSystem.upgrade(_world, state)])
+		_grow_options(out, state)   # BZ1
+	for prop in state.properties:   # BZ5b: a flat you own, not your home: a dice den
+		var pe: Entity = _world.entities.get(prop)
+		var pb: BuildingData = pe.get_component(ComponentNames.BUILDING) if pe != null else null
+		if pb != null and prop != npc.home_building_id and pos.distance_to(pb.position) <= CrimeSystem.INTERACT_RADIUS and not Rackets.den_at(state, prop):
+			var pid: StringName = prop
+			out.append(["Run a gambling den here ($%d, no more rent)" % Rackets.DEN_COST, func() -> Dictionary: return Rackets.open_den(_world, state, pid)])
+		var worn := WeaponWear.held(state)
+		if state.crib >= CribSystem.BENCH_TIER and worn != &"" and WeaponWear.repair_cost(state, worn) > 0:
+			out.append(["Fix your %s at the bench" % ItemCatalog.item(worn)["name"].to_lower(), func() -> Dictionary:
+				state.wear[worn] = 1.0
+				return {"ok": true, "effect": "repaired", "amount": 0}])
+	if not state.heist.is_empty() and state.heist["stage"] in ["rumour", "cased"] and pos.distance_to(state.heist["at"]) <= HeistSystem.WORK_M:   # HS1
+		out.append(["Start the score", func() -> Dictionary: return HeistSystem.start(_world, state, npc)])
 	if _downed_within(pos, Vicinity.REACH_M) != null:   # LT3: their pockets show in Nearby (I)
 		out.append(["Search their pockets", func() -> Dictionary:
 			state.inventory_open = true
@@ -447,6 +469,9 @@ func _options(npc: NPCData, state: PlayerStateData) -> Array:
 		var good := _best_to_sell(state)
 		if state.inventory.get(good, 0) > 0:
 			out.append(["Sell %s" % String(good), func() -> Dictionary: return DealSystem.start_handoff(_world, person, good, "sell")])
+	if p != null and p.gang_id != &"" and state.gang_member == &"":   # RP3
+		var gang_id: StringName = p.gang_id
+		out.append(["Ask to join %s" % GangLifeSystem.gang_name(_world, gang_id), func() -> Dictionary: return GangLifeSystem.join(_world, state, gang_id)])
 	if p != null and not p.is_dealer and p.gang_id != &"" and ShopSystem.owned_weapons(state).has(&"pistol"):
 		out.append(["Sell them a gun", func() -> Dictionary: return GunTrade.sell(_world, npc, state, p)])
 	if p != null and p.is_cop:
@@ -455,6 +480,14 @@ func _options(npc: NPCData, state: PlayerStateData) -> Array:
 		out.append(["Talk", func() -> Dictionary: return TalkSystem.small_talk(_world, npc, p)])
 		out.append(["Threaten them into silence", func() -> Dictionary: return TalkSystem.threaten(_world, npc, p)])
 		out.append(["Pay them to forget you ($%d)" % TalkSystem.PAYOFF, func() -> Dictionary: return TalkSystem.pay_off(_world, npc, p)])
+		if LoanSystem.owes(state, p.id):   # BZ5: they owe you
+			var debt := LoanSystem.loan_of(state, p.id)
+			out.append(["Collect what they owe ($%d)" % int(debt["owed"]), func() -> Dictionary: return LoanSystem.collect(_world, state, p)])
+			out.append(["Lean on them (they'll pay double)", func() -> Dictionary: return LoanSystem.lean_on(_world, npc, state, p)])
+			out.append(["Make an example of them", func() -> Dictionary: return LoanSystem.make_example(_world, npc, state, p)])
+		if not p.is_dealer and [&"weed", &"pills", &"meth", &"coke", &"heroin"].any(func(g: StringName) -> bool: return int(state.inventory.get(g, 0)) > 0):
+			var buyer_id: StringName = p.id
+			out.append(["Deal... (sell them something)", func() -> Dictionary: return TradeSystem.open(state, "deal", buyer_id)])   # LT4/UI7
 	if p != null and not p.is_dealer and not p.is_cop and not p.is_crew:
 		if state.weapon != &"fists":
 			out.append(["Mug them (%s out)" % String(state.weapon), func() -> Dictionary:
@@ -543,6 +576,8 @@ func _do_move(npc: NPCData, state: PlayerStateData, move: Dictionary) -> Diction
 			return Vicinity.take(_world, state, move["src"], move["n"])
 		"take_all":
 			return Vicinity.take_all(_world, state, move["srcs"])
+		"search":
+			return Vicinity.mark_searched(_world, move["src"])   # LT4
 	return {}
 
 ## UI5: a bag line is eaten/drunk/applied, or a weapon is taken in hand.
@@ -594,6 +629,88 @@ func _find_counter(position: Vector2) -> StringName:
 			best_dist = d
 			best_id = id
 	return best_id
+
+## BZ3: a night spot of yours, or a back-room game.
+func _venue_options(out: Array, state: PlayerStateData, building_id: StringName) -> void:
+	var counter_e: Entity = _world.entities.get(building_id)
+	if counter_e == null or counter_e.get_component(ComponentNames.BUILDING) == null:   # a dealer, not a building
+		if state.inventory.has(&"fake_bill"):   # BZ5
+			out.append(["Sell your fake bills (%d)" % int(state.inventory[&"fake_bill"]), func() -> Dictionary: return Rackets.sell_fakes(_world, state)])
+		if Fence.worth(state, Fence.FENCE_SHARE) > 0:
+			out.append(["Fence your stolen goods... (up to $%d, dirty)" % Fence.worth(state, Fence.FENCE_SHARE), func() -> Dictionary: return TradeSystem.open(state, "fence", building_id)])
+		return
+	var cb: BuildingData = counter_e.get_component(ComponentNames.BUILDING)
+	if state.inventory.has(&"fake_bill") and ShopSystem.is_open(_world, building_id):   # BZ5
+		out.append(["Break a fake $100 here", func() -> Dictionary: return Rackets.pass_bill(_world, _world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC), state, building_id), "%d%% they spot it" % roundi(Rackets.spot_chance(DrugLabSystem.stars(state, &"fake_bill")) * 100.0)])
+	if cb.trade == &"chop shop" and Rackets.chop_car(_world, cb) != null:
+		out.append(["Sell them the car outside ($%d)" % Rackets.chop_price(Rackets.chop_car(_world, cb)), func() -> Dictionary: return Rackets.chop(_world, state, cb)])
+	if Rackets.ring_at(state, building_id) and Fence.worth(state, Rackets.RING_SHARE) > 0:   # BZ5b: your own ring pays best
+		out.append(["Sell loot to your ring... (up to $%d, dirty)" % Fence.worth(state, Rackets.RING_SHARE), func() -> Dictionary: return TradeSystem.open(state, "ring", building_id)])
+	elif cb.trade == &"pawn shop" and ShopSystem.is_open(_world, building_id) and Fence.worth(state, Fence.PAWN_SHARE) > 0:   # LT4
+		out.append(["Pawn your valuables... (up to $%d, clean)" % Fence.worth(state, Fence.PAWN_SHARE), func() -> Dictionary: return TradeSystem.open(state, "pawn", building_id)])
+	if cb.trade == &"pawn shop" and BusinessSystem.owned_by_player(cb) and not Rackets.ring_at(state, building_id):
+		out.append(["Run a stolen-goods ring here ($%d)" % Rackets.RING_COST, func() -> Dictionary: return Rackets.open_ring(_world, state, cb)])
+	if DrugLabSystem.can_pick_up(_world, state, building_id):   # BZ4
+		out.append(["Pick up the shipment", func() -> Dictionary: return DrugLabSystem.pick_up(_world, _world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC), state)])
+	if GambleSystem.game_at(_world, state, building_id):
+		out.append(["Back-room game (cards, dice)", func() -> Dictionary: return GambleSystem.sit(_world, state, building_id)])
+	var b: BuildingData = _world.entities[building_id].get_component(ComponentNames.BUILDING)
+	if not BusinessSystem.owned_by_player(b):
+		return
+	var v: Dictionary = state.venues.get(building_id, {})
+	if v.is_empty():
+		for kind in VenueSystem.KINDS:
+			var spec: Array = VenueSystem.KINDS[kind]
+			var k: String = kind
+			out.append(["Make it a %s (licence $%d)" % [String(spec[0]).to_lower(), int(spec[1])], func() -> Dictionary: return VenueSystem.convert(_world, state, building_id, k)])
+		return
+	if int(v["decor"]) < VenueSystem.DECOR_COST.size():
+		out.append(["Fit it out ($%d, a star)" % VenueSystem.DECOR_COST[int(v["decor"])], func() -> Dictionary: return VenueSystem.decorate(_world, state, building_id)])
+	if state.inventory.has(&"pills"):
+		out.append(["Leave pills with the door staff (%d)" % int(state.inventory[&"pills"]), func() -> Dictionary: return VenueSystem.stock_pills(_world, state, building_id)])
+	if not v["back_room"]:
+		out.append(["Open a back room ($%d, illegal)" % VenueSystem.BACK_ROOM_COST, func() -> Dictionary: return VenueSystem.open_back_room(_world, state, building_id)])
+
+## BZ1: the grow at home, only the lines that apply right now.
+func _grow_options(out: Array, state: PlayerStateData) -> void:
+	var g := state.grow
+	if GrowSystem.GEAR.any(func(id: StringName) -> bool: return state.inventory.has(id)):
+		out.append(["Set up your grow gear", func() -> Dictionary: return GrowSystem.install(_world, state)])
+	var plants: Array = g.get("plants", [])
+	var seeds := 0
+	for id in GrowSystem.STRAINS:
+		seeds += int(state.inventory.get(id, 0))
+	if seeds > 0 and int(g.get("tents", 0)) > 0 and plants.size() < GrowSystem.slots(state):
+		out.append(["Plant seeds (%d spots free)" % (GrowSystem.slots(state) - plants.size()), func() -> Dictionary: return GrowSystem.plant(_world, state)])
+	if not plants.is_empty():
+		var dry := plants.filter(func(pl: Dictionary) -> bool: return GrowSystem.thirsty(_world, pl)).size()
+		out.append(["Water the plants" + (" (%d thirsty)" % dry if dry > 0 else ""), func() -> Dictionary: return GrowSystem.water(_world, state)])
+		if state.inventory.has(&"plant_food"):
+			out.append(["Feed the plants", func() -> Dictionary: return GrowSystem.feed(_world, state)])
+		var ripe := plants.filter(func(pl: Dictionary) -> bool: return GrowSystem.ripe(_world, pl) or pl.get("dead", false)).size()
+		if ripe > 0:
+			out.append(["Harvest (%d ready)" % ripe, func() -> Dictionary: return GrowSystem.harvest(_world, state)])
+	if (g.get("drying", []) as Array).any(func(d: Dictionary) -> bool: return _world.tick >= int(d["ready"])):
+		out.append(["Bag the dried weed", func() -> Dictionary: return GrowSystem.bag(_world, state)])
+	if not StaffSystem.grower(state).is_empty() and [&"seeds_mids", &"seeds_kush", &"seeds_haze", &"plant_food"].any(func(id: StringName) -> bool: return state.inventory.has(id)):
+		out.append(["Leave seeds and plant food for your grower", func() -> Dictionary: return GrowSystem.stock_up(_world, state)])
+	var stash := int(g.get("stash", {}).get("units", 0))
+	if stash > 0:
+		out.append(["Pick up %d bags from the stash" % stash, func() -> Dictionary: return GrowSystem.pick_up(_world, state)])
+	if state.lab.get("printer", false) and state.inventory.has(&"ink_paper"):   # BZ5
+		out.append(["Print fake money (%d paper)" % int(state.inventory[&"ink_paper"]), func() -> Dictionary: return Rackets.print_money(_world, state)])
+	if state.inventory.has(&"pill_press") or state.inventory.has(&"lab_glass") or state.inventory.has(&"print_press"):   # BZ4: the lab
+		out.append(["Set up your lab gear", func() -> Dictionary: return DrugLabSystem.install(_world, state)])
+	if state.lab.get("press", false) and state.inventory.has(&"pill_powder"):
+		out.append(["Press pills (%d powder)" % int(state.inventory[&"pill_powder"]), func() -> Dictionary: return DrugLabSystem.press(_world, state)])
+	if state.lab.get("glass", false) and state.inventory.has(&"cold_meds") and state.cook.is_empty():
+		out.append(["Cook a batch (%d boxes)" % int(state.inventory[&"cold_meds"]), func() -> Dictionary: return DrugLabSystem.start_cook(_world, state)])
+	for good in DrugLabSystem.CUTTABLE:
+		if int(state.inventory.get(good, 0)) >= 2:
+			var gd: StringName = good
+			out.append(["Step on your %s (+50%%, a star off)" % String(good), func() -> Dictionary: return DrugLabSystem.cut(_world, state, gd), Grades.drug_text(good, DrugLabSystem.stars(state, good))])
+	if int(state.inventory.get(GrowSystem.GOOD_ID, 0)) >= 2:
+		out.append(["Cut your weed (+50%%, a star off)", func() -> Dictionary: return GrowSystem.cut(_world, state), GrowSystem.stars_text(GrowSystem.stars_carried(state))])
 
 static func _counter_position(entity: Entity) -> Vector2:
 	if entity == null:

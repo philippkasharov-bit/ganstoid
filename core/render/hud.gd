@@ -100,6 +100,21 @@ func _ready() -> void:
 	get_parent().add_child.call_deferred(layout)
 	layout.setup()
 	layout.panels = {"card": card, "pager": pager, "minimap": mini, "tips": guide, "eye": eye, "notify": notify}
+	var prison := PrisonWindow.new()   # JL1: the days inside
+	get_parent().add_child.call_deferred(prison)
+	prison.setup(_world)
+	var court := CourtWindow.new()   # CT1: the day in court
+	get_parent().add_child.call_deferred(court)
+	court.setup(_world)
+	var table := GambleWindow.new()   # BZ3: the back-room table
+	get_parent().add_child.call_deferred(table)
+	table.setup(_world)
+	var cook := CookWindow.new()   # BZ4: the cook
+	get_parent().add_child.call_deferred(cook)
+	cook.setup(_world)
+	var trade := TradeWindow.new()   # UI7: deal, pawn, fence
+	get_parent().add_child.call_deferred(trade)
+	trade.setup(_world)
 	var admin := AdminWindow.new()   # AD1: F11 (Admin on in the pause menu)
 	get_parent().add_child.call_deferred(admin)
 	admin.setup(_world, Vector2(320, 90))
@@ -138,6 +153,14 @@ func _ready() -> void:
 	get_parent().add_child.call_deferred(flash)
 	flash.setup(_world)
 	get_parent().move_child.call_deferred(flash, 0)   # under every HUD piece: it is the world that flashes
+	var rel := RelationView.new()      # UI7: friend, enemy or stranger at a glance
+	get_parent().add_child.call_deferred(rel)
+	rel.setup(_world)
+	get_parent().move_child.call_deferred(rel, 1)   # under the windows, over the world
+	var barks := BarkView.new()        # ME1: people who know you say so
+	get_parent().add_child.call_deferred(barks)
+	barks.setup(_world)
+	get_parent().move_child.call_deferred(barks, 1)
 	var halo := HaloText.new()         # HT1: short lines float over your head
 	get_parent().add_child.call_deferred(halo)
 	halo.setup(_world)

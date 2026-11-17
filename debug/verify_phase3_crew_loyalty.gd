@@ -82,6 +82,7 @@ func _make_crew(world: World, state: PlayerStateData, index: int) -> NPCData:
 		if found == index:
 			n.is_crew = true
 			n.cash = 0
+			n.ambition = &"loyal"   # CA1: no wage demands or walk-outs in a test of loyalty itself
 			state.crew_ids.append(id)
 			return n
 		found += 1

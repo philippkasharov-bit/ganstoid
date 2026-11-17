@@ -13,9 +13,9 @@ const ORDER := ["Shop & deals", "Talk", "Crime", "Crew", "Property", "Car"]
 static func category(label: String) -> String:
 	var l := label.to_lower()
 	for pair in [["crew", "Crew"], ["recruit", "Crew"], ["talk", "Talk"], ["threaten", "Talk"], ["pay them", "Talk"],
-			["bribe", "Talk"], ["lawyer", "Talk"], ["mug", "Crime"], ["pickpocket", "Crime"], ["search their pockets", "Crime"], ["rob ", "Crime"],
+			["bribe", "Talk"], ["lawyer", "Talk"], ["mug", "Crime"], ["pickpocket", "Crime"], ["start the score", "Crime"], ["ask to join", "Talk"], ["search their pockets", "Crime"], ["rob ", "Crime"],
 			["break in", "Crime"], ["pick the lock", "Crime"], ["kick the door", "Crime"], ["smash a window", "Crime"], ["go in", "Crime"],
-			["board up", "Property"], ["carjack", "Crime"], ["spray", "Crime"], ["gang job", "Crime"], ["get in the car", "Car"],
+			["board up", "Property"], ["upgrade your crib", "Property"], ["at the bench", "Property"], ["carjack", "Crime"], ["spray", "Crime"], ["gang job", "Crime"], ["get in the car", "Car"],
 			["property", "Property"], ["product", "Property"], ["makes", "Property"]]:
 		if l.contains(pair[0]):
 			return pair[1]

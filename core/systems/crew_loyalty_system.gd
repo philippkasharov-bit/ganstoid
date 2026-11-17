@@ -109,6 +109,8 @@ static func _crew_npc(world: World, crew_id: StringName) -> NPCData:
 ## Batch 19: hand a posted crew member's held earnings (dealer sales,
 ## muscle collections) to the player minus their cut. Returns the payout.
 static func pay_out_earnings(world: World, npc: NPCData) -> int:
+	if npc.crew_rank >= 1:
+		npc.crew_earnings = int(npc.crew_earnings * CrewAmbitionSystem.LIEUTENANT_BONUS)   # CA1: a lieutenant runs it harder
 	var cut := int(floor(npc.crew_earnings * CREW_CUT_FRACTION))
 	var payout := npc.crew_earnings - cut
 	Wallet.earn_dirty(world, payout)  # batch 24: corner/protection money is dirty

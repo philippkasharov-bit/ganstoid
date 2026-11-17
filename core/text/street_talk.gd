@@ -73,6 +73,62 @@ const LINES := {
 	"shift_start": ["Clocking in. Four hours.", "Apron on. Shift started."],
 	"shift_done": ["Shift's over. ${n}, clean.", "Clocked out: ${n} in your pocket, legit."],
 	"bought": ["Paid ${n}.", "${n}, bagged.", "Done. ${n} lighter."],
+	"charged": ["Charged. They let you out to wait for the trial.", "Booked and bailed. Court in two days."],
+	"verdict_free": ["Not guilty. You walk out the front door.", "Case collapsed. Free."],
+	"verdict_guilty": ["Guilty. {n} days.", "The judge gives you {n} days."],
+	"grow_setup": ["Gear's set up. It hums.", "The tent's up, the light's on."],
+	"grow_planted": ["{n} seeds in the dirt.", "Planted {n}. Now keep them watered."],
+	"grow_watered": ["Watered {n} plants.", "They drink it up."],
+	"grow_fed": ["Fed {n} plants.", "Plant food in. They'll thank you."],
+	"grow_harvested": ["Cut {n} bags' worth. It hangs to dry.", "Harvest in: {n} bags once it's dry."],
+	"grow_cleared": ["Pulled the dead ones out.", "The dead plants go in the trash."],
+	"grow_bagged": ["{n} bags, stamped and ready.", "Bagged {n}. Your stamp on every one."],
+	"grow_cut": ["Cut it with oregano: {n} more bags. Nobody will thank you.", "Stretched it: +{n}. It's worse now."],
+	"grow_no_gear": ["No room for more of that gear.", "Nothing to set up."],
+	"grow_need_gear": ["You need a tent and a light first.", "No tent, no light, no grow."],
+	"grow_no_seeds": ["No seeds. A dealer has them.", "Out of seeds."],
+	"grow_full": ["Every spot in the tents is taken.", "No room for more plants."],
+	"grow_nothing": ["Nothing growing.", "No plants to water."],
+	"grow_no_food": ["No plant food left, or they've had enough.", "They don't need more food."],
+	"grow_not_ripe": ["Not ready yet.", "Give them more time."],
+	"grow_not_dry": ["Still drying.", "Not dry yet."],
+	"grow_stocked": ["Left {n} things for the grower.", "Seeds and food in the cupboard: {n}."],
+	"staff_hired": ["Hired. They start in the morning.", "You've got someone on the books."],
+	"staff_fired": ["Let go with ${n} to keep it quiet.", "Paid off and gone: ${n}."],
+	"staff_fired_angry": ["Fired, and they left angry. They know things.", "Gone, with nothing in their pocket. That's a risk."],
+	"staff_cant": ["Can't do that.", "No."],
+	"venue_opened": ["Licence on the wall. Doors open tonight.", "Your name's on the lease. Tonight it's a club."],
+	"venue_decor": ["New lights, new booths. It looks the part.", "Fitted out. People notice."],
+	"venue_back_room": ["A table in the back, a man at the door. Don't talk about it.", "The back room's open. Cash only."],
+	"venue_cant": ["Can't do that here.", "Not possible."],
+	"gamble_sat": ["You pull up a chair.", "A seat at the table. Cash on the felt."],
+	"lab_need_gear": ["You need the gear set up first.", "No press, no glassware: nothing to work with."],
+	"lab_no_chems": ["Nothing to work with. A dealer has powder; any shop sells cold medicine.", "Out of chemicals."],
+	"lab_pressed": ["Pressed {n} pills.", "{n} pills, stamped and counted."],
+	"lab_cooking": ["The cook's on. Watch the heat.", "Burner lit. Keep it in the green."],
+	"lab_ordered": ["Paid ${n} up front. Now the warehouse, tomorrow night.", "The connect has your money: ${n}."],
+	"lab_picked_up": ["{n} units, wrapped tight. Go.", "The load's yours: {n}."],
+	"lab_sting": ["It's a setup! Police everywhere!", "Sting! Run!"],
+	"lab_no_connect": ["Nobody big will deal with you yet.", "The connect isn't answering."],
+	"search_found": ["Something in here.", "Jackpot. Have a look."],
+	"search_empty": ["Nothing worth taking.", "Empty."],
+	"pawned": ["The pawn man counts out ${n}. Clean.", "${n} and a pawn ticket you'll never use."],
+	"fenced": ["${n}, cash, no questions.", "Fenced for ${n}."],
+	"sold_hand": ["${n} in your pocket. Keep moving.", "Hand to hand: ${n}."],
+	"too_dear": ["\"That much? Nah.\"", "\"You're crazy, man. Too much.\""],
+	"loan_out": ["Lent ${n}. They'll pay it back. One way or another.", "${n} out on the street."],
+	"loan_collected": ["${n} back towards what they owe.", "They count out ${n}."],
+	"loan_broke": ["\"I got nothing on me, I swear!\"", "Empty pockets. They owe you still."],
+	"loan_leaned": ["They get the message. They'll pay double.", "\"Okay, okay! I'll have it!\""],
+	"loan_example": ["You make an example. Everyone who owes you will hear.", "Nobody's going to be late again."],
+	"fake_printed": ["{n} fresh hundreds. Let them dry.", "Printed {n} bills."],
+	"fake_passed": ["The clerk hands you ${n} in real change.", "Bought gum with a fake hundred: ${n} change."],
+	"fake_spotted": ["The clerk holds it to the light. \"This is fake!\"", "\"Counterfeit! I'm calling the cops!\""],
+	"fake_too_many": ["Twice in one day here is pushing it.", "They've seen your face today already."],
+	"car_chopped": ["They strip it in an hour. ${n} for the parts.", "${n}, and the car never existed."],
+	"ring_opened": ["The back counter buys anything now. No questions.", "Your pawn shop is a fence now."],
+	"den_opened": ["Dice on the floor, a man on the door. Open for business.", "The flat's a den now."],
+	"store_refused": ["\"Get out of my store. I remember you.\"", "\"You! Out, before I call the cops.\""],
 	"closed": ["Shutters down. Opens at seven.", "Closed for the night."],
 	"not_sold_here": ["They don't carry that here."],
 	"no_counter": ["Nobody selling anything here."],
@@ -103,6 +159,29 @@ const LINES := {
 	"lift_lost": ["Lost them.", "They got away from you.", "Too far back. Gone."],
 	"rival_coming": ["{n} of them, coming your way.", "Here they come: {n}.", "{n} shapes coming fast."],   # RV1
 	"rival_new": ["New man on those corners. He knows your name already.", "Someone stepped up. He's heard about you."],
+	"gang_joined": ["You're in. Don't make them regret it.", "Jumped in. You've got a set now."],   # RP3
+	"gang_left": ["You walked. They won't forget.", "Out. Watch your back."],
+	"gang_already": ["You've already got a set.", "You're already claimed."],
+	"gang_not_here": ["Ask on their own turf.", "Not here. Their corners."],
+	"gang_standing": ["\"We don't know you like that.\" Do business with them first.", "\"Prove yourself. Deal with us, do a job.\""],
+	"gang_unknown": ["\"Who are you?\" Get a name first.", "\"Nobody's heard of you.\""],
+	"gang_grudge": ["\"After what you did? No.\"", "\"You've got some nerve.\""],
+	"gang_none": ["You're not in a gang.", "Nothing to leave."],
+	"gig_taken": ["Gig's yours. Check the GPS.", "Easy money. Go."],   # RP2
+	"gig_busy": ["Finish the one you've got first.", "One gig at a time."],
+	"gig_need_car": ["You need a car and a licence for that.", "Taxi work needs wheels and papers."],
+	"licence_bought": ["Licence in your wallet. Legit, for once.", "Papers. You can drive without sweating now."],
+	"licence_have": ["You've already got one.", "Already licensed."],
+	"no_licence": ["A cop clocked you driving without a licence. That goes on your file.", "No licence, and a cop saw. Great."],
+	"property_bought": ["Keys are yours. ${n}.", "Signed. You own a place now."],
+	"moved_in": ["New place. Feels like yours.", "Moved in."],
+	"not_yours": ["That's not your place.", "You don't own that."],
+	"crib_up": ["Moved up. ${n} well spent.", "The place looks like something now."],   # CR1
+	"crib_rank": ["Nobody rents that to a nobody. Rank up first.", "Not with your name. Not yet."],
+	"crib_max": ["Can't get bigger than this.", "This is as big as it gets."],
+	"heist_started": ["Go. Fast and quiet.", "Doing it. Watch the street.", "Clock's running."],   # HS1
+	"heist_not_yet": ["Not yet. Wait for the window.", "Too early. It's not on yet."],
+	"no_heist": ["Nothing on here.", "No score here."],
 	"gang_warning": ["\"Wrong block, homie. Keep walking.\"", "\"You lost? This ain't your street.\"", "\"Walk on. Now.\""],   # RX1
 	"gang_told": ["\"We told you.\" They're coming.", "\"You don't listen, huh?\"", "They're done talking."],
 	"searching": ["Let's see what they've got.", "Going through their pockets."],   # LT3
@@ -165,6 +244,7 @@ static func say(world: World, player_state: PlayerStateData, result: Dictionary)
 static func _count(world: World, player_state: PlayerStateData, key: String, amount: int) -> void:
 	HustleSystem.progress(world, player_state, key, amount)
 	RivalSystem.note(world, player_state, key)
+	GangLifeSystem.progress(world, player_state, key)
 	NewsSystem.note(world, player_state, key, amount)
 
 static func say_key(world: World, player_state: PlayerStateData, key: String, amount: int = 0) -> void:
@@ -173,6 +253,7 @@ static func say_key(world: World, player_state: PlayerStateData, key: String, am
 	player_state.last_message = line.replace("{n}", str(amount))
 	player_state.message_tone = 0
 	player_state.message_alert = ALERTS.has(key)
+	player_state.message_key = key
 	player_state.message_serial += 1
 
 static func _key_for(result: Dictionary) -> String:

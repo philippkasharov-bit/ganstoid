@@ -108,6 +108,7 @@ func _release(me: NPCData, state: PlayerStateData) -> void:
 		me.position = home.get_component(ComponentNames.BUILDING).position
 	_world.reindex_position(me.id)
 	StreetTalk.say_key(_world, state, "released")
+	StreetTalk._count(_world, state, "released", 0)   # JL1: it makes the paper
 
 static func lawyer(world: World, me: NPCData, state: PlayerStateData) -> Dictionary:
 	if state.case_evidence <= 0.0:

@@ -23,6 +23,7 @@ var people3d := RenderSync3D.new()
 var aim := AimView3D.new()
 var furniture := StreetFurniture3D.new()
 var stream := CityStream3D.new()
+var audio := AudioDirector.new()   # AU1: what you hear
 var turf_map := TurfMap3D.new()   # T3: U in 3D   # OPT1: builds the city round you, drops it behind you
 var _plane: MeshInstance3D
 const CITY_M := 9000.0   # signals, stop signs, bus stops
@@ -88,6 +89,11 @@ func setup(w: World, city: CityData, at: Vector2) -> void:
 	rig.world = world
 	rig.follow = people3d
 	add_child(rig)
+	audio.world = world
+	audio.origin = centre
+	audio.camera = rig.camera
+	audio.footprints = people3d.footprints
+	add_child(audio)
 
 ## Switch between the 3D view and the old 2D map.
 func show_3d(yes: bool) -> void:

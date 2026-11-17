@@ -44,7 +44,7 @@ func _drain(me: NPCData, state: PlayerStateData, days: float) -> void:
 	me.hunger = maxf(0.0, me.hunger - HUNGER_PER_DAY * days)
 	me.thirst = maxf(0.0, me.thirst - THIRST_PER_DAY * days)
 	if state.sleeping:
-		me.fatigue = minf(1.0, me.fatigue + (REST_PER_DAY_HOME if state.sleeping_home else REST_PER_DAY_ROUGH) * days)
+		me.fatigue = minf(1.0, me.fatigue + (REST_PER_DAY_HOME * CribSystem.rest_mult(state) if state.sleeping_home else REST_PER_DAY_ROUGH) * days)   # CR1
 	else:
 		me.fatigue = maxf(0.0, me.fatigue - TIRED_PER_DAY * days)
 	var hurt := 0.0

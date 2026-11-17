@@ -16,7 +16,7 @@ static func is_yours(me: NPCData, building: BuildingData) -> bool:
 
 ## The container kinds of a building you can open, filled as needed.
 static func open(world: World, me: NPCData, building: BuildingData) -> Array:
-	var kinds: Array = LootTables.containers_for(building)
+	var kinds: Array = LootTables.containers_for(building, world)
 	if is_yours(me, building):
 		kinds = [STASH] + kinds
 	for kind in kinds:
@@ -42,8 +42,19 @@ static func _ensure(world: World, building: BuildingData, kind: String) -> void:
 				roll[id] = roll.get(id, 0) + r[id]
 		if c["filled"] and not _pay_restock(building, LootTables.value(roll)):
 			return   # E3: they could not afford to stock it again; it stays empty
+		var restock: bool = c["filled"]
 		c["items"] = roll
 		c["filled"] = true
+		if roll.is_empty():
+			c["emptied_tick"] = world.tick   # LT4: an empty roll (a register, a bare drawer) waits for the next restock, not every look
+		if restock and not roll.is_empty():
+			c["searched"] = false   # LT4: new things in it: it has to be gone through again
+
+## LT4: has this container been gone through? (Your own place: always.)
+static func searched(me: NPCData, building: BuildingData, kind: String) -> bool:
+	if kind == STASH or is_yours(me, building):
+		return true
+	return bool(building.containers.get(kind, {}).get("searched", false))
 
 ## LT2: how many pieces of furniture hold `kind` in this building (1 when its
 ## layout is unknown or has none): an apartment block rolls each flat's kitchen.
@@ -57,7 +68,7 @@ static func _pieces(building: BuildingData, kind: String) -> int:
 	var n := 0
 	for f in InteriorLayout.of(b).furniture:
 		n += int(f["container"] == kind)
-	return clampi(ceili(n / 3.0), 1, MAX_PIECES)   # a kitchen is about three pieces (counter, fridge, cupboard)
+	return clampi(n, 1, MAX_PIECES)   # LT4: every piece of furniture rolls its own
 
 ## E3: the people there buy what fills the drawers again (from the cash at
 ## home or the till, then savings). False when they cannot afford it.

@@ -58,7 +58,7 @@ func process_entities(entities: Dictionary, delta: float, tick: int) -> void:
 static func ensure(world: World, state: PlayerStateData) -> void:
 	for e in world.get_entities_with_component(ComponentNames.GANG).values():
 		var gang: GangData = e.get_component(ComponentNames.GANG)
-		if gang.is_destroyed or state.rivals.has(gang.id):
+		if gang.is_destroyed or state.rivals.has(gang.id) or (state.gang_member == gang.id and state.gang_rank >= GangLifeSystem.RANKS.size() - 1):
 			continue
 		var lt := _pick(world, gang, int(hash(String(gang.id))))
 		if lt == null:
@@ -110,7 +110,7 @@ static func note(world: World, state: PlayerStateData, key: String) -> void:
 		grow(world, state, owner, TAG_GRUDGE)
 
 static func grow(world: World, state: PlayerStateData, gang: StringName, by: float) -> void:
-	if not state.rivals.has(gang):
+	if not state.rivals.has(gang) or (state.gang_member == gang and by < GangLifeSystem.LEAVE_GRUDGE):   # RP3: your own gang
 		return
 	var r: Dictionary = state.rivals[gang]
 	var mult := 1.4 if r["temper"] == "hot-headed" else (0.7 if r["temper"] == "patient" else 1.0)

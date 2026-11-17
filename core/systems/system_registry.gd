@@ -31,9 +31,26 @@ static func register_all(world: World) -> void:
 	world.register_system(ExplorationSystem.new(world))   # MP2
 	world.register_system(PickpocketSystem.new(world))    # PP1
 	world.register_system(ReactionSystem.new(world))      # RX1
+	world.register_system(MemorySystem.new(world))        # ME1
+	world.register_system(CourtSystem.new(world))         # CT1
+	world.register_system(CrewAmbitionSystem.new(world))  # CA1
+	world.register_system(GrowSystem.new(world))          # BZ1
+	world.register_system(StaffSystem.new(world))         # BZ2
+	world.register_system(VenueSystem.new(world))         # BZ3
+	world.register_system(GambleSystem.new(world))        # BZ3
+	world.register_system(DrugLabSystem.new(world))       # BZ4
+	world.register_system(TradeSystem.new(world))         # UI7
+	world.register_system(LoanSystem.new(world))          # BZ5
 	world.register_system(PhoneSystem.new(world))         # PH1
 	world.register_system(AdminSystem.new(world))         # AD1
 	world.register_system(CornerWarSystem.new(world))     # CW1
+	world.register_system(HeistSystem.new(world))         # HS1
+	world.register_system(CribSystem.new(world))          # CR1
+	world.register_system(GigSystem.new(world))           # RP2
+	world.register_system(PrisonSystem.new(world))        # JL1
+	var gang_life := GangLifeSystem.new(world)            # RP3
+	world.register_system(gang_life)
+	world.event_bus.subscribe(gang_life.on_assaulted)
 	var rivals := RivalSystem.new(world)                  # RV1
 	world.register_system(rivals)
 	world.event_bus.subscribe(rivals.on_assaulted)

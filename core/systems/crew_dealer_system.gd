@@ -15,6 +15,9 @@
 class_name CrewDealerSystem
 extends SystemBase
 
+var walked := 0   # QL3: buyers who found it too dear (checks)
+const REGULAR_AT := 0.25    # BZ1: a customer this happy with your product is a regular
+const REGULAR_PAYS := 1.25  # never stiffs you, pays a bit more
 const CONSIGNMENT := 5
 const GOOD_ID := &"weed"
 const CUSTOMER_RADIUS := 15.0   # a buyer has to come up to the corner
@@ -45,17 +48,35 @@ func process_entities(entities: Dictionary, _delta: float, _tick: int) -> void:
 				_try_sale(npc)
 
 func _try_sale(dealer: NPCData) -> void:
-	if not has_customer(_world, dealer.position) or _world.runtime_rng.randf() >= SALE_CHANCE:
+	var buyer := customer(_world, dealer.position)
+	if buyer == &"" or _world.runtime_rng.randf() >= SALE_CHANCE:
 		return
+	var state: PlayerStateData = _world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
+	var worth := DrugLabSystem.value_each(_world, state, GOOD_ID, dealer.position, false)   # QL3: your price, their call
+	var ask := DrugLabSystem.ask_each(_world, state, GOOD_ID, dealer.position, false)
+	var regular := MemorySystem.feel_of(state, buyer) >= REGULAR_AT   # BZ1: they liked it last time
+	if _world.runtime_rng.randf() >= DrugLabSystem.accept(ask / (REGULAR_PAYS if regular else 1.0), worth):
+		walked += 1
+		return   # too dear: they walk on
 	dealer.crew_stash -= 1
 	CrimeSystem.broadcast_witnesses(_world, dealer.position, CrimeSystem.SEVERITY_BY_TYPE[GanstoidEnums.CrimeType.DRUG_DEAL_OBSERVED], false)
-	if _world.runtime_rng.randf() < CUSTOMER_STIFF_CHANCE:
+	if not regular and _world.runtime_rng.randf() < CUSTOMER_STIFF_CHANCE:
 		return
 	var item: EconomyItemData = _world.economy_items[GOOD_ID]
-	dealer.crew_earnings += item.current_price
+	dealer.crew_earnings += int(round(ask * (REGULAR_PAYS if regular else 1.0)))
+	var stars := GrowSystem.stars_carried(state)
+	if stars >= 4.0 or (stars >= 3.0 and ask <= worth * 0.85):   # QL3: good weed, or decent weed cheap, makes regulars
+		MemorySystem.remember(_world, state, buyer, "good_product")
+	elif stars < 2.0:
+		MemorySystem.remember(_world, state, buyer, "bad_batch")
+	GrowSystem.sold(_world, state)
 	item.supply += (1.0 - item.supply) * SALE_SUPPLY_BUMP
 
 static func has_customer(world: World, position: Vector2) -> bool:
+	return customer(world, position) != &""
+
+## BZ1: the nearest would-be buyer's id, or &"".
+static func customer(world: World, position: Vector2) -> StringName:
 	for id in world.spatial_index.query_nearby(position):
 		var entity: Entity = world.entities.get(id)
 		if entity == null or entity.has_component(ComponentNames.PLAYER_STATE):
@@ -64,8 +85,8 @@ static func has_customer(world: World, position: Vector2) -> bool:
 		if npc == null or npc.is_crew or npc.is_cop or npc.is_dealer:
 			continue
 		if npc.position.distance_to(position) <= CUSTOMER_RADIUS:
-			return true
-	return false
+			return id
+	return &""
 
 ## G near a crew member: hand them a consignment and post them, or collect
 ## from a posted dealer and bring them back.

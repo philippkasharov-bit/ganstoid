@@ -44,10 +44,12 @@ static func hours_of(source_id: StringName, kind: String) -> Vector2:
 static func buy(world: World, me: NPCData, state: PlayerStateData, source_id: StringName, item_id: StringName) -> Dictionary:
 	var kind := counter_kind(world, source_id)
 	var it := ItemCatalog.item(item_id)
-	if kind == "" or it.is_empty() or it["sold_at"] != kind:
+	if kind == "" or it.is_empty() or it.get("sold_at", "") != kind:
 		return {"ok": false, "reason": "not_sold_here"}
 	if not is_open(world, source_id):
 		return {"ok": false, "reason": "closed"}
+	if MemorySystem.refuses(state, source_id):
+		return {"ok": false, "reason": "store_refused"}   # ME1
 	if it["kind"] == "weapon" and kind == "dealer" and state.rank < it.get("rank", RankSystem.GUN_RANK):
 		return {"ok": false, "reason": "nobody_gun"}   # RK1: they don't sell iron to a nobody
 	var price: int = it["price"]

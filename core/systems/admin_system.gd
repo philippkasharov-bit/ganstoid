@@ -4,7 +4,7 @@
 ## the same loop as play and can be checked. Commands:
 ##   cash n · heal · god · item id · fame n · rank_up · wanted_clear
 ##   teleport (to your waypoint) · hour h · reveal_map · push_now · hustles_new
-##   rival_max · paper_now
+##   rival_max · paper_now · heist_now (rank)
 ## run() is also how the checks call them directly.
 class_name AdminSystem
 extends SystemBase
@@ -115,6 +115,28 @@ static func run(world: World, cmd: String, arg: Variant, tick: int) -> String:
 			for g in state.rivals:
 				state.rivals[g]["grudge"] = RivalSystem.PERSONAL
 			return "every rival wants you dead"
+		"heist_now":
+			state.heist = {}
+			var kind: String = {1: "store", 2: "stash", 3: "van"}.get(int(arg) if arg != null else 1, "store")
+			var got := HeistSystem.offer(world, state, me, tick - SimClock.hours(3.0), kind)
+			if got:
+				state.heist["from"] = tick   # on right now
+			return "score offered" if got else "no target found"
+		"crib_up":
+			state.crib = mini(state.crib + 1, CribSystem.TIERS.size() - 1)
+			return "crib: %s" % CribSystem.TIERS[state.crib]
+		"jail":
+			var days := CaseSystem.sentence(world, me, state) if state.case_evidence >= CaseSystem.PRISON_FROM else 0
+			if days == 0:
+				state.case_evidence = CaseSystem.PRISON_FROM * 3.0
+				days = CaseSystem.sentence(world, me, state)
+			return "sentenced: %d days" % days
+		"trial_now":   # CT1: charge (with a case if there is none) and sit the court at once
+			if state.trial.is_empty():
+				state.case_evidence = maxf(state.case_evidence, CaseSystem.PRISON_FROM * 2.0)
+				CourtSystem.charge(world, me, state)
+			state.trial["at"] = tick
+			return "the court sits now (%d witnesses)" % state.trial["witnesses"].size()
 		"paper_now":
 			state.paper = NewsSystem.print_paper(state, HustleSystem.day_of(tick))
 			state.paper_serial += 1

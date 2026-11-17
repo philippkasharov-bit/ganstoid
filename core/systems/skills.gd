@@ -9,17 +9,17 @@
 class_name Skills
 extends RefCounted
 
-const NAMES: Array[StringName] = [&"shooting", &"melee", &"theft", &"driving", &"hustle"]
+const NAMES: Array[StringName] = [&"shooting", &"melee", &"theft", &"driving", &"hustle", &"growing", &"chemistry", &"forgery"]
 const MAX_LEVEL := 10
 const XP_PER_LEVEL_SQ := 25.0      # level n needs 25 * n^2 XP (10 needs 2500)
 const EDGE_PER_LEVEL := 0.05
 ## SK2: Zomboid groups its skills under headings; ours, with what a level
 ## gives and how XP comes in (the Skills tab's hover card).
-const GROUPS := [["Combat", [&"shooting", &"melee"]], ["Crime", [&"theft", &"hustle"]], ["Vehicles", [&"driving"]]]
+const GROUPS := [["Combat", [&"shooting", &"melee"]], ["Crime", [&"theft", &"hustle", &"forgery"]], ["Vehicles", [&"driving"]], ["Business", [&"growing", &"chemistry"]]]
 const PER_LEVEL := {&"shooting": "tighter spread", &"melee": "harder blows", &"theft": "faster hotwires, surer pickpockets",
-	&"driving": "quicker off the line", &"hustle": "better deal prices"}
+	&"driving": "quicker off the line", &"hustle": "better deal prices", &"growing": "better weed (+0.08 stars)", &"chemistry": "better pills and cooks", &"forgery": "better fake bills"}
 const XP_FROM := {&"shooting": "Shots fired and hits", &"melee": "Blows that land", &"theft": "Each hotwire, lockpick or pickpocket",
-	&"driving": "Distance driven", &"hustle": "Each deal"}
+	&"driving": "Distance driven", &"hustle": "Each deal", &"growing": "Each harvest", &"chemistry": "Each press or cook", &"forgery": "Each print run"}
 
 ## [level, xp into this level, xp this level needs] (needs 0 at max).
 static func progress(xp: float) -> Array:

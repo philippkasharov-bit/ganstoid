@@ -128,6 +128,187 @@ func _run(main: Node, args: Dictionary) -> void:
 				break
 		for i in 4:
 			await process_frame
+	if args.has("bark"):   # ME1 look: someone you robbed knows you again
+		var bp: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
+		var bs: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
+		for e in driver.world.get_entities_with_component(ComponentNames.NPC).values():
+			var n: NPCData = e.get_component(ComponentNames.NPC)
+			if n != bp and not (n.is_cop or n.is_dealer or n.is_fixer or n.is_crew or n.is_down) and n.gang_id == &"":
+				n.position = bp.position + Vector2(3.0, 1.0)
+				n.indoors = false
+				n.is_busy = true
+				driver.world.reindex_position(n.id)
+				MemorySystem.remember(driver.world, bs, n.id, "robbed")
+				MemorySystem.bark(driver.world, bs, n.id, "That's him! He robbed me!", -1)
+				bs.barks[-1]["until"] = driver.world.tick + 100000
+				break
+		for i in 4:
+			await process_frame
+	if args.has("trial") or args.has("court"):   # CT1 look: charged with four witnesses; --court: the court has sat
+		var tp: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
+		var ts: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
+		var deeds := ["robbed", "saw_crime", "saw_crime", "robbed"]
+		for e in driver.world.get_entities_with_component(ComponentNames.NPC).values():
+			var n: NPCData = e.get_component(ComponentNames.NPC)
+			if deeds.is_empty():
+				break
+			if n != tp and not (n.is_cop or n.is_dealer or n.is_fixer or n.is_crew or n.is_down) and n.gang_id == &"" and n.position.distance_to(tp.position) < 400.0:
+				MemorySystem.remember(driver.world, ts, n.id, deeds.pop_back())
+				if deeds.size() == 1:
+					n.fear = 1.0   # one too scared to come
+		ts.case_evidence = 45.0
+		CourtSystem.charge(driver.world, tp, ts)
+		if args.has("court"):
+			CourtSystem.hold(driver.world, tp, ts)
+		for i in 6:
+			await process_frame
+	if args.has("crew"):   # CA1 look: three crew, one asking for a wage
+		var cp: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
+		var cs: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
+		var natures := [&"loyal", &"climber", &"greedy"]
+		for e in driver.world.get_entities_with_component(ComponentNames.NPC).values():
+			var n: NPCData = e.get_component(ComponentNames.NPC)
+			if natures.is_empty():
+				break
+			if n != cp and not (n.is_cop or n.is_dealer or n.is_fixer or n.is_crew or n.is_down) and n.gang_id == &"":
+				n.is_crew = true
+				n.ambition = natures.pop_back()
+				n.loyalty = 0.55 + 0.1 * natures.size()
+				cs.crew_ids.append(n.id)
+		cs.crew_wages[cs.crew_ids[1]] = 30
+		CrewAmbitionSystem._ask(driver.world, cs, driver.world.entities[cs.crew_ids[0]].get_component(ComponentNames.NPC), "raise", 30, "I'm worth more than this. $%d a day, or I walk.")
+		for i in 4:
+			await process_frame
+	if args.has("grow"):   # BZ1 look: a grow at home mid-way, a harvest drying, a stamp
+		var gs: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
+		var t: int = driver.world.tick
+		gs.grow = {"tents": 1, "lamp": 2, "fan": true, "filter": false, "plants": [
+			{"strain": &"seeds_kush", "at": t - SimClock.hours(50), "watered": t - SimClock.hours(2), "fed": 2, "care": 1.0},
+			{"strain": &"seeds_kush", "at": t - SimClock.hours(30), "watered": t - SimClock.hours(14), "fed": 1, "care": 0.9},
+			{"strain": &"seeds_haze", "at": t - SimClock.hours(10), "watered": t - SimClock.hours(3), "fed": 0, "care": 1.0},
+			{"strain": &"seeds_mids", "at": t - SimClock.hours(5), "watered": t - SimClock.hours(3), "fed": 0, "care": 1.0}],
+			"drying": [{"units": 6, "q": 4.2, "strain": "seeds_kush", "ready": t + SimClock.hours(4)}]}
+		gs.inventory[&"weed"] = 12
+		gs.product = {"q": 3.6, "strain": "seeds_kush"}
+		gs.brand = "Blue Dragon"
+		gs.brand_rep = 0.35
+		for i in 4:
+			await process_frame
+	if args.has("biz"):   # BZ2 look: a grow with a grower, an owned shop waiting for a manager
+		var bp: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
+		var bs: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
+		bs.grow = {"tents": 2, "lamp": 2, "fan": true, "filter": true, "plants": [], "drying": [], "stash": {"units": 14, "q": 3.9, "strain": "OG Kush"}, "stock": {&"seeds_kush": 6, &"plant_food": 4}}
+		var home: BuildingData = driver.world.entities[bp.home_building_id].get_component(ComponentNames.BUILDING)
+		var gc := StaffSystem.candidates(driver.world, bs, home.position)
+		if not gc.is_empty():
+			StaffSystem.hire(driver.world, bs, gc[0], &"grow", "grower")
+		for b in BusinessSystem.all_buildings(driver.world):
+			if b.daily_revenue > 0 and b.building_type == GanstoidEnums.BuildingType.LEGIT_BUSINESS and b.position.distance_to(bp.position) < 300.0:
+				b.owner_npc_id = PlayerFactory.PLAYER_ENTITY_ID
+				BuildingData.ownership_serial += 1
+				break
+		bs.biz_day = {"shops": 240, "wages": 55}
+		for i in 4:
+			await process_frame
+	if args.has("club"):   # BZ3 look (with --biz): the shop turned into a two-star club with a back room
+		var vs: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
+		for b in BusinessSystem.player_owned(driver.world):
+			vs.venues[b.id] = {"kind": "club", "decor": 1, "back_room": true, "last": 412, "back": 260, "fight": true}
+			break
+		for i in 4:
+			await process_frame
+	if args.has("table"):   # BZ3 look: at a back-room table at night, a hand of blackjack on
+		var tp: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
+		var ts: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
+		ts.gamble = {"place": &"", "stage": "play", "you": [10, 6], "dealer": [12, 4], "line": "Hit or stand?", "bet": 50, "net": 120}
+		for b in BusinessSystem.all_buildings(driver.world):
+			if GambleSystem.TRADES.has(b.trade) and b.position.distance_to(tp.position) < GambleSystem.LEAVE_M:
+				ts.gamble["place"] = b.id
+		if ts.gamble["place"] == &"":   # nothing in reach: the game stays up for the picture
+			ts.gamble["place"] = tp.home_building_id
+			tp.position = (driver.world.entities[tp.home_building_id].get_component(ComponentNames.BUILDING) as BuildingData).position
+			driver.world.reindex_position(tp.id)
+		for i in 4:
+			await process_frame
+	if args.has("cook"):   # BZ4 look: a cook under way, the heat in the green
+		var ks: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
+		ks.cook = {"heat": 0.66, "t": 8.0, "green": 6.0, "boxes": 5}
+		driver.paused = true   # held still for the picture
+		for i in 4:
+			await process_frame
+	if args.has("connect"):   # BZ4 look: a Soldier with drugs of every grade, the connect's offers
+		var cs2: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
+		AdminSystem.run(driver.world, "rank_up", null, driver.world.tick)
+		AdminSystem.run(driver.world, "rank_up", null, driver.world.tick)
+		cs2.inventory[&"pills"] = 24
+		cs2.inventory[&"meth"] = 10
+		cs2.inventory[&"coke"] = 20
+		cs2.products = {&"pills": 2.7, &"meth": 4.8, &"coke": 4.0, "pills_kind": "pill_powder"}
+		cs2.prices = {&"coke": 140}
+		for i in 4:
+			await process_frame
+	if args.has("rings") or args.has("deal"):   # UI7 look: people around you marked by who they are to you; --deal: selling to one
+		var rp: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
+		var rs: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
+		var spots := [Vector2(3, 1), Vector2(-3, 2), Vector2(2, -3), Vector2(-2, -2), Vector2(5, 3)]
+		var deeds := ["helped", "robbed", "", "good_product", "threatened"]
+		var placed := []
+		for e in driver.world.get_entities_with_component(ComponentNames.NPC).values():
+			var n: NPCData = e.get_component(ComponentNames.NPC)
+			if placed.size() >= spots.size():
+				break
+			if n != rp and not (n.is_cop or n.is_dealer or n.is_fixer or n.is_crew or n.is_down) and n.gang_id == &"":
+				var i := placed.size()
+				n.position = rp.position + spots[i]
+				n.indoors = false
+				n.is_busy = true
+				driver.world.reindex_position(n.id)
+				if deeds[i] == "":
+					n.is_crew = true
+				else:
+					MemorySystem.remember(driver.world, rs, n.id, deeds[i])
+					if deeds[i] == "good_product":
+						MemorySystem.remember(driver.world, rs, n.id, deeds[i])
+				placed.append(n)
+		if args.has("deal"):
+			rs.inventory[&"weed"] = 14
+			rs.inventory[&"pills"] = 8
+			rs.product = {"q": 4.3, "strain": "seeds_kush"}
+			rs.products = {&"pills": 2.8, "pills_kind": "pill_powder"}
+			placed[3].position = rp.position + Vector2(1.2, 0.4)
+			driver.world.reindex_position(placed[3].id)
+			TradeSystem.open(rs, "deal", placed[3].id)
+			rs.trade["line"] = "Hand to hand: $41."
+			rs.trade["tone"] = 1
+		for i in 6:
+			await process_frame
+	if args.has("pawn"):   # UI7 look: the pawn window with a haul from a house
+		var pp: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
+		var ps: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
+		ps.inventory = {&"watch": 2, &"gold_chain": 1, &"vcr": 1, &"walkman": 1, &"jordans": 1}
+		ps.trade = {"mode": "pawn", "who": pp.home_building_id, "line": "", "tone": 0}
+		for i in 6:
+			await process_frame
+	if args.has("loans"):   # BZ5 look: two people asking, three on the book (one late)
+		var lp: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
+		var ls: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
+		var ids := []
+		for e in driver.world.get_entities_with_component(ComponentNames.NPC).values():
+			var n: NPCData = e.get_component(ComponentNames.NPC)
+			if n != lp and not (n.is_cop or n.is_crew or n.is_dealer or n.is_down) and n.gang_id == &"" and n.position.distance_to(lp.position) < 300.0:
+				ids.append(n.id)
+			if ids.size() == 5:
+				break
+		ls.loan_asks = [{"who": ids[0], "amount": 300, "rate": 0.25}, {"who": ids[1], "amount": 800, "rate": 0.4}]
+		ls.loans = [{"who": ids[2], "principal": 200, "total": 260, "owed": 150, "paid": 110, "day": 0, "due": 7, "status": "paying"},
+			{"who": ids[3], "principal": 500, "total": 650, "owed": 650, "paid": 0, "day": 0, "due": 1, "status": "late"},
+			{"who": ids[4], "principal": 100, "total": 125, "owed": 0, "paid": 125, "day": 0, "due": 7, "status": "paid off"}]
+		for i in 4:
+			await process_frame
+	if args.has("jail"):   # JL1 look: inside, the prison panel
+		AdminSystem.run(driver.world, "jail", null, driver.world.tick)
+		for i in 4:
+			await process_frame
 	if args.has("admin"):   # AD1 look: the admin panel on a tab
 		for n in main.get_node("HudLayer").get_children():
 			if n is AdminWindow:
@@ -152,6 +333,11 @@ func _run(main: Node, args: Dictionary) -> void:
 		ph.rivals[gs[0]]["grudge"] = 62.0
 		ph.rivals[gs[1]]["grudge"] = 18.0
 		ph.rivals[gs[1]]["scars"] = 1
+		ph.rank = maxi(ph.rank, 1)   # HS1: a score on, for the Score app
+		var pn: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
+		if HeistSystem.offer(driver.world, ph, pn, driver.world.tick, "store"):
+			ph.heist["known"] = true
+			ph.heist["stage"] = "cased"
 		ph.cash_history = [40, 95, 60, 210, 180, 340]   # UI6: the Bank app's chart
 		ph.dirty_cash = 15
 		PhoneSystem.push(driver.world, ph, "Unknown number", "Word on the street: %s has your name in their mouth." % ph.rivals[gs[0]]["name"])

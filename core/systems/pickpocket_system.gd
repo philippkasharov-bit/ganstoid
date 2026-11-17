@@ -90,6 +90,7 @@ static func _caught(world: World, me: NPCData, mark: NPCData) -> Dictionary:
 	var p: Entity = world.entities.get(PlayerFactory.PLAYER_ENTITY_ID)
 	if p != null:
 		StampView.put(p.get_component(ComponentNames.PLAYER_STATE), "CAUGHT!", "they felt your hand", UiTheme.BAD)   # UI3
+		MemorySystem.remember(world, p.get_component(ComponentNames.PLAYER_STATE), mark.id, "caught_lifting")   # ME1
 	return {"ok": false, "reason": "lift_caught"}
 
 static func _crowd(world: World, me: NPCData) -> int:

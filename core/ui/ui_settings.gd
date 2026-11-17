@@ -51,3 +51,40 @@ static func cycle(root: Window) -> float:
 	cfg.save(PATH)
 	apply(root, next)
 	return next
+
+## AU1: volume of a bus ("Master", "Music", "Effects"), 0 to 1.
+const VOLUMES := [0.0, 0.25, 0.5, 0.75, 1.0]
+const VOLUME_DEFAULT := {"Master": 1.0, "Music": 0.75, "Effects": 1.0}
+
+static func volume(bus: String) -> float:
+	var cfg := ConfigFile.new()
+	var v: Variant = VOLUME_DEFAULT.get(bus, 1.0)
+	if cfg.load(PATH) == OK:
+		v = cfg.get_value("audio", bus, v)
+	return clampf(float(v), 0.0, 1.0) if typeof(v) in [TYPE_FLOAT, TYPE_INT] else float(VOLUME_DEFAULT.get(bus, 1.0))
+
+static func set_volume(bus: String, v: float) -> void:
+	var cfg := ConfigFile.new()
+	cfg.load(PATH)
+	cfg.set_value("audio", bus, clampf(v, 0.0, 1.0))
+	cfg.save(PATH)
+	apply_volumes()
+
+## The next step up (wrapping round to off), applied and saved.
+static func cycle_volume(bus: String) -> float:
+	var now := volume(bus)
+	var i := 0
+	while i < VOLUMES.size() and VOLUMES[i] <= now + 0.01:
+		i += 1
+	var next: float = VOLUMES[i % VOLUMES.size()]
+	set_volume(bus, next)
+	return next
+
+## Sets every bus that exists to its saved volume.
+static func apply_volumes() -> void:
+	for bus in VOLUME_DEFAULT:
+		var i := AudioServer.get_bus_index(bus)
+		if i != -1:
+			var v := volume(bus)
+			AudioServer.set_bus_volume_db(i, linear_to_db(maxf(v, 0.0001)))
+			AudioServer.set_bus_mute(i, v <= 0.0)

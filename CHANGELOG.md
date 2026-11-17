@@ -5,6 +5,28 @@ Newest first. The in-game admin panel (F11, Bugs & updates) shows the top of it.
 
 ## 2026-11-17
 
+- BZ5: loan sharking, fake money and the chop shop
+- CA1 fix: the crew loyalty check uses loyal crew
+- LT4 fix: empty furniture no longer has to be searched over and over
+- UI7: a modern phone, who's who on the street, deal and pawn windows
+- LT4: search the furniture, a real loot list, deal it yourself
+- QL3: quality in street words, strains that differ, your own prices
+- BZ4: the drug chain: press, cook, import
+- BZ3: night spots, back rooms and a seat at the table
+- BZ2: hire people to work for you
+- BZ1: grow your own weed, with stars, your stamp and regulars
+- QL1: quality on everything, and ideas in that direction, on the roadmap
+- CA1: a crew with wants of its own
+- CT1: your day in court
+- ME1: the city remembers you
+- AU1: the city has sound, all made by code
+- ROADMAP: the indie mistakes we design against, batches re-ordered
+- JL1: prison you live through (B8)
+- RP3: join a gang and rise in it (B7)
+- RP2: legal gigs, a driving licence, buying homes (B6)
+- CR1: your crib (B2)
+- HS1: the big score (B1)
+- AD1/QA6: admin panel, test and code indexes, the roadmap
 - DR1/CH1: doors you can see; lose police by breaking line of sight
 - UI6: keys and layout mode for the HUD, motion and charts, calmer pushes
 - RP1/CW1: street reputation and a corner war you can see
@@ -107,8 +129,3 @@ Newest first. The in-game admin panel (F11, Bugs & updates) shows the top of it.
 - TX3: carpet, bigger kitchen tiles, filmic light, a real ground
 - TX2: the city's textures
 - TX1: surface materials and world-mapped detail textures
-- T3: turf and money maps over the 3D city
-- T2: capture points are streets
-- Fix: zebras and lamps where they belong; the player as a person
-- P1 polish: warm lamp light, closer camera, no box over the player
-- uid files for the new scripts
