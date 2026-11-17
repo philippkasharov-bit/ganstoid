@@ -36,6 +36,7 @@ bark_robbed      | debug/shot_main.gd   | --bark
 court_verdict    | debug/shot_main.gd   | --court
 phone_case       | debug/shot_main.gd   | --trial --phone=Case
 phone_crew       | debug/shot_main.gd   | --crew --phone=Crew
+phone_grow       | debug/shot_main.gd   | --grow --phone=Grow
 phone_rivals     | debug/shot_main.gd   | --phone=Rivals
 phone_home       | debug/shot_main.gd   | --phone=home
 minimap_gps      | debug/shot_main.gd   | --gps

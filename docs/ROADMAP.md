@@ -10,6 +10,10 @@ task id. When a batch is done, tick it here in the same commit.
 
 Status: [x] done, [~] partly, [ ] not started.
 
+Setting rule (Phil): it's the 1990s in America. Weed is illegal, there are no
+legal shops, awards or newspaper ratings for it; the street talks and the paper
+prints busts.
+
 ## Milestones (the big picture)
 
 | # | Milestone | Status |
@@ -53,6 +57,7 @@ Status: [x] done, [~] partly, [ ] not started.
 - [x] ME1 the city remembers: people you robbed, hurt, threatened or helped know you again; they shout it (speech bubbles), run, call the police once, or tip you off; a store you held up won't serve you; friends join your crew more readily; grudges fade over about a month
 - [x] CT1 court case: an arrest with a real case is a charge and a trial in two days; the people who remember you are the witnesses; scare them, pay them or hire a lawyer; the court window shows who talked and the verdict (Phone > Case, admin: Trial now)
 - [x] CA1 crew with ambitions: loyal, greedy, climber or rat; wages, lieutenants (their corner pays +50%), a sour lieutenant walks off with a friend and 15% of your cash, a rat gets you a warning and then testifies; Phone > Crew to answer
+- [x] BZ1 grow it yourself: gear from a hardware counter, seeds from a dealer, tents at home (more with a bigger crib), water, feed, harvest, dry, bag; 1-5 stars (strain, lamp, fan, care, growing skill); your stamp and its name on the street; regulars on your corners; cutting; the smell is the risk (a filter helps); Phone > Grow
 
 ## Indie mistakes we design against (Phil, 2026-11: "doesn't it look boring and repetitive?")
 
@@ -99,9 +104,9 @@ Each mistake below is checked against the game and owned by a batch.
 | ME1 | ~~**The city remembers** (killer 1)~~ **done** · | Everyone you robbed, hurt, helped or paid remembers you: clerks refuse you, victims cross the street, people you helped tip you off or join you | 2 |
 | CT1 | ~~**Court case** (killer 2)~~ **done** · | Arrested: a trial built from the real evidence (who saw you, what you carried); before it, scare or pay witnesses, hire a lawyer | 2 |
 | CA1 | ~~**Crew with ambitions** (killer 3)~~ **done** · | Crew have wants: one gets greedy, one talks to police, one wants your chair; promote, pay or cut them loose | 2 |
-| QL1 | **Quality on everything** (proposed, built into each BZ batch) | Every product, item, tool, piece of gear, business, worker and job has a quality from 1 to 5 stars (Trash, Street, Good, Premium, Legendary). It comes from your gear, your skill, your workers and how well you looked after it; it sets the price, how fast it sells, who buys, and your name. Stars show on every card, shop and the Business app | with BZ1 |
-| QL2 | **Ideas in the same direction** (proposed) | Name your own brand and strains; customers who remember your quality and come back (or go to a rival); cut your product to stretch it (more to sell, worse name); crossbreed seeds for new strains; the paper and street talk rate the best in each hood; big buyers who order 50 units of 4-star by Friday; worn gear caps quality; a yearly cannabis cup, club-night battle and poker tournament | pick |
-| BZ1 | **Grow it yourself** (proposed) | Buy gear at a grow shop (tent, lights, fan, filter, seeds), set it up in a place you own, tend the plants (water, feed, light), harvest, dry and bag, sell; more tents, then hydro; smell and neighbours are the risk | 2 |
+| QL1 | **Quality on everything** (weed done in BZ1; the rest with each BZ batch) | Every product, item, tool, piece of gear, business, worker and job has a quality from 1 to 5 stars (Trash, Street, Good, Premium, Legendary). It comes from your gear, your skill, your workers and how well you looked after it; it sets the price, how fast it sells, who buys, and your name. Stars show on every card, shop and the Business app | with BZ1 |
+| QL2 | **Ideas in the same direction** (Phil: all of them, 1990s-real) | Done in BZ1: your own stamp on the bags, customers who remember your quality (regulars), cutting. Still to come: crossbreed seeds for new strains; big buyers who order 50 bags of 4-star by Friday; worn gear caps quality; underground events (a back-room poker game, a club-night battle). No legal weed, no weed awards, no paper ratings: the street talks, the paper only prints busts | with BZ2-BZ7 |
+| BZ1 | ~~**Grow it yourself**~~ **done** · | Buy gear at a grow shop (tent, lights, fan, filter, seeds), set it up in a place you own, tend the plants (water, feed, light), harvest, dry and bag, sell; more tents, then hydro; smell and neighbours are the risk | 2 |
 | BZ2 | **Workers and the Business app** (proposed) | Hire staff for any business (wage, skill, loyalty; they can steal or talk), shifts, one Business app: money in and out, stock, staff, heat | 1-2 |
 | BZ3 | **Nightlife: clubs, strip clubs, casinos** (proposed) | Buy and run them: licence, bouncers, DJ, staff, VIP rooms; nights earn by hood; launder through them; a back-room card game; play blackjack and slots yourself | 3 |
 | BZ4 | **The drug chain** (proposed) | Weed to pills (press) to a cook lab (a short cook mini-game, fire risk) to imports; your own corners, delivery, your clubs; prices by hood | 2-3 |

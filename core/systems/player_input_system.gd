@@ -438,6 +438,7 @@ func _options(npc: NPCData, state: PlayerStateData) -> Array:
 	if npc.home_building_id != &"" and _world.entities.has(npc.home_building_id) and pos.distance_to((_world.entities[npc.home_building_id].get_component(ComponentNames.BUILDING) as BuildingData).position) <= CrimeSystem.INTERACT_RADIUS:   # CR1
 		if state.crib + 1 < CribSystem.TIERS.size():
 			out.append(["Upgrade your crib to %s ($%d)" % [CribSystem.TIERS[state.crib + 1], CribSystem.COST[state.crib + 1]], func() -> Dictionary: return CribSystem.upgrade(_world, state)])
+		_grow_options(out, state)   # BZ1
 		var worn := WeaponWear.held(state)
 		if state.crib >= CribSystem.BENCH_TIER and worn != &"" and WeaponWear.repair_cost(state, worn) > 0:
 			out.append(["Fix your %s at the bench" % ItemCatalog.item(worn)["name"].to_lower(), func() -> Dictionary:
@@ -611,6 +612,30 @@ func _find_counter(position: Vector2) -> StringName:
 			best_dist = d
 			best_id = id
 	return best_id
+
+## BZ1: the grow at home, only the lines that apply right now.
+func _grow_options(out: Array, state: PlayerStateData) -> void:
+	var g := state.grow
+	if GrowSystem.GEAR.any(func(id: StringName) -> bool: return state.inventory.has(id)):
+		out.append(["Set up your grow gear", func() -> Dictionary: return GrowSystem.install(_world, state)])
+	var plants: Array = g.get("plants", [])
+	var seeds := 0
+	for id in GrowSystem.STRAINS:
+		seeds += int(state.inventory.get(id, 0))
+	if seeds > 0 and int(g.get("tents", 0)) > 0 and plants.size() < GrowSystem.slots(state):
+		out.append(["Plant seeds (%d spots free)" % (GrowSystem.slots(state) - plants.size()), func() -> Dictionary: return GrowSystem.plant(_world, state)])
+	if not plants.is_empty():
+		var dry := plants.filter(func(pl: Dictionary) -> bool: return GrowSystem.thirsty(_world, pl)).size()
+		out.append(["Water the plants" + (" (%d thirsty)" % dry if dry > 0 else ""), func() -> Dictionary: return GrowSystem.water(_world, state)])
+		if state.inventory.has(&"plant_food"):
+			out.append(["Feed the plants", func() -> Dictionary: return GrowSystem.feed(_world, state)])
+		var ripe := plants.filter(func(pl: Dictionary) -> bool: return GrowSystem.ripe(_world, pl) or pl.get("dead", false)).size()
+		if ripe > 0:
+			out.append(["Harvest (%d ready)" % ripe, func() -> Dictionary: return GrowSystem.harvest(_world, state)])
+	if (g.get("drying", []) as Array).any(func(d: Dictionary) -> bool: return _world.tick >= int(d["ready"])):
+		out.append(["Bag the dried weed", func() -> Dictionary: return GrowSystem.bag(_world, state)])
+	if int(state.inventory.get(GrowSystem.GOOD_ID, 0)) >= 2:
+		out.append(["Cut your weed (+50%%, a star off)", func() -> Dictionary: return GrowSystem.cut(_world, state), GrowSystem.stars_text(GrowSystem.stars_carried(state))])
 
 static func _counter_position(entity: Entity) -> Vector2:
 	if entity == null:

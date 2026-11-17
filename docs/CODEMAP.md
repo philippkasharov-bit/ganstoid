@@ -207,6 +207,7 @@ One line per script: what it is for. Read the file only when you need it; find s
 | `exploration_system.gd` | ExplorationSystem | MP2: fog of war for the map. The city is a grid of CELL_M squares; the ones within REVEAL_M of you are explored for good (a bitset on PlayerStateData, saved). Street dealers and fixers you have actually seen are remembered by id, so the map can show them. Chec |
 | `gang_life_system.gd` | GangLifeSystem | RP3: join a gang and rise in it, instead of only fighting them. JOIN E by one of a gang's people, on their turf: "Ask to join". They take you if you're in good with them (standing JOIN_STANDING: deals, gun sales, gang jobs), known on the street (Rep Known), an |
 | `gig_system.gd` | GigSystem | RP2: a straight life on the side (RP-server style), all through the phone's Jobs and Property apps: GIGS three legal gigs a day, clean pay: delivery pick up at a shop, drop at an address before the time taxi a fare from A to B (needs a car and a licence) secur |
+| `grow_system.gd` | GrowSystem | BZ1: grow it yourself, by hand, at home. Gear comes from a hardware counter (tent, a shop light or a proper HPS lamp, a fan, a carbon filter, plant food); seeds come from a dealer. Set it up at your home door (E), plant, water at least every WATER_H game hours |
 | `gun_trade.gd` | GunTrade | Gun trade (WP1). Sell a gun you carry to a gang member (Esc next to one): the best gun first. Pays more than a dealer charged; the gang likes you better (more for clean guns) and is better armed in its fights. No gun ledger: a gun you sold is never traced back |
 | `heist_system.gd` | HeistSystem | HS1: the big score. Every few game days (once you are a Hustler) word of a score reaches your phone: a jewellery store, a gang stash house, or an armoured van stopped at a corner for an hour. Then: 1 CASE IT stand near it (CASE_M) for CASE_S: you learn how man |
 | `hotbar.gd` | Hotbar | HB1: Project Zomboid's hotbar: the slots along the bottom of the screen for what is on your belt, each on a number key. Ours fills itself (no dragging things onto the belt yet): every weapon you carry, then the best bandage, food and drink. A key or a click ta |
@@ -309,7 +310,7 @@ One line per script: what it is for. Read the file only when you need it; find s
 
 | file | class | what it is |
 |---|---|---|
-| `item_catalog.gd` | ItemCatalog | Items (G1): every thing the player can carry, as one data table. Pure data: systems read it; nothing here changes state. kind food / drink / medical / weapon / ammo price dollars at a counter (black-market goods: at a dealer) sold_at shop / workshop / dealer ( |
+| `item_catalog.gd` | ItemCatalog | Items (G1): every thing the player can carry, as one data table. Pure data: systems read it; nothing here changes state. kind food / drink / medical / weapon / ammo / gear / seed (BZ1: growing) price dollars at a counter (black-market goods: at a dealer) sold_ |
 | `loot_tables.gd` | LootTables | LT1: what each kind of container holds. A container is filled when you first open it (a seeded roll, so a save reloads the same contents) and refills RESTOCK_DAYS after it was emptied, if the people there can pay for it (E3). Entries: [item, chance, min, max]. |
 
 ## data/schemas

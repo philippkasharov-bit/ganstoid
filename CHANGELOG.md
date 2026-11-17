@@ -5,6 +5,8 @@ Newest first. The in-game admin panel (F11, Bugs & updates) shows the top of it.
 
 ## 2026-11-17
 
+- QL1: quality on everything, and ideas in that direction, on the roadmap
+- CA1: a crew with wants of its own
 - CT1: your day in court
 - ME1: the city remembers you
 - AU1: the city has sound, all made by code

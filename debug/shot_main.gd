@@ -179,6 +179,21 @@ func _run(main: Node, args: Dictionary) -> void:
 		CrewAmbitionSystem._ask(driver.world, cs, driver.world.entities[cs.crew_ids[0]].get_component(ComponentNames.NPC), "raise", 30, "I'm worth more than this. $%d a day, or I walk.")
 		for i in 4:
 			await process_frame
+	if args.has("grow"):   # BZ1 look: a grow at home mid-way, a harvest drying, a stamp
+		var gs: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
+		var t: int = driver.world.tick
+		gs.grow = {"tents": 1, "lamp": 2, "fan": true, "filter": false, "plants": [
+			{"strain": &"seeds_kush", "at": t - SimClock.hours(50), "watered": t - SimClock.hours(2), "fed": 2, "care": 1.0},
+			{"strain": &"seeds_kush", "at": t - SimClock.hours(30), "watered": t - SimClock.hours(14), "fed": 1, "care": 0.9},
+			{"strain": &"seeds_haze", "at": t - SimClock.hours(10), "watered": t - SimClock.hours(3), "fed": 0, "care": 1.0},
+			{"strain": &"seeds_mids", "at": t - SimClock.hours(5), "watered": t - SimClock.hours(3), "fed": 0, "care": 1.0}],
+			"drying": [{"units": 6, "q": 4.2, "strain": "OG Kush", "ready": t + SimClock.hours(4)}]}
+		gs.inventory[&"weed"] = 12
+		gs.product = {"q": 3.6, "strain": "OG Kush"}
+		gs.brand = "Blue Dragon"
+		gs.brand_rep = 0.35
+		for i in 4:
+			await process_frame
 	if args.has("jail"):   # JL1 look: inside, the prison panel
 		AdminSystem.run(driver.world, "jail", null, driver.world.tick)
 		for i in 4:

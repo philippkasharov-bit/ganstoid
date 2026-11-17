@@ -10,7 +10,7 @@ const ACTION := &"phone"
 const SCREEN := Color(0.62, 0.74, 0.47)
 const INK := Color(0.08, 0.12, 0.06)
 const W := 300.0
-const APPS := [["Messages", "Messages"], ["Contacts", "Contacts"], ["Hustles", "Hustles"], ["Bank", "Bank"], ["Rivals", "Rivals"], ["Score", "Score"], ["Crib", "Crib"], ["Jobs", "Jobs"], ["Property", "Property"], ["Gang", "Gang"], ["Crew", "Crew"], ["Case", "Case"], ["Paper", "Paper"]]
+const APPS := [["Messages", "Messages"], ["Contacts", "Contacts"], ["Hustles", "Hustles"], ["Bank", "Bank"], ["Rivals", "Rivals"], ["Score", "Score"], ["Crib", "Crib"], ["Jobs", "Jobs"], ["Property", "Property"], ["Gang", "Gang"], ["Crew", "Crew"], ["Grow", "Grow"], ["Case", "Case"], ["Paper", "Paper"]]
 
 var paper: PaperWindow
 var _world: World
@@ -66,7 +66,7 @@ func _process(delta: float) -> void:
 		return
 	_refresh = 0.4
 	var key := _app + str(state.inbox.size()) + str(state.job_offers.size()) + str(state.hustles) + str(state.rivals.size()) + str(state.known.size())
-	if _app in ["Bank", "Rivals", "Case", "Crew"]:
+	if _app in ["Bank", "Rivals", "Case", "Crew", "Grow"]:
 		key += str(_world.tick / 60)
 	if key == _key:
 		return
@@ -235,6 +235,29 @@ func _show(state: PlayerStateData) -> void:
 				_rule()
 				_text(HeistSystem.plan_line(_world, state), 16, true)
 				_screen.add_child(_progress(clampf(float(h["work"]) / float(spec[2]), 0.0, 1.0) if h["stage"] in ["working", "getaway"] else clampf(float(h["cased"]) / HeistSystem.CASE_S, 0.0, 1.0)))
+		"Grow":   # BZ1: the grow at home and your brand
+			var g := state.grow
+			if int(g.get("tents", 0)) == 0:
+				_text("No grow yet. A hardware counter sells tents, lights, fans, filters and plant food; a dealer has seeds. Set it up at your home door (E).")
+			else:
+				_text("%d tent%s · %s%s%s" % [int(g["tents"]), "" if int(g["tents"]) == 1 else "s", ["no light", "shop light", "HPS lamp"][int(g.get("lamp", 0))], " · fan" if g.get("fan", false) else "", " · filter" if g.get("filter", false) else " · no filter (smell!)"], 15, true)
+				for pl in g.get("plants", []):
+					var age := float(_world.tick - int(pl["at"])) / SimClock.day_ticks
+					var status := "dead" if pl.get("dead", false) else ("READY" if GrowSystem.ripe(_world, pl) else ("thirsty!" if GrowSystem.thirsty(_world, pl) else "growing %.1f d" % age))
+					_text("%s  ·  %s  ·  %s" % [GrowSystem.STRAINS[pl["strain"]][0], status, GrowSystem.stars_text(GrowSystem.quality(state, pl))], 14, status in ["thirsty!", "READY"])
+				for d in g.get("drying", []):
+					_text("drying: %d bags %s%s" % [int(d["units"]), d["strain"], "  · dry now" if _world.tick >= int(d["ready"]) else ""], 14)
+			_rule()
+			var carried: int = state.inventory.get(GrowSystem.GOOD_ID, 0)
+			if carried > 0:
+				_text("You carry %d bags  %s" % [carried, GrowSystem.stars_text(GrowSystem.stars_carried(state))], 15)
+			if state.brand != "":
+				_text("Your stamp: '%s'  ·  known %d%%" % [state.brand, roundi(state.brand_rep * 100.0)], 15, true)
+				var edit := LineEdit.new()
+				edit.placeholder_text = "new name for your stamp"
+				edit.custom_minimum_size = Vector2(W, 30)
+				edit.text_submitted.connect(func(t: String) -> void: state.ui_grow = {"brand": t})
+				_screen.add_child(edit)
 		"Crew":   # CA1: who they are, what they want
 			if state.crew_ids.is_empty():
 				_text("No crew yet. Recruit people (E by them) once you can pay them.")

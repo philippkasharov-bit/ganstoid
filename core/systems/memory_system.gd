@@ -34,7 +34,7 @@ const RECRUIT_PER_FEEL := 0.35   # a friend at +1 is this much more willing to j
 ## What each deed does to how someone feels about you.
 const DEEDS := {
 	"robbed": -0.7, "hurt": -0.6, "threatened": -0.4, "caught_lifting": -0.45, "saw_crime": -0.25,
-	"store_robbed": -0.8, "helped": 0.35, "paid": 0.3, "talked": 0.1,
+	"store_robbed": -0.8, "helped": 0.35, "paid": 0.3, "talked": 0.1, "good_product": 0.15, "bad_batch": -0.3,
 }
 const LINES := {
 	"robbed": ["That's him! He robbed me!", "You! You took my money!", "Stay away from me!"],
@@ -42,6 +42,7 @@ const LINES := {
 	"threatened": ["You again...", "I don't want trouble.", "Leave me alone."],
 	"caught_lifting": ["Watch it, pickpocket.", "Hands where I can see them.", "I know what you are."],
 	"saw_crime": ["I saw what you did.", "I know your face.", "Keep walking."],
+	"bad_batch": ["That stuff you sold was garbage.", "Your weed is trash, man.", "Never buying from your people again."],
 	"friend": ["Hey! Good to see you.", "Yo, what's good?", "Need anything, you let me know."],
 	"report": ["I'm calling the cops!", "Police! It's him!", "Somebody call 911!"],
 	"tip": ["Psst, cops %s. Go.", "Heads up: police %s.", "They're looking for you, %s."],

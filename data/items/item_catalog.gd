@@ -1,6 +1,6 @@
 ## Items (G1): every thing the player can carry, as one data table. Pure data:
 ## systems read it; nothing here changes state.
-##   kind     food | drink | medical | weapon | ammo
+##   kind     food | drink | medical | weapon | ammo | gear | seed (BZ1: growing)
 ##   price    dollars at a counter (black-market goods: at a dealer)
 ##   sold_at  shop | workshop | dealer   (who has it on the shelf)
 ##   hunger / thirst / tired  how much one use restores (0..1 of the need)
@@ -24,6 +24,15 @@ const ITEMS := {
 	&"knife":   {"size": Vector2i(1, 2), "stack": 1, "weight": 0.3, "name": "Knife", "kind": "weapon", "price": 35, "sold_at": "workshop", "weapon": &"knife"},
 	&"pistol":  {"size": Vector2i(2, 1), "stack": 1, "weight": 0.9, "name": "Pistol (no papers)", "kind": "weapon", "price": 450, "sold_at": "dealer", "weapon": &"pistol", "trade": 600, "standing": 0.1, "armory": 1},
 	&"pistol_clean": {"size": Vector2i(2, 1), "stack": 1, "weight": 0.9, "name": "Clean pistol (new, no history)", "kind": "weapon", "price": 900, "sold_at": "dealer", "weapon": &"pistol", "rank": 2, "trade": 1300, "standing": 0.2, "armory": 2},
+	&"grow_tent":  {"size": Vector2i(2, 2), "stack": 1, "weight": 4.0, "name": "Grow tent (4 plants)", "kind": "gear", "price": 220, "sold_at": "workshop"},
+	&"shop_light": {"size": Vector2i(2, 1), "stack": 1, "weight": 1.5, "name": "Shop light (fluorescent)", "kind": "gear", "price": 60, "sold_at": "workshop"},
+	&"hps_lamp":   {"size": Vector2i(2, 2), "stack": 1, "weight": 3.0, "name": "HPS grow lamp", "kind": "gear", "price": 320, "sold_at": "workshop"},
+	&"grow_fan":   {"size": Vector2i(1, 1), "stack": 1, "weight": 1.0, "name": "Clip fan", "kind": "gear", "price": 35, "sold_at": "workshop"},
+	&"carbon_filter": {"size": Vector2i(1, 2), "stack": 1, "weight": 2.0, "name": "Carbon filter (smell)", "kind": "gear", "price": 140, "sold_at": "workshop"},
+	&"plant_food": {"size": Vector2i(1, 1), "stack": 10, "weight": 0.3, "name": "Plant food", "kind": "gear", "price": 8, "sold_at": "workshop"},
+	&"seeds_mids": {"size": Vector2i(1, 1), "stack": 20, "weight": 0.0, "name": "Seeds: street mids", "kind": "seed", "price": 10, "sold_at": "dealer"},
+	&"seeds_kush": {"size": Vector2i(1, 1), "stack": 20, "weight": 0.0, "name": "Seeds: OG Kush", "kind": "seed", "price": 35, "sold_at": "dealer"},
+	&"seeds_haze": {"size": Vector2i(1, 1), "stack": 20, "weight": 0.0, "name": "Seeds: Purple Haze", "kind": "seed", "price": 60, "sold_at": "dealer"},
 	&"ammo":    {"size": Vector2i(1, 1), "stack": 1, "weight": 0.3, "name": "Box of 9 mm (12)", "kind": "ammo", "price": 40, "sold_at": "dealer", "rounds": 12},
 }
 

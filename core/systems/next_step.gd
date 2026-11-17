@@ -36,6 +36,9 @@ static func line(world: World) -> String:
 			return "Trial in %dh: %d witness%s will talk. Scare them, pay them, or get a lawyer (Phone > Case)" % [ceili(h), talk, "" if talk == 1 else "es"]
 	if not state.crew_asks.is_empty():
 		return CrewAmbitionSystem.ask_text(world, state, state.crew_asks[0]) + " Answer on Phone > Crew"
+	var grow := GrowSystem.need_line(world, state)   # BZ1
+	if grow != "":
+		return grow
 	if me.bleeding:
 		return "You're bleeding: press H and bandage the wound"
 	if me.hunger < URGENT:
