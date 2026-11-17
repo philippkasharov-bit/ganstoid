@@ -64,6 +64,9 @@ func process_entities(entities: Dictionary, _delta: float, tick: int) -> void:
 		if first:
 			continue   # a new life: no paper before the first morning
 		state.paper = print_paper(state, day)
+		state.cash_history.append((p.get_component(ComponentNames.NPC) as NPCData).cash)   # UI6
+		while state.cash_history.size() > 7:
+			state.cash_history.pop_front()
 		PhoneSystem.push(_world, state, NewsSystem.PAPER_NAME, String(state.paper.get("headline", "")))
 		state.news_today = []
 		state.paper_serial += 1

@@ -23,6 +23,10 @@ var _rank_left := 0.0
 var _key := ""
 var _shown_cash := -1.0
 var _shown_dirty := 0.0
+var _fill_to := 0.0                # UI6: bars fill smoothly toward these
+var _rep := ColorRect.new()
+var _rep_fill := ColorRect.new()
+var _rep_to := 0.0
 
 func setup(world: World) -> void:
 	_world = world
@@ -51,6 +55,13 @@ func setup(world: World) -> void:
 	_fill.size = Vector2(0, 4)
 	_bar.add_child(_fill)
 	col.add_child(_bar)
+	_rep.color = Color(1, 1, 1, 0.08)   # UI6: reputation meter, red, under the rank bar
+	_rep.custom_minimum_size = Vector2(BAR_W, 3)
+	_rep_fill.color = UiTheme.BAD
+	_rep_fill.size = Vector2(0, 3)
+	_rep.add_child(_rep_fill)
+	_rep.tooltip_text = "Street reputation"
+	col.add_child(_rep)
 	col.add_child(UiTheme.divider())
 	_grid.columns = 2
 	_grid.add_theme_constant_override("h_separation", 12)
@@ -58,16 +69,21 @@ func setup(world: World) -> void:
 	col.add_child(_grid)
 	visible = false
 
+var _want := false
+
 func _process(delta: float) -> void:
 	_count_cash(delta)
+	UiMotion.fade(self, _want, delta, Vector2(-1, 0))   # UI6: slides in from the left
+	position = HudLayout.place(self, "card", Vector2(UiTheme.MARGIN, UiTheme.MARGIN)) + UiMotion.shift(self)
+	_animate_bars(delta)
 	_left -= delta
 	if _world == null or _left > 0.0:
 		return
 	_left = REFRESH_S
 	var player: Entity = _world.entities.get(PlayerFactory.PLAYER_ENTITY_ID)
 	var ready := SimNav.active != null and SimNav.active.usable()
-	visible = player != null and ready and not player.get_component(ComponentNames.NPC).is_down and GameRules.of(_world) != null   # O1: hidden until the new-game choice
-	if not visible:
+	_want = player != null and ready and not player.get_component(ComponentNames.NPC).is_down and GameRules.of(_world) != null   # O1: hidden until the new-game choice
+	if not _want:
 		return
 	var npc: NPCData = player.get_component(ComponentNames.NPC)
 	var state: PlayerStateData = player.get_component(ComponentNames.PLAYER_STATE)
@@ -81,19 +97,27 @@ func _process(delta: float) -> void:
 		_key = key
 		_show(rows)
 
+## UI6: the bars ease toward their values.
+func _animate_bars(delta: float) -> void:
+	_fill.size.x = UiMotion.toward(_fill.size.x, _fill_to, delta)
+	_rep_fill.size.x = UiMotion.toward(_rep_fill.size.x, _rep_to, delta)
+	var p: Entity = _world.entities.get(PlayerFactory.PLAYER_ENTITY_ID) if _world != null else null
+	if p != null:
+		_rep_to = BAR_W * (p.get_component(ComponentNames.PLAYER_STATE) as PlayerStateData).fame / 100.0
+
 ## The rank and how far to the next one.
 func _show_rank(npc: NPCData, state: PlayerStateData) -> void:
 	_rank.text = RankSystem.name_of(state.rank)
 	var last := state.rank >= RankSystem.THRESHOLDS.size() - 1
 	if last:
 		_points.text = "top of the city"
-		_fill.size.x = BAR_W
+		_fill_to = BAR_W
 		return
 	var pts := RankSystem.score(_world, npc, state)
 	var lo: int = RankSystem.THRESHOLDS[state.rank]
 	var hi: int = RankSystem.THRESHOLDS[state.rank + 1]
 	_points.text = "%d / %d to %s" % [pts, hi, RankSystem.name_of(state.rank + 1)]
-	_fill.size.x = BAR_W * clampf(float(pts - lo) / float(maxi(1, hi - lo)), 0.0, 1.0)
+	_fill_to = BAR_W * clampf(float(pts - lo) / float(maxi(1, hi - lo)), 0.0, 1.0)
 
 ## The small print: [label, value] pairs, in order.
 func _rows(npc: NPCData, state: PlayerStateData) -> Array:

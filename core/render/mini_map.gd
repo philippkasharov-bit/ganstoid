@@ -33,11 +33,12 @@ func setup(world: World, c: CityData) -> void:
 
 func _process(delta: float) -> void:
 	var p: Entity = _world.entities.get(PlayerFactory.PLAYER_ENTITY_ID) if _world != null else null
-	visible = p != null and GameRules.of(_world) != null and SimNav.active != null and SimNav.active.usable()
-	if not visible:
+	var want: bool = p != null and GameRules.of(_world) != null and SimNav.active != null and SimNav.active.usable() and HudLayout.shown("minimap")
+	UiMotion.fade(self, want, delta, Vector2(0, 1))   # UI6: O hides it
+	if not want:
 		return
 	var view := get_viewport_rect().size
-	position = Vector2(view.x - SIZE - UiTheme.MARGIN, view.y - SIZE - UiTheme.MARGIN)
+	position = HudLayout.place(self, "minimap", Vector2(view.x - SIZE - UiTheme.MARGIN, view.y - SIZE - UiTheme.MARGIN)) + UiMotion.shift(self)
 	var me: NPCData = p.get_component(ComponentNames.NPC)
 	var state: PlayerStateData = p.get_component(ComponentNames.PLAYER_STATE)
 	if _cached_at == Vector2.INF or me.position.distance_to(_cached_at) > RECACHE_M:
@@ -129,6 +130,8 @@ func _draw() -> void:
 		var s := _to_mini(goal, me.position, turn)
 		if s.distance_to(c) > r - 8.0:
 			s = c + (s - c).normalized() * (r - 8.0)   # off the edge: pinned to the rim, pointing the way
+		var pulse := fmod(Time.get_ticks_msec() / 900.0, 1.0)   # UI6: the waypoint pulses
+		draw_arc(s, 6.0 + pulse * 10.0, 0.0, TAU, 20, Color(GPS, 1.0 - pulse), 2.0)
 		draw_circle(s, 6.0, GPS)
 		draw_circle(s, 3.0, Color.BLACK)
 		var d := roundi(me.position.distance_to(goal))

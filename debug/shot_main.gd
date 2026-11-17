@@ -128,6 +128,10 @@ func _run(main: Node, args: Dictionary) -> void:
 				break
 		for i in 4:
 			await process_frame
+	if args.has("layout"):   # UI6 look: F10 layout mode, the panels outlined
+		HudLayout.editing = true
+		for i in 4:
+			await process_frame
 	if args.has("gps"):   # MM1 look: a waypoint set, the GPS line on the minimap
 		var gs: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
 		var gn: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
@@ -141,6 +145,8 @@ func _run(main: Node, args: Dictionary) -> void:
 		ph.rivals[gs[0]]["grudge"] = 62.0
 		ph.rivals[gs[1]]["grudge"] = 18.0
 		ph.rivals[gs[1]]["scars"] = 1
+		ph.cash_history = [40, 95, 60, 210, 180, 340]   # UI6: the Bank app's chart
+		ph.dirty_cash = 15
 		PhoneSystem.push(driver.world, ph, "Unknown number", "Word on the street: %s has your name in their mouth." % ph.rivals[gs[0]]["name"])
 		for n in main.get_node("HudLayer").get_children():
 			if n is PhoneWindow:

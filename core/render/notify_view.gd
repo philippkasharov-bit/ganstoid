@@ -50,4 +50,4 @@ func _process(delta: float) -> void:
 	reset_size()
 	var right := pager.position.x + pager.size.x if pager != null and pager.visible else get_viewport_rect().size.x - UiTheme.MARGIN
 	var top := pager.position.y + pager.size.y + UiTheme.SPACE if pager != null and pager.visible else 80.0
-	position = Vector2(roundf(right - size.x + (1.0 - slide) * 60.0), roundf(top))
+	position = HudLayout.place(self, "notify", Vector2(roundf(right - size.x), roundf(top))) + Vector2((1.0 - slide) * 60.0, 0)

@@ -76,6 +76,11 @@ func _process(delta: float) -> void:
 func _show(state: PlayerStateData) -> void:
 	for c in _screen.get_children():
 		c.queue_free()
+	_screen.modulate.a = 0.0   # UI6: each page slides and fades in
+	_screen.position.x = 18.0
+	var tw := create_tween().set_parallel()
+	tw.tween_property(_screen, "modulate:a", 1.0, 0.18)
+	tw.tween_property(_screen, "position:x", 0.0, 0.18).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 	var hours := SimClock.day_fraction(_world.tick) * 24.0
 	_text("%s     %02d:%02d   ▮▮▮" % ["HOME" if _app == "" else _app.to_upper(), int(hours), int(fmod(hours, 1.0) * 60.0)], 16)
 	_rule()
@@ -139,7 +144,10 @@ func _show(state: PlayerStateData) -> void:
 			_text("CASH      $%d" % me2.cash, 20)
 			_text("clean     $%d" % (me2.cash - state.dirty_cash), 16)
 			_text("dirty     $%d" % state.dirty_cash, 16)
+			_screen.add_child(_split_bar(float(me2.cash - state.dirty_cash), float(state.dirty_cash)))   # UI6
 			_rule()
+			_text("LAST 7 MORNINGS", 14, true)
+			_screen.add_child(_spark(state.cash_history + [me2.cash]))
 			_text("Dirty money draws the police when they search you. Clean it through a business you own.", 14)
 		"Rivals":
 			if state.rivals.is_empty():
@@ -148,11 +156,54 @@ func _show(state: PlayerStateData) -> void:
 				var r: Dictionary = state.rivals[g]
 				var bar := "#".repeat(int(float(r["grudge"]) / 10.0)) + "-".repeat(10 - int(float(r["grudge"]) / 10.0))
 				_text("%s  (%s)" % [r["name"], _gang(g)], 16, true)
-				_text("grudge [%s]  %s%s" % [bar, r["temper"], "  scars %d" % int(r["scars"]) if int(r["scars"]) > 0 else ""], 14)
+				_screen.add_child(_grudge(float(r["grudge"])))   # UI6: a real bar, the stages marked
+				_text("%s  ·  %s%s" % [["calm", "talking", "hunting you", "watching your home", "coming for you"][int(r["stage"])], r["temper"], "  ·  scars %d" % int(r["scars"]) if int(r["scars"]) > 0 else ""], 14)
 	if _app != "":
 		_rule()
 		_screen.add_child(_button("< Back", func() -> void: _open(""), Vector2(80, 30)))
 	reset_size()
+
+## UI6: clean (ink) against dirty (red) as one bar.
+func _split_bar(clean: float, dirty: float) -> Control:
+	var total := maxf(1.0, clean + dirty)
+	var back := ColorRect.new()
+	back.color = Color(INK, 0.15)
+	back.custom_minimum_size = Vector2(W, 10)
+	var a := ColorRect.new()
+	a.color = INK
+	a.size = Vector2(W * clean / total, 10)
+	back.add_child(a)
+	var b := ColorRect.new()
+	b.color = Color(0.55, 0.12, 0.08)
+	b.position = Vector2(W * clean / total, 0)
+	b.size = Vector2(W * dirty / total, 10)
+	back.add_child(b)
+	return back
+
+## UI6: grudge 0-100, the four stages ticked off.
+func _grudge(v: float) -> Control:
+	var back := ColorRect.new()
+	back.color = Color(INK, 0.15)
+	back.custom_minimum_size = Vector2(W, 9)
+	var fill := ColorRect.new()
+	fill.color = INK.lerp(Color(0.6, 0.1, 0.05), clampf(v / 100.0, 0.0, 1.0))
+	fill.size = Vector2(W * clampf(v / 100.0, 0.0, 1.0), 9)
+	back.add_child(fill)
+	for s in [RivalSystem.THREAT, RivalSystem.HUNT, RivalSystem.AMBUSH]:
+		var tick := ColorRect.new()
+		tick.color = SCREEN
+		tick.position = Vector2(W * s / 100.0, 0)
+		tick.size = Vector2(2, 9)
+		back.add_child(tick)
+	return back
+
+## UI6: a little line chart of the numbers (cash each morning, now last).
+func _spark(values: Array) -> Control:
+	var chart := Sparkline.new()
+	chart.values = values
+	chart.ink = INK
+	chart.custom_minimum_size = Vector2(W, 60)
+	return chart
 
 func _open(app: String) -> void:
 	if app == "Paper":

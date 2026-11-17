@@ -46,13 +46,17 @@ func _initialize() -> void:
 	tick += CornerWarSystem.PHASE - tick % CornerWarSystem.EVERY
 	cw.process_entities(players, 0.0, tick)   # first look
 	TerritorySystem.set_influence(t, mine, TerritorySystem.PLAYER, 90.0)
+	for n in TerritoryData.neighbours(mine):   # UI6: pushes need two blocks of yours
+		if Hoods.is_block(n) and TerritorySystem.controller(t, n) == &"":
+			TerritorySystem.set_influence(t, n, TerritorySystem.PLAYER, 90.0)
+			break
 	var inbox := state.inbox.size()
 	cw.process_entities(players, 0.0, tick + CornerWarSystem.EVERY)
 	print("took %s: %s" % [CornerWarSystem.block_name(mine), state.inbox[-1]["text"] if state.inbox.size() > inbox else "-"])
 	ok = _check(state.inbox.size() > inbox and String(state.inbox[-1]["text"]).ends_with("is ours now."), "taking a block is announced") and ok
 
 	var days := 0
-	while state.turf_push.is_empty() and days < 30:
+	while state.turf_push.is_empty() and days < 60:
 		days += 1
 		cw.process_entities(players, 0.0, tick + SimClock.hours(24.0 * days) + CornerWarSystem.EVERY * 2)
 	print("a push after %d days: %s" % [days, state.inbox[-1]["text"]])

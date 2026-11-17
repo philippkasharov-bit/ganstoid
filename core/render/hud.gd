@@ -96,6 +96,10 @@ func _ready() -> void:
 	get_parent().add_child.call_deferred(phone)
 	phone.setup(_world, Vector2(right - 360, 140))
 	phone.paper = paper
+	var layout := LayoutEditor.new()   # UI6: F10 moves panels; J / O hide pager / minimap
+	get_parent().add_child.call_deferred(layout)
+	layout.setup()
+	layout.panels = {"card": card, "pager": pager, "minimap": mini, "tips": guide, "eye": eye, "notify": notify}
 	var bug := BugReportWindow.new()   # QA2: F12, report a bug with a picture and the save
 	get_parent().add_child.call_deferred(bug)
 	bug.setup(_world, get_node(world_driver_path), Vector2(160, 120))

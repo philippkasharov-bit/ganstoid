@@ -46,4 +46,4 @@ func _process(delta: float) -> void:
 	var x := UiTheme.MARGIN
 	if left_of != null and left_of.visible and y < left_of.position.y + left_of.size.y:
 		x = left_of.position.x + left_of.size.x + UiTheme.SPACE
-	position = Vector2(x, y)
+	position = HudLayout.place(self, "tips", Vector2(x, y))

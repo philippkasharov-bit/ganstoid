@@ -2,7 +2,9 @@
 ## spread, clashes, tags, crews); now you hear about it: a message and a stamp
 ## when you take or lose a block. And once a game day a gang next to your
 ## blocks makes a push on one: you have PUSH_H game hours (a few real minutes)
-## to get there. Be on the block when they come and beat DEFEND_KO of them, or
+## to get there (UI6: rarer and smaller: about one day in four, two days apart
+## at least, two of them, and only once you hold MIN_BLOCKS blocks). Be on the
+## block when they come and beat DEFEND_KO of them, or
 ## still be standing there when the time is up: the corner holds (influence,
 ## reputation). Not there: they take a big bite out of it.
 class_name CornerWarSystem
@@ -10,14 +12,16 @@ extends SystemBase
 
 const PHASE := 37
 const EVERY := 120                # two real seconds
-const PUSH_H := 2.0
-const PUSH_CHANCE := 0.5          # per game day, if a gang borders your blocks
+const PUSH_H := 3.0               # UI6: more time to get there (was 2)
+const PUSH_CHANCE := 0.25         # per game day, if a gang borders your blocks (UI6: was 0.5)
+const PUSH_GAP_DAYS := 2          # UI6: at least this many days between pushes
+const MIN_BLOCKS := 2             # UI6: a gang only bothers once you hold this many blocks
 const PUSH_HOUR := [10.0, 22.0]   # pushes happen in waking hours
 const BLOCK_M := 45.0             # "on the block": this close to its middle
-const SQUAD := 3
+const SQUAD := 2                  # UI6: was 3
 const DEFEND_KO := 2
 const HELD_GAIN := 18.0
-const LOST_BITE := 30.0
+const LOST_BITE := 15.0           # UI6: was 30
 
 var _world_ref: WeakRef
 var _world: World:
@@ -70,6 +74,8 @@ func _maybe_push(t: TerritoryData, state: PlayerStateData, tick: int) -> void:
 	if state.push_day == day or hour < PUSH_HOUR[0] or hour > PUSH_HOUR[1]:
 		return
 	state.push_day = day
+	if day - state.push_last < PUSH_GAP_DAYS or TerritorySystem.cells_held(t, TerritorySystem.PLAYER) < MIN_BLOCKS:
+		return
 	var rng := _world.runtime_rng
 	if rng.randf() >= PUSH_CHANCE:
 		return
@@ -84,6 +90,7 @@ func _maybe_push(t: TerritoryData, state: PlayerStateData, tick: int) -> void:
 	if options.is_empty():
 		return
 	var pick: Array = options[rng.randi() % options.size()]
+	state.push_last = day
 	state.turf_push = {"cell": pick[0], "gang": pick[1], "until": tick + SimClock.hours(PUSH_H), "sent": false, "ko": 0, "seen_down": []}
 	var name := block_name(pick[0])
 	PhoneSystem.push(_world, state, "Your crew", "%s are moving on %s! Get there in %d hours or we lose it." % [_gang(pick[1]), name, int(PUSH_H)])
