@@ -10,7 +10,7 @@ const ACTION := &"phone"
 const SCREEN := Color(0.62, 0.74, 0.47)
 const INK := Color(0.08, 0.12, 0.06)
 const W := 300.0
-const APPS := [["Messages", "Messages"], ["Contacts", "Contacts"], ["Hustles", "Hustles"], ["Bank", "Bank"], ["Rivals", "Rivals"], ["Score", "Score"], ["Crib", "Crib"], ["Jobs", "Jobs"], ["Property", "Property"], ["Gang", "Gang"], ["Crew", "Crew"], ["Grow", "Grow"], ["Business", "Business"], ["Connect", "Connect"], ["Case", "Case"], ["Paper", "Paper"]]
+const APPS := [["Messages", "Messages"], ["Contacts", "Contacts"], ["Hustles", "Hustles"], ["Bank", "Bank"], ["Rivals", "Rivals"], ["Score", "Score"], ["Crib", "Crib"], ["Jobs", "Jobs"], ["Property", "Property"], ["Gang", "Gang"], ["Crew", "Crew"], ["Grow", "Grow"], ["Business", "Business"], ["Connect", "Connect"], ["Prices", "Prices"], ["Case", "Case"], ["Paper", "Paper"]]
 
 var paper: PaperWindow
 var _world: World
@@ -67,7 +67,7 @@ func _process(delta: float) -> void:
 		return
 	_refresh = 0.4
 	var key := _app + str(state.inbox.size()) + str(state.job_offers.size()) + str(state.hustles) + str(state.rivals.size()) + str(state.known.size())
-	if _app in ["Bank", "Rivals", "Case", "Crew", "Grow", "Business"]:
+	if _app in ["Bank", "Rivals", "Case", "Crew", "Grow", "Business", "Prices"]:
 		key += str(_world.tick / 60)
 	if key == _key:
 		return
@@ -236,6 +236,29 @@ func _show(state: PlayerStateData) -> void:
 				_rule()
 				_text(HeistSystem.plan_line(_world, state), 16, true)
 				_screen.add_child(_progress(clampf(float(h["work"]) / float(spec[2]), 0.0, 1.0) if h["stage"] in ["working", "getaway"] else clampf(float(h["cased"]) / HeistSystem.CASE_S, 0.0, 1.0)))
+		"Prices":   # QL3: your asking price, what it's worth, how fast it'll move
+			var me: NPCData = _world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
+			_text("Your corners and door staff sell at your price: ask more, fewer bite.", 13)
+			_rule()
+			var any := false
+			for good in [&"weed", &"pills", &"meth", &"coke", &"heroin"]:
+				if int(state.inventory.get(good, 0)) <= 0 and not state.prices.has(good):
+					continue
+				any = true
+				var worth := roundi(DrugLabSystem.value_each(_world, state, good, me.position, false))
+				var ask := int(state.prices.get(good, 0))
+				var now := ask if ask > 0 else worth
+				_text("%s %s · worth $%d · ask $%d · %d%% bite" % [String(good), Grades.drug(good, DrugLabSystem.stars(state, good)), worth, now, roundi(DrugLabSystem.accept(now, worth) * 100.0)], 13, ask > 0)
+				var row := HBoxContainer.new()
+				for d in [-5, -1, 1, 5]:
+					var to := maxi(1, now + d)
+					var gd: StringName = good
+					row.add_child(_button(("%+d" % d), func() -> void: state.ui_lab = {"price": gd, "set": to}, Vector2(46, 24)))
+				var gd2: StringName = good
+				row.add_child(_button("fair", func() -> void: state.ui_lab = {"price": gd2, "set": 0}, Vector2(52, 24)))
+				_screen.add_child(row)
+			if not any:
+				_text("Nothing to price. Grow, cook, press or import something first.")
 		"Connect":   # BZ4: imports, and what you carry
 			if state.rank < DrugLabSystem.IMPORT_RANK:
 				_text("Nobody big will sell to you until you're a %s." % RankSystem.NAMES[DrugLabSystem.IMPORT_RANK])
@@ -251,7 +274,10 @@ func _show(state: PlayerStateData) -> void:
 			_rule()
 			for good in [&"weed", &"pills", &"meth", &"coke", &"heroin"]:
 				if int(state.inventory.get(good, 0)) > 0:
-					_text("%s  %d  %s" % [String(good), int(state.inventory[good]), GrowSystem.stars_text(DrugLabSystem.stars(state, good))], 14)
+					_text("%s  %d  %s" % [String(good), int(state.inventory[good]), Grades.drug_text(good, DrugLabSystem.stars(state, good))], 14)
+					var about := Grades.about(state, good)
+					if about != "":
+						_text("  " + about, 13)
 		"Business":   # BZ2: your places, your staff, who you could hire
 			var me: NPCData = _world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
 			_text("Yesterday: shops paid $%d · wages $%d" % [int(state.biz_day.get("shops", 0)), int(state.biz_day.get("wages", 0))], 15, true)
@@ -267,7 +293,7 @@ func _show(state: PlayerStateData) -> void:
 					places.append(["%s · %s" % [String(b.trade if b.trade != &"" else &"shop").capitalize(), NextStep.where(me.position, b.position)], b.id, "manager", b.position])
 					continue
 				var night := "last night $%d%s%s" % [int(v.get("last", 0)), " + back room $%d" % int(v.get("back", 0)) if int(v.get("back", 0)) > 0 else "", " · a fight" if v.get("fight", false) else ""]
-				places.append(["%s %s · %s · %s" % [VenueSystem.KINDS[v["kind"]][0], "*".repeat(VenueSystem.stars(state, b.id)), NextStep.where(me.position, b.position), night], b.id, "manager", b.position])
+				places.append(["%s (%s) · %s · %s" % [VenueSystem.KINDS[v["kind"]][0], Grades.venue(VenueSystem.stars(state, b.id)), NextStep.where(me.position, b.position), night], b.id, "manager", b.position])
 				places.append(["  door", b.id, "bouncer", b.position])
 			if places.is_empty():
 				_text("Nothing to staff yet. Set up a grow at home, or buy a shop (B by its door).")
@@ -279,7 +305,7 @@ func _show(state: PlayerStateData) -> void:
 						hired = id
 				if hired != "":
 					var s: Dictionary = state.staff[hired]
-					_text("%s %s · %s · $%d/day" % [StaffSystem.ROLES[s["role"]], _who(hired), "*".repeat(StaffSystem.stars(float(s["skill"]))), int(s["wage"])], 14)
+					_text("%s %s · %s · $%d/day" % [StaffSystem.ROLES[s["role"]], _who(hired), Grades.staff(float(s["skill"])), int(s["wage"])], 14)
 					var fire_id: StringName = hired
 					_screen.add_child(_button("Let go ($%d, quietly)" % (int(s["wage"]) * StaffSystem.FIRE_DAYS), func() -> void: state.ui_biz = {"fire": fire_id}, Vector2(W, 28)))
 				elif _hiring != "%s|%s" % [pl[1], pl[2]]:
@@ -293,7 +319,7 @@ func _show(state: PlayerStateData) -> void:
 					for c in StaffSystem.candidates(_world, state, pl[3]):
 						var t := StaffSystem.traits_of(c)
 						var ask := {"hire": c, "at": pl[1], "role": pl[2]}
-						_screen.add_child(_button("%s %s %s $%d" % [_who(c), "*".repeat(StaffSystem.stars(t.x)), StaffSystem.read_honesty(t.y), StaffSystem.wage_of(t.x)], func() -> void: state.ui_biz = ask, Vector2(W, 28)))
+						_screen.add_child(_button("%s · %s · %s · $%d" % [_who(c), Grades.staff(t.x), StaffSystem.read_honesty(t.y), StaffSystem.wage_of(t.x)], func() -> void: state.ui_biz = ask, Vector2(W, 28)))
 				_rule()
 		"Grow":   # BZ1: the grow at home and your brand
 			var g := state.grow
@@ -304,13 +330,15 @@ func _show(state: PlayerStateData) -> void:
 				for pl in g.get("plants", []):
 					var age := float(_world.tick - int(pl["at"])) / SimClock.day_ticks
 					var status := "dead" if pl.get("dead", false) else ("READY" if GrowSystem.ripe(_world, pl) else ("thirsty!" if GrowSystem.thirsty(_world, pl) else "growing %.1f d" % age))
-					_text("%s  ·  %s  ·  %s" % [GrowSystem.STRAINS[pl["strain"]][0], status, GrowSystem.stars_text(GrowSystem.quality(state, pl))], 14, status in ["thirsty!", "READY"])
+					_text("%s  ·  %s  ·  %s" % [GrowSystem._strain(pl)["name"], status, GrowSystem.stars_text(GrowSystem.quality(state, pl))], 14, status in ["thirsty!", "READY"])
 				for d in g.get("drying", []):
-					_text("drying: %d bags %s%s" % [int(d["units"]), d["strain"], "  · dry now" if _world.tick >= int(d["ready"]) else ""], 14)
+					_text("drying: %d bags %s%s" % [int(d["units"]), GrowSystem.STRAINS.get(StringName(d["strain"]), {}).get("name", d["strain"]), "  · dry now" if _world.tick >= int(d["ready"]) else ""], 14)
 			_rule()
 			var carried: int = state.inventory.get(GrowSystem.GOOD_ID, 0)
 			if carried > 0:
 				_text("You carry %d bags  %s" % [carried, GrowSystem.stars_text(GrowSystem.stars_carried(state))], 15)
+				var about := Grades.about(state, &"weed")
+				_text("  " + (about if about != "" else "mixed strains: no name on it"), 13)
 			if state.brand != "":
 				_text("Your stamp: '%s'  ·  known %d%%" % [state.brand, roundi(state.brand_rep * 100.0)], 15, true)
 				var edit := LineEdit.new()

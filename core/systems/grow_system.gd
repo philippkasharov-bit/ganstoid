@@ -25,7 +25,6 @@ const DIE_H := 48.0            # dry this long: dead
 const DRY_H := 12.0
 const MAX_FEEDS := 2
 const BASE_YIELD := 3
-const STARS := ["Trash", "Street", "Good", "Premium", "Top shelf"]
 const PRICE_BY_STARS := [0.6, 1.0, 1.3, 1.7, 2.3]   # street weed (2 stars) sells as it always did
 const SHOP_LIGHT_CAP := 3.0    # a plain shop light can't grow better than this
 const SMELL_PER_PLANT_H := 0.01
@@ -36,8 +35,17 @@ const BRANDS := ["Blue Dragon", "Red Devil", "Black Widow", "Gold Crown", "White
 const BRAND_GOOD := 0.02       # brand name gained per good sale (4 stars and up)
 const BRAND_BAD := 0.04        # lost per bad one (under 2 stars)
 const BRAND_TALK := [0.3, 0.6, 0.9]   # word on the street at these
-## seed item -> [strain name, base stars, grow time factor]
-const STRAINS := {&"seeds_mids": ["Street mids", 2.0, 1.0], &"seeds_kush": ["OG Kush", 3.2, 1.0], &"seeds_haze": ["Purple Haze", 3.8, 1.3]}
+## QL3: seed item -> the strain: name, base quality, grow time and yield
+## factors, how much it stinks, the high, and where it sells best (Grades.fit).
+const STRAINS := {
+	&"seeds_mids": {"name": "Street mids", "base": 2.0, "days": 1.0, "yield": 1.0, "smell": 1.0, "high": "mellow, nothing special", "sells": ""},
+	&"seeds_skunk": {"name": "Skunk #1", "base": 2.6, "days": 1.0, "yield": 1.5, "smell": 2.0, "high": "strong, and it stinks", "sells": "poor"},
+	&"seeds_nl": {"name": "Northern Lights", "base": 3.0, "days": 0.8, "yield": 1.0, "smell": 0.6, "high": "sleepy, smooth", "sells": "rich"},
+	&"seeds_kush": {"name": "OG Kush", "base": 3.2, "days": 1.0, "yield": 0.9, "smell": 1.4, "high": "heavy body high", "sells": "poor"},
+	&"seeds_blue": {"name": "Blueberry", "base": 3.5, "days": 1.1, "yield": 0.9, "smell": 0.8, "high": "sweet, easy", "sells": "rich"},
+	&"seeds_haze": {"name": "Purple Haze", "base": 3.8, "days": 1.3, "yield": 0.9, "smell": 1.0, "high": "up, talky head high", "sells": "club"},
+}
+const SEED_ORDER: Array[StringName] = [&"seeds_haze", &"seeds_blue", &"seeds_kush", &"seeds_nl", &"seeds_skunk", &"seeds_mids"]
 const GEAR := [&"grow_tent", &"shop_light", &"hps_lamp", &"grow_fan", &"carbon_filter"]
 
 var _world_ref: WeakRef
@@ -75,7 +83,7 @@ static func tend_hour(world: World, me: NPCData, state: PlayerStateData, tick: i
 	if not gw.is_empty():
 		grower_hour(world, state, gw, tick)   # BZ2
 	var plants: Array = state.grow.get("plants", [])
-	var living := 0
+	var living := 0.0   # QL3: how much it stinks, strain by strain
 	for pl in plants:
 		if pl.get("dead", false):
 			continue
@@ -84,11 +92,11 @@ static func tend_hour(world: World, me: NPCData, state: PlayerStateData, tick: i
 			pl["dead"] = true
 		elif dry_h >= WATER_H:
 			pl["care"] = maxf(0.0, float(pl["care"]) - WILT_PER_H)
-			living += 1
+			living += float(_strain(pl)["smell"])
 		else:
-			living += 1
+			living += float(_strain(pl)["smell"])
 	var chance := SMELL_PER_PLANT_H * living * (FILTER_KEEP if state.grow.get("filter", false) else 1.0)
-	if living > 0 and world.runtime_rng.randf() < chance:
+	if living > 0.0 and world.runtime_rng.randf() < chance:
 		var home: Entity = world.entities.get(me.home_building_id)
 		var at: Vector2 = home.get_component(ComponentNames.BUILDING).position if home != null else me.position
 		world.event_bus.emit(GanstoidEvents.CRIME_WITNESSED, {"position": at, "severity": SMELL_SEVERITY, "tick": tick, "witness_id": &""})
@@ -122,7 +130,7 @@ static func grower_hour(world: World, state: PlayerStateData, gw: Dictionary, ti
 			left.append(d)
 	state.grow["drying"] = left
 	var plants: Array = state.grow.get("plants", [])
-	for seed in [&"seeds_haze", &"seeds_kush", &"seeds_mids"]:
+	for seed in SEED_ORDER:
 		while int(stock.get(seed, 0)) > 0 and plants.size() < slots(state) and int(state.grow.get("lamp", 0)) > 0:
 			plants.append({"strain": seed, "at": tick, "watered": tick, "fed": 0, "care": 1.0})
 			stock[seed] = int(stock[seed]) - 1
@@ -134,13 +142,13 @@ static func _to_stash(state: PlayerStateData, units: int, q: float, strain: Stri
 		return
 	var st: Dictionary = state.grow.get("stash", {"units": 0, "q": q, "strain": strain})
 	var had := int(st["units"])
-	state.grow["stash"] = {"units": had + units, "q": (float(st["q"]) * had + q * units) / float(had + units), "strain": strain}
+	state.grow["stash"] = {"units": had + units, "q": (float(st["q"]) * had + q * units) / float(had + units), "strain": strain if had == 0 or String(st["strain"]) == strain else ""}
 
 ## BZ2: leave your seeds and plant food at the grow for the grower.
 static func stock_up(_world: World, state: PlayerStateData) -> Dictionary:
 	var stock: Dictionary = state.grow.get("stock", {})
 	var n := 0
-	for id in [&"seeds_mids", &"seeds_kush", &"seeds_haze", &"plant_food"]:
+	for id in SEED_ORDER + [&"plant_food"]:
 		var have := int(state.inventory.get(id, 0))
 		if have > 0:
 			stock[id] = int(stock.get(id, 0)) + have
@@ -212,7 +220,7 @@ static func plant(world: World, state: PlayerStateData) -> Dictionary:
 		return {"ok": false, "reason": "grow_need_gear"}
 	var plants: Array = state.grow.get("plants", [])
 	var put := 0
-	for seed in [&"seeds_haze", &"seeds_kush", &"seeds_mids"]:
+	for seed in SEED_ORDER:
 		while int(state.inventory.get(seed, 0)) > 0 and plants.size() < slots(state):
 			plants.append({"strain": seed, "at": world.tick, "watered": world.tick, "fed": 0, "care": 1.0})
 			state.inventory[seed] = int(state.inventory[seed]) - 1
@@ -244,7 +252,7 @@ static func feed(_world: World, state: PlayerStateData) -> Dictionary:
 	return {"ok": true, "effect": "grow_fed", "amount": n} if n > 0 else {"ok": false, "reason": "grow_no_food"}
 
 static func ripe(world: World, pl: Dictionary) -> bool:
-	var days: float = GROW_DAYS * float(STRAINS[pl["strain"]][2])
+	var days: float = GROW_DAYS * float(_strain(pl)["days"])
 	return not pl.get("dead", false) and world.tick - int(pl["at"]) >= int(days * SimClock.day_ticks)
 
 static func thirsty(world: World, pl: Dictionary) -> bool:
@@ -253,7 +261,7 @@ static func thirsty(world: World, pl: Dictionary) -> bool:
 ## The stars a plant would give if cut now (1..5).
 static func quality(state: PlayerStateData, pl: Dictionary) -> float:
 	var lamp := int(state.grow.get("lamp", 0))
-	var q: float = STRAINS[pl["strain"]][1]
+	var q: float = _strain(pl)["base"]
 	q += 0.6 if lamp >= 2 else 0.0
 	q += 0.3 if state.grow.get("fan", false) else 0.0
 	q += 0.25 * int(pl["fed"])
@@ -263,7 +271,11 @@ static func quality(state: PlayerStateData, pl: Dictionary) -> float:
 	return clampf(q, 1.0, 5.0 if lamp >= 2 else SHOP_LIGHT_CAP)
 
 static func yield_of(state: PlayerStateData, pl: Dictionary) -> int:
-	return BASE_YIELD + (2 if int(state.grow.get("lamp", 0)) >= 2 else 0) + int(pl["fed"]) + (1 if float(pl["care"]) > 0.8 else 0)
+	return roundi((BASE_YIELD + (2 if int(state.grow.get("lamp", 0)) >= 2 else 0) + int(pl["fed"]) + (1 if float(pl["care"]) > 0.8 else 0)) * float(_strain(pl)["yield"]))
+
+## A plant's strain (an unknown one reads as street mids).
+static func _strain(pl: Dictionary) -> Dictionary:
+	return STRAINS.get(StringName(pl.get("strain", &"")), STRAINS[&"seeds_mids"])
 
 ## Cuts every ripe plant (and clears the dead); they hang to dry.
 static func harvest(world: World, state: PlayerStateData, by_hand := true) -> Dictionary:
@@ -275,7 +287,7 @@ static func harvest(world: World, state: PlayerStateData, by_hand := true) -> Di
 			continue
 		if ripe(world, pl):
 			var u := yield_of(state, pl)
-			drying.append({"units": u, "q": quality(state, pl), "strain": STRAINS[pl["strain"]][0], "ready": world.tick + SimClock.hours(DRY_H)})
+			drying.append({"units": u, "q": quality(state, pl), "strain": String(pl["strain"]), "ready": world.tick + SimClock.hours(DRY_H)})
 			units += u
 		else:
 			keep.append(pl)
@@ -310,7 +322,8 @@ static func add_product(state: PlayerStateData, units: int, q: float, strain: St
 	var had: int = state.inventory.get(GOOD_ID, 0)
 	var old_q := stars_carried(state)
 	state.inventory[GOOD_ID] = had + units
-	state.product = {"q": (old_q * had + q * units) / float(had + units), "strain": strain}
+	var same: bool = had == 0 or String(state.product.get("strain", "")) == strain
+	state.product = {"q": (old_q * had + q * units) / float(had + units), "strain": strain if same else ""}   # QL3: mixed strains lose their name
 
 ## The stars of the weed you carry (bought on the street: 2).
 static func stars_carried(state: PlayerStateData) -> float:
@@ -346,9 +359,9 @@ static func sold(world: World, state: PlayerStateData) -> void:
 		if before < at and state.brand_rep >= at:
 			PhoneSystem.push(world, state, "Word on the street", "People are asking for '%s' by name." % state.brand)
 
+## QL3: the weed's grade in words ("Chronic (4.6)").
 static func stars_text(q: float) -> String:
-	var s := clampi(roundi(q), 1, 5)
-	return "*".repeat(s) + "-".repeat(5 - s) + " " + STARS[s - 1]
+	return Grades.drug_text(&"weed", q)
 
 ## The next thing the grow needs, for the pager ("" when nothing).
 static func need_line(world: World, state: PlayerStateData) -> String:

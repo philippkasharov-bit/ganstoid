@@ -151,10 +151,10 @@ static func close_night(world: World, state: PlayerStateData) -> void:
 				state.case_evidence += PILL_CASE
 				PhoneSystem.push(world, state, String(spec[0]), "Vice searched the door staff. They found the pills.")
 			else:
-				var n := mini(pills, PILLS_BASE + PILLS_PER_STAR * stars(state, id))
-				var item: EconomyItemData = world.economy_items.get(&"pills")
-				var each := (item.current_price if item != null else 40) * DrugLabSystem.price_mult(state, &"pills")
-				Wallet.earn_dirty(world, roundi(n * each))
+				var worth := DrugLabSystem.value_each(world, state, &"pills", b.position, true)   # QL3: your price, the crowd's call
+				var ask := DrugLabSystem.ask_each(world, state, &"pills", b.position, true)
+				var n := mini(pills, roundi((PILLS_BASE + PILLS_PER_STAR * stars(state, id)) * DrugLabSystem.accept(ask, worth)))
+				Wallet.earn_dirty(world, n * ask)
 				v["pills"] = pills - n
 				v["sold"] = n
 		if v["back_room"]:

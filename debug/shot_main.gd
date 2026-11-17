@@ -187,9 +187,9 @@ func _run(main: Node, args: Dictionary) -> void:
 			{"strain": &"seeds_kush", "at": t - SimClock.hours(30), "watered": t - SimClock.hours(14), "fed": 1, "care": 0.9},
 			{"strain": &"seeds_haze", "at": t - SimClock.hours(10), "watered": t - SimClock.hours(3), "fed": 0, "care": 1.0},
 			{"strain": &"seeds_mids", "at": t - SimClock.hours(5), "watered": t - SimClock.hours(3), "fed": 0, "care": 1.0}],
-			"drying": [{"units": 6, "q": 4.2, "strain": "OG Kush", "ready": t + SimClock.hours(4)}]}
+			"drying": [{"units": 6, "q": 4.2, "strain": "seeds_kush", "ready": t + SimClock.hours(4)}]}
 		gs.inventory[&"weed"] = 12
-		gs.product = {"q": 3.6, "strain": "OG Kush"}
+		gs.product = {"q": 3.6, "strain": "seeds_kush"}
 		gs.brand = "Blue Dragon"
 		gs.brand_rep = 0.35
 		for i in 4:
@@ -243,7 +243,8 @@ func _run(main: Node, args: Dictionary) -> void:
 		cs2.inventory[&"pills"] = 24
 		cs2.inventory[&"meth"] = 10
 		cs2.inventory[&"coke"] = 20
-		cs2.products = {&"pills": 2.7, &"meth": 4.8, &"coke": 4.0}
+		cs2.products = {&"pills": 2.7, &"meth": 4.8, &"coke": 4.0, "pills_kind": "pill_powder"}
+		cs2.prices = {&"coke": 140}
 		for i in 4:
 			await process_frame
 	if args.has("jail"):   # JL1 look: inside, the prison panel

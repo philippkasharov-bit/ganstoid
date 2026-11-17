@@ -672,7 +672,7 @@ func _grow_options(out: Array, state: PlayerStateData) -> void:
 	for good in DrugLabSystem.CUTTABLE:
 		if int(state.inventory.get(good, 0)) >= 2:
 			var gd: StringName = good
-			out.append(["Step on your %s (+50%%, a star off)" % String(good), func() -> Dictionary: return DrugLabSystem.cut(_world, state, gd), GrowSystem.stars_text(DrugLabSystem.stars(state, good))])
+			out.append(["Step on your %s (+50%%, a star off)" % String(good), func() -> Dictionary: return DrugLabSystem.cut(_world, state, gd), Grades.drug_text(good, DrugLabSystem.stars(state, good))])
 	if int(state.inventory.get(GrowSystem.GOOD_ID, 0)) >= 2:
 		out.append(["Cut your weed (+50%%, a star off)", func() -> Dictionary: return GrowSystem.cut(_world, state), GrowSystem.stars_text(GrowSystem.stars_carried(state))])
 

@@ -5,6 +5,7 @@ Newest first. The in-game admin panel (F11, Bugs & updates) shows the top of it.
 
 ## 2026-11-17
 
+- BZ4: the drug chain: press, cook, import
 - BZ3: night spots, back rooms and a seat at the table
 - BZ2: hire people to work for you
 - BZ1: grow your own weed, with stars, your stamp and regulars

@@ -61,6 +61,7 @@ prints busts.
 - [x] BZ2 staff: hire a grower (runs the grow from a stock of seeds and food, bags into a stash) or a shop manager (+ up to 40% takings); skill stars, a daily wage, honesty you can only guess (shifty ones skim); unpaid or fired without severance, a grower becomes a witness; Phone > Business
 - [x] BZ3 nightlife: turn a shop you own into a nightclub, gentlemen's club or card room (licence, clean money); fit-out and a good manager add stars; takings at closing by hood and stars; a bouncer stops fights; washes more dirty money; an illegal back room pays big until vice raids it; back-room blackjack and dice at night at pawn shops and liquor stores
 - [x] BZ4 drug chain: a pill press (pill powder from dealers), a hands-on meth cook (keep the heat in the green; past the red it burns), imports from Soldier rank (cash up front, a warehouse pick-up window, sometimes a sting); stars on every drug set its price; step on coke and heroin; your clubs' door staff sell your pills; new chemistry skill; Phone > Connect
+- [x] QL3 quality in street words (Schwag to Chronic, Baking soda to Uncut; workers Green to A pro; night spots Dive to The place to be); six weed strains with their own high, smell, speed, yield and best market; doves and speedy whites; you set your own prices (Phone > Prices): all buyers bite at its worth, half at 1.5x
 
 ## Indie mistakes we design against (Phil, 2026-11: "doesn't it look boring and repetitive?")
 

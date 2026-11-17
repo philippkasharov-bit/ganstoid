@@ -56,6 +56,8 @@ func process_entities(entities: Dictionary, delta: float, tick: int) -> void:
 				StreetTalk.say(_world, state, order(_world, me, state, ask["order"]))
 			elif ask.has("heat"):
 				nudge(state, float(ask["heat"]))
+			elif ask.has("price"):
+				set_price(state, ask["price"], int(ask.get("set", 0)))
 		if not state.cook.is_empty():
 			cook_step(_world, me, state, 1.0 / SimClock.TICKS_PER_SECOND)
 		if tick % 60 == 17 and not state.shipment.is_empty() and tick > int(state.shipment.get("until", 0)):
@@ -89,12 +91,17 @@ static func add_drug(state: PlayerStateData, good: StringName, units: int, q: fl
 static func press(world: World, state: PlayerStateData) -> Dictionary:
 	if not state.lab.get("press", false):
 		return {"ok": false, "reason": "lab_need_gear"}
-	var powder: int = state.inventory.get(&"pill_powder", 0)
+	var kind := &"pill_powder" if state.inventory.has(&"pill_powder") else &"speed_powder"   # QL3: doves first
+	var powder: int = state.inventory.get(kind, 0)
 	if powder <= 0:
 		return {"ok": false, "reason": "lab_no_chems"}
-	state.inventory.erase(&"pill_powder")
-	var q := clampf(2.6 + 0.08 * Skills.level(state, &"chemistry") + world.runtime_rng.randf_range(-0.3, 0.3), 1.0, 4.0)
+	state.inventory.erase(kind)
+	var base: float = Grades.PILLS[kind]["base"]
+	var q := clampf(base + 0.08 * Skills.level(state, &"chemistry") + world.runtime_rng.randf_range(-0.3, 0.3), 1.0, 4.5)
+	var had_kind := String(state.products.get("pills_kind", ""))
+	var carried: int = state.inventory.get(&"pills", 0)
 	add_drug(state, &"pills", powder * PILLS_PER_POWDER, q)
+	state.products["pills_kind"] = String(kind) if carried == 0 or had_kind == String(kind) else ""
 	Skills.train(world, state, &"chemistry", 3.0 * powder)
 	return {"ok": true, "effect": "lab_pressed", "amount": powder * PILLS_PER_POWDER}
 
@@ -150,7 +157,7 @@ static func cook_step(world: World, me: NPCData, state: PlayerStateData, dt: flo
 		add_drug(state, &"meth", units, q)
 		Skills.train(world, state, &"chemistry", 4.0 * int(c["boxes"]))
 		state.cook = {}
-		StampView.put(state, "COOKED", "%d bags %s" % [units, GrowSystem.stars_text(q)], UiTheme.GOOD)
+		StampView.put(state, "COOKED", "%d bags of %s" % [units, Grades.drug_text(&"meth", q)], UiTheme.GOOD)
 
 ## The connect sells a shipment: cash now, a warehouse tomorrow night.
 static func order(world: World, me: NPCData, state: PlayerStateData, good: StringName) -> Dictionary:
@@ -200,6 +207,30 @@ static func pick_up(world: World, me: NPCData, state: PlayerStateData) -> Dictio
 		return {"ok": false, "reason": "lab_sting"}
 	add_drug(state, s["good"], int(s["units"]), IMPORT_STARS)
 	return {"ok": true, "effect": "lab_picked_up", "amount": int(s["units"])}
+
+## QL3: what a unit of what you carry is worth to a buyer here.
+static func value_each(world: World, state: PlayerStateData, good: StringName, at: Vector2, in_club: bool) -> float:
+	var item: EconomyItemData = world.economy_items.get(good)
+	var market := float(item.current_price) if item != null else 20.0
+	var wealth := float(BlockEconomyData.block_at(world, at).get("wealth", 0.5))
+	return market * price_mult(state, good) * Grades.fit(state, good, wealth, in_club)
+
+## Your asking price here (what it's worth if you set none).
+static func ask_each(world: World, state: PlayerStateData, good: StringName, at: Vector2, in_club: bool) -> int:
+	var set_to := int(state.prices.get(good, 0))
+	return set_to if set_to > 0 else maxi(1, roundi(value_each(world, state, good, at, in_club)))
+
+## The share of buyers who take it at that price: all of them at its worth
+## or less, half at 1.5x, hardly anyone at 2x.
+static func accept(ask: float, value: float) -> float:
+	return clampf(2.0 - ask / maxf(value, 1.0), 0.05, 1.0)
+
+## Sets your asking price ($ a unit); 0 goes back to what it's worth.
+static func set_price(state: PlayerStateData, good: StringName, to: int) -> void:
+	if to <= 0:
+		state.prices.erase(good)
+	else:
+		state.prices[good] = mini(to, 9999)
 
 ## Step on it: half as much again, a star off.
 static func cut(_world: World, state: PlayerStateData, good: StringName) -> Dictionary:

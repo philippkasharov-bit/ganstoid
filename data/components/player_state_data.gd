@@ -159,6 +159,7 @@ var ui_crib: bool = false                         # CR1: the phone or the door a
 @export var lab: Dictionary = {}                  # BZ4: the lab at home {press, glass, fires}
 @export var products: Dictionary = {}             # BZ4: stars of each drug you carry (weed: product)
 @export var shipment: Dictionary = {}             # BZ4: an import waiting {good, units, at, from, until, sting}
+@export var prices: Dictionary = {}               # QL3: your asking price per drug, $ a unit (missing: what it's worth)
 var ui_phone: Dictionary = {}
 var ui_admin: Array = []                          # AD1: [command, arg] from the admin panel (not saved)
 @export var admin_god: bool = false               # AD1: admin god mode: you take no damage                     # PH1: what the phone asked for (not saved)
