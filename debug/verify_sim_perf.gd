@@ -9,7 +9,7 @@
 ## never eat a whole frame in one tick.
 extends SceneTree
 
-const POPULATION := 6000         # = WorldDriver.GAME_POPULATION (PF3: SIM_POP=1500 overrides, for stress runs)
+const POPULATION := 6000         # = WorldDriver.GAME_POPULATION (PF3: SIM_POP=1500 overrides, for stress runs; NB2d: SIM_BRAIN=1 turns the brain on)
 const TICKS := 3600              # one real minute
 const AVG_BUDGET_MS := {3.0: 1.0, 8.0: 4.0, 11.0: 2.5}   # BUG-13, with traffic and a running city (4 cores): 0.4 / 3.1 / 2.0 ms
 const OVER_4MS_MAX := 150   # BUG-15: rush-hour ticks over 4 ms (a stutter); 605 before the fix, ~35 after
@@ -30,6 +30,8 @@ func _initialize() -> void:
 		var gen0 := Time.get_ticks_msec()
 		WorldGenerator.generate_real_city_game(world, 1, city, city.spawn, _radius(), int(OS.get_environment("SIM_POP")) if OS.has_environment("SIM_POP") else POPULATION)
 		print("generated in %d ms: %d entities, %d MB static" % [Time.get_ticks_msec() - gen0, world.entities.size(), OS.get_static_memory_usage() / 1048576])
+		if OS.get_environment("SIM_BRAIN") == "1":   # NB2d: free time by the shared brain
+			GameRules.install(world, 1, 1).npc_brain = true
 		SimNav.install(city, city.spawn, minf(_radius(), TestWorlds.DISTRICT_RADIUS))
 		await TestWorlds.wait_nav(self, [SimNav.active])
 		var warm: float = RUN_IN.get(hour, 0.0)   # BUG-13: a city that has been running, not one just placed

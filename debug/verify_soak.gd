@@ -12,7 +12,9 @@
 ##     an hour instead of going in (BUG-10: out of sight, walkers never went in)
 ##   - the world doesn't swell (entity count) or slow down as days pass
 ## Prints a line per game hour and the worst cases it saw, with ids and places.
-## SOAK_HOURS, SOAK_POP (default 1500; the game has 6000), SOAK_SEED (default 7).
+## SOAK_HOURS, SOAK_POP (default 1500; the game has 6000), SOAK_SEED (default 7),
+## SOAK_BRAIN=1 (NB2d: free time by the shared brain; the hourly line then also
+## lists what people chose that hour).
 extends SceneTree
 
 const CHECK_EVERY_MIN := 10.0
@@ -46,7 +48,7 @@ func _initialize() -> void:
 	TrafficSystem.junctions = Junctions.load_file()
 	DriveSystem.graph = RoadGraph.build(_city.roads)
 	WorldGenerator.generate_real_city_game(world, seed, _city, _city.spawn, 6500.0, pop)
-	GameRules.install(world, 1, 1)
+	GameRules.install(world, 1, 1).npc_brain = OS.get_environment("SOAK_BRAIN") == "1"
 	SimNav.install(_city, _city.spawn, TestWorlds.DISTRICT_RADIUS)
 	await TestWorlds.wait_nav(self, [SimNav.active])
 	_col = SimNav.active.collision
@@ -91,6 +93,7 @@ func _initialize() -> void:
 			print("day %d %02d:00  %.2f ms/tick avg, worst %.1f ms | outdoors %d | %s | entities %d | %d MB | problems so far %d%s" % [
 				day, hod, avg, hour_worst / 1000.0, outdoors, ", ".join(top.slice(0, 2).map(func(k): return "%s %.2f" % [k, world.total_usec[k] / 1000.0 / hour_ticks])),
 				world.entities.size(), OS.get_static_memory_usage() / 1048576, _total(), slow])
+			print("         trips %s" % _trips(world))
 			world.total_usec.clear()
 			hour_usec = 0
 			hour_ticks = 0
@@ -180,6 +183,23 @@ static func _wall_distance(p: Vector2, poly: PackedVector2Array) -> float:
 		var c := poly[(i + 1) % poly.size()]
 		best = minf(best, p.distance_to(Geometry2D.get_closest_point_to_segment(p, a, c)))
 	return best
+
+var _trips_seen := 0
+var _picks_seen := {}
+
+## NB2d: trips started this hour, and with the brain on what people chose.
+func _trips(world: World) -> String:
+	var sched: NPCScheduleSystem = world.find_system(NPCScheduleSystem)
+	var out := str(sched.outings_started - _trips_seen)
+	_trips_seen = sched.outings_started
+	var picks := []
+	for id in sched.free_time.picks:
+		var n: int = sched.free_time.picks[id] - _picks_seen.get(id, 0)
+		if n > 0:
+			picks.append([n, id])
+	_picks_seen = sched.free_time.picks.duplicate()
+	picks.sort_custom(func(a: Array, b: Array) -> bool: return a[0] > b[0])
+	return out + ("  (%s)" % ", ".join(picks.map(func(p: Array) -> String: return "%s %d" % [p[1], p[0]])) if not picks.is_empty() else "")
 
 func _flag(rule: String, example: String) -> void:
 	if not _problems.has(rule):
