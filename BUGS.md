@@ -13,6 +13,14 @@ Severity: **high** = breaks a game or loses progress · **medium** = clearly wro
 
 | ID | Severity | What happens | Where | Found by |
 |----|----------|--------------|-------|----------|
+| BUG-30 | low | The ground texture repeats in a visible diamond pattern on sandy lots and plazas; some ground looks flat and washed out. | ground materials | VS2 audit (`docs/VS2_AUDIT.md`) |
+| BUG-29 | low | Parked cars, mailboxes and bins are placed without checking driveways, hydrants, crosswalk ramps or doors, so they can block them. | `VehicleSeeder`, `StreetClutter` | VS2 audit |
+| BUG-28 | low | Service roads have no kerb at all; the pavement and road meet with nothing between (only main and residential roads get kerbs). | `street_detail_3d.gd` `KERBED` | VS2 audit |
+| BUG-27 | low | Crosswalks have no kerb ramp: the kerb runs straight through at full height. The 15,566 ramps in the city data are never used. | `street_detail_3d.gd` | VS2 audit |
+| BUG-26 | low | Driveways cut the kerb with square ends, without a flare. | `street_detail_3d.gd` | VS2 audit |
+| BUG-25 | low | Kerbs stop 2.5 m short of every junction and end square: no rounded corner. | `street_detail_3d.gd` | VS2 audit |
+| BUG-24 | low | The road surface has a jagged saw-tooth edge on the outside of bends. | road mesh | VS2 audit |
+| BUG-23 | low | Kerbs break open with a wedge-shaped gap on the outside of every bend (each road segment ends square). | `street_detail_3d.gd` `_kerbs` | VS2 audit |
 | BUG-9 | low (to check on Phil's PC) | In the shop (`--store` picture) a dark curved band runs across the shop floor, under the player. It could be a curved wall drawn at floor height, or a drawing glitch. | shop interior / cutaway | album `shop_counter` |
 
 ## Ideas (not bugs)
