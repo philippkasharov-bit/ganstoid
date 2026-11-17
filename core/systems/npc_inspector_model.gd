@@ -6,6 +6,7 @@ extends RefCounted
 
 const FULL_DETAIL_M := 40.0   # NB plan tier T0: full detail this close (NB7 makes it real)
 const LINKS_SHOWN := 4        # names listed per kind of link
+const CHOICES_SHOWN := 5      # NB2b: free-time choices listed, best first
 
 ## The person nearest `at` within `radius_m`, or &"" (the player is skipped).
 static func person_at(world: World, at: Vector2, radius_m: float) -> StringName:
@@ -33,7 +34,8 @@ static func tier(distance_m: float) -> String:
 
 ## The whole picture of one person, or {} if they are gone. `with_links` walks
 ## everyone to find household and workmates, so callers ask for it once.
-static func describe(world: World, id: StringName, with_links: bool = true) -> Dictionary:
+## `places` (NB2b) adds what they would choose to do with free time right now.
+static func describe(world: World, id: StringName, with_links: bool = true, places: ActivityPlaces = null) -> Dictionary:
 	var entity: Entity = world.entities.get(id)
 	var npc: NPCData = entity.get_component(ComponentNames.NPC) if entity != null else null
 	if npc == null:
@@ -55,6 +57,19 @@ static func describe(world: World, id: StringName, with_links: bool = true) -> D
 	}
 	if with_links:
 		out["links"] = links(world, npc, mind)
+	if places != null:
+		out["choices"] = choices(world, npc, mind, places)
+	return out
+
+## What they would do with free time now: the top few with their score and
+## why, the one they would pick marked "<- picks".
+static func choices(world: World, npc: NPCData, mind: NPCMindData, places: ActivityPlaces) -> Array:
+	var scored := ActivityChooser.score_all(npc, mind, world.tick, places.for_person(world, npc, mind))
+	var picked := ActivityChooser.pick(scored, npc.id, SimClock.day_number(world.tick), 0)
+	var out := []
+	for s in scored.slice(0, CHOICES_SHOWN):
+		var mark := "  <- picks" if s["id"] == picked else ""
+		out.append("%s %.2f: %s%s" % [Activities.TABLE[s["id"]]["label"], s["score"], s["why"], mark])
 	return out
 
 ## An enum key in plain words: "WAS_ROBBED" -> "Was robbed".

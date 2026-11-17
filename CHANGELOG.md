@@ -5,6 +5,7 @@ Newest first. The in-game admin panel (F11, Bugs & updates) shows the top of it.
 
 ## 2026-11-17
 
+- NB2: changelog after bringing in the NB1 fix
 - NB1b fix: the player shows as "you" among housemates
 - NB2a: free-time activities as data
 - NB1c: the Living City and Crew Command plans on the roadmap

@@ -50,7 +50,7 @@ const TABLE := {
 	&"groom": {
 		"label": "Get a haircut", "place": "shop", "walk": "visit", "hours": [9.0, 19.0], "stay": [25.0, 60.0],
 		"trades": [&"barbershop", &"beauty salon"],
-		"fills": {D.SOCIAL: 0.4, D.FUN: 0.2}, "likes": {T.SOCIABLE: 0.4, T.PATIENT: 0.2}, "cost": 12,
+		"fills": {D.SOCIAL: 0.2, D.FUN: 0.1}, "likes": {T.SOCIABLE: 0.3, T.PATIENT: 0.2}, "cost": 12,
 	},
 	&"night_out": {
 		"label": "Night out", "place": "shop", "walk": "visit", "hours": [18.0, 2.0], "stay": [40.0, 120.0],

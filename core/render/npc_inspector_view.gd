@@ -1,7 +1,8 @@
 ## NB1b: the F11 People tab. Middle-click someone in the street (left click is
 ## attack), or press "Nearest to me", to see who they are: kind of person,
-## character, needs, mood, memory, links, detail tier and what they think of
-## you. Read only: NPCInspectorModel never changes the game.
+## character, needs, mood, what they would do with free time now and why
+## (NB2b), memory, links, detail tier and what they think of you.
+## Read only: NPCInspectorModel never changes the game.
 class_name NPCInspectorView
 extends VBoxContainer
 
@@ -12,6 +13,7 @@ const LOW := 0.25          # a need or trait under this shows in red (the number
 const COLUMNS := 4
 
 static var pinned := &""   # kept when you switch tabs
+static var _places := ActivityPlaces.new()   # NB2b: shops near each home, built once
 
 var _world: World
 var _resize: Callable
@@ -71,7 +73,7 @@ func _redraw() -> void:
 	for c in _content.get_children():
 		_content.remove_child(c)
 		c.queue_free()
-	var info := NPCInspectorModel.describe(_world, pinned, pinned != _links_for) if pinned != &"" else {}
+	var info := NPCInspectorModel.describe(_world, pinned, pinned != _links_for, _places) if pinned != &"" else {}
 	if info.is_empty():
 		_content.add_child(UiTheme.label("Nobody picked.", UiTheme.FONT_BODY, UiTheme.DIM))
 		return
@@ -84,6 +86,7 @@ func _redraw() -> void:
 	_grid("CHARACTER", info["traits"], false)
 	_grid("NEEDS (1 = fine)", info["drives"], true)
 	_grid("MOOD", info["mood"], false)
+	_lines("FREE TIME NOW (score: why)", info["choices"], "nothing possible now")
 	_lines("MEMORY", info["memories"], "nothing yet")
 	var link_lines := _links.map(func(l: Array) -> String: return "%s: %s" % [l[0], l[1]])
 	_lines("LINKS", link_lines, "")
