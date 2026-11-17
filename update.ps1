@@ -100,7 +100,8 @@ try {
 }
 catch {
     $msg = $_.Exception.Message
-    if ($_.Exception.HResult -eq -2147024864 -or $msg -match 'being used by another process|cannot access the file') {   # 0x80070020, a locked file, in any language $msg = 'Windows is holding an update file (antivirus or a window open on it). Wait a minute and press Play again, or restart the PC.' }
+    # 0x80070020 = a file locked by another process, whatever the Windows language
+    if ($_.Exception.HResult -eq -2147024864 -or $msg -match 'being used by another process|cannot access the file') { $msg = 'Windows is holding an update file (antivirus or a window open on it). Wait a minute and press Play again, or restart the PC.' }
     if ($msg -match '401') { $msg = 'GitHub refused the token (401). The token in github_token.txt has expired or is wrong.' }
     Say "ERROR $msg"
     exit 1
