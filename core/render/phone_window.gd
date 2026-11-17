@@ -10,7 +10,7 @@ const ACTION := &"phone"
 const SCREEN := Color(0.62, 0.74, 0.47)
 const INK := Color(0.08, 0.12, 0.06)
 const W := 300.0
-const APPS := [["Messages", "Messages"], ["Contacts", "Contacts"], ["Hustles", "Hustles"], ["Bank", "Bank"], ["Rivals", "Rivals"], ["Score", "Score"], ["Crib", "Crib"], ["Jobs", "Jobs"], ["Property", "Property"], ["Gang", "Gang"], ["Crew", "Crew"], ["Grow", "Grow"], ["Case", "Case"], ["Paper", "Paper"]]
+const APPS := [["Messages", "Messages"], ["Contacts", "Contacts"], ["Hustles", "Hustles"], ["Bank", "Bank"], ["Rivals", "Rivals"], ["Score", "Score"], ["Crib", "Crib"], ["Jobs", "Jobs"], ["Property", "Property"], ["Gang", "Gang"], ["Crew", "Crew"], ["Grow", "Grow"], ["Business", "Business"], ["Case", "Case"], ["Paper", "Paper"]]
 
 var paper: PaperWindow
 var _world: World
@@ -66,7 +66,7 @@ func _process(delta: float) -> void:
 		return
 	_refresh = 0.4
 	var key := _app + str(state.inbox.size()) + str(state.job_offers.size()) + str(state.hustles) + str(state.rivals.size()) + str(state.known.size())
-	if _app in ["Bank", "Rivals", "Case", "Crew", "Grow"]:
+	if _app in ["Bank", "Rivals", "Case", "Crew", "Grow", "Business"]:
 		key += str(_world.tick / 60)
 	if key == _key:
 		return
@@ -235,6 +235,37 @@ func _show(state: PlayerStateData) -> void:
 				_rule()
 				_text(HeistSystem.plan_line(_world, state), 16, true)
 				_screen.add_child(_progress(clampf(float(h["work"]) / float(spec[2]), 0.0, 1.0) if h["stage"] in ["working", "getaway"] else clampf(float(h["cased"]) / HeistSystem.CASE_S, 0.0, 1.0)))
+		"Business":   # BZ2: your places, your staff, who you could hire
+			var me: NPCData = _world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
+			_text("Yesterday: shops paid $%d · wages $%d" % [int(state.biz_day.get("shops", 0)), int(state.biz_day.get("wages", 0))], 15, true)
+			_rule()
+			var places: Array = []   # [label, place id, role, where]
+			var home: Entity = _world.entities.get(me.home_building_id)
+			if int(state.grow.get("tents", 0)) > 0 and home != null:
+				var st: Dictionary = state.grow.get("stash", {})
+				places.append(["Grow at home · stash %d bags · stock %d seeds" % [int(st.get("units", 0)), _seeds(state)], &"grow", "grower", home.get_component(ComponentNames.BUILDING).position])
+			for b in BusinessSystem.player_owned(_world):
+				places.append(["%s · %s" % [String(b.trade if b.trade != &"" else &"shop").capitalize(), NextStep.where(me.position, b.position)], b.id, "manager", b.position])
+			if places.is_empty():
+				_text("Nothing to staff yet. Set up a grow at home, or buy a shop (B by its door).")
+			for pl in places:
+				_text(pl[0], 15, true)
+				var hired := ""
+				for id in state.staff:
+					if state.staff[id].get("at", &"") == pl[1]:
+						hired = id
+				if hired != "":
+					var s: Dictionary = state.staff[hired]
+					_text("%s %s · %s · $%d/day" % [StaffSystem.ROLES[s["role"]], _who(hired), "*".repeat(StaffSystem.stars(float(s["skill"]))), int(s["wage"])], 14)
+					var fire_id: StringName = hired
+					_screen.add_child(_button("Let go ($%d, quietly)" % (int(s["wage"]) * StaffSystem.FIRE_DAYS), func() -> void: state.ui_biz = {"fire": fire_id}, Vector2(W, 28)))
+				else:
+					_text("hire a %s ($ a day):" % String(pl[2]), 14)
+					for c in StaffSystem.candidates(_world, state, pl[3]):
+						var t := StaffSystem.traits_of(c)
+						var ask := {"hire": c, "at": pl[1], "role": pl[2]}
+						_screen.add_child(_button("%s %s %s $%d" % [_who(c), "*".repeat(StaffSystem.stars(t.x)), StaffSystem.read_honesty(t.y), StaffSystem.wage_of(t.x)], func() -> void: state.ui_biz = ask, Vector2(W, 28)))
+				_rule()
 		"Grow":   # BZ1: the grow at home and your brand
 			var g := state.grow
 			if int(g.get("tents", 0)) == 0:
@@ -306,6 +337,17 @@ func _show(state: PlayerStateData) -> void:
 		_rule()
 		_screen.add_child(_button("< Back", func() -> void: _open(""), Vector2(80, 30)))
 	reset_size()
+
+## BZ2: someone's name.
+func _who(id: StringName) -> String:
+	var e: Entity = _world.entities.get(id)
+	var n: NPCData = e.get_component(ComponentNames.NPC) if e != null else null
+	return n.display_name if n != null else "?"
+
+## BZ2: seeds left at the grow for the grower.
+func _seeds(state: PlayerStateData) -> int:
+	var stock: Dictionary = state.grow.get("stock", {})
+	return int(stock.get(&"seeds_mids", 0)) + int(stock.get(&"seeds_kush", 0)) + int(stock.get(&"seeds_haze", 0))
 
 ## HS1: a plain progress bar (casing, then the work).
 func _progress(f: float) -> Control:

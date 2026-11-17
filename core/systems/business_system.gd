@@ -73,12 +73,16 @@ static func spare(building: BuildingData) -> int:
 ## player's cash. Returns the total. (E2: the shop earns it from real sales.)
 static func collect_all(world: World) -> int:
 	var total := 0
+	var p: Entity = world.entities.get(PlayerFactory.PLAYER_ENTITY_ID)
+	var state: PlayerStateData = p.get_component(ComponentNames.PLAYER_STATE) if p != null else null
 	for building in all_buildings(world):
 		if owned_by_player(building) and spare(building) > 0:
-			total += spare(building)
+			total += StaffSystem.managed(state, building.id, spare(building)) if state != null else spare(building)   # BZ2: a manager
 			building.bank = mini(building.bank, building.daily_revenue * RESERVE_DAYS)
 			building.cash_on_hand = 0
 	Wallet.earn_clean(world, total)
+	if state != null:
+		state.biz_day["shops"] = total
 	return total
 
 ## Owned legit shops (grow houses are counted by ProductionSystem).

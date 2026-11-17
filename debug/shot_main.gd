@@ -194,6 +194,22 @@ func _run(main: Node, args: Dictionary) -> void:
 		gs.brand_rep = 0.35
 		for i in 4:
 			await process_frame
+	if args.has("biz"):   # BZ2 look: a grow with a grower, an owned shop waiting for a manager
+		var bp: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
+		var bs: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
+		bs.grow = {"tents": 2, "lamp": 2, "fan": true, "filter": true, "plants": [], "drying": [], "stash": {"units": 14, "q": 3.9, "strain": "OG Kush"}, "stock": {&"seeds_kush": 6, &"plant_food": 4}}
+		var home: BuildingData = driver.world.entities[bp.home_building_id].get_component(ComponentNames.BUILDING)
+		var gc := StaffSystem.candidates(driver.world, bs, home.position)
+		if not gc.is_empty():
+			StaffSystem.hire(driver.world, bs, gc[0], &"grow", "grower")
+		for b in BusinessSystem.all_buildings(driver.world):
+			if b.daily_revenue > 0 and b.building_type == GanstoidEnums.BuildingType.LEGIT_BUSINESS and b.position.distance_to(bp.position) < 300.0:
+				b.owner_npc_id = PlayerFactory.PLAYER_ENTITY_ID
+				BuildingData.ownership_serial += 1
+				break
+		bs.biz_day = {"shops": 240, "wages": 55}
+		for i in 4:
+			await process_frame
 	if args.has("jail"):   # JL1 look: inside, the prison panel
 		AdminSystem.run(driver.world, "jail", null, driver.world.tick)
 		for i in 4:

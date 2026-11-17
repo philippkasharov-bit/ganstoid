@@ -71,6 +71,9 @@ func process_entities(entities: Dictionary, _delta: float, tick: int) -> void:
 ## One game hour at the grow: thirsty plants wilt (and die), the smell may
 ## tip off a neighbour.
 static func tend_hour(world: World, me: NPCData, state: PlayerStateData, tick: int) -> void:
+	var gw := StaffSystem.grower(state)
+	if not gw.is_empty():
+		grower_hour(world, state, gw, tick)   # BZ2
 	var plants: Array = state.grow.get("plants", [])
 	var living := 0
 	for pl in plants:
@@ -92,6 +95,71 @@ static func tend_hour(world: World, me: NPCData, state: PlayerStateData, tick: i
 		if not state.grow.get("smelled", false):
 			state.grow["smelled"] = true
 			PhoneSystem.push(world, state, "Your neighbour", "What is that SMELL? I'm calling somebody about it.")
+
+## BZ2: an hour of your grower's work: water before they're thirsty, feed
+## from the stock, harvest what's ripe, bag what's dry into the stash (less
+## what a shifty one keeps), clear the dead and replant from the stock.
+static func grower_hour(world: World, state: PlayerStateData, gw: Dictionary, tick: int) -> void:
+	var stock: Dictionary = state.grow.get("stock", {})
+	for pl in state.grow.get("plants", []):
+		if pl.get("dead", false):
+			continue
+		if tick - int(pl["watered"]) >= SimClock.hours(WATER_H - 2.0):
+			pl["watered"] = tick
+		if int(pl["fed"]) < MAX_FEEDS and int(stock.get(&"plant_food", 0)) > 0:
+			pl["fed"] = int(pl["fed"]) + 1
+			stock[&"plant_food"] = int(stock[&"plant_food"]) - 1
+	if state.grow.get("plants", []).any(func(pl: Dictionary) -> bool: return ripe(world, pl) or pl.get("dead", false)):
+		harvest(world, state, false)
+	var left: Array = []
+	for d in state.grow.get("drying", []):
+		if tick >= int(d["ready"]):
+			var units := int(d["units"])
+			var kept := StaffSystem.skim_of(gw, units)
+			gw["skimmed"] = int(gw.get("skimmed", 0)) + kept
+			_to_stash(state, units - kept, float(d["q"]), String(d["strain"]))
+		else:
+			left.append(d)
+	state.grow["drying"] = left
+	var plants: Array = state.grow.get("plants", [])
+	for seed in [&"seeds_haze", &"seeds_kush", &"seeds_mids"]:
+		while int(stock.get(seed, 0)) > 0 and plants.size() < slots(state) and int(state.grow.get("lamp", 0)) > 0:
+			plants.append({"strain": seed, "at": tick, "watered": tick, "fed": 0, "care": 1.0})
+			stock[seed] = int(stock[seed]) - 1
+	state.grow["plants"] = plants
+	state.grow["stock"] = stock
+
+static func _to_stash(state: PlayerStateData, units: int, q: float, strain: String) -> void:
+	if units <= 0:
+		return
+	var st: Dictionary = state.grow.get("stash", {"units": 0, "q": q, "strain": strain})
+	var had := int(st["units"])
+	state.grow["stash"] = {"units": had + units, "q": (float(st["q"]) * had + q * units) / float(had + units), "strain": strain}
+
+## BZ2: leave your seeds and plant food at the grow for the grower.
+static func stock_up(_world: World, state: PlayerStateData) -> Dictionary:
+	var stock: Dictionary = state.grow.get("stock", {})
+	var n := 0
+	for id in [&"seeds_mids", &"seeds_kush", &"seeds_haze", &"plant_food"]:
+		var have := int(state.inventory.get(id, 0))
+		if have > 0:
+			stock[id] = int(stock.get(id, 0)) + have
+			state.inventory.erase(id)
+			n += have
+	state.grow["stock"] = stock
+	return {"ok": true, "effect": "grow_stocked", "amount": n} if n > 0 else {"ok": false, "reason": "grow_no_seeds"}
+
+## BZ2: take the bags the grower put by.
+static func pick_up(world: World, state: PlayerStateData) -> Dictionary:
+	var st: Dictionary = state.grow.get("stash", {})
+	var units := int(st.get("units", 0))
+	if units <= 0:
+		return {"ok": false, "reason": "grow_not_dry"}
+	add_product(state, units, float(st["q"]), String(st["strain"]))
+	state.grow.erase("stash")
+	if state.brand == "":
+		state.brand = BRANDS[world.runtime_rng.randi() % BRANDS.size()]
+	return {"ok": true, "effect": "grow_bagged", "amount": units}
 
 ## Moves every piece of grow gear in the bag into the grow at home.
 static func install(world: World, state: PlayerStateData) -> Dictionary:
@@ -189,7 +257,8 @@ static func quality(state: PlayerStateData, pl: Dictionary) -> float:
 	q += 0.6 if lamp >= 2 else 0.0
 	q += 0.3 if state.grow.get("fan", false) else 0.0
 	q += 0.25 * int(pl["fed"])
-	q += 0.08 * Skills.level(state, &"growing")
+	var gw := StaffSystem.grower(state)   # BZ2: a skilled grower counts as your own hand
+	q += 0.08 * maxi(Skills.level(state, &"growing"), roundi(float(gw.get("skill", 0.0)) * Skills.MAX_LEVEL))
 	q -= (1.0 - float(pl["care"])) * 2.0
 	return clampf(q, 1.0, 5.0 if lamp >= 2 else SHOP_LIGHT_CAP)
 
@@ -197,7 +266,7 @@ static func yield_of(state: PlayerStateData, pl: Dictionary) -> int:
 	return BASE_YIELD + (2 if int(state.grow.get("lamp", 0)) >= 2 else 0) + int(pl["fed"]) + (1 if float(pl["care"]) > 0.8 else 0)
 
 ## Cuts every ripe plant (and clears the dead); they hang to dry.
-static func harvest(world: World, state: PlayerStateData) -> Dictionary:
+static func harvest(world: World, state: PlayerStateData, by_hand := true) -> Dictionary:
 	var keep: Array = []
 	var drying: Array = state.grow.get("drying", [])
 	var units := 0
@@ -215,7 +284,8 @@ static func harvest(world: World, state: PlayerStateData) -> Dictionary:
 	state.grow["drying"] = drying
 	if units == 0:
 		return {"ok": cleared > 0, "effect": "grow_cleared", "reason": "grow_not_ripe"} if cleared > 0 else {"ok": false, "reason": "grow_not_ripe"}
-	Skills.train(world, state, &"growing", 6.0 * units)
+	if by_hand:
+		Skills.train(world, state, &"growing", 6.0 * units)
 	return {"ok": true, "effect": "grow_harvested", "amount": units}
 
 ## Bags what has dried: it joins what you carry, the stars averaged in.
@@ -282,6 +352,9 @@ static func stars_text(q: float) -> String:
 
 ## The next thing the grow needs, for the pager ("" when nothing).
 static func need_line(world: World, state: PlayerStateData) -> String:
+	if not StaffSystem.grower(state).is_empty():   # BZ2: the grower handles the plants
+		var waiting := int(state.grow.get("stash", {}).get("units", 0))
+		return "Your grower put %d bags by: pick them up at home" % waiting if waiting >= 10 else ""
 	var plants: Array = state.grow.get("plants", [])
 	var dry := 0
 	var ready := 0

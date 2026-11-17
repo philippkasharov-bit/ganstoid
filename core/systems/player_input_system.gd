@@ -634,6 +634,11 @@ func _grow_options(out: Array, state: PlayerStateData) -> void:
 			out.append(["Harvest (%d ready)" % ripe, func() -> Dictionary: return GrowSystem.harvest(_world, state)])
 	if (g.get("drying", []) as Array).any(func(d: Dictionary) -> bool: return _world.tick >= int(d["ready"])):
 		out.append(["Bag the dried weed", func() -> Dictionary: return GrowSystem.bag(_world, state)])
+	if not StaffSystem.grower(state).is_empty() and [&"seeds_mids", &"seeds_kush", &"seeds_haze", &"plant_food"].any(func(id: StringName) -> bool: return state.inventory.has(id)):
+		out.append(["Leave seeds and plant food for your grower", func() -> Dictionary: return GrowSystem.stock_up(_world, state)])
+	var stash := int(g.get("stash", {}).get("units", 0))
+	if stash > 0:
+		out.append(["Pick up %d bags from the stash" % stash, func() -> Dictionary: return GrowSystem.pick_up(_world, state)])
 	if int(state.inventory.get(GrowSystem.GOOD_ID, 0)) >= 2:
 		out.append(["Cut your weed (+50%%, a star off)", func() -> Dictionary: return GrowSystem.cut(_world, state), GrowSystem.stars_text(GrowSystem.stars_carried(state))])
 
