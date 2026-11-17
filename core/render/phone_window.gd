@@ -15,6 +15,7 @@ const APPS := [["Messages", "Messages"], ["Contacts", "Contacts"], ["Hustles", "
 var paper: PaperWindow
 var _world: World
 var _screen := VBoxContainer.new()
+var _hiring := ""   # BZ2/BZ3: the one job on the Business page whose candidates are listed
 var _app := ""
 var _key := ""
 var _refresh := 0.0
@@ -245,20 +246,32 @@ func _show(state: PlayerStateData) -> void:
 				var st: Dictionary = state.grow.get("stash", {})
 				places.append(["Grow at home · stash %d bags · stock %d seeds" % [int(st.get("units", 0)), _seeds(state)], &"grow", "grower", home.get_component(ComponentNames.BUILDING).position])
 			for b in BusinessSystem.player_owned(_world):
-				places.append(["%s · %s" % [String(b.trade if b.trade != &"" else &"shop").capitalize(), NextStep.where(me.position, b.position)], b.id, "manager", b.position])
+				var v: Dictionary = state.venues.get(b.id, {})
+				if v.is_empty():
+					places.append(["%s · %s" % [String(b.trade if b.trade != &"" else &"shop").capitalize(), NextStep.where(me.position, b.position)], b.id, "manager", b.position])
+					continue
+				var night := "last night $%d%s%s" % [int(v.get("last", 0)), " + back room $%d" % int(v.get("back", 0)) if int(v.get("back", 0)) > 0 else "", " · a fight" if v.get("fight", false) else ""]
+				places.append(["%s %s · %s · %s" % [VenueSystem.KINDS[v["kind"]][0], "*".repeat(VenueSystem.stars(state, b.id)), NextStep.where(me.position, b.position), night], b.id, "manager", b.position])
+				places.append(["  door", b.id, "bouncer", b.position])
 			if places.is_empty():
 				_text("Nothing to staff yet. Set up a grow at home, or buy a shop (B by its door).")
 			for pl in places:
 				_text(pl[0], 15, true)
 				var hired := ""
 				for id in state.staff:
-					if state.staff[id].get("at", &"") == pl[1]:
+					if state.staff[id].get("at", &"") == pl[1] and state.staff[id].get("role", "") == pl[2]:
 						hired = id
 				if hired != "":
 					var s: Dictionary = state.staff[hired]
 					_text("%s %s · %s · $%d/day" % [StaffSystem.ROLES[s["role"]], _who(hired), "*".repeat(StaffSystem.stars(float(s["skill"]))), int(s["wage"])], 14)
 					var fire_id: StringName = hired
 					_screen.add_child(_button("Let go ($%d, quietly)" % (int(s["wage"]) * StaffSystem.FIRE_DAYS), func() -> void: state.ui_biz = {"fire": fire_id}, Vector2(W, 28)))
+				elif _hiring != "%s|%s" % [pl[1], pl[2]]:
+					var slot := "%s|%s" % [pl[1], pl[2]]
+					_screen.add_child(_button("Hire a %s..." % String(pl[2]), func() -> void:
+						_hiring = slot
+						_key = ""
+						_refresh = 0.0, Vector2(W, 28)))
 				else:
 					_text("hire a %s ($ a day):" % String(pl[2]), 14)
 					for c in StaffSystem.candidates(_world, state, pl[3]):

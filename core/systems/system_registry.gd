@@ -36,6 +36,8 @@ static func register_all(world: World) -> void:
 	world.register_system(CrewAmbitionSystem.new(world))  # CA1
 	world.register_system(GrowSystem.new(world))          # BZ1
 	world.register_system(StaffSystem.new(world))         # BZ2
+	world.register_system(VenueSystem.new(world))         # BZ3
+	world.register_system(GambleSystem.new(world))        # BZ3
 	world.register_system(PhoneSystem.new(world))         # PH1
 	world.register_system(AdminSystem.new(world))         # AD1
 	world.register_system(CornerWarSystem.new(world))     # CW1

@@ -421,6 +421,7 @@ func _options(npc: NPCData, state: PlayerStateData) -> Array:
 	var person := _find_nearest_npc(pos)
 	var p: NPCData = _world.entities[person].get_component(ComponentNames.NPC) if person != &"" else null
 	if counter != &"":
+		_venue_options(out, state, counter)   # BZ3
 		out.append(["Shop here", func() -> Dictionary:
 			if MemorySystem.refuses(state, counter):
 				return {"ok": false, "reason": "store_refused"}   # ME1: you robbed them
@@ -612,6 +613,25 @@ func _find_counter(position: Vector2) -> StringName:
 			best_dist = d
 			best_id = id
 	return best_id
+
+## BZ3: a night spot of yours, or a back-room game.
+func _venue_options(out: Array, state: PlayerStateData, building_id: StringName) -> void:
+	if GambleSystem.game_at(_world, state, building_id):
+		out.append(["Back-room game (cards, dice)", func() -> Dictionary: return GambleSystem.sit(_world, state, building_id)])
+	var b: BuildingData = _world.entities[building_id].get_component(ComponentNames.BUILDING)
+	if not BusinessSystem.owned_by_player(b):
+		return
+	var v: Dictionary = state.venues.get(building_id, {})
+	if v.is_empty():
+		for kind in VenueSystem.KINDS:
+			var spec: Array = VenueSystem.KINDS[kind]
+			var k: String = kind
+			out.append(["Make it a %s (licence $%d)" % [String(spec[0]).to_lower(), int(spec[1])], func() -> Dictionary: return VenueSystem.convert(_world, state, building_id, k)])
+		return
+	if int(v["decor"]) < VenueSystem.DECOR_COST.size():
+		out.append(["Fit it out ($%d, a star)" % VenueSystem.DECOR_COST[int(v["decor"])], func() -> Dictionary: return VenueSystem.decorate(_world, state, building_id)])
+	if not v["back_room"]:
+		out.append(["Open a back room ($%d, illegal)" % VenueSystem.BACK_ROOM_COST, func() -> Dictionary: return VenueSystem.open_back_room(_world, state, building_id)])
 
 ## BZ1: the grow at home, only the lines that apply right now.
 func _grow_options(out: Array, state: PlayerStateData) -> void:

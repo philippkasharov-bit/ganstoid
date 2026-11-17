@@ -106,6 +106,9 @@ func _ready() -> void:
 	var court := CourtWindow.new()   # CT1: the day in court
 	get_parent().add_child.call_deferred(court)
 	court.setup(_world)
+	var table := GambleWindow.new()   # BZ3: the back-room table
+	get_parent().add_child.call_deferred(table)
+	table.setup(_world)
 	var admin := AdminWindow.new()   # AD1: F11 (Admin on in the pause menu)
 	get_parent().add_child.call_deferred(admin)
 	admin.setup(_world, Vector2(320, 90))

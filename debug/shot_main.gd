@@ -210,6 +210,26 @@ func _run(main: Node, args: Dictionary) -> void:
 		bs.biz_day = {"shops": 240, "wages": 55}
 		for i in 4:
 			await process_frame
+	if args.has("club"):   # BZ3 look (with --biz): the shop turned into a two-star club with a back room
+		var vs: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
+		for b in BusinessSystem.player_owned(driver.world):
+			vs.venues[b.id] = {"kind": "club", "decor": 1, "back_room": true, "last": 412, "back": 260, "fight": true}
+			break
+		for i in 4:
+			await process_frame
+	if args.has("table"):   # BZ3 look: at a back-room table at night, a hand of blackjack on
+		var tp: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
+		var ts: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
+		ts.gamble = {"place": &"", "stage": "play", "you": [10, 6], "dealer": [12, 4], "line": "Hit or stand?", "bet": 50, "net": 120}
+		for b in BusinessSystem.all_buildings(driver.world):
+			if GambleSystem.TRADES.has(b.trade) and b.position.distance_to(tp.position) < GambleSystem.LEAVE_M:
+				ts.gamble["place"] = b.id
+		if ts.gamble["place"] == &"":   # nothing in reach: the game stays up for the picture
+			ts.gamble["place"] = tp.home_building_id
+			tp.position = (driver.world.entities[tp.home_building_id].get_component(ComponentNames.BUILDING) as BuildingData).position
+			driver.world.reindex_position(tp.id)
+		for i in 4:
+			await process_frame
 	if args.has("jail"):   # JL1 look: inside, the prison panel
 		AdminSystem.run(driver.world, "jail", null, driver.world.tick)
 		for i in 4:

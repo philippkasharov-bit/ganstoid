@@ -18,7 +18,7 @@ extends SystemBase
 
 const EVERY := 60
 const PHASE := 2
-const ROLES := {"grower": "Grower", "manager": "Manager"}
+const ROLES := {"grower": "Grower", "manager": "Manager", "bouncer": "Bouncer"}   # BZ3: a bouncer keeps a night spot calm
 const WAGE_BASE := 20
 const WAGE_PER_SKILL := 60    # a top hand asks $80 a day
 const CANDIDATES := 3
@@ -79,9 +79,9 @@ static func read_honesty(honesty: float) -> String:
 	return "straight" if honesty >= 0.66 else ("hard to read" if honesty >= 0.33 else "shifty")
 
 ## The place a role works at is open: no one hired there yet.
-static func open_at(state: PlayerStateData, at: StringName) -> bool:
+static func open_at(state: PlayerStateData, at: StringName, role: String = "") -> bool:
 	for id in state.staff:
-		if state.staff[id].get("at", &"") == at:
+		if state.staff[id].get("at", &"") == at and (role == "" or state.staff[id].get("role", "") == role):
 			return false
 	return true
 
@@ -101,7 +101,7 @@ static func candidates(world: World, state: PlayerStateData, where: Vector2) -> 
 	return out
 
 static func hire(world: World, state: PlayerStateData, id: StringName, at: StringName, role: String) -> Dictionary:
-	if not ROLES.has(role) or state.staff.has(id) or not open_at(state, at) or world.entities.get(id) == null:
+	if not ROLES.has(role) or state.staff.has(id) or not open_at(state, at, role) or world.entities.get(id) == null:
 		return {"ok": false, "reason": "staff_cant"}
 	var t := traits_of(id)
 	state.staff[id] = {"at": at, "role": role, "skill": t.x, "honesty": t.y, "wage": wage_of(t.x), "skimmed": 0}

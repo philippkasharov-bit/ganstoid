@@ -54,6 +54,9 @@ static func laundering_capacity(world: World) -> int:
 		var building: BuildingData = entity.get_component(ComponentNames.BUILDING)
 		if owned_by_player(building):
 			total += building.daily_revenue
+	var p: Entity = world.entities.get(PlayerFactory.PLAYER_ENTITY_ID)
+	if p != null:
+		total += VenueSystem.wash_capacity(p.get_component(ComponentNames.PLAYER_STATE))   # BZ3: a cash business washes more
 	return total
 
 static func owned_by_player(building: BuildingData) -> bool:
@@ -77,6 +80,8 @@ static func collect_all(world: World) -> int:
 	var state: PlayerStateData = p.get_component(ComponentNames.PLAYER_STATE) if p != null else null
 	for building in all_buildings(world):
 		if owned_by_player(building) and spare(building) > 0:
+			if state != null and state.venues.has(building.id):
+				continue   # BZ3: a night spot earns at closing time (VenueSystem)
 			total += StaffSystem.managed(state, building.id, spare(building)) if state != null else spare(building)   # BZ2: a manager
 			building.bank = mini(building.bank, building.daily_revenue * RESERVE_DAYS)
 			building.cash_on_hand = 0
