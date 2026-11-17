@@ -25,6 +25,8 @@ static func line(world: World) -> String:
 		return HeistSystem.plan_line(world, state)   # HS1: a score comes first
 	if not state.job.is_empty():
 		return _job(world, me, state)
+	if not state.gig.is_empty():
+		return GigSystem.line(world, state)   # RP2
 	if me.bleeding:
 		return "You're bleeding: press H and bandage the wound"
 	if me.hunger < URGENT:

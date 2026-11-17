@@ -10,7 +10,7 @@ const ACTION := &"phone"
 const SCREEN := Color(0.62, 0.74, 0.47)
 const INK := Color(0.08, 0.12, 0.06)
 const W := 300.0
-const APPS := [["Messages", "Messages"], ["Contacts", "Contacts"], ["Hustles", "Hustles"], ["Bank", "Bank"], ["Rivals", "Rivals"], ["Score", "Score"], ["Crib", "Crib"], ["Paper", "Paper"]]
+const APPS := [["Messages", "Messages"], ["Contacts", "Contacts"], ["Hustles", "Hustles"], ["Bank", "Bank"], ["Rivals", "Rivals"], ["Score", "Score"], ["Crib", "Crib"], ["Jobs", "Jobs"], ["Property", "Property"], ["Paper", "Paper"]]
 
 var paper: PaperWindow
 var _world: World
@@ -149,6 +149,41 @@ func _show(state: PlayerStateData) -> void:
 			_text("LAST 7 MORNINGS", 14, true)
 			_screen.add_child(_spark(state.cash_history + [me2.cash]))
 			_text("Dirty money draws the police when they search you. Clean it through a business you own.", 14)
+		"Jobs":   # RP2
+			if not state.gig.is_empty():
+				_text(GigSystem.line(_world, state), 16, true)
+				_rule()
+			_text("TODAY'S GIGS (clean pay)", 15, true)
+			if state.gigs.is_empty():
+				_text("Nothing left today. New gigs every morning.", 14)
+			for i in state.gigs.size():
+				var g: Dictionary = state.gigs[i]
+				var idx := i
+				var tag := "  (car + licence)" if g["kind"] == "taxi" else ""
+				_screen.add_child(_button("%s  $%d%s" % [GigSystem.KINDS[g["kind"]][0], int(g["pay"]), tag], func() -> void: state.ui_gig = {"take": idx}, Vector2(W, 34)))
+			_rule()
+			if state.licence:
+				_text("Driving licence: yes", 15)
+			else:
+				_screen.add_child(_button("Get a driving licence  $%d" % GigSystem.LICENCE_COST, func() -> void: state.ui_gig = {"licence": true}, Vector2(W, 34)))
+		"Property":   # RP2
+			var me3: NPCData = _world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
+			_text("YOU OWN %d" % state.properties.size(), 16, true)
+			for id in state.properties:
+				var pid: StringName = id
+				var row := HBoxContainer.new()
+				var home := me3.home_building_id == pid
+				var l := _label("%s%s" % [CornerWarSystem.block_name(TerritoryData.turf_of(_bpos(pid))), "  (home)" if home else "  rent $%d/day" % int(float(state.property_prices.get(pid, 0)) * GigSystem.RENT_SHARE)], 14)
+				l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+				row.add_child(l)
+				if not home:
+					row.add_child(_button("Move in", func() -> void: state.ui_gig = {"move": pid}, Vector2(80, 30)))
+				_screen.add_child(row)
+			_rule()
+			_text("FOR SALE NEAR YOU (clean money only)", 15, true)
+			for lst in GigSystem.listings(_world, state, me3):
+				var bid: StringName = lst[0]
+				_screen.add_child(_button("%s  $%d  (%d m)" % [CornerWarSystem.block_name(TerritoryData.turf_of(_bpos(bid))), int(lst[1]), int(lst[2])], func() -> void: state.ui_gig = {"buy": bid}, Vector2(W, 34)))
 		"Crib":   # CR1
 			_text("YOUR CRIB: %s" % CribSystem.TIERS[state.crib].to_upper(), 17, true)
 			for t in range(1, state.crib + 1):
@@ -257,6 +292,10 @@ func _open(app: String) -> void:
 		return
 	_app = app
 	_key = ""
+
+func _bpos(id: StringName) -> Vector2:
+	var e: Entity = _world.entities.get(id)
+	return (e.get_component(ComponentNames.BUILDING) as BuildingData).position if e != null else Vector2.ZERO
 
 func _gang(g: StringName) -> String:
 	var e: Entity = _world.entities.get(g)

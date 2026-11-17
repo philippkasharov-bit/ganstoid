@@ -103,6 +103,15 @@ const LINES := {
 	"lift_lost": ["Lost them.", "They got away from you.", "Too far back. Gone."],
 	"rival_coming": ["{n} of them, coming your way.", "Here they come: {n}.", "{n} shapes coming fast."],   # RV1
 	"rival_new": ["New man on those corners. He knows your name already.", "Someone stepped up. He's heard about you."],
+	"gig_taken": ["Gig's yours. Check the GPS.", "Easy money. Go."],   # RP2
+	"gig_busy": ["Finish the one you've got first.", "One gig at a time."],
+	"gig_need_car": ["You need a car and a licence for that.", "Taxi work needs wheels and papers."],
+	"licence_bought": ["Licence in your wallet. Legit, for once.", "Papers. You can drive without sweating now."],
+	"licence_have": ["You've already got one.", "Already licensed."],
+	"no_licence": ["A cop clocked you driving without a licence. That goes on your file.", "No licence, and a cop saw. Great."],
+	"property_bought": ["Keys are yours. ${n}.", "Signed. You own a place now."],
+	"moved_in": ["New place. Feels like yours.", "Moved in."],
+	"not_yours": ["That's not your place.", "You don't own that."],
 	"crib_up": ["Moved up. ${n} well spent.", "The place looks like something now."],   # CR1
 	"crib_rank": ["Nobody rents that to a nobody. Rank up first.", "Not with your name. Not yet."],
 	"crib_max": ["Can't get bigger than this.", "This is as big as it gets."],

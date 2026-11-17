@@ -115,6 +115,13 @@ extends Resource
 var job_offers: Array = []                      # JB1: offers on screen (not saved)
 @export var explored: PackedByteArray = PackedByteArray()   # MP2: fog of war, one bit per ExplorationSystem cell
 @export var known: Dictionary = {}                 # MP2: dealer and fixer ids you have seen -> "dealer" / "fixer"
+@export var gig: Dictionary = {}                  # RP2: the legal gig you are on
+@export var gigs: Array = []                      # RP2: today's offers
+@export var gig_day: int = -1000000
+@export var licence: bool = false                 # RP2: driving licence
+@export var properties: Array = []                # RP2: homes you own (building ids)
+@export var property_prices: Dictionary = {}      # RP2: what you paid (rent is a share of it)
+var ui_gig: Dictionary = {}                       # RP2: a phone request (not saved)
 @export var crib: int = 0                         # CR1: home tier (CribSystem.TIERS)
 @export var crib_day: int = -1000000
 @export var trophies: Array = []                  # CR1: finished scores [{what, take, day}]
