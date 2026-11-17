@@ -324,15 +324,18 @@ func _arrest(player_npc: NPCData, player_state: PlayerStateData) -> void:
 	player_state.law_tier = GanstoidEnums.LawTier.CLEAN
 	DealSystem.cancel_handoff(_world, player_state)  # batch 11: getting busted mid-handoff kills the deal
 	CrewLoyaltySystem.on_player_arrested(_world, player_state)  # batch 16
-	var days := CaseSystem.sentence(_world, player_npc, player_state)   # CP1: court
-	if days > 0:
-		StreetTalk.say_key(_world, player_state, "sentenced", days)
+	if CourtSystem.charge(_world, player_npc, player_state):   # CT1: charged, out to wait for the trial
+		StreetTalk.say_key(_world, player_state, "charged")
 		for id in _alerted.keys():
 			_stand_down(id)
+		_send_home(player_npc)
 		return
 	var seized := Wallet.seize_dirty(_world, ARREST_SEIZE_FRACTION * (0.5 if player_state.crib >= CribSystem.SAFE_TIER else 1.0))  # batch 24; CR1: the safe
 	StreetTalk.say_key(_world, player_state, "arrested_seized" if seized > 0 else "arrested", seized)
 	StreetTalk._count(_world, player_state, "arrested_seized" if seized > 0 else "arrested", seized)   # NP1: it makes the paper
+	_send_home(player_npc)
+
+func _send_home(player_npc: NPCData) -> void:
 	if player_npc.home_building_id != &"" and _world.entities.has(player_npc.home_building_id):
 		var home: BuildingData = _world.entities[player_npc.home_building_id].get_component(ComponentNames.BUILDING)
 		player_npc.position = home.position

@@ -5,6 +5,7 @@ Newest first. The in-game admin panel (F11, Bugs & updates) shows the top of it.
 
 ## 2026-11-17
 
+- ME1: the city remembers you
 - AU1: the city has sound, all made by code
 - ROADMAP: the indie mistakes we design against, batches re-ordered
 - JL1: prison you live through (B8)

@@ -51,6 +51,7 @@ Status: [x] done, [~] partly, [ ] not started.
 - [x] AD1 admin panel (F11) with bug test, bugs and updates · QA6 test index and code map
 - [x] AU1 sound, all made by code (tools/audio/synth.py): day and night city, crowd murmur, steps, doors, guns, cars passing, police siren, engine, two radio stations, interface sounds; Sound and Music volume in the Esc menu
 - [x] ME1 the city remembers: people you robbed, hurt, threatened or helped know you again; they shout it (speech bubbles), run, call the police once, or tip you off; a store you held up won't serve you; friends join your crew more readily; grudges fade over about a month
+- [x] CT1 court case: an arrest with a real case is a charge and a trial in two days; the people who remember you are the witnesses; scare them, pay them or hire a lawyer; the court window shows who talked and the verdict (Phone > Case, admin: Trial now)
 
 ## Indie mistakes we design against (Phil, 2026-11: "doesn't it look boring and repetitive?")
 
@@ -95,7 +96,7 @@ Each mistake below is checked against the game and owned by a batch.
 |---|---|---|---|
 | AU1 | ~~**Sound and music**~~ **done** · | City ambience by area and hour, footsteps, doors, cars, guns, crowd voices, a 90s radio in cars, UI sounds | 2 |
 | ME1 | ~~**The city remembers** (killer 1)~~ **done** · | Everyone you robbed, hurt, helped or paid remembers you: clerks refuse you, victims cross the street, people you helped tip you off or join you | 2 |
-| CT1 | **Court case** (killer 2) | Arrested: a trial built from the real evidence (who saw you, what you carried); before it, scare or pay witnesses, hire a lawyer | 2 |
+| CT1 | ~~**Court case** (killer 2)~~ **done** · | Arrested: a trial built from the real evidence (who saw you, what you carried); before it, scare or pay witnesses, hire a lawyer | 2 |
 | CA1 | **Crew with ambitions** (killer 3) | Crew have wants: one gets greedy, one talks to police, one wants your chair; promote, pay or cut them loose | 2 |
 | FX1 | **Game feel** | Hit reactions and knockdowns, camera shake, muzzle flash, blood, slow-mo on a knockout, screen pulses on big moments | 1-2 |
 | LV1 | **Living streets** | People say things (barks), street events (fights, arrests, crashes, parties, dealers busted), more traffic, people with jobs you can see | 2 |

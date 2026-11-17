@@ -144,6 +144,24 @@ func _run(main: Node, args: Dictionary) -> void:
 				break
 		for i in 4:
 			await process_frame
+	if args.has("trial") or args.has("court"):   # CT1 look: charged with four witnesses; --court: the court has sat
+		var tp: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
+		var ts: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
+		var deeds := ["robbed", "saw_crime", "saw_crime", "robbed"]
+		for e in driver.world.get_entities_with_component(ComponentNames.NPC).values():
+			var n: NPCData = e.get_component(ComponentNames.NPC)
+			if deeds.is_empty():
+				break
+			if n != tp and not (n.is_cop or n.is_dealer or n.is_fixer or n.is_crew or n.is_down) and n.gang_id == &"" and n.position.distance_to(tp.position) < 400.0:
+				MemorySystem.remember(driver.world, ts, n.id, deeds.pop_back())
+				if deeds.size() == 1:
+					n.fear = 1.0   # one too scared to come
+		ts.case_evidence = 45.0
+		CourtSystem.charge(driver.world, tp, ts)
+		if args.has("court"):
+			CourtSystem.hold(driver.world, tp, ts)
+		for i in 6:
+			await process_frame
 	if args.has("jail"):   # JL1 look: inside, the prison panel
 		AdminSystem.run(driver.world, "jail", null, driver.world.tick)
 		for i in 4:

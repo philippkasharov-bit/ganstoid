@@ -70,7 +70,7 @@ func _show(tab: String) -> void:
 		"World":
 			_row([["06:00", "hour", 6], ["12:00", "hour", 12], ["18:00", "hour", 18], ["23:00", "hour", 23]])
 			_row([["Reveal the map", "reveal_map", null], ["Corner push now", "push_now", null], ["New hustles", "hustles_new", null]])
-			_row([["Print the paper", "paper_now", null], ["Every rival angry", "rival_max", null]])
+			_row([["Print the paper", "paper_now", null], ["Every rival angry", "rival_max", null], ["Trial now", "trial_now", null]])
 			_row([["Score: store", "heist_now", 1], ["Score: stash house", "heist_now", 2], ["Score: armoured van", "heist_now", 3]])
 		"Tests":
 			var results := AdminTests.run_all(_world)

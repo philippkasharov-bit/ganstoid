@@ -10,7 +10,7 @@ const ACTION := &"phone"
 const SCREEN := Color(0.62, 0.74, 0.47)
 const INK := Color(0.08, 0.12, 0.06)
 const W := 300.0
-const APPS := [["Messages", "Messages"], ["Contacts", "Contacts"], ["Hustles", "Hustles"], ["Bank", "Bank"], ["Rivals", "Rivals"], ["Score", "Score"], ["Crib", "Crib"], ["Jobs", "Jobs"], ["Property", "Property"], ["Gang", "Gang"], ["Paper", "Paper"]]
+const APPS := [["Messages", "Messages"], ["Contacts", "Contacts"], ["Hustles", "Hustles"], ["Bank", "Bank"], ["Rivals", "Rivals"], ["Score", "Score"], ["Crib", "Crib"], ["Jobs", "Jobs"], ["Property", "Property"], ["Gang", "Gang"], ["Case", "Case"], ["Paper", "Paper"]]
 
 var paper: PaperWindow
 var _world: World
@@ -66,7 +66,7 @@ func _process(delta: float) -> void:
 		return
 	_refresh = 0.4
 	var key := _app + str(state.inbox.size()) + str(state.job_offers.size()) + str(state.hustles) + str(state.rivals.size()) + str(state.known.size())
-	if _app in ["Bank", "Rivals"]:
+	if _app in ["Bank", "Rivals", "Case"]:
 		key += str(_world.tick / 60)
 	if key == _key:
 		return
@@ -235,6 +235,25 @@ func _show(state: PlayerStateData) -> void:
 				_rule()
 				_text(HeistSystem.plan_line(_world, state), 16, true)
 				_screen.add_child(_progress(clampf(float(h["work"]) / float(spec[2]), 0.0, 1.0) if h["stage"] in ["working", "getaway"] else clampf(float(h["cased"]) / HeistSystem.CASE_S, 0.0, 1.0)))
+		"Case":   # CT1: the trial and its witnesses
+			var t := state.trial
+			if t.is_empty():
+				_text("No trial coming. Keep it that way." if state.case_evidence < CaseSystem.PRISON_FROM else "Case file: %d. Get arrested now and you'll stand trial." % int(state.case_evidence))
+			else:
+				var me: NPCData = _world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
+				var h := maxf(0.0, float(int(t.get("at", 0)) - _world.tick) / SimClock.hours(1.0))
+				_text("TRIAL IN %dh" % ceili(h), 17, true)
+				var s := CourtSystem.score(_world, state)
+				_text("the case %d  ·  guilty from %d  ·  %s" % [int(s), int(CourtSystem.GUILTY_AT), "you'd go down" if s >= CourtSystem.GUILTY_AT else "you'd walk"], 15)
+				_rule()
+				for id in t.get("witnesses", []):
+					var e: Entity = _world.entities.get(id)
+					var n: NPCData = e.get_component(ComponentNames.NPC) if e != null else null
+					var stand := CourtSystem.stand_of(_world, state, id)
+					var where := NextStep.where(me.position, n.position) if n != null and stand != "dead" else ""
+					_text("%s  ·  %s%s" % [n.display_name if n != null else "?", {"talks": "will talk", "scared": "too scared", "bought": "forgot you", "dead": "dead", "gone": "gone"}[stand], "  ·  " + where if where != "" else ""], 14, stand == "talks")
+				_rule()
+				_text("Scare them or pay them (E by them), or hire a lawyer (E anywhere, $%d)." % CourtSystem.LAWYER_FEE, 14)
 		"Rivals":
 			if state.rivals.is_empty():
 				_text("Nobody knows your name yet.")

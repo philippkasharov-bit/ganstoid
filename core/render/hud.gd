@@ -103,6 +103,9 @@ func _ready() -> void:
 	var prison := PrisonWindow.new()   # JL1: the days inside
 	get_parent().add_child.call_deferred(prison)
 	prison.setup(_world)
+	var court := CourtWindow.new()   # CT1: the day in court
+	get_parent().add_child.call_deferred(court)
+	court.setup(_world)
 	var admin := AdminWindow.new()   # AD1: F11 (Admin on in the pause menu)
 	get_parent().add_child.call_deferred(admin)
 	admin.setup(_world, Vector2(320, 90))

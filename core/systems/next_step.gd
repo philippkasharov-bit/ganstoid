@@ -27,6 +27,13 @@ static func line(world: World) -> String:
 		return _job(world, me, state)
 	if not state.gig.is_empty():
 		return GigSystem.line(world, state)   # RP2
+	if not state.trial.is_empty() and state.trial.get("at") is int:
+		var h := maxf(0.0, float(int(state.trial["at"]) - world.tick) / SimClock.hours(1.0))
+		var talk := 0
+		for id in state.trial.get("witnesses", []):
+			talk += 1 if CourtSystem.stand_of(world, state, id) == "talks" else 0
+		if talk > 0 or CourtSystem.score(world, state) >= CourtSystem.GUILTY_AT:
+			return "Trial in %dh: %d witness%s will talk. Scare them, pay them, or get a lawyer (Phone > Case)" % [ceili(h), talk, "" if talk == 1 else "es"]
 	if me.bleeding:
 		return "You're bleeding: press H and bandage the wound"
 	if me.hunger < URGENT:

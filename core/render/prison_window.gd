@@ -18,7 +18,7 @@ func setup(world: World) -> void:
 func _process(_delta: float) -> void:
 	var p: Entity = _world.entities.get(PlayerFactory.PLAYER_ENTITY_ID) if _world != null else null
 	var state: PlayerStateData = p.get_component(ComponentNames.PLAYER_STATE) if p != null else null
-	visible = state != null and state.prison_until_tick > 0
+	visible = state != null and state.prison_until_tick > 0 and state.verdict.is_empty()   # CT1: the court first
 	if not visible:
 		return
 	var left := maxf(0.0, float(state.prison_until_tick - _world.tick) / SimClock.day_ticks)

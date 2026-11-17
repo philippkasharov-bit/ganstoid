@@ -131,6 +131,12 @@ static func run(world: World, cmd: String, arg: Variant, tick: int) -> String:
 				state.case_evidence = CaseSystem.PRISON_FROM * 3.0
 				days = CaseSystem.sentence(world, me, state)
 			return "sentenced: %d days" % days
+		"trial_now":   # CT1: charge (with a case if there is none) and sit the court at once
+			if state.trial.is_empty():
+				state.case_evidence = maxf(state.case_evidence, CaseSystem.PRISON_FROM * 2.0)
+				CourtSystem.charge(world, me, state)
+			state.trial["at"] = tick
+			return "the court sits now (%d witnesses)" % state.trial["witnesses"].size()
 		"paper_now":
 			state.paper = NewsSystem.print_paper(state, HustleSystem.day_of(tick))
 			state.paper_serial += 1

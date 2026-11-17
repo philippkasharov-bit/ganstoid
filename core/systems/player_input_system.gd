@@ -413,6 +413,8 @@ func _options(npc: NPCData, state: PlayerStateData) -> Array:
 				state.job_offers = []
 				return JobSystem.take(_world, state, job)])
 		return out
+	if not state.trial.is_empty():
+		out.append(["Lawyer for your trial ($%d, case -%d)" % [CourtSystem.LAWYER_FEE, int(CourtSystem.LAWYER_CUT)], func() -> Dictionary: return CourtSystem.lawyer(_world, state)])
 	if state.case_evidence > 0.0:
 		out.append(["Call a lawyer ($%d, case -%d)" % [CaseSystem.LAWYER_FEE, int(CaseSystem.LAWYER_CUT)], func() -> Dictionary: return CaseSystem.lawyer(_world, npc, state)])
 	var counter := _find_counter(pos)
