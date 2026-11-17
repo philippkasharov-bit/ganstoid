@@ -21,6 +21,24 @@ $versionFile = Join-Path $root 'version.txt'
 # data (LA parcels, OpenStreetMap cells) lives here and is not in the repo.
 $keep = @((Join-Path $root 'tools\city\osm'))
 
+# Windows sometimes holds a file a moment longer (Defender scanning a fresh
+# download, Explorer, a leftover from a run that was cut off): try again,
+# up to $tries times, before giving up.
+function Retry([scriptblock]$work, [int]$tries = 10) {
+    for ($i = 1; $i -le $tries; $i++) {
+        try { & $work; return }
+        catch { if ($i -eq $tries) { throw } ; Start-Sleep -Seconds 2 }
+    }
+}
+
+# Leftovers of earlier runs (_update*, whatever their name): removed if
+# Windows lets go of them, otherwise left for next time. Never fatal.
+function Clear-Leftovers {
+    Get-ChildItem -Path $root -Filter '_update*' -Force -ErrorAction SilentlyContinue | ForEach-Object {
+        try { Remove-Item $_.FullName -Recurse -Force -ErrorAction Stop } catch { }
+    }
+}
+
 function Say([string]$text) {
     Write-Host $text
     if ($StatusFile) { Add-Content -Path $StatusFile -Value $text -Encoding UTF8 }
@@ -54,12 +72,13 @@ try {
 
     if ($have -ne $latest) {
         Say "Downloading version $latest..."
-        $zip = Join-Path $root '_update.zip'
-        $tmp = Join-Path $root '_update'
+        Clear-Leftovers
+        $stamp = Get-Date -Format 'yyyyMMddHHmmss'   # a fresh name each time: a locked leftover can't block us
+        $zip = Join-Path $root "_update_$stamp.zip"
+        $tmp = Join-Path $root "_update_$stamp"
         Invoke-WebRequest -UseBasicParsing -Headers $headers -Uri "https://api.github.com/repos/$repo/zipball/main" -OutFile $zip
-        if (Test-Path $tmp) { Remove-Item $tmp -Recurse -Force }
         Say 'Unpacking...'
-        Expand-Archive -Force $zip $tmp
+        Retry { Expand-Archive -Force $zip $tmp }
         $inner = (Get-ChildItem $tmp | Select-Object -First 1).FullName
         Say 'Installing...'
         foreach ($dir in (Get-ChildItem $inner -Directory | Where-Object { $_.Name -notlike '.*' } | ForEach-Object { $_.Name })) {
@@ -70,9 +89,8 @@ try {
                 if ($LASTEXITCODE -ge 8) { throw "Could not copy the $dir folder (robocopy code $LASTEXITCODE). Is the game still running?" }
             }
         }
-        Get-ChildItem $inner -File | Copy-Item -Destination $root -Force
-        Remove-Item $tmp -Recurse -Force
-        Remove-Item $zip -Force
+        Retry { Get-ChildItem $inner -File | Copy-Item -Destination $root -Force }
+        Clear-Leftovers   # tidy up; if Windows still holds something, next time
         Say 'Preparing the game files (first start after an update takes a minute)...'
         $import = Start-Process -FilePath $godot -ArgumentList @('--headless', '--path', "`"$root`"", '--import') -Wait -PassThru -WindowStyle Hidden
         Set-Content -Path $versionFile -Value "$latest $title" -Encoding UTF8
@@ -82,6 +100,7 @@ try {
 }
 catch {
     $msg = $_.Exception.Message
+    if ($_.Exception.HResult -eq -2147024864 -or $msg -match 'being used by another process|cannot access the file') {   # 0x80070020, a locked file, in any language $msg = 'Windows is holding an update file (antivirus or a window open on it). Wait a minute and press Play again, or restart the PC.' }
     if ($msg -match '401') { $msg = 'GitHub refused the token (401). The token in github_token.txt has expired or is wrong.' }
     Say "ERROR $msg"
     exit 1
