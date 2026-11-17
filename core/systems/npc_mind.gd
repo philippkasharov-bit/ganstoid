@@ -10,6 +10,7 @@ const DRIVES := 6          # GanstoidEnums.MindDrive
 const MOODS := 5           # GanstoidEnums.MindMood
 const MEMORY_CAP := 12     # kept memories; the least important goes first
 const FRIENDS_CAP := 4
+const HABIT_SLOTS := 6     # 4-hour slots of the day
 const SALT_TRAIT := 9100   # salts kept clear of NPCRoutine's (1..31)
 const SALT_DRIVE := 9200
 const SALT_RATE := 9300
@@ -178,6 +179,11 @@ static func sanitize(mind: NPCMindData) -> void:
 			mind.mem_kind[i] = GanstoidEnums.MindMemory.MET_PLAYER
 	if mind.friends.size() > FRIENDS_CAP:
 		mind.friends.resize(FRIENDS_CAP)
+	if not mind.habit_slots.is_empty():
+		mind.habit_slots.resize(HABIT_SLOTS)
+		for i in HABIT_SLOTS:
+			if not Activities.TABLE.has(StringName(mind.habit_slots[i])):
+				mind.habit_slots[i] = ""
 
 ## `values` cut or padded to `size`, NaN replaced, every entry clamped.
 static func _fit(values: PackedFloat32Array, size: int, lo: float, hi: float, fill: float) -> PackedFloat32Array:

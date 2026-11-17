@@ -33,6 +33,7 @@ var _world: World:
 	get:
 		return _world_ref.get_ref()
 var _outings := NPCOutings.new()
+var free_time := NPCFreeTime.new(_outings)   # NB2c: free time by the shared brain (GameRules.brain)
 var _homebound: Dictionary = {}    # npc id -> their trip ends at home (free time)
 var _visit_until: Dictionary = {}  # npc id -> tick their stay inside a business ends
 var _outing_at: Dictionary = {}    # npc id -> tick they next think about going out
@@ -77,6 +78,7 @@ func process_entities(entities: Dictionary, delta: float, tick: int) -> void:
 ## the world is generated; a later jump in time does this by itself.
 func settle_all(tick: int) -> void:
 	_outings.prime(_world)   # MAP1: not on the first outing's tick
+	free_time.places.prime(_world)
 	_resync(_world.get_entities_with_component(ComponentNames.NPC), tick)
 	_last_tick = tick
 
@@ -128,23 +130,32 @@ func _wake(npc: NPCData, at: int) -> void:
 func _think_about_going_out(npc: NPCData, tick: int) -> void:
 	if npc.is_dealer:
 		return
-	_outing_at[npc.id] = tick + NPCOutings.next_gap(npc.id, _world.runtime_rng)
+	var rng := NPCFreeTime.rng_for(npc.id, tick) if GameRules.brain(_world) else _world.runtime_rng
+	_outing_at[npc.id] = tick + NPCOutings.next_gap(npc.id, rng)
 	_wake(npc, _outing_at[npc.id])
 
 ## Free and at home, and the moment has come: an errand, an evening out or a
 ## stroll, if there is time for it before work. Otherwise think again later.
 func _maybe_go_out(npc: NPCData, home: Vector2, tick: int, free_ticks: int) -> void:
 	_outing_at.erase(npc.id)
-	var outing := _outings.plan(_world, npc, home, SimClock.day_fraction(tick) * 24.0, _world.runtime_rng)
+	var brain := GameRules.brain(_world)
+	var outing := free_time.plan(_world, npc, home, tick) if brain else _outings.plan(_world, npc, home, SimClock.day_fraction(tick) * 24.0, _world.runtime_rng)
 	if outing.is_empty() or _outing_ticks(npc, outing, home) * OUTING_SLACK > free_ticks:
 		_think_about_going_out(npc, tick)
 		return
+	if brain:
+		free_time.started(_world, npc, outing, tick)
+		if outing["legs"].is_empty() and outing["hold"] == 0:
+			_think_about_going_out(npc, tick)   # staying in
+			return
 	street.start_trip(npc, outing["legs"], home, outing["pace"])
+	if outing.get("hold", 0) > 0:
+		street.hold(npc, tick, outing["hold"])   # on the stoop
 	outings_started += 1
 
 func _outing_ticks(npc: NPCData, outing: Dictionary, home: Vector2) -> int:
 	var metres := 0.0
-	var inside := 0
+	var inside: int = outing.get("hold", 0)
 	var at := home
 	for leg in outing["legs"]:
 		metres += at.distance_to(leg["p"])

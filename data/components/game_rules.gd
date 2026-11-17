@@ -21,6 +21,9 @@ const STYLE_TEXT := [
 @export var difficulty: int = 1
 @export var style: int = 1
 @export var rescues: int = 0
+## NB2c: free time chosen by the shared brain (needs, character, places)
+## instead of NPCOutings' coin flips. Off until NB2d's soak shows it is ready.
+@export var npc_brain: bool = false
 
 func needs_rate() -> float:
 	return [1.0, 0.7, 0.3][style]
@@ -77,3 +80,7 @@ static func evidence(world: World) -> float:
 static func hurt(world: World) -> float:
 	var r := of(world)
 	return r.damage_to_player() if r != null else 1.0
+
+static func brain(world: World) -> bool:
+	var r := of(world)
+	return r.npc_brain if r != null else false

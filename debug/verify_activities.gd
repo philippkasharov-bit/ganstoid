@@ -8,7 +8,7 @@
 extends SceneTree
 
 const SEED := 4242
-const FIELDS := ["label", "place", "walk", "hours", "stay", "trades", "fills", "likes", "cost"]
+const FIELDS := ["label", "place", "walk", "hours", "stay", "trades", "fills", "likes", "cost", "appeal"]
 
 func _initialize() -> void:
 	for id in Activities.TABLE:
@@ -42,6 +42,8 @@ func _bad_entry(id: StringName, a: Dictionary) -> String:
 	for k in a["likes"]:
 		if k < 0 or k >= NPCMind.TRAITS or absf(a["likes"][k]) > 1.0:
 			return "likes a trait that does not exist, or by more than 1"
+	if a["appeal"] <= 0.0 or a["appeal"] > 5.0:
+		return "appeal out of range"
 	return "" if a["cost"] >= 0 else "negative cost"
 
 func _check_coverage() -> bool:

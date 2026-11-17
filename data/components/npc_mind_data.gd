@@ -22,5 +22,8 @@ extends Resource
 @export var mem_tick: PackedInt64Array = PackedInt64Array()
 @export var mem_weight: PackedFloat32Array = PackedFloat32Array()   # how much it mattered, 0..1
 
+## --- NB2c: habits: what they did last time in each 4-hour slot of the day ---
+@export var habit_slots: PackedStringArray = PackedStringArray()
+
 ## --- Relationships beyond home, work and gang (those come from NPCData) ---
 @export var friends: PackedStringArray = PackedStringArray()

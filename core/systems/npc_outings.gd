@@ -91,6 +91,10 @@ func plan(world: World, npc: NPCData, home: Vector2, hour: float, rng: RandomNum
 	return {"kind": Kind.EVENING_OUT if stay == EVENING_STAY_MIN else Kind.ERRAND, "pace": 0.0,
 		"legs": [{"p": door, "stay": SimClock.hours(rng.randf_range(stay[0], stay[1]) / 60.0)}]}
 
+## NB2c: a stroll for the shared brain's "take a walk".
+func promenade(home: Vector2, rng: RandomNumberGenerator) -> Dictionary:
+	return _promenade(home, rng)
+
 func _promenade(home: Vector2, rng: RandomNumberGenerator) -> Dictionary:
 	var legs := []
 	var at := home

@@ -74,6 +74,7 @@ func _show(tab: String) -> void:
 			_row([["Print the paper", "paper_now", null], ["Every rival angry", "rival_max", null], ["Trial now", "trial_now", null]])
 			_row([["Score: store", "heist_now", 1], ["Score: stash house", "heist_now", 2], ["Score: armoured van", "heist_now", 3]])
 		"People":
+			_row([["People's brain on/off", "brain", null]])
 			_page.add_child(NPCInspectorView.new(_world, reset_size))
 		"Tests":
 			var results := AdminTests.run_all(_world)

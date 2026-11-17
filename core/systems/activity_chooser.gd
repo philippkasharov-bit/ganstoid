@@ -5,7 +5,8 @@
 ##   distance  nearer places score higher
 ##   cost      can they afford it, and do they mind paying
 ##   dark      paranoid people avoid the street at night
-##   habit     a small bonus for what they did yesterday at this hour
+##   habit     a small bonus for what they did last time at this time of day
+##   appeal    the activity's own weight (data), which sets the overall mix
 ## Then one of the top few is picked, weighted by score and seeded from
 ## (person, day, wake), so people are sensible but not mechanical.
 ## Pure functions: no World writes, no shared random stream. Nothing in play
@@ -57,7 +58,7 @@ static func score(id: StringName, traits: PackedFloat32Array, drives: PackedFloa
 	var dark := 1.0
 	if a["walk"] in ["stroll", "linger"] and (hour >= DARK_FROM or hour < DARK_UNTIL):
 		dark = clampf(1.2 - traits[GanstoidEnums.MindTrait.PARANOID], 0.1, 1.0)
-	var total := need * fit * near * cost * dark * (HABIT_BONUS if habit else 1.0)
+	var total := float(a["appeal"]) * need * fit * near * cost * dark * (HABIT_BONUS if habit else 1.0)
 	return [total, _why(a, drives, traits, dist_m, cost, habit)]
 
 static func _need(fills: Dictionary, drives: PackedFloat32Array) -> float:

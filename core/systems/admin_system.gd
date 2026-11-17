@@ -53,6 +53,12 @@ static func run(world: World, cmd: String, arg: Variant, tick: int) -> String:
 			for part in state.body.keys():
 				state.body[part] = BodyParts.fresh()
 			return "healed, fed, rested"
+		"brain":   # NB2c: free time by the shared brain, on or off
+			var rules := GameRules.of(world)
+			if rules == null:
+				rules = GameRules.install(world, 1, 1)
+			rules.npc_brain = not rules.npc_brain
+			return "people's brain %s" % ("ON" if rules.npc_brain else "off")
 		"god":
 			state.admin_god = not state.admin_god
 			return "god mode %s" % ("ON" if state.admin_god else "off")
