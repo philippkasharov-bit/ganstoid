@@ -115,6 +115,8 @@ extends Resource
 var job_offers: Array = []                      # JB1: offers on screen (not saved)
 @export var explored: PackedByteArray = PackedByteArray()   # MP2: fog of war, one bit per ExplorationSystem cell
 @export var known: Dictionary = {}                 # MP2: dealer and fixer ids you have seen -> "dealer" / "fixer"
+@export var heist: Dictionary = {}                # HS1: the score you are on {kind, at, target, where, take, guards, complication, stage, cased, known, from, until, work, alarm}
+@export var heist_day: int = -1000000              # HS1: the day the last score was offered
 @export var turf_push: Dictionary = {}            # CW1: a gang's push on one of your blocks {cell, gang, until, sent, ko, seen_down, squad}
 @export var push_day: int = -1000000
 @export var push_last: int = -1000000             # UI6: the day of the last push

@@ -5,6 +5,7 @@ Newest first. The in-game admin panel (F11, Bugs & updates) shows the top of it.
 
 ## 2026-11-17
 
+- AD1/QA6: admin panel, test and code indexes, the roadmap
 - DR1/CH1: doors you can see; lose police by breaking line of sight
 - UI6: keys and layout mode for the HUD, motion and charts, calmer pushes
 - RP1/CW1: street reputation and a corner war you can see

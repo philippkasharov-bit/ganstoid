@@ -21,6 +21,8 @@ static func line(world: World) -> String:
 	var state: PlayerStateData = player.get_component(ComponentNames.PLAYER_STATE)
 	if me.is_down or state.sleeping:
 		return ""
+	if not state.heist.is_empty():
+		return HeistSystem.plan_line(world, state)   # HS1: a score comes first
 	if not state.job.is_empty():
 		return _job(world, me, state)
 	if me.bleeding:

@@ -431,6 +431,8 @@ func _options(npc: NPCData, state: PlayerStateData) -> Array:
 			out.append(["Work a %d-hour shift ($%d/h, clean)" % [SHIFT_HOURS, SHIFT_PAY_PER_HOUR], func() -> Dictionary:
 				state.work_until_tick = _world.tick + SimClock.hours(SHIFT_HOURS)
 				return {"ok": true, "effect": "shift_start"}])
+	if not state.heist.is_empty() and state.heist["stage"] in ["rumour", "cased"] and pos.distance_to(state.heist["at"]) <= HeistSystem.WORK_M:   # HS1
+		out.append(["Start the score", func() -> Dictionary: return HeistSystem.start(_world, state, npc)])
 	if _downed_within(pos, Vicinity.REACH_M) != null:   # LT3: their pockets show in Nearby (I)
 		out.append(["Search their pockets", func() -> Dictionary:
 			state.inventory_open = true

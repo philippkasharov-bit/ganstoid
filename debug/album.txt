@@ -39,3 +39,4 @@ layout_mode      | debug/shot_main.gd   | --layout
 phone_bank       | debug/shot_main.gd   | --phone=Bank
 admin_tests      | debug/shot_main.gd   | --admin=Tests
 admin_bugs       | debug/shot_main.gd   | --admin=Bugs
+phone_score      | debug/shot_main.gd   | --phone=Score

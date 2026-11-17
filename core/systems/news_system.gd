@@ -24,6 +24,9 @@ const STORIES := {
 	"rival_scarred": [9, "GANG LIEUTENANT BEATEN IN {HOOD}", "Police say a known gang figure was left on the pavement. On the street they go by '{n}' now."],
 	"rival_killed": [10, "GANG FIGURE SHOT DEAD IN {HOOD}", "A gang figure known on the street as '{n}' died last night. Police fear reprisals."],
 	"corner_held": [6, "STREET BATTLE IN {HOOD}", "Residents of {hood} say {n} came for a corner and were sent packing."],
+	"heist_store": [10, "JEWELLERY STORE HIT IN {HOOD}", "Thieves cleared out a jewellery store in {hood}. Police put the take at {n}."],
+	"heist_stash": [10, "GANG STASH HOUSE ROBBED IN {HOOD}", "Word in {hood} is someone walked off with a gang's stash, {n}. Expect trouble."],
+	"heist_van": [11, "ARMOURED VAN HELD UP IN {HOOD}", "An armoured van was robbed in broad daylight in {hood}. {n} gone."],
 	"business_bought": [3, "NEW OWNER FOR {HOOD} BUSINESS", "A {hood} business changed hands for ${n}. The buyer paid cash."],
 }
 const CITY_NEWS := [

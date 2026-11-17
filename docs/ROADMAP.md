@@ -10,6 +10,18 @@ task id. When a batch is done, tick it here in the same commit.
 
 Status: [x] done, [~] partly, [ ] not started.
 
+## Milestones (the big picture)
+
+| # | Milestone | Status |
+|---|---|---|
+| 1 | The living city: map, 6000 people, traffic, police, gangs, saving | done |
+| 2 | The core crime loop: crimes, stealth, crew, turf, money, ranks | done |
+| 3 | Something to do every day: hustles, paper, phone, map, GPS, rivals, reputation, corner war | done |
+| 4 | Big moments and depth: heists, crib, jobs and property, joining a gang, prison | **now** (B1, B2, B6, B7, B8) |
+| 5 | Look and feel: shoulder camera, people, streets, sound | later (B3, B4, B5, B10) |
+| 6 | Balance and the first hour: pacing robot, tuning, tutorial | later (B9) |
+| 7 | Release-ready: runs on normal PCs, settings, save safety, installer | last |
+
 ## Done: the foundation (Phases 0-4, the original plan)
 
 - [x] Phase 0: the engine-free simulation (World, systems, events, save)
@@ -31,15 +43,16 @@ Status: [x] done, [~] partly, [ ] not started.
 - [x] PP1 pickpocket mini-game · RX1 people react to you
 - [x] RV1 rivals with names · RP1 street reputation · CW1 corner war and pushes
 - [x] UI1-UI6: pager, status card, stamps, prompts, title screen, layout mode (F10), motion and charts
+- [x] HS1 the big score: store, stash house, armoured van; case it, crew roles, alarm, getaway
 - [x] AD1 admin panel (F11) with bug test, bugs and updates · QA6 test index and code map
 
 ## Next batches (in order unless Phil says otherwise)
 
 | # | Batch | What the player gets | Size |
 |---|---|---|---|
-| B1 | **The big score (HS1)** | Rumours lead to heists (armoured van, stash house, jewellery store); case it, pick crew roles, get a car and gear, do it live | 2-3 sessions |
+| B1 | ~~The big score (HS1)~~ **done** · | Rumours lead to heists (armoured van, stash house, jewellery store); case it, pick crew roles, get a car and gear, do it live | 2-3 sessions |
 | B2 | **Your crib (CR1)** | Upgrade home from mattress to stash house: safe, workbench, trophies, crew hanging out | 1-2 |
-| B3 | **Camera (CM1)** | Over-the-shoulder view on a key; first person later if wanted | 1 (shoulder), 2-3 (first person) |
+| B3 | **Camera (CM1)** | Over-the-shoulder view on a key (Phil: no first person) | 1 |
 | B4 | **Visuals: people (VS1)** | Better NPC figures (shared rigged models, variety), the biggest visual gap | 2 |
 | B5 | **Visuals: streets (VS2)** | Parked cars, clutter, fences, graffiti, kerbs, worn ground; flats and shops less boxy | 2 |
 | B6 | **RP jobs and property (RP2)** | A list of legal jobs (delivery, taxi, security), buy a flat or house, a driving licence | 2 |

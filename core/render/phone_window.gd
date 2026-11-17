@@ -10,7 +10,7 @@ const ACTION := &"phone"
 const SCREEN := Color(0.62, 0.74, 0.47)
 const INK := Color(0.08, 0.12, 0.06)
 const W := 300.0
-const APPS := [["Messages", "Messages"], ["Contacts", "Contacts"], ["Hustles", "Hustles"], ["Bank", "Bank"], ["Rivals", "Rivals"], ["Paper", "Paper"]]
+const APPS := [["Messages", "Messages"], ["Contacts", "Contacts"], ["Hustles", "Hustles"], ["Bank", "Bank"], ["Rivals", "Rivals"], ["Score", "Score"], ["Paper", "Paper"]]
 
 var paper: PaperWindow
 var _world: World
@@ -149,6 +149,22 @@ func _show(state: PlayerStateData) -> void:
 			_text("LAST 7 MORNINGS", 14, true)
 			_screen.add_child(_spark(state.cash_history + [me2.cash]))
 			_text("Dirty money draws the police when they search you. Clean it through a business you own.", 14)
+		"Score":   # HS1: the plan
+			var h := state.heist
+			if h.is_empty():
+				_text("No score on. Word comes every couple of days once you're a Hustler.")
+			else:
+				var spec: Array = HeistSystem.KINDS[h["kind"]]
+				_text("%s %s" % [String(spec[0]).to_upper(), h["where"]], 17, true)
+				_text("take   about $%d" % int(h["take"]), 16)
+				_text("window %s" % HeistSystem.window_text(h), 16)
+				_text("guards %s" % (str(int(h["guards"])) if h["known"] else "? (case it)"), 16)
+				_text("trouble %s" % (HeistSystem.COMPLICATIONS[h["complication"]] if h["known"] else "? (case it)"), 15)
+				_rule()
+				_text("crew: lookout %d (alarm later)  muscle %d (faster, fewer guards)  driver %d (shorter run)" % [HeistSystem._crew(_world, state, GanstoidEnums.CrewRole.LOOKOUT), HeistSystem._crew(_world, state, GanstoidEnums.CrewRole.MUSCLE), HeistSystem._crew(_world, state, GanstoidEnums.CrewRole.DRIVER)], 14)
+				_rule()
+				_text(HeistSystem.plan_line(_world, state), 16, true)
+				_screen.add_child(_progress(clampf(float(h["work"]) / float(spec[2]), 0.0, 1.0) if h["stage"] in ["working", "getaway"] else clampf(float(h["cased"]) / HeistSystem.CASE_S, 0.0, 1.0)))
 		"Rivals":
 			if state.rivals.is_empty():
 				_text("Nobody knows your name yet.")
@@ -162,6 +178,17 @@ func _show(state: PlayerStateData) -> void:
 		_rule()
 		_screen.add_child(_button("< Back", func() -> void: _open(""), Vector2(80, 30)))
 	reset_size()
+
+## HS1: a plain progress bar (casing, then the work).
+func _progress(f: float) -> Control:
+	var back := ColorRect.new()
+	back.color = Color(INK, 0.15)
+	back.custom_minimum_size = Vector2(W, 10)
+	var fill := ColorRect.new()
+	fill.color = INK
+	fill.size = Vector2(W * f, 10)
+	back.add_child(fill)
+	return back
 
 ## UI6: clean (ink) against dirty (red) as one bar.
 func _split_bar(clean: float, dirty: float) -> Control:

@@ -152,6 +152,11 @@ func _run(main: Node, args: Dictionary) -> void:
 		ph.rivals[gs[0]]["grudge"] = 62.0
 		ph.rivals[gs[1]]["grudge"] = 18.0
 		ph.rivals[gs[1]]["scars"] = 1
+		ph.rank = 1   # HS1: a score on, for the Score app
+		var pn: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
+		if HeistSystem.offer(driver.world, ph, pn, driver.world.tick, "store"):
+			ph.heist["known"] = true
+			ph.heist["stage"] = "cased"
 		ph.cash_history = [40, 95, 60, 210, 180, 340]   # UI6: the Bank app's chart
 		ph.dirty_cash = 15
 		PhoneSystem.push(driver.world, ph, "Unknown number", "Word on the street: %s has your name in their mouth." % ph.rivals[gs[0]]["name"])

@@ -103,6 +103,9 @@ const LINES := {
 	"lift_lost": ["Lost them.", "They got away from you.", "Too far back. Gone."],
 	"rival_coming": ["{n} of them, coming your way.", "Here they come: {n}.", "{n} shapes coming fast."],   # RV1
 	"rival_new": ["New man on those corners. He knows your name already.", "Someone stepped up. He's heard about you."],
+	"heist_started": ["Go. Fast and quiet.", "Doing it. Watch the street.", "Clock's running."],   # HS1
+	"heist_not_yet": ["Not yet. Wait for the window.", "Too early. It's not on yet."],
+	"no_heist": ["Nothing on here.", "No score here."],
 	"gang_warning": ["\"Wrong block, homie. Keep walking.\"", "\"You lost? This ain't your street.\"", "\"Walk on. Now.\""],   # RX1
 	"gang_told": ["\"We told you.\" They're coming.", "\"You don't listen, huh?\"", "They're done talking."],
 	"searching": ["Let's see what they've got.", "Going through their pockets."],   # LT3
