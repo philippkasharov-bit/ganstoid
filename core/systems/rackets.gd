@@ -149,7 +149,7 @@ static func night(world: World, state: PlayerStateData) -> void:
 		var den: bool = book == state.dens
 		for id in book.keys():
 			var r: Dictionary = book[id]
-			if not r.get("open", false):
+			if not r.get("open", false) or EmpireSystem.closed(world, r):   # BZ7: robbed by a rival: nothing tonight
 				continue
 			var e: Entity = world.entities.get(id)
 			var b: BuildingData = e.get_component(ComponentNames.BUILDING) if e != null else null

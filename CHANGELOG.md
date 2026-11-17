@@ -5,6 +5,7 @@ Newest first. The in-game admin panel (F11, Bugs & updates) shows the top of it.
 
 ## 2026-11-17
 
+- BZ6: the legal side: fronts, upgrades, taxes and the IRS
 - BZ5b: a stolen-goods ring, gambling dens and gun running
 - BZ5: loan sharking, fake money and the chop shop
 - CA1 fix: the crew loyalty check uses loyal crew

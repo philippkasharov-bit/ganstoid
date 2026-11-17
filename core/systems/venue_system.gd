@@ -132,6 +132,10 @@ static func close_night(world: World, state: PlayerStateData) -> void:
 			state.venues.erase(id)
 			continue
 		var v: Dictionary = state.venues[id]
+		if EmpireSystem.closed(world, v):   # BZ7: smashed up by a rival: shut tonight
+			v["last"] = 0
+			v["back"] = 0
+			continue
 		var spec: Array = KINDS[v["kind"]]
 		var wealth := float(BlockEconomyData.block_at(world, b.position).get("wealth", 0.5))
 		var take := float(spec[2]) * (0.5 + wealth) * (0.5 + 0.25 * stars(state, id)) * rng.randf_range(0.85, 1.15)

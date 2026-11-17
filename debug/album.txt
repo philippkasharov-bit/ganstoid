@@ -48,6 +48,7 @@ deal_window      | debug/shot_main.gd   | --deal
 pawn_window      | debug/shot_main.gd   | --pawn
 phone_loans      | debug/shot_main.gd   | --loans --phone=Loans
 phone_fronts     | debug/shot_main.gd   | --biz --front --phone=Business
+phone_empire     | debug/shot_main.gd   | --biz --club --phone=Empire
 phone_rivals     | debug/shot_main.gd   | --phone=Rivals
 phone_home       | debug/shot_main.gd   | --phone=home
 minimap_gps      | debug/shot_main.gd   | --gps

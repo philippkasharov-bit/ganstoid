@@ -17,9 +17,9 @@ const SCREEN_H := 470.0
 const TILES := {"Messages": ["4c9be8", "Ms"], "Contacts": ["5aa469", "Co"], "Hustles": ["e0a33a", "Hu"], "Bank": ["3fae8f", "$"],
 	"Rivals": ["d0544b", "Rv"], "Score": ["8c62d6", "Sc"], "Crib": ["c98a4b", "Cr"], "Jobs": ["4f86c6", "Jb"], "Property": ["8a9aa8", "Pr"],
 	"Gang": ["b2443e", "Gg"], "Crew": ["3f7fd0", "Cw"], "Grow": ["4caf50", "Gr"], "Business": ["2f9c9c", "Bz"], "Connect": ["9c6ad0", "Cn"],
-	"Prices": ["d9a440", "Px"], "Loans": ["c0603a", "Ln"], "Case": ["7a8592", "Cs"], "Paper": ["b8b0a0", "Pa"]}
+	"Prices": ["d9a440", "Px"], "Loans": ["c0603a", "Ln"], "Empire": ["d4af37", "Em"], "Case": ["7a8592", "Cs"], "Paper": ["b8b0a0", "Pa"]}
 const W := 300.0
-const APPS := [["Messages", "Messages"], ["Contacts", "Contacts"], ["Hustles", "Hustles"], ["Bank", "Bank"], ["Rivals", "Rivals"], ["Score", "Score"], ["Crib", "Crib"], ["Jobs", "Jobs"], ["Property", "Property"], ["Gang", "Gang"], ["Crew", "Crew"], ["Grow", "Grow"], ["Business", "Business"], ["Connect", "Connect"], ["Prices", "Prices"], ["Loans", "Loans"], ["Case", "Case"], ["Paper", "Paper"]]
+const APPS := [["Messages", "Messages"], ["Contacts", "Contacts"], ["Hustles", "Hustles"], ["Bank", "Bank"], ["Rivals", "Rivals"], ["Score", "Score"], ["Crib", "Crib"], ["Jobs", "Jobs"], ["Property", "Property"], ["Gang", "Gang"], ["Crew", "Crew"], ["Grow", "Grow"], ["Empire", "Empire"], ["Business", "Business"], ["Connect", "Connect"], ["Prices", "Prices"], ["Loans", "Loans"], ["Case", "Case"], ["Paper", "Paper"]]
 
 var paper: PaperWindow
 var _world: World
@@ -83,7 +83,7 @@ func _process(delta: float) -> void:
 		return
 	_refresh = 0.4
 	var key := _app + str(state.inbox.size()) + str(state.job_offers.size()) + str(state.hustles) + str(state.rivals.size()) + str(state.known.size())
-	if _app in ["Bank", "Rivals", "Case", "Crew", "Grow", "Business", "Prices", "Loans"]:
+	if _app in ["Bank", "Rivals", "Case", "Crew", "Grow", "Business", "Prices", "Loans", "Empire"]:
 		key += str(_world.tick / 60)
 	if key == _key:
 		return
@@ -312,6 +312,49 @@ func _show(state: PlayerStateData) -> void:
 					var about := Grades.about(state, good)
 					if about != "":
 						_text("  " + about, 13)
+		"Empire":   # BZ7: the whole thing at a glance
+			var ins := {"Shops": int(state.biz_day.get("shops", 0)), "Night spots": 0, "Back rooms": 0, "Ring": 0, "Dens": 0, "Loans": int(state.biz_day.get("loans", 0))}
+			for id in state.venues:
+				ins["Night spots"] += int(state.venues[id].get("last", 0))
+				ins["Back rooms"] += int(state.venues[id].get("back", 0))
+			for id in state.rings:
+				ins["Ring"] += int(state.rings[id].get("last", 0))
+			for id in state.dens:
+				ins["Dens"] += int(state.dens[id].get("last", 0))
+			var total_in := 0
+			for k in ins:
+				total_in += int(ins[k])
+			var crew_pay := 0
+			for id in state.crew_wages:
+				crew_pay += int(state.crew_wages[id])
+			var out := int(state.biz_day.get("wages", 0)) + crew_pay
+			_text("Yesterday: in $%d · out $%d · net $%d" % [total_in, out, total_in - out], 16, true)
+			for k in ins:
+				if int(ins[k]) > 0:
+					_text("%s  $%d" % [k, int(ins[k])], 13)
+					_screen.add_child(_progress(float(ins[k]) / float(maxi(total_in, 1))))
+			_text("Wages: staff $%d · crew $%d a day" % [int(state.biz_day.get("wages", 0)), crew_pay], 13)
+			_rule()
+			_text("HEAT", 13, true)
+			var hunting := []
+			for g in state.rivals:
+				if float(state.rivals[g].get("grudge", 0.0)) >= RivalSystem.HUNT:
+					hunting.append(String(state.rivals[g]["name"]))
+			_text("Case file %d · audit risk %s · %s" % [int(state.case_evidence), "low" if FrontSystem.audit_chance(state) < 0.15 else ("medium" if FrontSystem.audit_chance(state) < 0.4 else "HIGH"), "hunting you: " + ", ".join(hunting) if not hunting.is_empty() else "no rival is after your places"], 13, not hunting.is_empty())
+			_rule()
+			_text("PLACES", 13, true)
+			var me: NPCData = _world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
+			var mine := EmpireSystem.places(_world, state)
+			if mine.is_empty():
+				_text("Nothing yet. Buy a shop (B at its door) or a flat (Phone > Property).", 13)
+			for id in mine:
+				var e: Entity = _world.entities.get(id)
+				var b: BuildingData = e.get_component(ComponentNames.BUILDING) if e != null else null
+				if b == null:
+					continue
+				var d := EmpireSystem.describe(_world, state, b)
+				var guard := EmpireSystem.exposure(_world, state, b)
+				_text("%s · %s · %s" % [d[2], NextStep.where(me.position, b.position), "well guarded" if guard <= 0.34 else ("guarded" if guard < 1.0 else "unguarded")], 13, String(d[2]).contains("hit by"))
 		"Business":   # BZ2: your places, your staff, who you could hire
 			var me: NPCData = _world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
 			_text("Yesterday: shops paid $%d · wages $%d" % [int(state.biz_day.get("shops", 0)), int(state.biz_day.get("wages", 0))], 15, true)

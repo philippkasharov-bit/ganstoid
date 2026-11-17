@@ -167,6 +167,7 @@ var ui_crib: bool = false                         # CR1: the phone or the door a
 @export var fronts: Dictionary = {}                # BZ6: shops made into fronts: building id -> kind
 @export var upgrades: Dictionary = {}              # BZ6: building id -> upgrade tier (0-3)
 @export var books: Dictionary = {}                 # BZ6: this week {earned, washed}, and {frozen_until} after an audit
+@export var empire_hits: Dictionary = {}           # BZ7: places rivals hit: building id -> {day, by, lost}
 var ui_phone: Dictionary = {}
 var ui_admin: Array = []                          # AD1: [command, arg] from the admin panel (not saved)
 @export var admin_god: bool = false               # AD1: admin god mode: you take no damage                     # PH1: what the phone asked for (not saved)
