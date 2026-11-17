@@ -18,10 +18,10 @@ const TARGET_M2 := 16.0
 const CACHE := 24
 ## room kind -> [name, [width along the wall, depth, height], container ("" none)]
 const FURNITURE := {
-	"living": [["sofa", [2.0, 0.9, 0.8], ""], ["tv", [1.4, 0.45, 1.0], ""], ["table", [1.0, 0.6, 0.45], ""], ["shelf", [1.0, 0.4, 1.8], "bedroom"]],
-	"kitchen": [["fridge", [0.75, 0.7, 1.8], "kitchen"], ["stove", [0.7, 0.65, 0.9], "kitchen"], ["counter", [1.4, 0.65, 0.9], "kitchen"], ["counter", [1.4, 0.65, 0.9], "kitchen"], ["table", [1.2, 0.8, 0.75], ""]],
-	"bath": [["tub", [1.6, 0.75, 0.55], ""], ["toilet", [0.45, 0.65, 0.75], ""], ["sink", [0.6, 0.45, 0.85], "bathroom"]],
-	"bed": [["bed", [1.6, 2.0, 0.55], ""], ["drawers", [1.0, 0.5, 1.0], "bedroom"], ["wardrobe", [1.2, 0.6, 2.0], "bedroom"]],
+	"living": [["sofa", [2.0, 0.9, 0.8], "sofa"], ["tv", [1.4, 0.45, 1.0], "tv_stand"], ["table", [1.0, 0.6, 0.45], ""], ["shelf", [1.0, 0.4, 1.8], "shelf"]],
+	"kitchen": [["fridge", [0.75, 0.7, 1.8], "fridge"], ["stove", [0.7, 0.65, 0.9], ""], ["counter", [1.4, 0.65, 0.9], "cabinet"], ["counter", [1.4, 0.65, 0.9], "cabinet"], ["table", [1.2, 0.8, 0.75], ""]],
+	"bath": [["tub", [1.6, 0.75, 0.55], ""], ["toilet", [0.45, 0.65, 0.75], ""], ["sink", [0.6, 0.45, 0.85], "medicine"]],
+	"bed": [["bed", [1.6, 2.0, 0.55], "under_bed"], ["drawers", [1.0, 0.5, 1.0], "drawers"], ["wardrobe", [1.2, 0.6, 2.0], "wardrobe"]],   # LT4: every piece its own container
 	"shop": [["shelf", [2.4, 0.6, 1.7], "stockroom"], ["shelf", [2.4, 0.6, 1.7], "stockroom"], ["counter", [2.0, 0.7, 1.0], "register"], ["fridge", [1.6, 0.7, 2.0], "stockroom"]],
 	"stock": [["crates", [1.2, 1.0, 1.2], "stockroom"], ["shelf", [2.0, 0.6, 2.0], "stockroom"]],
 	"work": [["bench", [2.0, 0.8, 0.95], "register"], ["crates", [1.2, 1.0, 1.2], "stockroom"], ["drums", [0.6, 0.6, 0.9], ""]],

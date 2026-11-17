@@ -474,6 +474,11 @@ func _options(npc: NPCData, state: PlayerStateData) -> Array:
 		out.append(["Talk", func() -> Dictionary: return TalkSystem.small_talk(_world, npc, p)])
 		out.append(["Threaten them into silence", func() -> Dictionary: return TalkSystem.threaten(_world, npc, p)])
 		out.append(["Pay them to forget you ($%d)" % TalkSystem.PAYOFF, func() -> Dictionary: return TalkSystem.pay_off(_world, npc, p)])
+		if not p.is_dealer:
+			for good in [&"weed", &"pills", &"meth", &"coke", &"heroin"]:   # LT4: deal it yourself
+				if int(state.inventory.get(good, 0)) > 0:
+					var gd: StringName = good
+					out.append(["Sell them %s ($%d)" % [String(good), DrugLabSystem.ask_each(_world, state, good, p.position, false)], func() -> Dictionary: return StreetDeal.sell(_world, npc, state, p, gd)])
 	if p != null and not p.is_dealer and not p.is_cop and not p.is_crew:
 		if state.weapon != &"fists":
 			out.append(["Mug them (%s out)" % String(state.weapon), func() -> Dictionary:
@@ -562,6 +567,8 @@ func _do_move(npc: NPCData, state: PlayerStateData, move: Dictionary) -> Diction
 			return Vicinity.take(_world, state, move["src"], move["n"])
 		"take_all":
 			return Vicinity.take_all(_world, state, move["srcs"])
+		"search":
+			return Vicinity.mark_searched(_world, move["src"])   # LT4
 	return {}
 
 ## UI5: a bag line is eaten/drunk/applied, or a weapon is taken in hand.
@@ -616,6 +623,14 @@ func _find_counter(position: Vector2) -> StringName:
 
 ## BZ3: a night spot of yours, or a back-room game.
 func _venue_options(out: Array, state: PlayerStateData, building_id: StringName) -> void:
+	var counter_e: Entity = _world.entities.get(building_id)
+	if counter_e == null or counter_e.get_component(ComponentNames.BUILDING) == null:   # a dealer, not a building
+		if Fence.worth(state, Fence.FENCE_SHARE) > 0:
+			out.append(["Fence your stolen goods ($%d, dirty)" % Fence.worth(state, Fence.FENCE_SHARE), func() -> Dictionary: return Fence.fence(_world, state)])
+		return
+	var cb: BuildingData = counter_e.get_component(ComponentNames.BUILDING)
+	if cb.trade == &"pawn shop" and ShopSystem.is_open(_world, building_id) and Fence.worth(state, Fence.PAWN_SHARE) > 0:   # LT4
+		out.append(["Pawn your valuables ($%d, clean)" % Fence.worth(state, Fence.PAWN_SHARE), func() -> Dictionary: return Fence.pawn(_world, state)])
 	if DrugLabSystem.can_pick_up(_world, state, building_id):   # BZ4
 		out.append(["Pick up the shipment", func() -> Dictionary: return DrugLabSystem.pick_up(_world, _world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC), state)])
 	if GambleSystem.game_at(_world, state, building_id):

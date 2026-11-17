@@ -109,7 +109,7 @@ func _process(delta: float) -> void:
 		return
 	var npc: NPCData = _world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
 	var near := Vicinity.near(_world, npc, state)
-	var key := "%s|%s|%d|%s|%s" % [state.inventory, state.weapon, state.ammo, near, _near_key]
+	var key := "%s|%s|%d|%s|%s|%s" % [state.inventory, state.weapon, state.ammo, near, _near_key, state.timed.get("move", {}).get("op", "")]
 	if key != _key:
 		_key = key
 		var near_before := ItemFlight.centres(_near)
@@ -228,7 +228,11 @@ func _vicinity_pane() -> HBoxContainer:
 	_take_all.add_theme_font_size_override("font_size", 10)
 	for look in ["normal", "hover", "pressed", "disabled"]:
 		_take_all.add_theme_stylebox_override(look, UiTheme.button_box(look))
-	_take_all.pressed.connect(func() -> void: _state().ui_move = {"op": "take_all", "srcs": _near_now})
+	_take_all.pressed.connect(func() -> void:
+		if not _search_src.is_empty():
+			_state().ui_move = {"op": "search", "src": _search_src, "secs": float(_search_src["secs"])}
+		else:
+			_state().ui_move = {"op": "take_all", "srcs": _near_now})
 	head.add_child(_take_all)
 	right.add_child(head)
 	_near.resize_grid(NEAR_COLS, BagGrid.ROWS)
@@ -250,6 +254,17 @@ func _show_near(near: Array) -> void:
 	_near.show_piles(Vicinity.layout(_near_now, NEAR_COLS, BagGrid.ROWS))
 	_near_title.text = Vicinity.title_of(_near_key) if _near_key != "" else "Nothing in reach"
 	_take_all.disabled = _near_now.is_empty()
+	_search_src = {}
+	_take_all.text = "Take all"
+	for src in _near_now:   # LT4: not gone through yet: Search instead of Take all
+		if src.get("unsearched", false):
+			_search_src = src
+			var busy: bool = _state().timed.get("move", {}).get("op", "") == "search"
+			_take_all.text = "Searching..." if busy else "Search (%ds)" % ceili(float(src["secs"]))
+			_take_all.disabled = busy
+			_near_title.text += " · not searched"
+
+var _search_src: Dictionary = {}   # LT4: the container shown, if it still needs searching
 
 const CONT_ICONS := {"ground": "floor", "trunk": "trunk", "glovebox": "glovebox"}
 

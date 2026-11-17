@@ -27,6 +27,8 @@ const MOVE_PER_KG_S := 0.5
 const MOVE_MAX_S := 5.0
 
 static func move_seconds(move: Dictionary) -> float:
+	if move.get("op", "") == "search":
+		return float(move.get("secs", 3.0))   # LT4: going through a drawer or pockets
 	var kg := 0.0
 	if move.get("op", "") == "take_all":
 		for src in move["srcs"]:
@@ -85,7 +87,7 @@ static func progress(world: World, state: PlayerStateData) -> Dictionary:
 		return {"f": clampf(float(state.lift["f"]), 0.0, 1.0), "text": "Lifting" if float(state.lift["notice"]) <= 0.0 else "Careful..."}
 	if not state.timed.is_empty() and state.timed.has("move"):
 		var mt: Dictionary = state.timed
-		var verb: String = {"take": "Taking", "take_all": "Taking all", "drop": "Dropping", "stash": "Stashing", "store": "Stashing"}.get(mt["move"].get("op", ""), "Moving")
+		var verb: String = {"take": "Taking", "take_all": "Taking all", "search": "Searching", "drop": "Dropping", "stash": "Stashing", "store": "Stashing"}.get(mt["move"].get("op", ""), "Moving")
 		return {"f": _f(world, mt["start"], mt["done"]), "text": verb}
 	if not state.timed.is_empty():
 		var t: Dictionary = state.timed

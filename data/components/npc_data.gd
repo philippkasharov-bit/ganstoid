@@ -23,6 +23,7 @@ extends Resource
 @export var cash: int = 0
 @export var pockets: Dictionary = {}               # LT3: item id -> count, rolled the first time someone searches them
 @export var pockets_rolled: bool = false
+@export var pockets_searched: bool = false   # LT4: someone has gone through them
 @export var job: StringName = &""                # E1: "cashier", "mechanic"... (empty: out of work)
 @export var wage: int = 0
 @export var camp: Vector2 = Vector2.ZERO         # E1: where a homeless person sleeps rough (no home_building_id)                       # E1: a day's pay, paid by the workplace each payday

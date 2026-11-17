@@ -31,6 +31,9 @@ static func near(world: World, npc: NPCData, state: PlayerStateData) -> Array:
 		if other == null or other == npc or not other.is_down or other.position.distance_to(npc.position) > REACH_M:
 			continue
 		_roll_pockets(other)
+		if not other.pockets_searched:   # LT4: go through their pockets first
+			out.append({"kind": "body", "npc": other.id, "who": other.display_name, "id": &"", "n": 0, "unsearched": true, "secs": LootTables.search_secs("pockets", Skills.level(state, &"theft"))})
+			continue
 		for item in other.pockets:
 			out.append({"kind": "body", "npc": other.id, "who": other.display_name, "id": item, "n": int(other.pockets[item])})
 		if other.cash > 0:
@@ -40,6 +43,9 @@ static func near(world: World, npc: NPCData, state: PlayerStateData) -> Array:
 		for kind in Containers.open(world, npc, inside):
 			if Indoors.out_of_reach(npc.position, kind):
 				continue   # R3D14: walk over to the cupboard to see what's in it
+			if not Containers.searched(npc, inside, kind):   # LT4: search it first (TimedAction)
+				out.append({"kind": "container", "building": inside.id, "cont": kind, "id": &"", "n": 0, "unsearched": true, "secs": LootTables.search_secs(kind, Skills.level(state, &"theft"))})
+				continue
 			var items: Dictionary = inside.containers[kind]["items"]
 			for id in items:
 				out.append({"kind": "container", "building": inside.id, "cont": kind, "id": id, "n": int(items[id])})
@@ -57,6 +63,24 @@ static func _roll_pockets(other: NPCData) -> void:
 	rng.seed = hash(String(other.id) + "pockets")
 	var kind := "pockets_cop" if other.is_cop else ("pockets_dealer" if other.is_dealer else "pockets")
 	other.pockets = LootTables.roll(kind, rng)
+
+## LT4: a search is done: the container or the pockets now show what's in them.
+static func mark_searched(world: World, src: Dictionary) -> Dictionary:
+	var found := 0
+	if src["kind"] == "body":
+		var e: Entity = world.entities.get(src["npc"])
+		var n: NPCData = e.get_component(ComponentNames.NPC) if e != null else null
+		if n == null:
+			return {}
+		n.pockets_searched = true
+		found = n.pockets.size() + (1 if n.cash > 0 else 0)
+	else:
+		var b := _building(world, src["building"])
+		if b == null or not b.containers.has(src["cont"]):
+			return {}
+		b.containers[src["cont"]]["searched"] = true
+		found = (b.containers[src["cont"]]["items"] as Dictionary).size() + (1 if Containers.cash_shown(b, src["cont"]) > 0 else 0)
+	return {"ok": found > 0, "effect": "search_found", "reason": "search_empty"}
 
 ## LT1: you are inside a place while you stay at its door: after a break-in,
 ## or any time at your own. Call every player tick.
@@ -240,6 +264,8 @@ static func take_all(world: World, state: PlayerStateData, srcs: Array) -> Dicti
 static func layout(near: Array, cols: int, rows: int) -> Array:
 	var piles: Array = []
 	for src in near:
+		if src.get("unsearched", false):
+			continue
 		var spot := BagGrid.free_spot(BagGrid.occupancy(piles), src["id"], cols, rows)
 		if spot.is_empty():
 			continue
