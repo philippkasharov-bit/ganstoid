@@ -21,6 +21,9 @@ const STORIES := {
 	"pickpocket": [2, "PICKPOCKETS ON THE BUS LINES", "Riders in {hood} warned to watch their wallets: ${n} lifted in one theft."],
 	"sell": [3, "DRUG TRADE ON {HOOD} CORNERS", "Residents say deals happen in broad daylight in {hood}."],
 	"grow_house_raided": [8, "GROW HOUSE BUSTED", "Police raided a house full of plants and lamps in {hood}."],
+	"rival_scarred": [9, "GANG LIEUTENANT BEATEN IN {HOOD}", "Police say a known gang figure was left on the pavement. On the street they go by '{n}' now."],
+	"rival_killed": [10, "GANG FIGURE SHOT DEAD IN {HOOD}", "A gang figure known on the street as '{n}' died last night. Police fear reprisals."],
+	"corner_held": [6, "STREET BATTLE IN {HOOD}", "Residents of {hood} say {n} came for a corner and were sent packing."],
 	"business_bought": [3, "NEW OWNER FOR {HOOD} BUSINESS", "A {hood} business changed hands for ${n}. The buyer paid cash."],
 }
 const CITY_NEWS := [
@@ -61,6 +64,10 @@ func process_entities(entities: Dictionary, _delta: float, tick: int) -> void:
 		if first:
 			continue   # a new life: no paper before the first morning
 		state.paper = print_paper(state, day)
+		state.cash_history.append((p.get_component(ComponentNames.NPC) as NPCData).cash)   # UI6
+		while state.cash_history.size() > 7:
+			state.cash_history.pop_front()
+		PhoneSystem.push(_world, state, NewsSystem.PAPER_NAME, String(state.paper.get("headline", "")))
 		state.news_today = []
 		state.paper_serial += 1
 
@@ -70,6 +77,10 @@ static func note(world: World, state: PlayerStateData, key: String, amount: int)
 		return
 	var me: NPCData = world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
 	state.news_today.append([key, amount, hood_at(me.position)])
+
+## RV1: a story told in a name rather than a number ({n} = the name).
+static func note_story(state: PlayerStateData, key: String, name: String, at: Vector2) -> void:
+	state.news_today.append([key, name, hood_at(at)])
 
 static func hood_at(p: Vector2) -> String:
 	var h := Hoods.data()

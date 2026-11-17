@@ -101,6 +101,8 @@ const LINES := {
 	"lifting": ["Stay right behind them. Don't bump them.", "Close, behind them, easy...", "Fall in behind. Steady."],   # PP1
 	"lift_caught": ["\"Hey! THIEF!\" They felt it.", "They spun round. \"Get your hand off me!\"", "Busted. They're yelling."],
 	"lift_lost": ["Lost them.", "They got away from you.", "Too far back. Gone."],
+	"rival_coming": ["{n} of them, coming your way.", "Here they come: {n}.", "{n} shapes coming fast."],   # RV1
+	"rival_new": ["New man on those corners. He knows your name already.", "Someone stepped up. He's heard about you."],
 	"gang_warning": ["\"Wrong block, homie. Keep walking.\"", "\"You lost? This ain't your street.\"", "\"Walk on. Now.\""],   # RX1
 	"gang_told": ["\"We told you.\" They're coming.", "\"You don't listen, huh?\"", "They're done talking."],
 	"searching": ["Let's see what they've got.", "Going through their pockets."],   # LT3
@@ -162,6 +164,7 @@ static func say(world: World, player_state: PlayerStateData, result: Dictionary)
 ## (A system's own say_key, e.g. an arrest, is counted there.)
 static func _count(world: World, player_state: PlayerStateData, key: String, amount: int) -> void:
 	HustleSystem.progress(world, player_state, key, amount)
+	RivalSystem.note(world, player_state, key)
 	NewsSystem.note(world, player_state, key, amount)
 
 static func say_key(world: World, player_state: PlayerStateData, key: String, amount: int = 0) -> void:

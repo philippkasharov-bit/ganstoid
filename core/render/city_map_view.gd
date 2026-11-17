@@ -80,6 +80,10 @@ func _process(delta: float) -> void:
 		_collect()
 		queue_redraw()
 
+func _waypoint() -> Vector2:
+	var e: Entity = world.entities.get(PlayerFactory.PLAYER_ENTITY_ID) if world != null else null
+	return (e.get_component(ComponentNames.PLAYER_STATE) as PlayerStateData).waypoint if e != null else Vector2.INF
+
 func _me() -> NPCData:
 	var e: Entity = world.entities.get(PlayerFactory.PLAYER_ENTITY_ID) if world != null else null
 	return e.get_component(ComponentNames.NPC) if e != null else null
@@ -192,6 +196,11 @@ func _draw() -> void:
 			if letter != "":
 				draw_string(font, s + Vector2(-4, 4), letter, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color(0, 0, 0))
 	_draw_me()
+	var wp := _waypoint()
+	if wp != Vector2.INF:   # MM1: the GPS flag
+		var ws := _to_screen(wp)
+		draw_line(ws, ws + Vector2(0, -18), Color.WHITE, 2.0)
+		draw_colored_polygon(PackedVector2Array([ws + Vector2(0, -18), ws + Vector2(12, -14), ws + Vector2(0, -10)]), MiniMap.GPS)
 	var text := ""
 	var at := _mouse + Vector2(12, -10)
 	if _hover >= 0 and _hover < _marks.size():
@@ -238,6 +247,9 @@ func _gui_input(event: InputEvent) -> void:
 		_keep_in_city()
 		queue_redraw()
 		accept_event()
+	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
+		set_waypoint(_to_map(event.position))   # MM1: the GPS
+		accept_event()
 	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		_drag = event.pressed
 		accept_event()
@@ -248,6 +260,15 @@ func _gui_input(event: InputEvent) -> void:
 		_hover = _nearest(event.position)
 		_mouse = event.position
 		queue_redraw()
+
+## MM1: right-click: the GPS points here (right-click it again to clear).
+func set_waypoint(at: Vector2) -> void:
+	var p: Entity = world.entities.get(PlayerFactory.PLAYER_ENTITY_ID)
+	if p == null:
+		return
+	var state: PlayerStateData = p.get_component(ComponentNames.PLAYER_STATE)
+	state.waypoint = Vector2.INF if state.waypoint != Vector2.INF and state.waypoint.distance_to(at) * zoom < 12.0 else at
+	queue_redraw()
 
 func _nearest(s: Vector2) -> int:
 	var best := -1

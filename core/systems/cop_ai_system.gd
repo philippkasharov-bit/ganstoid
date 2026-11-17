@@ -338,6 +338,16 @@ func _arrest(player_npc: NPCData, player_state: PlayerStateData) -> void:
 		player_npc.position = home.position
 		_world.reindex_position(PlayerFactory.PLAYER_ENTITY_ID)
 
+## CH1: for the minimap: [cop position, where they think you are, searching?] of every cop after you.
+func hunters() -> Array:
+	var out: Array = []
+	for id in _alerted:
+		var e: Entity = _world.entities.get(id)
+		var n: NPCData = e.get_component(ComponentNames.NPC) if e != null else null
+		if n != null and not n.is_down:
+			out.append([n.position, _last_known.get(id, n.position), _search.has(id)])
+	return out
+
 ## I1: a warrant is out and this cop has just seen you (CaseSystem decides).
 func alert(cop_id: StringName) -> void:
 	if not _alerted.has(cop_id):

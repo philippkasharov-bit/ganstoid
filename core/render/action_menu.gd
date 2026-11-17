@@ -43,10 +43,17 @@ func refresh() -> void:
 		_sub.position = at.clamp(Vector2.ZERO, (screen - _sub.size).max(Vector2.ZERO))
 
 ## numbered: the list 1-9 pick in; the category list beside a fly-out is not.
+## UI4: each E-menu category has its icon.
+const ICONS := {"Shop": "cash", "Talk": "skills", "Crime": "wanted", "Crew": "crew", "Property": "tools", "Car": "car"}
+
 static func _rows_of(labels: PackedStringArray, notes: PackedStringArray, numbered := true) -> Array:
 	var rows: Array = []
 	for i in labels.size():
-		rows.append([str(i + 1) if numbered else "-", labels[i], notes[i] if i < notes.size() else ""])
+		var icon := ""
+		for k in ICONS:
+			if labels[i].begins_with(k):
+				icon = ICONS[k]
+		rows.append([str(i + 1) if numbered else "-", labels[i], notes[i] if i < notes.size() else "", icon])
 	return rows
 
 ## Clicks: on the category list while a fly-out shows, open that category;

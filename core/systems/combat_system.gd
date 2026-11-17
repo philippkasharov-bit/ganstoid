@@ -142,6 +142,8 @@ static func _fire(world: World, shooter: NPCData, dir: Vector2, w: Dictionary) -
 ## G3: blades and bullets open a wound that bleeds; a beating that takes the
 ## last of someone's health knocks them out (KO_S) instead of killing them.
 static func _hurt(world: World, npc: NPCData, w: Dictionary) -> Dictionary:
+	if npc.id == PlayerFactory.PLAYER_ENTITY_ID and (world.entities[npc.id].get_component(ComponentNames.PLAYER_STATE) as PlayerStateData).admin_god:
+		return {"hit_id": npc.id, "end": npc.position}   # AD1: god mode
 	npc.health = maxf(0.0, npc.health - w["damage"])
 	var blunt: bool = w.get("blunt", false)
 	if not blunt:

@@ -1,4 +1,4 @@
-## NX1: the one line at the top of the screen that always says what to do
+## NX1: the one line (on the pager, UI1) that always says what to do
 ## next, so a new player is never left wondering. Read-only: it only looks at
 ## the world. The first thing that applies wins:
 ##   a job under way   where to go and how long is left

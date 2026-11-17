@@ -16,7 +16,7 @@ var _grab := Vector2.ZERO
 
 func setup_window(id: String, title: String, at: Vector2, min_size: Vector2) -> void:
 	window_id = id
-	position = _positions.get(id, at)
+	position = HudLayout.window_pos(id, _positions.get(id, at))   # UI6: where you last put it, even after a restart
 	custom_minimum_size = min_size
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	add_theme_stylebox_override("panel", UiTheme.window_box())
@@ -65,17 +65,18 @@ func _close_button() -> Button:
 	close.mouse_exited.connect(close.queue_redraw)
 	return close
 
-## UI25: windows fade and settle in (120 ms), like a real game's panels.
+## UI25/UI6: windows rise, fade and settle in (180 ms), like a real game's panels.
 func _animate_open() -> void:
 	if not visible or not is_inside_tree():
 		return
 	_keep_on_screen.call_deferred()   # UI26: never opens half off a small screen
 	pivot_offset = size * 0.5
 	modulate.a = 0.0
-	scale = Vector2.ONE * 0.97
-	var t := create_tween().set_parallel(true).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	t.tween_property(self, "modulate:a", 1.0, 0.12)
-	t.tween_property(self, "scale", Vector2.ONE, 0.12)
+	scale = Vector2.ONE * 0.92
+	var t := create_tween().set_parallel(true).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	t.tween_property(self, "modulate:a", 1.0, 0.14)
+	t.tween_property(self, "scale", Vector2.ONE, 0.18)
+
 
 func _keep_on_screen() -> void:
 	var screen := get_viewport_rect().size
@@ -84,12 +85,15 @@ func _keep_on_screen() -> void:
 func set_title(title: String) -> void:
 	_title.text = title.to_upper()
 
+## Closing is instant (game logic reads `visible` straight after); opening animates.
 func close_window() -> void:
 	visible = false
 	closed.emit()
 
 func _on_header_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		if _dragging and not event.pressed:
+			HudLayout.save_window(window_id, position)   # UI6
 		_dragging = event.pressed
 		_grab = get_global_mouse_position() - position
 	elif event is InputEventMouseMotion and _dragging:

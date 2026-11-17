@@ -39,6 +39,8 @@ func _initialize() -> void:
 	me.position = hide
 	w.reindex_position(me.id)
 	cops.on_crime_witnessed(GanstoidEvents.CRIME_WITNESSED, {"position": scene})
+	var h: Array = cops.hunters()
+	ok = _check(h.size() == 1 and (h[0][1] as Vector2) == scene, "CH1: the minimap sees the officer heading for the scene, not for you") and ok
 	var closest := INF
 	var at_scene := INF
 	for t in 60 * 45:   # 45 s

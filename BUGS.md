@@ -13,7 +13,6 @@ Severity: **high** = breaks a game or loses progress · **medium** = clearly wro
 
 | ID | Severity | What happens | Where | Found by |
 |----|----------|--------------|-------|----------|
-| BUG-15 | medium | At rush hour (08:00) one tick now and then takes 20-28 ms, a small stutter. It comes from the people's daily-routine planner (`NPCScheduleSystem`, up to 27 ms in one tick) when many people re-plan at once, on top of traffic (~11 ms). `verify_sim_perf` measures a real rush hour since BUG-13, so it now passes or fails by chance (main: 19.4 ms pass, 23.5 ms fail). Spread the re-plans over more ticks. | `core/systems/npc_schedule_system.gd` | `verify_sim_perf` |
 | BUG-9 | low (to check on Phil's PC) | In the shop (`--store` picture) a dark curved band runs across the shop floor, under the player. It could be a curved wall drawn at floor height, or a drawing glitch. | shop interior / cutaway | album `shop_counter` |
 
 ## Ideas (not bugs)
@@ -31,6 +30,7 @@ Severity: **high** = breaks a game or loses progress · **medium** = clearly wro
 
 | ID | What it was | Fix | Guarded by |
 |----|-------------|-----|-----------|
+| BUG-15 | Rush hour stuttered: walkers coming into range were snapped onto the navmesh on the main thread (~16k a rush hour, up to 6 ms each), and traffic scanned 5k streets every half second with no traffic on. | Snap only a walker who comes into range inside a building; skip the street scan when there is no background traffic (rush-hour worst tick 20-28 ms -> ~8 ms) | `verify_sim_perf` (ticks over 4 ms) |
 | BUG-21 | Seen from far away in the dark: after a report, every cop within 400 m ran straight to where you were right now (live position, through walls and darkness), and armed cops and gangs shot at you from 18 m in the dark. | Police go to the crime scene, then only follow you while they can see you (the light rules; a searching eye sees 1.6x further), search where they last saw you for 25 s and give up; shooting needs sight too | `verify_stealth` |
 | BUG-7 | At night building walls were pitch black, so lit windows floated. | The BUG-20 city glow lights walls dimly | album `3d_night`, `street_night` |
 | BUG-20 | Night looked unnatural: hard-edged flat lamp discs and pitch-black everywhere else. | Lamp light now fades softly from under each head (warmer sodium), and a faint blue city glow keeps streets, palms and buildings readable | album `3d_night`, `street_night` |

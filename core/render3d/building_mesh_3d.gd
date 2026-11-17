@@ -267,16 +267,48 @@ static func _openings(st: SurfaceTool, v: Callable, a: Vector2, c: Vector2, out:
 		quad(st, [v.call(a + proud, 2.8), v.call(c + proud, 2.8), v.call(c + out * 1.3, 2.4), v.call(a + out * 1.3, 2.4)], Vector3.UP, s["awning"])
 		BuildingDetail3D.sign_band(st, v, a, c, out, int(s["seed"]))   # G1: the shop's sign over the awning
 	elif front:
+		st.set_uv(Vector2(0.0, s["tag"]))   # DR1: the building's tag, or the sight shading takes the door for "behind a wall" (it drew black)
 		var mid := a.lerp(c, door_t) + proud
 		var w: float = 3.0 if s["rollup"] else DOOR_W
 		var half := dir * w * 0.5
 		var tall: float = 3.0 if s["rollup"] else DOOR_H
 		quad(st, [v.call(mid - half * 1.15, 0.0), v.call(mid + half * 1.15, 0.0), v.call(mid + half * 1.15, tall + 0.15), v.call(mid - half * 1.15, tall + 0.15)], n, FRAME)
 		var inner := mid + proud * 0.5
-		quad(st, [v.call(inner - half, 0.0), v.call(inner + half, 0.0), v.call(inner + half, tall), v.call(inner - half, tall)], n, ROLLUP if s["rollup"] else DOOR)
-		if not s["rollup"]:
+		if s["rollup"]:
+			quad(st, [v.call(inner - half, 0.0), v.call(inner + half, 0.0), v.call(inner + half, tall), v.call(inner - half, tall)], n, ROLLUP)
+		else:
+			_door(st, v, inner, half, dir, out, n, tall, s)
 			BuildingDetail3D.stoop(st, v, mid - proud, half * 1.15, out)   # G1: a step up to the door
 	_windows(st, v, a, c, out, levels, door_t, s)
+
+## DR1: a door you can read from the street: a painted leaf with two raised
+## panels and a brass handle, a glass pane over it, a small canopy and a
+## porch lamp that glows at night (it was one flat dark quad).
+const DOOR_PAINTS := [Color("5fae86"), Color("c8574a"), Color("5a7fc4"), Color("b8875a"), Color("4fb0b0"), Color("e0b44f")]   # light: lit colours go much darker
+const BRASS := Color("c9a14a")
+const LAMP := Color("ffe2a0")
+
+static func _door(st: SurfaceTool, v: Callable, at: Vector2, half: Vector2, dir: Vector2, out: Vector2, n: Vector3, tall: float, s: Dictionary) -> void:
+	var paint: Color = DOOR_PAINTS[absi(int(s["seed"])) % DOOR_PAINTS.size()]
+	var leaf_top := tall - 0.38
+	quad(st, [v.call(at - half, 0.0), v.call(at + half, 0.0), v.call(at + half, leaf_top), v.call(at - half, leaf_top)], n, paint)
+	var lift := out * 0.025
+	for k in 2:   # two raised panels, lighter
+		var y0: float = [0.18, 1.0][k]
+		var y1: float = [0.88, leaf_top - 0.12][k]
+		var ph := half * 0.7
+		quad(st, [v.call(at + lift - ph, y0), v.call(at + lift + ph, y0), v.call(at + lift + ph, y1), v.call(at + lift - ph, y1)], n, paint.lightened(0.18))
+	var handle := at + half * 0.72 + out * 0.05
+	quad(st, [v.call(handle - dir * 0.04, 0.95), v.call(handle + dir * 0.04, 0.95), v.call(handle + dir * 0.04, 1.1), v.call(handle - dir * 0.04, 1.1)], n, BRASS)
+	st.set_uv(Vector2(0.6, s["tag"]))   # the transom glass catches the light at night
+	quad(st, [v.call(at - half * 0.92, leaf_top + 0.06), v.call(at + half * 0.92, leaf_top + 0.06), v.call(at + half * 0.92, tall - 0.04), v.call(at - half * 0.92, tall - 0.04)], n, Color("9fb4bf"))
+	st.set_uv(Vector2(0.0, s["tag"]))
+	var hood := half * 1.45   # the canopy over the door
+	quad(st, [v.call(at - hood, tall + 0.32), v.call(at + hood, tall + 0.32), v.call(at + hood + out * 0.55, tall + 0.2), v.call(at - hood + out * 0.55, tall + 0.2)], Vector3.UP, paint.darkened(0.25))
+	var lamp := at + half * 1.75 + out * 0.08
+	st.set_uv(Vector2(1.0, s["tag"]))   # the porch lamp: lit at night
+	quad(st, [v.call(lamp - dir * 0.09, tall - 0.25), v.call(lamp + dir * 0.09, tall - 0.25), v.call(lamp + dir * 0.09, tall + 0.02), v.call(lamp - dir * 0.09, tall + 0.02)], n, LAMP)
+	st.set_uv(Vector2(0.0, s["tag"]))
 
 ## Each storey's windows along the wall a..c (none behind a shop front or by the door).
 static func _windows(st: SurfaceTool, v: Callable, a: Vector2, c: Vector2, out: Vector2, levels: int, door_t: float, s: Dictionary) -> void:
