@@ -162,6 +162,23 @@ func _run(main: Node, args: Dictionary) -> void:
 			CourtSystem.hold(driver.world, tp, ts)
 		for i in 6:
 			await process_frame
+	if args.has("crew"):   # CA1 look: three crew, one asking for a wage
+		var cp: NPCData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
+		var cs: PlayerStateData = driver.world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
+		var natures := [&"loyal", &"climber", &"greedy"]
+		for e in driver.world.get_entities_with_component(ComponentNames.NPC).values():
+			var n: NPCData = e.get_component(ComponentNames.NPC)
+			if natures.is_empty():
+				break
+			if n != cp and not (n.is_cop or n.is_dealer or n.is_fixer or n.is_crew or n.is_down) and n.gang_id == &"":
+				n.is_crew = true
+				n.ambition = natures.pop_back()
+				n.loyalty = 0.55 + 0.1 * natures.size()
+				cs.crew_ids.append(n.id)
+		cs.crew_wages[cs.crew_ids[1]] = 30
+		CrewAmbitionSystem._ask(driver.world, cs, driver.world.entities[cs.crew_ids[0]].get_component(ComponentNames.NPC), "raise", 30, "I'm worth more than this. $%d a day, or I walk.")
+		for i in 4:
+			await process_frame
 	if args.has("jail"):   # JL1 look: inside, the prison panel
 		AdminSystem.run(driver.world, "jail", null, driver.world.tick)
 		for i in 4:

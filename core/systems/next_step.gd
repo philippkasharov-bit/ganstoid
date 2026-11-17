@@ -34,6 +34,8 @@ static func line(world: World) -> String:
 			talk += 1 if CourtSystem.stand_of(world, state, id) == "talks" else 0
 		if talk > 0 or CourtSystem.score(world, state) >= CourtSystem.GUILTY_AT:
 			return "Trial in %dh: %d witness%s will talk. Scare them, pay them, or get a lawyer (Phone > Case)" % [ceili(h), talk, "" if talk == 1 else "es"]
+	if not state.crew_asks.is_empty():
+		return CrewAmbitionSystem.ask_text(world, state, state.crew_asks[0]) + " Answer on Phone > Crew"
 	if me.bleeding:
 		return "You're bleeding: press H and bandage the wound"
 	if me.hunger < URGENT:

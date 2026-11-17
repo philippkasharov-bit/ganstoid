@@ -33,6 +33,9 @@ extends Resource
 @export var is_crew: bool = false
 @export var crew_role: GanstoidEnums.CrewRole = GanstoidEnums.CrewRole.UNASSIGNED
 @export_range(0.0, 1.0) var loyalty: float = 0.5
+@export var ambition: StringName = &""   # CA1: loyal, greedy, climber or rat (rolled when they first work for you)
+@export var crew_rank: int = 0          # CA1: 1 = lieutenant, runs a corner
+@export var crew_days: int = 0          # CA1: days in your crew
 ## Batch 17: where a LOOKOUT was posted (only meaningful for that role).
 @export var post_position: Vector2 = Vector2.ZERO
 ## Batch 18: a crew DEALER's consignment (weed units) and the cash from

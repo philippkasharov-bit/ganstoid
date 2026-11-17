@@ -52,6 +52,7 @@ Status: [x] done, [~] partly, [ ] not started.
 - [x] AU1 sound, all made by code (tools/audio/synth.py): day and night city, crowd murmur, steps, doors, guns, cars passing, police siren, engine, two radio stations, interface sounds; Sound and Music volume in the Esc menu
 - [x] ME1 the city remembers: people you robbed, hurt, threatened or helped know you again; they shout it (speech bubbles), run, call the police once, or tip you off; a store you held up won't serve you; friends join your crew more readily; grudges fade over about a month
 - [x] CT1 court case: an arrest with a real case is a charge and a trial in two days; the people who remember you are the witnesses; scare them, pay them or hire a lawyer; the court window shows who talked and the verdict (Phone > Case, admin: Trial now)
+- [x] CA1 crew with ambitions: loyal, greedy, climber or rat; wages, lieutenants (their corner pays +50%), a sour lieutenant walks off with a friend and 15% of your cash, a rat gets you a warning and then testifies; Phone > Crew to answer
 
 ## Indie mistakes we design against (Phil, 2026-11: "doesn't it look boring and repetitive?")
 
@@ -97,7 +98,14 @@ Each mistake below is checked against the game and owned by a batch.
 | AU1 | ~~**Sound and music**~~ **done** · | City ambience by area and hour, footsteps, doors, cars, guns, crowd voices, a 90s radio in cars, UI sounds | 2 |
 | ME1 | ~~**The city remembers** (killer 1)~~ **done** · | Everyone you robbed, hurt, helped or paid remembers you: clerks refuse you, victims cross the street, people you helped tip you off or join you | 2 |
 | CT1 | ~~**Court case** (killer 2)~~ **done** · | Arrested: a trial built from the real evidence (who saw you, what you carried); before it, scare or pay witnesses, hire a lawyer | 2 |
-| CA1 | **Crew with ambitions** (killer 3) | Crew have wants: one gets greedy, one talks to police, one wants your chair; promote, pay or cut them loose | 2 |
+| CA1 | ~~**Crew with ambitions** (killer 3)~~ **done** · | Crew have wants: one gets greedy, one talks to police, one wants your chair; promote, pay or cut them loose | 2 |
+| BZ1 | **Grow it yourself** (proposed) | Buy gear at a grow shop (tent, lights, fan, filter, seeds), set it up in a place you own, tend the plants (water, feed, light), harvest, dry and bag, sell; more tents, then hydro; smell and neighbours are the risk | 2 |
+| BZ2 | **Workers and the Business app** (proposed) | Hire staff for any business (wage, skill, loyalty; they can steal or talk), shifts, one Business app: money in and out, stock, staff, heat | 1-2 |
+| BZ3 | **Nightlife: clubs, strip clubs, casinos** (proposed) | Buy and run them: licence, bouncers, DJ, staff, VIP rooms; nights earn by hood; launder through them; a back-room card game; play blackjack and slots yourself | 3 |
+| BZ4 | **The drug chain** (proposed) | Weed to pills (press) to a cook lab (a short cook mini-game, fire risk) to imports; your own corners, delivery, your clubs; prices by hood | 2-3 |
+| BZ5 | **Big illegal side** (proposed) | Chop shop, counterfeit cash, fencing ring, gun running, loan sharking, gambling dens; laundering through your legal fronts with limits and audits | 3 |
+| BZ6 | **Big legal side** (proposed) | Car wash, laundromat, restaurant, shop chain, flats to rent, trucking, security firm; upgrades, competition, taxes and audits | 2-3 |
+| BZ7 | **Empire view** (proposed) | A map layer of everything you own, the daily ledger, raids and robberies by rivals on your places | 1 |
 | FX1 | **Game feel** | Hit reactions and knockdowns, camera shake, muzzle flash, blood, slow-mo on a knockout, screen pulses on big moments | 1-2 |
 | LV1 | **Living streets** | People say things (barks), street events (fights, arrests, crashes, parties, dealers busted), more traffic, people with jobs you can see | 2 |
 | SK1 | **Skill moments** | Lockpicking, hotwiring, hold-ups, safe-cracking as short hands-on mini-games instead of menu lines | 2 |

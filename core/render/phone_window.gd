@@ -10,7 +10,7 @@ const ACTION := &"phone"
 const SCREEN := Color(0.62, 0.74, 0.47)
 const INK := Color(0.08, 0.12, 0.06)
 const W := 300.0
-const APPS := [["Messages", "Messages"], ["Contacts", "Contacts"], ["Hustles", "Hustles"], ["Bank", "Bank"], ["Rivals", "Rivals"], ["Score", "Score"], ["Crib", "Crib"], ["Jobs", "Jobs"], ["Property", "Property"], ["Gang", "Gang"], ["Case", "Case"], ["Paper", "Paper"]]
+const APPS := [["Messages", "Messages"], ["Contacts", "Contacts"], ["Hustles", "Hustles"], ["Bank", "Bank"], ["Rivals", "Rivals"], ["Score", "Score"], ["Crib", "Crib"], ["Jobs", "Jobs"], ["Property", "Property"], ["Gang", "Gang"], ["Crew", "Crew"], ["Case", "Case"], ["Paper", "Paper"]]
 
 var paper: PaperWindow
 var _world: World
@@ -66,7 +66,7 @@ func _process(delta: float) -> void:
 		return
 	_refresh = 0.4
 	var key := _app + str(state.inbox.size()) + str(state.job_offers.size()) + str(state.hustles) + str(state.rivals.size()) + str(state.known.size())
-	if _app in ["Bank", "Rivals", "Case"]:
+	if _app in ["Bank", "Rivals", "Case", "Crew"]:
 		key += str(_world.tick / 60)
 	if key == _key:
 		return
@@ -235,6 +235,22 @@ func _show(state: PlayerStateData) -> void:
 				_rule()
 				_text(HeistSystem.plan_line(_world, state), 16, true)
 				_screen.add_child(_progress(clampf(float(h["work"]) / float(spec[2]), 0.0, 1.0) if h["stage"] in ["working", "getaway"] else clampf(float(h["cased"]) / HeistSystem.CASE_S, 0.0, 1.0)))
+		"Crew":   # CA1: who they are, what they want
+			if state.crew_ids.is_empty():
+				_text("No crew yet. Recruit people (E by them) once you can pay them.")
+			for a in state.crew_asks:
+				_text(CrewAmbitionSystem.ask_text(_world, state, a), 16, true)
+				for ch in CrewAmbitionSystem.CHOICES.get(String(a["kind"]), []):
+					var pick := {"id": a["id"], "choice": ch[0]}
+					_screen.add_child(_button(CrewAmbitionSystem.choice_text(a, ch), func() -> void: state.ui_crew = pick, Vector2(W, 30)))
+				_rule()
+			for id in state.crew_ids:
+				var e: Entity = _world.entities.get(id)
+				var n: NPCData = e.get_component(ComponentNames.NPC) if e != null else null
+				if n == null:
+					continue
+				var nature: String = {&"": "new", &"loyal": "loyal", &"greedy": "greedy", &"climber": "wants more", &"rat": "hard to read"}.get(n.ambition, "?")
+				_text("%s%s  ·  %s  ·  loyalty %d%%%s" % [n.display_name, "  (lieutenant)" if n.crew_rank >= 1 else "", nature, roundi(n.loyalty * 100.0), "  ·  $%d/day" % int(state.crew_wages[id]) if state.crew_wages.has(id) else ""], 14)
 		"Case":   # CT1: the trial and its witnesses
 			var t := state.trial
 			if t.is_empty():
