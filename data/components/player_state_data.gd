@@ -159,6 +159,7 @@ var ui_admin: Array = []                          # AD1: [command, arg] from the
 @export var tips_on: bool = true                  # TP1: the pause menu turns tips off
 var stamp: Dictionary = {}                        # UI3: a big moment for the HUD {text, sub, color} (not saved)
 var stamp_serial: int = 0                         # UI3: +1 per stamp (not saved)
+var message_key: String = ""                      # AU1: the StreetTalk key of the last line, for its sound (not saved)
 var lift: Dictionary = {}                         # PP1: a pickpocket under way {target, f, notice, last, dir} (not saved)
 var tip_text: String = ""                         # TP1: the tip on screen (not saved)
 var tip_serial: int = 0                           # TP1: +1 per new tip (not saved)

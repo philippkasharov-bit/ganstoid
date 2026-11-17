@@ -8,6 +8,13 @@ One line per script: what it is for. Read the file only when you need it; find s
 |---|---|---|
 | `world_driver.gd` |  | Thin scene-tree adapter: the only piece of the SIMULATION layer that touches Godot's process loop — everything else in core/ecs stays engine-agnostic and testable without this node. (core/render/render_sync.gd is its sibling on the rendering side, reading Worl |
 
+## core/audio
+
+| file | class | what it is |
+|---|---|---|
+| `audio_bank.gd` | AudioBank | AU1: the game's sounds, all made by tools/audio/synth.py (maths, no samples, so they are ours to ship). Loads each WAV once; the loops (city ambience, engine, siren, the car radio) are set to loop here, since the imported files are plain one-shots. Also makes  |
+| `audio_director.gd` | AudioDirector | AU1: the city you hear. Like RenderSync3D it only reads World (and hears its EventBus), then plays what fits: ambience day traffic or night crickets by the hour, a crowd murmur when people are close, all muffled indoors you footsteps (quieter crouched), doors  |
+
 ## core/city
 
 | file | class | what it is |
@@ -86,7 +93,7 @@ One line per script: what it is for. Read the file only when you need it; find s
 | `openings_view.gd` | OpeningsView | DW2: break-ins you can see on the street: a kicked-in door shows as a dark gap with splinters, smashed glass as shards, boarded windows as crossed planks, all at the building's door. Screen-space over the map (the cached building layer never redraws); the list |
 | `pager_view.gd` | PagerView | UI1: the pager, top right beside the clock: a 90s beeper's green screen with what to do next (NextStep) and today's hustles (HustleSystem), so the middle of the screen stays clear for the street. It beeps (blinks) when a new hustle day comes in or one is done. |
 | `paper_window.gd` | PaperWindow | NP1: the morning paper. Opens by itself when a new front page is out (NewsSystem, each morning) and on P: the headline, the night's stories, city news, and "word on the street" (today's hustles). Read-only. |
-| `pause_menu.gd` | PauseMenu | PM1: Project Zomboid's Esc menu. Esc with nothing else open stops the game and shows: Resume, Controls (every key, as keycaps), Save and quit. Esc or Resume goes back. Only the pause flag and the save are touched here. |
+| `pause_menu.gd` | PauseMenu | PM1: Project Zomboid's Esc menu. Esc with nothing else open stops the game and shows: Resume, Controls (every key, as keycaps), sizes and volumes (AU1), Save and quit. Esc or Resume goes back. Only the pause flag and the save are touched here. |
 | `phone_window.gd` | PhoneWindow | PH1: the phone (P): a 90s brick phone, the hub for everything. Home screen of apps: Messages (the inbox), Contacts (fixers and dealers you have met: call a fixer for work from anywhere), Hustles, Bank, Rivals (who wants you and how badly), Paper. It only reads |
 | `player_camera.gd` |  | MG1c: camera that follows the player around the real city (metres). Mouse wheel / +/- zoom between ZOOM_MIN and ZOOM_MAX pixels per metre. |
 | `prison_window.gd` | PrisonWindow | JL1: the prison panel, open the whole time you're inside: days left, what today is for (PrisonSystem's choices: click one) and the odds of a run. Read-only: a click only asks (ui_prison). |

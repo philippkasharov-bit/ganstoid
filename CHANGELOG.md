@@ -5,6 +5,8 @@ Newest first. The in-game admin panel (F11, Bugs & updates) shows the top of it.
 
 ## 2026-11-17
 
+- ROADMAP: the indie mistakes we design against, batches re-ordered
+- JL1: prison you live through (B8)
 - RP3: join a gang and rise in it (B7)
 - RP2: legal gigs, a driving licence, buying homes (B6)
 - CR1: your crib (B2)

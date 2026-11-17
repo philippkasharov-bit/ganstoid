@@ -197,6 +197,7 @@ static func say_key(world: World, player_state: PlayerStateData, key: String, am
 	player_state.last_message = line.replace("{n}", str(amount))
 	player_state.message_tone = 0
 	player_state.message_alert = ALERTS.has(key)
+	player_state.message_key = key
 	player_state.message_serial += 1
 
 static func _key_for(result: Dictionary) -> String:

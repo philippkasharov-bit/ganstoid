@@ -49,6 +49,7 @@ Status: [x] done, [~] partly, [ ] not started.
 - [x] RP3 join a gang: Prospect to Lieutenant, daily missions, a cut, leaving
 - [x] JL1 prison days: head down, yard, connections, appeal, escape; the crew slips outside
 - [x] AD1 admin panel (F11) with bug test, bugs and updates · QA6 test index and code map
+- [x] AU1 sound, all made by code (tools/audio/synth.py): day and night city, crowd murmur, steps, doors, guns, cars passing, police siren, engine, two radio stations, interface sounds; Sound and Music volume in the Esc menu
 
 ## Indie mistakes we design against (Phil, 2026-11: "doesn't it look boring and repetitive?")
 
@@ -58,7 +59,7 @@ Each mistake below is checked against the game and owned by a batch.
 
 | # | Mistake | Us now | Fix (batch) |
 |---|---|---|---|
-| 1 | No sound or music | none at all | AU1 |
+| 1 | No sound or music | AU1 done (code-made); voices and real music later | AU1, AU2 |
 | 2 | Menus instead of doing (E, pick a line) | most crimes | SK1 skill moments |
 | 3 | Weak game feel: no impact, shake, reactions | flat | FX1 juice |
 | 4 | Lifeless crowds: same people, no voices, no events | yes | LV1 living streets |
@@ -91,7 +92,10 @@ Each mistake below is checked against the game and owned by a batch.
 
 | # | Batch | What the player gets | Size |
 |---|---|---|---|
-| AU1 | **Sound and music** | City ambience by area and hour, footsteps, doors, cars, guns, crowd voices, a 90s radio in cars, UI sounds | 2 |
+| AU1 | ~~**Sound and music**~~ **done** · | City ambience by area and hour, footsteps, doors, cars, guns, crowd voices, a 90s radio in cars, UI sounds | 2 |
+| ME1 | **The city remembers** (killer 1) | Everyone you robbed, hurt, helped or paid remembers you: clerks refuse you, victims cross the street, people you helped tip you off or join you | 2 |
+| CT1 | **Court case** (killer 2) | Arrested: a trial built from the real evidence (who saw you, what you carried); before it, scare or pay witnesses, hire a lawyer | 2 |
+| CA1 | **Crew with ambitions** (killer 3) | Crew have wants: one gets greedy, one talks to police, one wants your chair; promote, pay or cut them loose | 2 |
 | FX1 | **Game feel** | Hit reactions and knockdowns, camera shake, muzzle flash, blood, slow-mo on a knockout, screen pulses on big moments | 1-2 |
 | LV1 | **Living streets** | People say things (barks), street events (fights, arrests, crashes, parties, dealers busted), more traffic, people with jobs you can see | 2 |
 | SK1 | **Skill moments** | Lockpicking, hotwiring, hold-ups, safe-cracking as short hands-on mini-games instead of menu lines | 2 |
