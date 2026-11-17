@@ -171,7 +171,7 @@ static func order(world: World, me: NPCData, state: PlayerStateData, good: Strin
 		return {"ok": false, "reason": "lab_no_connect"}
 	Wallet.spend(world, price)
 	var ready := (world.tick / SimClock.day_ticks + 1) * SimClock.day_ticks + SimClock.hours(22.0)
-	state.shipment = {"good": good, "units": IMPORTS[good][0], "at": spot, "from": ready, "until": ready + SimClock.hours(PICKUP_H), "sting": world.runtime_rng.randf() < STING_CHANCE}
+	state.shipment = {"good": good, "units": IMPORTS[good][0], "at": spot, "from": ready, "until": ready + SimClock.hours(PICKUP_H), "sting": world.runtime_rng.randf() < STING_CHANCE * FrontSystem.sting_mult(state)}
 	state.waypoint = (world.entities[spot].get_component(ComponentNames.BUILDING) as BuildingData).position
 	PhoneSystem.push(world, state, "The connect", "Tomorrow, 10 at night, the warehouse I marked. Six hours, then it's gone.")
 	return {"ok": true, "effect": "lab_ordered", "amount": price}

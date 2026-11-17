@@ -5,10 +5,15 @@ Newest first. The in-game admin panel (F11, Bugs & updates) shows the top of it.
 
 ## 2026-11-17
 
+- BZ7: the empire: on the map, on the phone, and under attack
+- BZ6: the legal side: fronts, upgrades, taxes and the IRS
+- BZ5b: a stolen-goods ring, gambling dens and gun running
 - BZ5: loan sharking, fake money and the chop shop
 - CA1 fix: the crew loyalty check uses loyal crew
 - LT4 fix: empty furniture no longer has to be searched over and over
 - UI7: a modern phone, who's who on the street, deal and pawn windows
+- UP1: keep the comment off the error line
+- UP1: the updater no longer gets stuck on a locked file
 - LT4: search the furniture, a real loot list, deal it yourself
 - QL3: quality in street words, strains that differ, your own prices
 - BZ4: the drug chain: press, cook, import

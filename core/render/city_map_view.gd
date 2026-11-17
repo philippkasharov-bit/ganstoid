@@ -98,9 +98,13 @@ func _collect() -> void:
 	var state: PlayerStateData = world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.PLAYER_STATE)
 	for e in world.get_entities_with_component(ComponentNames.BUILDING).values():
 		var b: BuildingData = e.get_component(ComponentNames.BUILDING)
-		if b.owner_npc_id == PlayerFactory.PLAYER_ENTITY_ID or b.id == me.home_building_id:
+		if b.owner_npc_id == PlayerFactory.PLAYER_ENTITY_ID or b.id == me.home_building_id or state.properties.has(b.id):
 			if show_mine:
-				_marks.append([b.position, HOME if b.id == me.home_building_id else MINE, "Your home" if b.id == me.home_building_id else "Yours: " + _name(b), true, "H" if b.id == me.home_building_id else ""])
+				if b.id == me.home_building_id:
+					_marks.append([b.position, HOME, "Your home", true, "H"])
+				else:   # BZ7: what each place of yours is
+					var d := EmpireSystem.describe(world, state, b)
+					_marks.append([b.position, d[1], "Yours: " + String(d[2]), d[3], d[0]])
 			continue
 		var kind := ShopSystem.counter_kind(world, b.id)
 		if kind == "" or (kind == "workshop" and not show_workshops) or (kind != "workshop" and not show_shops):
