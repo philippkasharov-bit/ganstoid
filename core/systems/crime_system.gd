@@ -52,6 +52,7 @@ const CRIME_HEAT_GAIN := 0.2
 
 ## Fixed per-crime-type severity (roadmap Phase 1 lock) -- feeds
 ## RecognitionSystem.register_witness, not the crime's gameplay effect.
+const CLERK_CALL := 0.5   # B9: a robbed clerk's 911 call counts half a recognised witness
 const SEVERITY_BY_TYPE := {
 	GanstoidEnums.CrimeType.PICKPOCKET: 0.15,
 	GanstoidEnums.CrimeType.CAR_BREAK_IN: 0.2,
@@ -134,6 +135,8 @@ static func rob_building(world: World, building_id: StringName) -> Dictionary:
 	EconomySystem.apply_robbery(building, taken)
 	Wallet.earn_dirty(world, taken)  # batch 24
 	broadcast_witnesses(world, building.position, SEVERITY_BY_TYPE[GanstoidEnums.CrimeType.ARMED_ROBBERY])
+	# B9: whoever was behind the counter calls it in with your description, seen or not
+	world.event_bus.emit(GanstoidEvents.CRIME_WITNESSED, {"position": building.position, "severity": SEVERITY_BY_TYPE[GanstoidEnums.CrimeType.ARMED_ROBBERY] * CLERK_CALL, "tick": world.tick, "witness_id": &""})
 	MemorySystem.remember(world, player_entity.get_component(ComponentNames.PLAYER_STATE), building_id, "store_robbed")   # ME1: they won't serve you
 	return {"ok": true, "effect": "robbery", "taken": taken}
 

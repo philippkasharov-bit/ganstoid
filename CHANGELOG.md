@@ -5,6 +5,7 @@ Newest first. The in-game admin panel (F11, Bugs & updates) shows the top of it.
 
 ## 2026-11-17
 
+- B9: the pacing robot, and what it measured
 - BZ7: the empire: on the map, on the phone, and under attack
 - BZ6: the legal side: fronts, upgrades, taxes and the IRS
 - BZ5b: a stolen-goods ring, gambling dens and gun running

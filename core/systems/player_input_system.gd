@@ -480,6 +480,8 @@ func _options(npc: NPCData, state: PlayerStateData) -> Array:
 		out.append(["Talk", func() -> Dictionary: return TalkSystem.small_talk(_world, npc, p)])
 		out.append(["Threaten them into silence", func() -> Dictionary: return TalkSystem.threaten(_world, npc, p)])
 		out.append(["Pay them to forget you ($%d)" % TalkSystem.PAYOFF, func() -> Dictionary: return TalkSystem.pay_off(_world, npc, p)])
+		if p.is_fixer and state.known.has(p.id) and state.dirty_cash > 0:   # B9: wash dirty money with a fixer
+			out.append(["Wash dirty money (30%% cut, $%d left today)" % Rackets.wash_left(_world, state), func() -> Dictionary: return Rackets.fixer_wash(_world, state)])
 		if LoanSystem.owes(state, p.id):   # BZ5: they owe you
 			var debt := LoanSystem.loan_of(state, p.id)
 			out.append(["Collect what they owe ($%d)" % int(debt["owed"]), func() -> Dictionary: return LoanSystem.collect(_world, state, p)])

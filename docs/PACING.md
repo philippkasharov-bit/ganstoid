@@ -38,3 +38,28 @@ businesses $0. End: $3,906 cash, of it $3,119 dirty; case file 0.
 4. **Ranks.** Soldier (needed for imports, gun crates) is past day 14.
 
 Tuning is proposed to Phil before it is changed (see the session report).
+
+## After the first tuning (B9b, 2026-11-17, same robot and seed)
+
+Changes: a fixer washes dirty money for a 30% cut (up to $1,000 a day, off
+the books); a shop costs 6 days of its takings (was 10); you start with
+$150 (was $40); Soldier at 70 points (was 90); the case file cools 0.5 an
+hour (was 1.5; 1.5 at home, was 4); a robbed clerk calls the police with
+your description (half a recognised witness).
+
+| Milestone | Before | After |
+|---|---|---|
+| First clean money | never before a business | day 0.9 (a fixer) |
+| $500 cash | day 1.9 | day 1.9 |
+| First business | never | day 7.9 to 9.9 |
+| Rank: Soldier | after day 14 | day 13.9 (when the robot keeps robbing) |
+| Highest case file | 19 | 61 (a warrant is out from 40) |
+| First arrest | never | never: the robot stops robbing above 25 and doesn't meet cops |
+
+Still to look at:
+- The robot bought the cheapest shop, a gas station that was nearly broke:
+  a struggling shop refills its own bank before it pays you anything (the
+  city's economy), so it paid nothing for days. The buy option and the
+  phone should say "struggling" before you buy.
+- The first real hour still ends around $330: hustles and fixer jobs (which
+  the robot doesn't take) are where a real player's first hour goes.

@@ -11,6 +11,7 @@
 ##   GROW_AT cash             set up a grow at home, plant, water, harvest, bag
 ##   carrying weed            sell it hand to hand, a few tries an hour
 ##   GROWER_AT cash           hire a grower, leave seeds
+##   dirty $200, afternoons   wash it with a fixer (B9), once a day
 ##   shop price in clean      buy the cheapest shop; WASH_AT clean: make it a car wash
 ## Run: $G --headless --path . -s debug/pace_robot.gd   (PACE_DAYS, PACE_SEED, PACE_POP: default 1500)
 extends SceneTree
@@ -37,6 +38,9 @@ var robbed_day := -1
 var shift_day := -1
 var shop: BuildingData = null
 var busy_until := 0
+var reports := 0
+var wash_day := -1
+var max_case := 0.0
 
 func _initialize() -> void:
 	var days := int(OS.get_environment("PACE_DAYS")) if OS.get_environment("PACE_DAYS") != "" else 14
@@ -52,6 +56,9 @@ func _initialize() -> void:
 	me = p.get_component(ComponentNames.NPC)
 	state = p.get_component(ComponentNames.PLAYER_STATE)
 	state.inventory[&"knife"] = 1
+	w.event_bus.subscribe(func(ev: StringName, _p: Dictionary) -> void:
+		if ev == GanstoidEvents.CRIME_WITNESSED:
+			reports += 1)
 	var hour := SimClock.hours(1.0)
 	var prev_rank := state.rank
 	var prev_prison := 0
@@ -62,6 +69,7 @@ func _initialize() -> void:
 		w.step(1.0 / 60.0)
 		if w.tick % hour != 0:
 			continue
+		max_case = maxf(max_case, state.case_evidence)
 		me.hunger = 1.0
 		me.thirst = 1.0
 		me.fatigue = 1.0
@@ -94,6 +102,9 @@ func _initialize() -> void:
 	print("PACE: income  " + "  ".join(income.keys().map(func(k: String) -> String: return "%s $%d" % [k, income[k]])))
 	print("PACE: counts  " + "  ".join(counts.keys().map(func(k: String) -> String: return "%s %d" % [k, counts[k]])))
 	print("PACE: cash each morning " + str(cash_days))
+	print("PACE: police: %d reports by witnesses, highest case file %d (prison from %d)" % [reports, int(max_case), int(CaseSystem.PRISON_FROM)])
+	if shop != null:
+		print("PACE: your shop: %s, takes about $%d a day, till $%d, bank $%d" % [shop.trade, shop.daily_revenue, shop.cash_on_hand, shop.bank])
 	print("PACE: end cash $%d (dirty $%d), rank %s, case %d, places %d" % [me.cash, state.dirty_cash, RankSystem.NAMES[state.rank], int(state.case_evidence), EmpireSystem.places(w, state).size()])
 	quit(0)
 
@@ -133,6 +144,17 @@ func _play() -> void:
 			if CrimeSystem.rob_building(w, s.id).get("ok", false):
 				counts["robberies"] += 1
 				income["robbery"] += me.cash - c
+	# B9: once a day, wash dirty money with a fixer (a real player meets one early)
+	if day != wash_day and state.dirty_cash >= 200 and h >= 14.0:
+		wash_day = day
+		var fixer := NextStep.nearest_fixer(w, me.position)
+		if fixer != null:
+			state.known[fixer.id] = "fixer"
+			_go(fixer.position + Vector2(1, 0))
+			var c := Wallet.clean(w)
+			if Rackets.fixer_wash(w, state).get("ok", false):
+				income["washed"] = int(income.get("washed", 0)) + Wallet.clean(w) - c
+				_mark("first wash at a fixer")
 	_grow()
 	_sell_weed()
 	_business()

@@ -19,7 +19,7 @@
 class_name BusinessSystem
 extends SystemBase
 
-const PRICE_DAYS := 10
+const PRICE_DAYS := 6   # B9: was 10: the first business was out of reach in 14 hours of play
 ## One game day = SimClock.day_ticks.
 const LAUNDER_FEE := 0.2
 
