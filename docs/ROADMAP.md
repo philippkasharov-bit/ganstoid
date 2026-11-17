@@ -65,6 +65,7 @@ prints busts.
 - [x] LT4 looting by searching: every piece of furniture its own container (fridge, cabinets, medicine cabinet, drawers, wardrobe, under the bed, shelf, sofa, TV stand, a wall safe in rich homes), each searched with a timed bar (moving breaks it off), pockets too; 19 new valuables and business supplies in the tables; pawn (clean) or fence (dirty); deal hand to hand at your own price
 - [x] UI7 a modern phone (dark, app tiles with badges, scrolls); rings at people's feet for who they are to you (crew, police, gang, friend, scared, enemy; strangers none) and a name card on hover; a deal window (your price, the odds, Offer) and a pawn / fence window (sell one or all) · UP1 the updater no longer sticks on a locked file
 - [x] BZ5 (part 1) loan sharking (Phone > Loans: lend at interest, daily repayments, collect / lean on / make an example), fake money (printing press, paper and ink, graded bills, pass for real change or sell to dealers), the chop shop (sell a stolen car parked outside); forgery skill
+- [x] BZ5 (part 2) a stolen-goods ring in a pawn shop you own (nightly dirty money, buys your loot at 70%), gambling dens in flats you own (nightly, no rent), gun crates from the connect (six pistols to sell to the gangs); raids shut rings and dens (a bouncer halves the risk)
 
 ## Indie mistakes we design against (Phil, 2026-11: "doesn't it look boring and repetitive?")
 
@@ -117,7 +118,7 @@ Each mistake below is checked against the game and owned by a batch.
 | BZ2 | ~~**Workers and the Business app**~~ **done** · | Hire staff for any business (wage, skill, loyalty; they can steal or talk), shifts, one Business app: money in and out, stock, staff, heat | 1-2 |
 | BZ3 | ~~**Nightlife: clubs, strip clubs, casinos**~~ **done** (card rooms, not casinos: 1990s LA) · | Buy and run them: licence, bouncers, DJ, staff, VIP rooms; nights earn by hood; launder through them; a back-room card game; play blackjack and slots yourself | 3 |
 | BZ4 | ~~**The drug chain**~~ **done** · | Weed to pills (press) to a cook lab (a short cook mini-game, fire risk) to imports; your own corners, delivery, your clubs; prices by hood | 2-3 |
-| BZ5 | **Big illegal side** (part done: loans, fake money, chop shop; still to come: fencing ring, gun running, gambling dens) | Chop shop, counterfeit cash, fencing ring, gun running, loan sharking, gambling dens; laundering through your legal fronts with limits and audits | 3 |
+| BZ5 | ~~**Big illegal side**~~ **done** (loans, fake money, chop shop, stolen-goods ring, gun running, gambling dens) · | Chop shop, counterfeit cash, fencing ring, gun running, loan sharking, gambling dens; laundering through your legal fronts with limits and audits | 3 |
 | BZ6 | **Big legal side** (proposed) | Car wash, laundromat, restaurant, shop chain, flats to rent, trucking, security firm; upgrades, competition, taxes and audits | 2-3 |
 | BZ7 | **Empire view** (proposed) | A map layer of everything you own, the daily ledger, raids and robberies by rivals on your places | 1 |
 | FX1 | **Game feel** | Hit reactions and knockdowns, camera shake, muzzle flash, blood, slow-mo on a knockout, screen pulses on big moments | 1-2 |

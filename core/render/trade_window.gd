@@ -88,8 +88,9 @@ func _deal(state: PlayerStateData, me: NPCData, t: Dictionary) -> void:
 
 func _pawn(state: PlayerStateData, t: Dictionary) -> void:
 	var pawn: bool = t["mode"] == "pawn"
-	var share := Fence.PAWN_SHARE if pawn else Fence.FENCE_SHARE
-	_head("PAWN SHOP" if pawn else "FENCE", "clean cash, %d%% of worth" % roundi(share * 100) if pawn else "no questions, %d%%, dirty cash" % roundi(share * 100))
+	var share := TradeSystem.share_of(t["mode"])
+	var title: String = {"pawn": "PAWN SHOP", "ring": "YOUR RING"}.get(t["mode"], "FENCE")
+	_head(title, "clean cash, %d%% of worth" % roundi(share * 100) if pawn else "no questions, %d%%, dirty cash" % roundi(share * 100))
 	_col.add_child(UiTheme.divider())
 	var any := false
 	for id in state.inventory:

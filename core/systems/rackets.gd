@@ -100,3 +100,77 @@ static func chop(world: World, state: PlayerStateData, shop: BuildingData) -> Di
 	world.reindex_position(car.id)
 	Wallet.earn_dirty(world, pay)
 	return {"ok": true, "effect": "car_chopped", "amount": pay}
+
+## BZ5b: a pawn shop you own can run a stolen-goods ring (RING_COST, any
+## money): every night thieves sell to it and it sells on (RING_TAKE dirty),
+## and it buys your own loot at RING_SHARE, better than any fence. A flat you
+## own (not your home) can be a gambling den (DEN_COST): dice all night,
+## DEN_TAKE dirty, more on a poor block, and no rent from it while it runs.
+## Both can be raided any night (a bouncer from StaffSystem halves it): shut,
+## the night's money gone, your case grows, it makes the paper.
+const RING_COST := 1500
+const RING_TAKE := Vector2(120, 380)
+const RING_SHARE := 0.7
+const RING_RAID := 0.04
+const DEN_COST := 1500
+const DEN_TAKE := 280
+const DEN_RAID := 0.07
+const RAID_CASE := 15.0
+
+static func open_ring(world: World, state: PlayerStateData, shop: BuildingData) -> Dictionary:
+	if not BusinessSystem.owned_by_player(shop) or shop.trade != &"pawn shop" or state.rings.get(shop.id, {}).get("open", false):
+		return {"ok": false, "reason": "venue_cant"}
+	if world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC).cash < RING_COST:
+		return {"ok": false, "reason": "cant_afford"}
+	Wallet.spend(world, RING_COST)
+	state.rings[shop.id] = {"open": true, "last": 0}
+	return {"ok": true, "effect": "ring_opened", "amount": RING_COST}
+
+static func ring_at(state: PlayerStateData, id: StringName) -> bool:
+	return state.rings.get(id, {}).get("open", false)
+
+static func open_den(world: World, state: PlayerStateData, id: StringName) -> Dictionary:
+	var me: NPCData = world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
+	if not state.properties.has(id) or id == me.home_building_id or state.dens.get(id, {}).get("open", false):
+		return {"ok": false, "reason": "venue_cant"}
+	if me.cash < DEN_COST:
+		return {"ok": false, "reason": "cant_afford"}
+	Wallet.spend(world, DEN_COST)
+	state.dens[id] = {"open": true, "last": 0}
+	return {"ok": true, "effect": "den_opened", "amount": DEN_COST}
+
+static func den_at(state: PlayerStateData, id: StringName) -> bool:
+	return state.dens.get(id, {}).get("open", false)
+
+## A night of the rings and dens (VenueSystem.close_night calls this).
+static func night(world: World, state: PlayerStateData) -> void:
+	var rng := world.runtime_rng
+	for book in [state.rings, state.dens]:
+		var den: bool = book == state.dens
+		for id in book.keys():
+			var r: Dictionary = book[id]
+			if not r.get("open", false):
+				continue
+			var e: Entity = world.entities.get(id)
+			var b: BuildingData = e.get_component(ComponentNames.BUILDING) if e != null else null
+			if b == null:
+				book.erase(id)
+				continue
+			var raid := (DEN_RAID if den else RING_RAID) * (0.5 if VenueSystem.has_bouncer(state, id) else 1.0)
+			if rng.randf() < raid:
+				r["open"] = false
+				r["raided"] = int(r.get("raided", 0)) + 1
+				r["last"] = 0
+				state.case_evidence += RAID_CASE
+				StampView.put(state, "RAIDED", "the police shut your %s" % ("dice den" if den else "fencing ring"), UiTheme.BAD)
+				PhoneSystem.push(world, state, "Word on the street", "Cops hit your %s last night. It's shut." % ("den" if den else "ring"))
+				StreetTalk._count(world, state, "den_raided", 0)
+				continue
+			var take := 0
+			if den:
+				var wealth := float(BlockEconomyData.block_at(world, b.position).get("wealth", 0.5))
+				take = roundi(DEN_TAKE * (0.6 + 0.8 * (1.0 - wealth)) * rng.randf_range(0.7, 1.3))
+			else:
+				take = rng.randi_range(int(RING_TAKE.x), int(RING_TAKE.y))
+			Wallet.earn_dirty(world, take)
+			r["last"] = take

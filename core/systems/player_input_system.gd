@@ -440,6 +440,12 @@ func _options(npc: NPCData, state: PlayerStateData) -> Array:
 		if state.crib + 1 < CribSystem.TIERS.size():
 			out.append(["Upgrade your crib to %s ($%d)" % [CribSystem.TIERS[state.crib + 1], CribSystem.COST[state.crib + 1]], func() -> Dictionary: return CribSystem.upgrade(_world, state)])
 		_grow_options(out, state)   # BZ1
+	for prop in state.properties:   # BZ5b: a flat you own, not your home: a dice den
+		var pe: Entity = _world.entities.get(prop)
+		var pb: BuildingData = pe.get_component(ComponentNames.BUILDING) if pe != null else null
+		if pb != null and prop != npc.home_building_id and pos.distance_to(pb.position) <= CrimeSystem.INTERACT_RADIUS and not Rackets.den_at(state, prop):
+			var pid: StringName = prop
+			out.append(["Run a gambling den here ($%d, no more rent)" % Rackets.DEN_COST, func() -> Dictionary: return Rackets.open_den(_world, state, pid)])
 		var worn := WeaponWear.held(state)
 		if state.crib >= CribSystem.BENCH_TIER and worn != &"" and WeaponWear.repair_cost(state, worn) > 0:
 			out.append(["Fix your %s at the bench" % ItemCatalog.item(worn)["name"].to_lower(), func() -> Dictionary:
@@ -638,8 +644,12 @@ func _venue_options(out: Array, state: PlayerStateData, building_id: StringName)
 		out.append(["Break a fake $100 here", func() -> Dictionary: return Rackets.pass_bill(_world, _world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC), state, building_id), "%d%% they spot it" % roundi(Rackets.spot_chance(DrugLabSystem.stars(state, &"fake_bill")) * 100.0)])
 	if cb.trade == &"chop shop" and Rackets.chop_car(_world, cb) != null:
 		out.append(["Sell them the car outside ($%d)" % Rackets.chop_price(Rackets.chop_car(_world, cb)), func() -> Dictionary: return Rackets.chop(_world, state, cb)])
-	if cb.trade == &"pawn shop" and ShopSystem.is_open(_world, building_id) and Fence.worth(state, Fence.PAWN_SHARE) > 0:   # LT4
+	if Rackets.ring_at(state, building_id) and Fence.worth(state, Rackets.RING_SHARE) > 0:   # BZ5b: your own ring pays best
+		out.append(["Sell loot to your ring... (up to $%d, dirty)" % Fence.worth(state, Rackets.RING_SHARE), func() -> Dictionary: return TradeSystem.open(state, "ring", building_id)])
+	elif cb.trade == &"pawn shop" and ShopSystem.is_open(_world, building_id) and Fence.worth(state, Fence.PAWN_SHARE) > 0:   # LT4
 		out.append(["Pawn your valuables... (up to $%d, clean)" % Fence.worth(state, Fence.PAWN_SHARE), func() -> Dictionary: return TradeSystem.open(state, "pawn", building_id)])
+	if cb.trade == &"pawn shop" and BusinessSystem.owned_by_player(cb) and not Rackets.ring_at(state, building_id):
+		out.append(["Run a stolen-goods ring here ($%d)" % Rackets.RING_COST, func() -> Dictionary: return Rackets.open_ring(_world, state, cb)])
 	if DrugLabSystem.can_pick_up(_world, state, building_id):   # BZ4
 		out.append(["Pick up the shipment", func() -> Dictionary: return DrugLabSystem.pick_up(_world, _world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC), state)])
 	if GambleSystem.game_at(_world, state, building_id):

@@ -123,6 +123,7 @@ static func has_bouncer(state: PlayerStateData, building_id: StringName) -> bool
 
 ## Closing time: each venue's night.
 static func close_night(world: World, state: PlayerStateData) -> void:
+	Rackets.night(world, state)   # BZ5b: rings and dens close at the same hour
 	var rng := world.runtime_rng
 	for id in state.venues.keys():
 		var e: Entity = world.entities.get(id)

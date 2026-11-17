@@ -126,6 +126,8 @@ const LINES := {
 	"fake_spotted": ["The clerk holds it to the light. \"This is fake!\"", "\"Counterfeit! I'm calling the cops!\""],
 	"fake_too_many": ["Twice in one day here is pushing it.", "They've seen your face today already."],
 	"car_chopped": ["They strip it in an hour. ${n} for the parts.", "${n}, and the car never existed."],
+	"ring_opened": ["The back counter buys anything now. No questions.", "Your pawn shop is a fence now."],
+	"den_opened": ["Dice on the floor, a man on the door. Open for business.", "The flat's a den now."],
 	"store_refused": ["\"Get out of my store. I remember you.\"", "\"You! Out, before I call the cops.\""],
 	"closed": ["Shutters down. Opens at seven.", "Closed for the night."],
 	"not_sold_here": ["They don't carry that here."],

@@ -329,6 +329,15 @@ func _show(state: PlayerStateData) -> void:
 				var night := "last night $%d%s%s" % [int(v.get("last", 0)), " + back room $%d" % int(v.get("back", 0)) if int(v.get("back", 0)) > 0 else "", " · a fight" if v.get("fight", false) else ""]
 				places.append(["%s (%s) · %s · %s" % [VenueSystem.KINDS[v["kind"]][0], Grades.venue(VenueSystem.stars(state, b.id)), NextStep.where(me.position, b.position), night], b.id, "manager", b.position])
 				places.append(["  door", b.id, "bouncer", b.position])
+			for id in state.rings:   # BZ5b
+				var r: Dictionary = state.rings[id]
+				_text("Stolen-goods ring · %s" % ("last night $%d" % int(r.get("last", 0)) if r.get("open", false) else "shut by the police"), 14, true)
+			for id in state.dens:
+				var d: Dictionary = state.dens[id]
+				_text("Gambling den · %s" % ("last night $%d" % int(d.get("last", 0)) if d.get("open", false) else "shut by the police"), 14, true)
+				var db: Entity = _world.entities.get(id)
+				if db != null and d.get("open", false):
+					places.append(["  den door", id, "bouncer", (db.get_component(ComponentNames.BUILDING) as BuildingData).position])
 			if places.is_empty():
 				_text("Nothing to staff yet. Set up a grow at home, or buy a shop (B by its door).")
 			for pl in places:

@@ -211,7 +211,7 @@ func _rent(state: PlayerStateData) -> void:
 	var me: NPCData = _world.entities[PlayerFactory.PLAYER_ENTITY_ID].get_component(ComponentNames.NPC)
 	var total := 0
 	for id in state.properties:
-		if id != me.home_building_id:
+		if id != me.home_building_id and not Rackets.den_at(state, id):   # BZ5b: a den pays at night instead
 			total += int(float(state.property_prices.get(id, 5000)) * RENT_SHARE)
 	if total > 0:
 		Wallet.earn_clean(_world, total)

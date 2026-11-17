@@ -32,7 +32,7 @@ const STING_CASE := 25.0
 const IMPORT_STARS := 4.0
 const IMPORT_RANK := 2
 ## good -> [units, price $ up front]
-const IMPORTS := {&"coke": [20, 1300], &"heroin": [15, 1150]}
+const IMPORTS := {&"coke": [20, 1300], &"heroin": [15, 1150], &"guns": [6, 1800]}   # BZ5b: a crate of pistols to sell to the gangs
 const CUTTABLE := [&"coke", &"heroin"]
 
 var _world_ref: WeakRef
@@ -205,7 +205,10 @@ static func pick_up(world: World, me: NPCData, state: PlayerStateData) -> Dictio
 					cops.alert(id)
 		StampView.put(state, "STING!", "it was the police: run", UiTheme.BAD)
 		return {"ok": false, "reason": "lab_sting"}
-	add_drug(state, s["good"], int(s["units"]), IMPORT_STARS)
+	if s["good"] == &"guns":   # BZ5b: a crate of pistols
+		state.inventory[&"pistol"] = int(state.inventory.get(&"pistol", 0)) + int(s["units"])
+	else:
+		add_drug(state, s["good"], int(s["units"]), IMPORT_STARS)
 	return {"ok": true, "effect": "lab_picked_up", "amount": int(s["units"])}
 
 ## QL3: what a unit of what you carry is worth to a buyer here.

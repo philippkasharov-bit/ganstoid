@@ -38,6 +38,10 @@ func process_entities(entities: Dictionary, _delta: float, _tick: int) -> void:
 			act(_world, me, state, state.ui_trade)
 			state.ui_trade = {}
 
+## What each kind of buyer pays for loot.
+static func share_of(mode: String) -> float:
+	return {"pawn": Fence.PAWN_SHARE, "ring": Rackets.RING_SHARE}.get(mode, Fence.FENCE_SHARE)
+
 static func where(world: World, id: StringName) -> Vector2:
 	var e: Entity = world.entities.get(id)
 	if e == null:
@@ -64,10 +68,9 @@ static func act(world: World, me: NPCData, state: PlayerStateData, ask: Dictiona
 			if buyer != null:
 				r = StreetDeal.sell(world, me, state, buyer, ask["good"])
 		"sell":
-			var share := Fence.PAWN_SHARE if t["mode"] == "pawn" else Fence.FENCE_SHARE
-			r = Fence.sell_one(world, state, ask["id"], share, t["mode"] == "pawn")
+			r = Fence.sell_one(world, state, ask["id"], share_of(t["mode"]), t["mode"] == "pawn")
 		"sell_all":
-			r = Fence.pawn(world, state) if t["mode"] == "pawn" else Fence.fence(world, state)
+			r = Fence._sell(world, state, share_of(t["mode"]), t["mode"] == "pawn")
 	if r.is_empty():
 		return
 	StreetTalk.say(world, state, r)
