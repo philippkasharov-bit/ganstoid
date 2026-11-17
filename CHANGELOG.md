@@ -5,6 +5,7 @@ Newest first. The in-game admin panel (F11, Bugs & updates) shows the top of it.
 
 ## 2026-11-17
 
+- NB2d: the soak and speed checks can run with the brain on
 - NB2d: people's minds are saved small
 - NB2c: free time can be run by the shared brain (switch, off by default)
 - NB2b: people score what to do with free time; the People tab shows why

@@ -67,7 +67,7 @@ const TABLE := {
 	&"hang_out": {
 		"label": "Hang out on the stoop", "place": "home", "walk": "linger", "hours": [10.0, 23.0], "stay": [20.0, 90.0],
 		"trades": [],
-		"fills": {D.SOCIAL: 0.3, D.FUN: 0.3}, "likes": {T.SOCIABLE: 0.4, T.PATIENT: 0.3, T.LAWFUL: -0.2, T.ENERGETIC: -0.2}, "cost": 0, "appeal": 0.8,
+		"fills": {D.SOCIAL: 0.3, D.FUN: 0.3}, "likes": {T.SOCIABLE: 0.4, T.PATIENT: 0.3, T.LAWFUL: -0.2, T.ENERGETIC: -0.2}, "cost": 0, "appeal": 0.6,
 	},
 	&"visit_friend": {
 		"label": "Visit a friend", "place": "friend", "walk": "visit", "hours": [10.0, 22.0], "stay": [30.0, 120.0],

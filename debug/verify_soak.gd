@@ -139,7 +139,8 @@ func _watch(world: World) -> void:
 			_at_door_since.erase(npc.id)
 			continue
 		var goal: Variant = _sched.street._goal.get(npc.id)
-		if goal != null and p.distance_to(goal) < 0.6 and not NPCRoutine.stays_outside(npc, world.tick) and not npc.is_cop and not npc.is_crew and not npc.is_dealer:
+		var holding: bool = _sched.street._pause_until.get(npc.id, 0) > world.tick   # NB2c: on their stoop on purpose
+		if goal != null and p.distance_to(goal) < 0.6 and not holding and not NPCRoutine.stays_outside(npc, world.tick) and not npc.is_cop and not npc.is_crew and not npc.is_dealer:
 			var since: int = _at_door_since.get(npc.id, world.tick)
 			_at_door_since[npc.id] = since
 			if world.tick - since > SimClock.hours(AT_DOOR_MIN / 60.0):
