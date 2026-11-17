@@ -122,7 +122,7 @@ Each mistake below is checked against the game and owned by a batch.
 | BZ6 | **Big legal side** (proposed) | Car wash, laundromat, restaurant, shop chain, flats to rent, trucking, security firm; upgrades, competition, taxes and audits | 2-3 |
 | BZ7 | **Empire view** (proposed) | A map layer of everything you own, the daily ledger, raids and robberies by rivals on your places | 1 |
 | FX1 | **Game feel** | Hit reactions and knockdowns, camera shake, muzzle flash, blood, slow-mo on a knockout, screen pulses on big moments | 1-2 |
-| LV1 | **Living streets** | People say things (barks), street events (fights, arrests, crashes, parties, dealers busted), more traffic, people with jobs you can see | 2 |
+| LV1 | **Living streets** (proposed: folded into NB5) | People say things (barks), street events (fights, arrests, crashes, parties, dealers busted), more traffic, people with jobs you can see | 2 |
 | SK1 | **Skill moments** | Lockpicking, hotwiring, hold-ups, safe-cracking as short hands-on mini-games instead of menu lines | 2 |
 | VS1/VS2 | **People and streets** | Varied people (models, clothes), parked cars, clutter, graffiti, worn ground | 4 |
 | ST1 | **Story arc** | Named characters, chapters from Street rat to City boss, an ending (and play on after) | 3 |
@@ -132,6 +132,34 @@ Each mistake below is checked against the game and owned by a batch.
 | ART1 | **Look bible** | One art direction, interiors for crib, prison, stores | 2 |
 | REL1 | **Release-ready** | Settings, quality levels, languages, accessibility, credits, legal | 3 |
 | MK1 | **Marketing** | One-line hook, store page, trailer, demo, devlog | ongoing |
+
+## Living City (NB) and Crew Command (CC)
+
+Two plans, full detail in `docs/NPC_BEHAVIOUR_PLAN.md` and `docs/CREW_COMMAND_PLAN.md`.
+NB gives every person one shared brain (character, needs, choices, reactions,
+social life) that stays fast at 6,000 people. CC lets you run your crew by hand
+or leave them to it. They meet at NB8 and CC4: crew jobs become activities on
+the shared brain. CC1 and CC2 need no new sim and can go in parallel with NB.
+
+| # | Batch | What the player gets | Size |
+|---|---|---|---|
+| NB1 | ~~**Data and inspector**~~ **done** · | Every person has a character, needs, mood and memory (data only); F11 People tab shows who someone is | 2 |
+| NB2 | **Activities and choice** | Free time chosen from needs, character and places, not random picks | 3 |
+| NB3 | **Perception and reactions** | Reactions differ by person, with a short delay, and people go back to what they were doing | 3 |
+| NB4 | **Social** | Groups, conversations, queues, crowds, gossip that spreads what you did | 3 |
+| NB5 | **Barks and body language** (takes over LV1) | People talk and move in ways you can read | 2 |
+| NB6 | **Archetypes and content** | A dozen kinds of people and 30+ activities, all data | 2 |
+| NB7 | **Tiers and speed** | Full detail only near you, no popping, a hard time budget | 2 |
+| NB8 | **Cops, gangs, crew on the same brain** | One system for everyone; crew jobs are activities | 3 |
+| CC1 | **Select and order** | Click and box-select crew, a portrait strip, move, hold, follow, watch | 3 |
+| CC2 | **Direct control** | Take over any crew member and switch back | 2 |
+| CC3 | **Crew gear** | Each member's bag, hand items over, loadouts | 2 |
+| CC4 | **Jobs table** | A priority grid per member and job, hourly picks, off-screen outcomes | 3 |
+| CC5 | **New crimes as jobs** | Burglary, car theft, mugging, smuggling, enforcer | 3 |
+| CC6 | **Standing rules and reports** | Shifts, risk and heat limits, phone and paper reports | 2 |
+| CC7 | **Stances and morale** (builds on CA1) | Stances, refusing orders, ducking under fire | 2 |
+| CC8 | **Lieutenants** (builds on CA1 ranks) | Hood-level standing orders and nightly reports | 2 |
+| CC9 | **Co-op** | Friends control crew members | later |
 
 ## Older batch list (kept for reference)
 
