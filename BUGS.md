@@ -31,6 +31,7 @@ Severity: **high** = breaks a game or loses progress · **medium** = clearly wro
 
 | ID | What it was | Fix | Guarded by |
 |----|-------------|-----|-----------|
+| BUG-33 | `verify_venue` failed now and then: a back room raided on its very first night (a fair 5-9% roll) had earned nothing yet. | The check reopens the back room and plays on until it has earned, then checks the raid | `verify_venue` |
 | BUG-32 | Signs, power poles, trees, palms and graffiti each placed themselves by their own rules. | On Placement (VS2B2): poles clear of driveways, lamps (2 m), hydrants and ramps; trees and palms clear of driveways, poles, lamps and street corners (nothing tall within 6 m); signs clear of driveways, hydrants, lamps and poles; graffiti never on the front-door wall. Lamps and signals stay where the sim has them (witnesses see by them) and the rest keeps clear | `verify_placement` |
 | BUG-31 | The city data had only 80 fire hydrants, so red kerbs were rare. | Placement adds one every 90-120 m along both kerbs of every kerbed street (3,179 in all), clear of driveways, ramps and crosswalks; red kerbs follow them | `verify_placement`, `verify_kerbs` |
 | BUG-29 | Parked cars, mailboxes and bins were placed without checking driveways, hydrants, crosswalks or each other. | Placement (VS2B): cars keep 4.6 m from hydrants, 6 m from crosswalks, ramps and corners, and clear of driveways; mailboxes and bins clear of the road, buildings, trees, lamps and each other | `verify_placement` |

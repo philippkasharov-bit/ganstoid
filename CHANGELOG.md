@@ -5,6 +5,7 @@ Newest first. The in-game admin panel (F11, Bugs & updates) shows the top of it.
 
 ## 2026-11-18
 
+- VS2B3: designed street clusters: stoops, bus stops, corner stores, dumpsters
 - VS2B2: power poles, trees, palms, street signs and graffiti obey Placement
 - VS2B1: speed notes for the batch
 - VS2B1: one placement system; hydrants, parked cars, mailboxes and bins obey it

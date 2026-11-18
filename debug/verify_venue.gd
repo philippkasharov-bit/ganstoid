@@ -63,9 +63,15 @@ func _initialize() -> void:
 	var dirty := state.dirty_cash
 	state.case_evidence = 0.0
 	var nights := 0
-	while state.venues[shop.id]["back_room"] and nights < 500:
-		VenueSystem.close_night(w, state)
-		nights += 1
+	for tries in 20:   # raided on its very first night (a fair roll) earns nothing: open it again and play on
+		if tries > 0:
+			Wallet.earn_clean(w, VenueSystem.BACK_ROOM_COST)
+			VenueSystem.open_back_room(w, state, shop.id)
+		while state.venues[shop.id]["back_room"] and nights < 500:
+			VenueSystem.close_night(w, state)
+			nights += 1
+		if state.dirty_cash > dirty:
+			break
 	ok = _check(r["ok"] and state.dirty_cash > dirty, "the back room makes dirty money ($%d in %d nights)" % [state.dirty_cash - dirty, nights]) and ok
 	ok = _check(not state.venues[shop.id]["back_room"] and state.case_evidence >= VenueSystem.RAID_CASE and state.stamp.get("text", "") == "RAIDED", "until vice raids it: shut, on your case") and ok
 	ok = _check(state.news_today.any(func(n: Array) -> bool: return n[0] == "den_raided"), "the raid makes the paper") and ok
