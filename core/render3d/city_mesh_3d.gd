@@ -33,6 +33,7 @@ var _ao := {}      # VS2-0: chunk Vector2i -> contact shading SurfaceTool (Conta
 var aprons := PackedVector2Array()   # K4: driveway aprons near the build
 var space: RoadSpace     # B1: where other roads cross (the centre line stops there)
 var _sink: SurfaceTool   # geometry for other chunks lands here and is thrown away
+var _joints := {}        # VS2A: 0.5 m cells where two or more road ends meet (their ribbons get round caps)
 
 ## Every chunk mesh plus the palms, as nodes ready to add under a Node3D.
 static func build(city: CityData, centre: Vector2, radius: float, at_origin: Vector2 = Vector2.INF, chunk: Vector2i = ALL, keep: Rect2 = Rect2(), real: CityReal = null) -> Array[Node3D]:
@@ -47,6 +48,11 @@ static func build(city: CityData, centre: Vector2, radius: float, at_origin: Vec
 	for d in city.driveways:   # K4: a house's garage faces its driveway
 		if d["c"].distance_squared_to(centre) < (radius + 40.0) * (radius + 40.0):
 			b.aprons.append(d["c"])
+	for r in city.roads:   # VS2A: where road records join end to end, their ribbons close with round caps
+		if _near(r["pts"], centre, r2):
+			for p in [r["pts"][0], r["pts"][r["pts"].size() - 1]]:
+				var key := Vector2i((p * 2.0).round())
+				b._joints[key] = int(b._joints.get(key, 0)) + 1
 	for i in city.roads.size():
 		if _near(city.roads[i]["pts"], centre, r2):
 			b._road(city.roads[i], i)
@@ -103,6 +109,10 @@ func decal_tool(at: Vector2) -> SurfaceTool:
 		_decals[k] = st
 	return _decals[k]
 
+## VS2A: does this build draw geometry that starts at `at` (the chunk being built, or every chunk)?
+func owns(at: Vector2) -> bool:
+	return only == ALL or Vector2i(((at - origin) / CHUNK_M).floor()) == only
+
 ## VS2-0: the chunk's contact shading mesh (ContactAO3D), or null for another chunk.
 func ao_tool(at: Vector2) -> SurfaceTool:
 	var k := Vector2i(((at - origin) / CHUNK_M).floor())
@@ -137,15 +147,15 @@ func _flat_poly(poly: PackedVector2Array, h: float, col: Color) -> void:
 func _area(area: Dictionary) -> void:
 	if AREA_COL.has(area["kind"]):
 		var col: Color = AREA_COL[area["kind"]]
-		_flat_poly(_open(area["poly"]), 0.005, SurfaceDetail.mark(col, SurfaceDetail.GRASS) if area["kind"] == "park" else col)
+		_flat_poly(_open(area["poly"]), StreetLevels.GROUND, SurfaceDetail.mark(col, SurfaceDetail.GRASS) if area["kind"] == "park" else col)
 
 ## A road: its sidewalk band, the carriageway, and a centre line on arterials.
 func _road(r: Dictionary, own: int) -> void:
 	var w: float = r.get("w", ROAD_W.get(r["tier"], 6.0))
 	var walk: float = r.get("walk", 0.0)
 	if walk > 0.0:
-		_ribbon(r["pts"], w * 0.5 + walk, 0.02, SurfaceDetail.mark(SIDEWALK, SurfaceDetail.SIDEWALK))
-	var h := 0.04 if ROAD_SURFACE.get(r["tier"], SurfaceDetail.ASPHALT) == SurfaceDetail.ASPHALT else 0.035   # B1: paths and driveways tuck under the asphalt, no z-fight
+		_ribbon(r["pts"], w * 0.5 + walk, StreetLevels.SIDEWALK, SurfaceDetail.mark(SIDEWALK, SurfaceDetail.SIDEWALK))
+	var h := StreetLevels.ROAD if ROAD_SURFACE.get(r["tier"], SurfaceDetail.ASPHALT) == SurfaceDetail.ASPHALT else StreetLevels.PATH   # B1: paths and driveways tuck under the asphalt, no z-fight
 	_ribbon(r["pts"], w * 0.5, h, SurfaceDetail.mark(ROAD_COL.get(r["tier"], ROAD_COL["res"]), ROAD_SURFACE.get(r["tier"], SurfaceDetail.ASPHALT)))
 	if r["tier"] == "art":
 		_centre_line(r["pts"], own)
@@ -159,18 +169,32 @@ func _centre_line(pts: PackedVector2Array, own: int) -> void:
 			var a := pts[i].lerp(pts[i + 1], float(k) / pieces)
 			var b := pts[i].lerp(pts[i + 1], float(k + 1) / pieces)
 			if space == null or not space.inside((a + b) * 0.5, 0.3, own):
-				_ribbon(PackedVector2Array([a, b]), 0.1, 0.05, CENTRE_LINE)
+				_ribbon(PackedVector2Array([a, b]), 0.1, StreetLevels.LINE, CENTRE_LINE, false)
 
-## A ribbon along a polyline, with a square under each joint so bends close.
-func _ribbon(pts: PackedVector2Array, half: float, h: float, col: Color) -> void:
+## A ribbon along a polyline. VS2A: a round patch under each bend (and each end
+## that meets another road's end) closes the outer side, so a bend reads as a
+## smooth curve, not the saw-tooth the old square patches left.
+func _ribbon(pts: PackedVector2Array, half: float, h: float, col: Color, joins: bool = true) -> void:
 	for i in pts.size() - 1:
 		var a := pts[i]
 		var b := pts[i + 1]
 		var n := (b - a).orthogonal().normalized() * half
 		_quad(_tool(a), [_v(a + n, h), _v(b + n, h), _v(b - n, h), _v(a - n, h)], Vector3.UP, col)
-		if i > 0:
-			var s := Vector2(half, half)
-			_quad(_tool(a), [_v(a - s, h - 0.001), _v(a + Vector2(s.x, -s.y), h - 0.001), _v(a + s, h - 0.001), _v(a + Vector2(-s.x, s.y), h - 0.001)], Vector3.UP, col)
+		if joins and i > 0 and absf((a - pts[i - 1]).angle_to(b - a)) > deg_to_rad(1.0):
+			_round(a, half, h - 0.001, col)
+	if joins and pts.size() >= 2:
+		for p in [pts[0], pts[pts.size() - 1]]:
+			if int(_joints.get(Vector2i((p * 2.0).round()), 0)) >= 2:
+				_round(p, half, h - 0.001, col)
+
+## A flat disc of radius `r` at `c`, as fine as its size needs.
+func _round(c: Vector2, r: float, h: float, col: Color) -> void:
+	var st := _tool(c)
+	var n := clampi(ceili(r * 1.6), 8, 24)
+	for k in n:
+		var a := c + Vector2.from_angle(k * TAU / n) * r
+		var b := c + Vector2.from_angle((k + 1) * TAU / n) * r
+		_tri(st, _v(c, h), _v(a, h), _v(b, h), Vector3.UP, col)
 
 static func _open(poly: PackedVector2Array) -> PackedVector2Array:
 	return poly.slice(0, poly.size() - 1) if poly.size() > 3 and poly[0] == poly[poly.size() - 1] else poly

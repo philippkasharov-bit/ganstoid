@@ -63,3 +63,7 @@ phone_gang       | debug/shot_main.gd   | --phone=Gang
 3d_grey_half     | debug/shot_3d.gd     | --sim=10 --grey --half
 3d_golden_dusk   | debug/shot_3d.gd     | --look=5206,3392 --size=40 --hour=19
 3d_golden_shops  | debug/shot_3d.gd     | --look=5140,3550 --size=40 --hour=22
+kerb_bend        | debug/shot_3d.gd     | --look=5266,3378 --size=34 --hour=12
+kerb_corner      | debug/shot_3d.gd     | --look=5177,3302 --size=34 --hour=12
+kerb_driveway    | debug/shot_3d.gd     | --look=5185.6,3386.7 --size=8 --hour=12
+kerb_crosswalk   | debug/shot_3d.gd     | --look=5169,3375.7 --size=8 --hour=12

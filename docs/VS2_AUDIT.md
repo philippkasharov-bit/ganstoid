@@ -49,3 +49,14 @@ Limits of this baseline:
 - `--breakdown` measures before `--look`/`--hour` are applied, so the night and dense-apartment-block (975, 2925) runs gave the spawn numbers again. A Batch 0 fix: measure after moving the camera.
 
 VS2 rule from here: every batch reports draw calls and triangles at the spawn point against these numbers, and the sim must stay within `verify_sim_perf`.
+
+## After each batch
+
+| Batch | Draw calls at the spawn | Primitives | Chunk build (7 chunks, average / worst) | `verify_sim_perf` |
+|-------|-------------------------|------------|------------------------------------------|-------------------|
+| before (Step 0) | 585 | 1.488 M | 1415-1449 / 1605-2012 ms (two runs) | PASS |
+| 0 (shading, grade) | 589 | 1.491 M | same build | PASS |
+| A (kerbs) | 591 | 1.477 M | 1262-1464 / 1533-2093 ms (three runs); kerb runs alone 64-76 ms | see the batch commit |
+
+Chunk build times swing a lot from run to run on the shared cloud machine; the
+kerb work itself costs about 70 ms of a chunk's 1.3-1.5 s, built off the main thread.

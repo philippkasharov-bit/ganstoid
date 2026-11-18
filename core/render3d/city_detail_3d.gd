@@ -11,9 +11,9 @@
 class_name CityDetail3D
 extends RefCounted
 
-const LOT_H := 0.008
-const SURFACE_H := 0.012
-const STRIPE_H := 0.045
+const LOT_H := StreetLevels.LOT
+const SURFACE_H := StreetLevels.SURFACE
+const STRIPE_H := StreetLevels.STRIPE
 const YARDS := [Color("8fae6a"), Color("9cb071"), Color("b3ad7a"), Color("a7b47c"), Color("c2b98c")]   # lush .. dry
 const LOT_COL := {"commercial": Color("b9b4aa"), "industrial": Color("a8a59e"), "parking": Color("77746f"), "civic": Color("c8c2b2"), "open": Color("bdb48f")}
 const SURFACE_COL := {"park": Color("8fb36a"), "grass": Color("97b872"), "pitch": Color("7fae5c"), "school": Color("c9b79a"),
@@ -100,7 +100,7 @@ static func _prism(m: CityMesh3D, c: Array, h: float, col: Color) -> void:
 		m._quad(st, [m._v(a, 0.0), m._v(b, 0.0), m._v(b, h), m._v(a, h)], Vector3(e.y, 0, -e.x).normalized(), col.darkened(0.06 * (i % 2)))
 	m._quad(st, [m._v(c[0], h), m._v(c[1], h), m._v(c[2], h), m._v(c[3], h)], Vector3.UP, col.lightened(0.05))
 
-const PAINT_H := 0.047
+const PAINT_H := StreetLevels.PAINT
 const PAINT := Color("ecebe4")
 const DASH_M := 3.0
 const DASH_GAP_M := 6.0
@@ -122,7 +122,7 @@ static func _paint(m: CityMesh3D, city: CityData, centre: Vector2, r2: float) ->
 			var side := out.orthogonal() * float(d["w"]) * 0.5
 			var c: Vector2 = d["c"]
 			var far := c + out * float(d["len"])
-			m._quad(m._tool(c), [m._v(c - side, 0.03), m._v(c + side, 0.03), m._v(far + side, 0.03), m._v(far - side, 0.03)], Vector3.UP, SurfaceDetail.mark(Color("d6d1c6"), SurfaceDetail.SIDEWALK))
+			m._quad(m._tool(c), [m._v(c - side, StreetLevels.APRON), m._v(c + side, StreetLevels.APRON), m._v(far + side, StreetLevels.APRON), m._v(far - side, StreetLevels.APRON)], Vector3.UP, SurfaceDetail.mark(Color("d6d1c6"), SurfaceDetail.SIDEWALK))
 
 ## White dashes between the lanes on each side of the middle.
 static func _lanes(m: CityMesh3D, r: Dictionary, own: int, space: RoadSpace) -> void:

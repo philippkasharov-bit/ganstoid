@@ -6,7 +6,7 @@
 class_name RoadWear3D
 extends RefCounted
 
-const Y := 0.042
+const Y := StreetLevels.WEAR
 const IRON := Color("3d3c3a")
 const GRATE := Color("2c2c2b")
 const PATCH := Color("666562")

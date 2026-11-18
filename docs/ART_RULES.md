@@ -40,6 +40,21 @@ graffiti, loot.
 - Roads: wear and patches come from `StreetDetail3D` and the asphalt grain. Batch C adds stains, patches and repairs, and removes the visible repeat (BUG-30).
 - Never more wear than the references show: dusty and patched, not ruined.
 
+## Kerbs (VS2A)
+
+`KerbRuns` works them out, `StreetDetail3D` draws them, `verify_kerbs` checks them.
+
+| Rule | Value |
+|------|-------|
+| Which roads | main (`art`) and residential (`res`): the only ones with a sidewalk in the data |
+| Shape | one continuous run per road edge, mitred at bends and across joins to the next road record |
+| Street corner | a rounded return, radius 5 m (residential) or 8 m (arterial; the larger street wins), each street draws half; tighter if a third street is in the way |
+| Driveway or lot entrance (service road, alley, aisle) | kerb dropped to 6 cm, 0.6 m sloped flare each side |
+| Crosswalk ramp (`city.kerb_ramps`) | kerb flush with the road over the ramp width, 0.45 m flare, a darker grooved plate on the sidewalk (no yellow pads: 1990s) |
+| Red kerb | 4.5 m either side of a hydrant (up to 5.5 m behind the kerb) |
+| Meters | one per 6 m on arterials, never in a drop, a red stretch or near an end |
+| Heights | `StreetLevels`: every flat street layer at its own height; kerb top 0.12 m |
+
 ## Contact shading (baked, VS2-0)
 
 `ContactAO3D`: a multiply band on the ground, built with each chunk.

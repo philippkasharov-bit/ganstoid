@@ -9,7 +9,7 @@
 class_name ContactAO3D
 extends RefCounted
 
-const LIFT := 0.06          # above roads (0.04), lots and sidewalks; below the kerb top
+const LIFT := StreetLevels.SHADE   # above roads, lots and sidewalks; below the kerb top
 const WALL_M := 1.3         # how far the shade reaches from a building
 const WALL_SHADE := 0.56    # at the wall foot
 const LINE_M := 0.55        # from a wall, fence or hedge

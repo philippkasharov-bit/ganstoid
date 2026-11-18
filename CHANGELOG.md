@@ -5,6 +5,9 @@ Newest first. The in-game admin panel (F11, Bugs & updates) shows the top of it.
 
 ## 2026-11-17
 
+- VS2-0: Godot ID files for the new scripts
+- VS2-0: night keeps its orange lamp pools
+- VS2-0: contact shading, a colour grade by the hour, and a readability test
 - VS2-0: reference pictures for the street look
 - VS2-0: street look audit and speed baseline
 - BZ5b: a stolen-goods ring, gambling dens and gun running
@@ -14,13 +17,68 @@ Newest first. The in-game admin panel (F11, Bugs & updates) shows the top of it.
 - UI7: a modern phone, who's who on the street, deal and pawn windows
 - UP1: keep the comment off the error line
 - UP1: the updater no longer gets stuck on a locked file
+- LT4: search the furniture, a real loot list, deal it yourself
+- QL3: quality in street words, strains that differ, your own prices
+- BZ4: the drug chain: press, cook, import
+- BZ3: night spots, back rooms and a seat at the table
+- BZ2: hire people to work for you
+- BZ1: grow your own weed, with stars, your stamp and regulars
+- QL1: quality on everything, and ideas in that direction, on the roadmap
+- CA1: a crew with wants of its own
+- CT1: your day in court
+- ME1: the city remembers you
+- AU1: the city has sound, all made by code
+- ROADMAP: the indie mistakes we design against, batches re-ordered
 - AD1/QA6: admin panel, test and code indexes, the roadmap
 - DR1/CH1: doors you can see; lose police by breaking line of sight
 - UI6: keys and layout mode for the HUD, motion and charts, calmer pushes
+- RP1/CW1: street reputation and a corner war you can see
 
 ## 2026-11-16
 
+- RV1/PH1/MM1: rivals with names, the phone, minimap with GPS
+- UI1-UI5: a cleaner, readable HUD with feedback, prompts and a title screen
 - PP1/RX1: pickpocket mini-game; people react to you
 - DH1/NP1: daily hustles and the morning paper
+- MP2: map with fog of war
+- ST2: police and gangs only know where you are while they can see you
+- BUG-16/BUG-20: player stays in his ring; softer, more natural night
+- GP1/GP2/LT3/CV1: faster run, gentler needs, caught people give up, search bodies, doormats
+- GP1/GP2/LT3/CV1: faster run, gentler needs, caught people give up, search bodies, doormats (checks running)
+- BUG-15: snap walkers only when they come into range inside a building; log Phil's play feedback
+- BUG-15 (in progress): remove two rush-hour stutters
 - NX1/TP1: guide box sits under the windows; album updated
-- Merge pull request #3 from philippkasharov-bit/a-BUG13-perf-rush
+- NX1/TP1: "next step" line and first-day tips
+- K6: Godot id file for the Spanish house check
+- BUG-13: speed check measures a real rush hour with traffic
+- K6: Part C, Spanish houses
+- K6: Part B, worn 90s houses: stains, grime and window bars on poor blocks
+- K6: porch roofs lit like the house roof; album approved for Part A
+- K6: mid-poly houses in the game: tiled roofs, the new kit, LA chimneys and gutters
+- K6: four house styles in the Blender preview (tile and shingle roofs, Spanish, colours, worn)
+- K6: mid-poly walls and roof in the Blender house preview (tile courses, hip caps, plinth, stucco, LA chimney, no gutters)
+- K5: a mid-poly house kit, and houses assembled from it in Blender
+- PL2: a mid-poly 90s gangster player with a swagger walk
+- IC1: gritty 90s crime mood icons
+- IC1: icon cutter takes the white back out of edge pixels (no pale halo on dark tiles)
+- IC1: mood tiles for full-colour icons; a cutter for generated icon sheets
+
+## 2026-11-15
+
+- R1: Magnific needs a yes first; rules for two Claude accounts
+- R1: Phil is a beginner: plain words, always propose next steps
+- R1: verify_sim_perf must run alone; baseline numbers
+- R1: project rules for Claude sessions (CLAUDE.md)
+
+## 2026-11-14
+
+- MP1 city map (N) with every shop; LT2 loot per flat
+- Updater: mirror every folder in the repo
+- MAP1: the whole 6 km map is live; 6000 people; routes follow you
+- POP1: 1500 people; out-of-sight walkers go straight; GPU benchmark
+- T3: every block is a capture point; districts roll them up
+- PF3: stress-run the sim, fix the two hot spots it found
+- PF2: one-disc blob shadows, small kit parts cast no shadow
+- PF1: every long route planned off the main thread
+- M3: player gets Casual_Walk and Right_Jab Punch clips
+- M3: player Punch clip hook and multi-clip Meshy pipeline

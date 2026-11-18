@@ -13,14 +13,9 @@ Severity: **high** = breaks a game or loses progress · **medium** = clearly wro
 
 | ID | Severity | What happens | Where | Found by |
 |----|----------|--------------|-------|----------|
+| BUG-31 | low | The city data has only 80 fire hydrants (none round the spawn), so red kerbs are rare; a real downtown has one every block or two. | `data/city` points; for VS2 Batch B (placement) | VS2 Batch A |
 | BUG-30 | low | The ground texture repeats in a visible diamond pattern on sandy lots and plazas; some ground looks flat and washed out. | ground materials | VS2 audit (`docs/VS2_AUDIT.md`) |
 | BUG-29 | low | Parked cars, mailboxes and bins are placed without checking driveways, hydrants, crosswalk ramps or doors, so they can block them. | `VehicleSeeder`, `StreetClutter` | VS2 audit |
-| BUG-28 | low | Service roads have no kerb at all; the pavement and road meet with nothing between (only main and residential roads get kerbs). | `street_detail_3d.gd` `KERBED` | VS2 audit |
-| BUG-27 | low | Crosswalks have no kerb ramp: the kerb runs straight through at full height. The 15,566 ramps in the city data are never used. | `street_detail_3d.gd` | VS2 audit |
-| BUG-26 | low | Driveways cut the kerb with square ends, without a flare. | `street_detail_3d.gd` | VS2 audit |
-| BUG-25 | low | Kerbs stop 2.5 m short of every junction and end square: no rounded corner. | `street_detail_3d.gd` | VS2 audit |
-| BUG-24 | low | The road surface has a jagged saw-tooth edge on the outside of bends. | road mesh | VS2 audit |
-| BUG-23 | low | Kerbs break open with a wedge-shaped gap on the outside of every bend (each road segment ends square). | `street_detail_3d.gd` `_kerbs` | VS2 audit |
 | BUG-9 | low (to check on Phil's PC) | In the shop (`--store` picture) a dark curved band runs across the shop floor, under the player. It could be a curved wall drawn at floor height, or a drawing glitch. | shop interior / cutaway | album `shop_counter` |
 
 ## Ideas (not bugs)
@@ -38,6 +33,12 @@ Severity: **high** = breaks a game or loses progress · **medium** = clearly wro
 
 | ID | What it was | Fix | Guarded by |
 |----|-------------|-----|-----------|
+| BUG-28 | Service roads had no kerb: the pavement and road met with nothing between. | By the data, only main and residential roads have a sidewalk; service roads, alleys, aisles and driveways now drop the main road's kerb where they come in (a lowered entrance with sloped flares) | `verify_kerbs` (drops) |
+| BUG-27 | Crosswalks had no kerb ramp; the 15,566 mapped ramps were never used. | Each ramp drops the kerb flush with the road over its width, with a darker plate on the sidewalk behind | `verify_kerbs` (ramps), album `kerb_crosswalk` |
+| BUG-26 | Driveways cut the kerb with square ends. | The kerb drops to 6 cm across the driveway with a 0.6 m sloped flare either side | `verify_kerbs`, album `kerb_driveway` |
+| BUG-25 | Kerbs stopped 2.5 m short of every junction and ended square. | Each kerb turns the corner in a rounded return (5 m residential, 8 m arterial), meeting the other street's half; tighter where a third street is in the way | `verify_kerbs` (ends meet), album `kerb_corner` |
+| BUG-24 | The road surface had a jagged saw-tooth edge on the outside of bends. | Round patches at every bend and wherever two road records meet end to end, instead of square ones | album `kerb_bend` |
+| BUG-23 | Kerbs broke open with a wedge-shaped gap on the outside of every bend. | One continuous kerb run per road edge, mitred at bends and across joins to the next road | `verify_kerbs`, album `kerb_bend` |
 | BUG-15 | Rush hour stuttered: walkers coming into range were snapped onto the navmesh on the main thread (~16k a rush hour, up to 6 ms each), and traffic scanned 5k streets every half second with no traffic on. | Snap only a walker who comes into range inside a building; skip the street scan when there is no background traffic (rush-hour worst tick 20-28 ms -> ~8 ms) | `verify_sim_perf` (ticks over 4 ms) |
 | BUG-21 | Seen from far away in the dark: after a report, every cop within 400 m ran straight to where you were right now (live position, through walls and darkness), and armed cops and gangs shot at you from 18 m in the dark. | Police go to the crime scene, then only follow you while they can see you (the light rules; a searching eye sees 1.6x further), search where they last saw you for 25 s and give up; shooting needs sight too | `verify_stealth` |
 | BUG-7 | At night building walls were pitch black, so lit windows floated. | The BUG-20 city glow lights walls dimly | album `3d_night`, `street_night` |

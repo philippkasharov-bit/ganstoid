@@ -8,10 +8,12 @@ extends RefCounted
 
 var origin := Vector2.ZERO
 var _cells: Dictionary = {}   # Vector2i -> [CityData, CityReal]
+var _whole: Array = []        # VS2A: the full [CityData, CityReal], linked from every slice (meta "whole")
 
 static func build(city: CityData, real: CityReal, at_origin: Vector2) -> ChunkIndex3D:
 	var ix := ChunkIndex3D.new()
 	ix.origin = at_origin
+	ix._whole = [city, real]
 	for i in city.buildings.size():
 		city.buildings[i]["tag"] = i + 1   # R3D7: the Cutaway knows a building by its city index
 		ix._spread(city.buildings[i]["poly"], func(c: Array) -> void: c[0].buildings.append(city.buildings[i]))
@@ -48,13 +50,23 @@ func rect_of(key: Vector2i) -> Rect2:
 
 ## [CityData, CityReal] holding what touches chunk `key` (empty ones where nothing is).
 func slice(key: Vector2i) -> Array:
-	return _cells.get(key, [CityData.new(), CityReal.new()])
+	return _cells.get(key, _new_cell())
 
 func _cell(p: Vector2) -> Array:
 	var k := key_of(p)
 	if not _cells.has(k):
-		_cells[k] = [CityData.new(), CityReal.new()]
+		_cells[k] = _new_cell()
 	return _cells[k]
+
+## An empty slice that still knows the whole city: KerbRuns works a kerb out along
+## its whole road (crossings, ramps and driveways past the chunk edge), so every
+## chunk sees the same runs and draws only the ones that start in it.
+func _new_cell() -> Array:
+	var c := [CityData.new(), CityReal.new()]
+	if not _whole.is_empty():
+		c[0].set_meta("whole", _whole[0])
+		c[1].set_meta("whole", _whole[1])
+	return c
 
 ## Calls `add` with every chunk the box round `pts` touches.
 func _spread(pts: PackedVector2Array, add: Callable) -> void:
@@ -69,5 +81,5 @@ func _spread(pts: PackedVector2Array, add: Callable) -> void:
 		for y in range(lo.y, hi.y + 1):
 			var k := Vector2i(x, y)
 			if not _cells.has(k):
-				_cells[k] = [CityData.new(), CityReal.new()]
+				_cells[k] = _new_cell()
 			add.call(_cells[k])
