@@ -56,7 +56,13 @@ VS2 rule from here: every batch reports draw calls and triangles at the spawn po
 |-------|-------------------------|------------|------------------------------------------|-------------------|
 | before (Step 0) | 585 | 1.488 M | 1415-1449 / 1605-2012 ms (two runs) | PASS |
 | 0 (shading, grade) | 589 | 1.491 M | same build | PASS |
-| A (kerbs) | 591 | 1.477 M | 1262-1464 / 1533-2093 ms (three runs); kerb runs alone 64-76 ms | see the batch commit |
+| A (kerbs) | 591 | 1.477 M | 1262-1464 / 1533-2093 ms (three runs); kerb runs alone 64-76 ms | see below |
 
 Chunk build times swing a lot from run to run on the shared cloud machine; the
 kerb work itself costs about 70 ms of a chunk's 1.3-1.5 s, built off the main thread.
+
+`verify_sim_perf` on 2026-11-18 (a new, slower cloud machine): Batch A failed it run
+alone (rush hour 3.08 ms/tick, 337 ticks over 4 ms), and so did Batch 0 on the same
+machine the same hour (3.14 ms/tick, 324 ticks over 4 ms); on 2026-11-17 Batch 0 passed
+(2.17 ms/tick). Every hour slowed alike, 03:00 included, and the check runs the sim
+only, which no VS2 batch touches: the machine, not the change. Judge it on a quiet machine.
