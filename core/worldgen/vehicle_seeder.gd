@@ -1,6 +1,9 @@
 ## Parked cars (V1): one every PARK_EVERY_M or so along the kerb of
 ## residential and arterial streets near the district, facing with traffic
-## (right-hand side). Seeded, so a save rebuilds the same cars.
+## (right-hand side). Seeded, so a save rebuilds the same cars. VS2B: every
+## spot asks Placement first: no car within 4.6 m of a hydrant, 6 m of a
+## crosswalk, ramp or corner, across a driveway, or nose to tail with another
+## (a spot that breaks a rule slides along the kerb a little, or stays empty).
 class_name VehicleSeeder
 extends RefCounted
 
@@ -19,18 +22,33 @@ const COLORS := [Color(0.85, 0.85, 0.85), Color(0.15, 0.15, 0.17), Color(0.55, 0
 static func seed(world: World, seed: int, city: CityData, centre: Vector2, radius: float) -> int:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed
-	var spots: Array = []   # [position, heading]
-	for road in city.roads:
+	var spots: Array = []   # [position, heading, direction, road]
+	for i in city.roads.size():
+		var road: Dictionary = city.roads[i]
 		if not TIERS.has(road["tier"]) or not road.has("w"):
 			continue
 		var pts: PackedVector2Array = road["pts"]
 		for k in pts.size() - 1:
-			_spots_along(spots, rng, pts[k], pts[k + 1], road["w"], centre, radius)
+			_spots_along(spots, rng, pts[k], pts[k + 1], road["w"], centre, radius, i)
+	var place := Placement.of(city)
+	var taken := {}   # this world's own cars, for the gap between them
 	var stride := maxf(1.0, float(spots.size()) / MAX_CARS)   # spread over the whole district, not the first streets listed
 	var n := 0
-	while n < MAX_CARS and int(n * stride) < spots.size():
-		_park(world, rng, StringName("car_%d" % n), spots[int(n * stride)])
-		n += 1
+	var tried := {}
+	for offset in [0.0, 0.5, 0.25, 0.75]:   # a spot with no legal space stays clear; later passes fill in between
+		var k := 0
+		while n < MAX_CARS and int((k + offset) * stride) < spots.size():
+			var at := int((k + offset) * stride)
+			k += 1
+			if tried.has(at):
+				continue
+			tried[at] = true
+			var spot: Array = spots[at]
+			var ok := place.car_spot(spot[0], spot[2], spot[3], taken)
+			if ok.is_empty():
+				continue
+			_park(world, rng, StringName("car_%d" % n), [ok["pos"], spot[1]])
+			n += 1
 	return n + _driveways(world, rng, city, centre, radius)
 
 ## B5: a car up many driveways, nose to the house, as LA parks. Owned by the
@@ -49,7 +67,7 @@ static func _driveways(world: World, rng: RandomNumberGenerator, city: CityData,
 			n += 1
 	return n
 
-static func _spots_along(spots: Array, rng: RandomNumberGenerator, a: Vector2, b: Vector2, w: float, centre: Vector2, radius: float) -> void:
+static func _spots_along(spots: Array, rng: RandomNumberGenerator, a: Vector2, b: Vector2, w: float, centre: Vector2, radius: float, road: int) -> void:
 	var dir := (b - a).normalized()
 	var right := Vector2(-dir.y, dir.x)
 	var seg := a.distance_to(b)
@@ -58,7 +76,7 @@ static func _spots_along(spots: Array, rng: RandomNumberGenerator, a: Vector2, b
 		var p := a + dir * t + right * (w * 0.5 - KERB_IN_M)
 		t += PARK_EVERY_M
 		if p.distance_to(centre) <= radius and rng.randf() < KEEP_SHARE:
-			spots.append([p, dir.angle()])
+			spots.append([p, dir.angle(), dir, road])
 
 static func _park(world: World, rng: RandomNumberGenerator, id: StringName, spot: Array) -> void:
 	var car := VehicleData.new()

@@ -48,7 +48,7 @@ static func add(m: CityMesh3D, city: CityData, real: CityReal, centre: Vector2, 
 		if c["markings"] != "no" and CityMesh3D._near(c["pts"], centre, r2) and not _at_signal(c["pts"][0]):
 			_zebra(m, c["pts"])
 	for p in real.points:
-		if POINT.has(p["kind"]) and p["p"].distance_squared_to(centre) < r2:
+		if POINT.has(p["kind"]) and p["kind"] != "hydrant" and p["p"].distance_squared_to(centre) < r2:   # VS2B: hydrants come from Placement
 			var spec: Array = POINT[p["kind"]]
 			_box(m, p["p"], spec[0], absf(fmod(p["p"].x * 0.37, PI)), spec[1])
 

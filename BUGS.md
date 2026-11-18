@@ -13,9 +13,8 @@ Severity: **high** = breaks a game or loses progress · **medium** = clearly wro
 
 | ID | Severity | What happens | Where | Found by |
 |----|----------|--------------|-------|----------|
-| BUG-31 | low | The city data has only 80 fire hydrants (none round the spawn), so red kerbs are rare; a real downtown has one every block or two. | `data/city` points; for VS2 Batch B (placement) | VS2 Batch A |
+| BUG-32 | low | Street signs, lamps, power poles, trees and graffiti still each place themselves by their own rules, not Placement's (signs and lamps only keep out of the carriageway). | `StreetClutter3D` signs, `CityProps3D`, `StreetFurniture3D`, `Palms3D`, `Graffiti3D` | VS2 Batch B1 (left for B2) |
 | BUG-30 | low | The ground texture repeats in a visible diamond pattern on sandy lots and plazas; some ground looks flat and washed out. | ground materials | VS2 audit (`docs/VS2_AUDIT.md`) |
-| BUG-29 | low | Parked cars, mailboxes and bins are placed without checking driveways, hydrants, crosswalk ramps or doors, so they can block them. | `VehicleSeeder`, `StreetClutter` | VS2 audit |
 | BUG-9 | low (to check on Phil's PC) | In the shop (`--store` picture) a dark curved band runs across the shop floor, under the player. It could be a curved wall drawn at floor height, or a drawing glitch. | shop interior / cutaway | album `shop_counter` |
 
 ## Ideas (not bugs)
@@ -33,6 +32,8 @@ Severity: **high** = breaks a game or loses progress · **medium** = clearly wro
 
 | ID | What it was | Fix | Guarded by |
 |----|-------------|-----|-----------|
+| BUG-31 | The city data had only 80 fire hydrants, so red kerbs were rare. | Placement adds one every 90-120 m along both kerbs of every kerbed street (3,179 in all), clear of driveways, ramps and crosswalks; red kerbs follow them | `verify_placement`, `verify_kerbs` |
+| BUG-29 | Parked cars, mailboxes and bins were placed without checking driveways, hydrants, crosswalks or each other. | Placement (VS2B): cars keep 4.6 m from hydrants, 6 m from crosswalks, ramps and corners, and clear of driveways; mailboxes and bins clear of the road, buildings, trees, lamps and each other | `verify_placement` |
 | BUG-28 | Service roads had no kerb: the pavement and road met with nothing between. | By the data, only main and residential roads have a sidewalk; service roads, alleys, aisles and driveways now drop the main road's kerb where they come in (a lowered entrance with sloped flares) | `verify_kerbs` (drops) |
 | BUG-27 | Crosswalks had no kerb ramp; the 15,566 mapped ramps were never used. | Each ramp drops the kerb flush with the road over its width, with a darker plate on the sidewalk behind | `verify_kerbs` (ramps), album `kerb_crosswalk` |
 | BUG-26 | Driveways cut the kerb with square ends. | The kerb drops to 6 cm across the driveway with a 0.6 m sloped flare either side | `verify_kerbs`, album `kerb_driveway` |

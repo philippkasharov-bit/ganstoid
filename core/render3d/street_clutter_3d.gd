@@ -3,11 +3,11 @@
 ## bins (black trash, blue recycling, green yard waste) waiting for pick-up;
 ## chain-link fences get their posts and top rail; every signalled or
 ## stop-sign corner a green street-name sign. Baked into the chunk meshes.
+## VS2B: where mailboxes, bins and hydrants stand is Placement's call; this
+## only draws them.
 class_name StreetClutter3D
 extends RefCounted
 
-const MAILBOX_SHARE := 70     # percent of driveways
-const BINS_SHARE := 35
 const BINS := [Color("2b2d2f"), Color("2f5d9a"), Color("3f7a3a")]
 const POST := Color("5a5f63")
 const MAILBOX := Color("d9d8d2")
@@ -15,35 +15,28 @@ const FENCE_POST := Color("7b8085")
 const FENCE_EVERY := 2.4
 const SIGN := Color("1f6b3a")
 const SIGN_POLE := Color("8d9095")
+const HYDRANT := Color("d6452f")
 
 ## Mailboxes, bins, fence posts and street signs within sqrt(r2) of `centre`.
 static func add(m: CityMesh3D, city: CityData, real: CityReal, centre: Vector2, r2: float) -> void:
-	for d in city.driveways:
-		if d["c"].distance_squared_to(centre) < r2:
-			_by_driveway(m, d)
+	var place := Placement.of(city)
+	var reach := sqrt(r2)
+	for it in place.near("mailbox", centre, reach):
+		if m.owns(it[0]):
+			CityDetail3D._box(m, it[0], Vector3(0.08, 1.0, 0.08), it[1], POST)
+			_raised(m, it[0], Vector3(0.48, 0.24, 0.22), 1.0, it[1], MAILBOX)
+	for it in place.near("bin", centre, reach):
+		if m.owns(it[0]):
+			CityDetail3D._box(m, it[0], Vector3(0.62, 1.05, 0.72), it[1], BINS[int(it[2]) % BINS.size()])
+			_raised(m, it[0], Vector3(0.66, 0.05, 0.76), 1.05, it[1], BINS[int(it[2]) % BINS.size()].darkened(0.3))   # the lid
+	for it in place.near("hydrant", centre, reach):
+		if m.owns(it[0]):
+			CityDetail3D._box(m, it[0], Vector3(0.3, 0.75, 0.3), it[1], HYDRANT)
 	for b in real.barriers:
 		if b["kind"] == "fence" and CityMesh3D._near(b["pts"], centre, r2):
 			_fence(m, b["pts"])
 	for x in CityDetail3D._junctions().near(centre, sqrt(r2)):
 		_street_sign(m, x, RoadSpace.of(city))
-
-## A mailbox on one side of the driveway, the bins on the other (by a hash of the spot).
-static func _by_driveway(m: CityMesh3D, d: Dictionary) -> void:
-	var c: Vector2 = d["c"]
-	var into: Vector2 = d["dir"]
-	var side := into.orthogonal()
-	var half := float(d["w"]) * 0.5
-	var roll := absi(hash(c))
-	var turn := into.angle()
-	if roll % 100 < MAILBOX_SHARE:
-		var at := c + into * 0.6 + side * (half + 0.7)
-		CityDetail3D._box(m, at, Vector3(0.08, 1.0, 0.08), turn, POST)
-		_raised(m, at, Vector3(0.48, 0.24, 0.22), 1.0, turn, MAILBOX)
-	if (roll / 100) % 100 < BINS_SHARE:
-		for k in 3:
-			var bin := c + into * 0.8 - side * (half + 0.8 + k * 0.78)
-			CityDetail3D._box(m, bin, Vector3(0.62, 1.05, 0.72), turn, BINS[k])
-			_raised(m, bin, Vector3(0.66, 0.05, 0.76), 1.05, turn, BINS[k].darkened(0.3))   # the lid
 
 ## A box of `size` whose bottom is at `y`: the mailbox on its post, a bin's lid.
 static func _raised(m: CityMesh3D, p: Vector2, size: Vector3, y: float, angle: float, col: Color) -> void:

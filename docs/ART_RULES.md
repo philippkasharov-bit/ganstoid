@@ -55,6 +55,24 @@ graffiti, loot.
 | Meters | one per 6 m on arterials, never in a drop, a red stretch or near an end |
 | Heights | `StreetLevels`: every flat street layer at its own height; kerb top 0.12 m |
 
+## Placement (VS2B)
+
+`Placement` (`core/city/placement.gd`) decides where a thing may stand; `verify_placement` checks it.
+Order: hydrants, then driveway items, then parked cars. Every decision is seeded from
+the thing's own anchor (its road, its driveway), so the street is the same whichever
+chunk loads first, and saves rebuild the same cars.
+
+| Kind | Where | Keeps clear of (m) |
+|------|-------|--------------------|
+| Hydrant | parkway, 0.5 m behind the kerb, every 90-120 m, sides alternating | carriageway 0.3, building 0.3, driveway 1.5, ramp 1.5, crosswalk 1.5, another hydrant 25 |
+| Mailbox | beside 70% of driveways, 0.7 m past its edge | carriageway 0.3, driveway 0.5, ramp 0.8, crosswalk 1, hydrant 0.9, tree well 0.8, lamp 0.5, other items 0.6 |
+| Bins (3) | beside 35% of driveways, the other side | as a mailbox; bins 0.7 apart |
+| Parked car | kerb side, parallel, centre 1.2 m in from the kerb | hydrant 4.6, crosswalk and ramp 6, corner (another street) 6, driveway apron 2.9 (body 0.5 m clear), next car 0.5 end to end |
+
+A thing that breaks a rule slides along the kerb up to 4.5 m (cars 3 m) to a legal
+spot, or is left out. Lamps, poles, signs, trees and graffiti move onto Placement in B2;
+the designed clusters (stoops, bus stops, corner stores, alley dumpsters) come in B3.
+
 ## Contact shading (baked, VS2-0)
 
 `ContactAO3D`: a multiply band on the ground, built with each chunk.

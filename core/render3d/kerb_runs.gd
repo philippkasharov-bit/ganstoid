@@ -94,9 +94,8 @@ func _index(real: CityReal, centre: Vector2, reach: float) -> void:
 	for d in city.kerb_ramps:
 		if d["c"].distance_to(centre) < reach:
 			_file(_ramps, d["c"], d["c"], 2.0, [d["c"], d["dir"], float(d["w"]), float(d["len"])])
-	for p in real.points:
-		if p["kind"] == "hydrant" and p["p"].distance_to(centre) < reach:
-			_file(_hydrants, p["p"], p["p"], RED_M, p["p"])
+	for h in Placement.of(city).near("hydrant", centre, reach):   # VS2B: the map's own and the placed ones
+		_file(_hydrants, h[0], h[0], RED_M, h[0])
 
 func _file(grid: Dictionary, a: Vector2, b: Vector2, grow: float, item: Variant) -> void:
 	var lo := _cell(a.min(b) - Vector2.ONE * grow)

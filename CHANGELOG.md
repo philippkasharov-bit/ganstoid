@@ -3,6 +3,11 @@
 Newest first. The in-game admin panel (F11, Bugs & updates) shows the top of it.
 
 
+## 2026-11-18
+
+- VS2A: speed notes for the batch
+- VS2A: clean kerbs, rounded corners, ramps and smooth road bends
+
 ## 2026-11-17
 
 - VS2-0: Godot ID files for the new scripts
