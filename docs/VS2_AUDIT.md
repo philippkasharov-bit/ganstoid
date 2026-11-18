@@ -57,6 +57,7 @@ VS2 rule from here: every batch reports draw calls and triangles at the spawn po
 | before (Step 0) | 585 | 1.488 M | 1415-1449 / 1605-2012 ms (two runs) | PASS |
 | 0 (shading, grade) | 589 | 1.491 M | same build | PASS |
 | A (kerbs) | 591 | 1.477 M | 1262-1464 / 1533-2093 ms (three runs); kerb runs alone 64-76 ms | see below |
+| B2 + B3 (poles, trees, signs; clusters) | 592 | 1.442 M | 3D view start-up 5.3 s (B1: 5.1-5.9 s); cluster anchors 330 ms once at the first chunk | see the suite |
 | B1 (placement) | 592 | 1.467 M | 3D view start-up 5.1-5.9 s against 5.4 s without B1 (same machine, same hour); Placement itself about 0.6 s once at a new game (hydrants), driveway items about 6 ms a district when a chunk first asks | in the full suite: 165 ticks over 4 ms (limit 150; Batch A had 337 the same day): the slow machine, see below |
 
 Chunk build times swing a lot from run to run on the shared cloud machine; the

@@ -26,6 +26,9 @@ const RULES := {
 	"tree": {"carriageway": 0.6, "building": 1.0, "drive": 1.0, "ramp": 1.0, "crosswalk": 1.0, "hydrant": 1.0, "lamp": 1.5, "pole": 1.5, "sight": 6.0},
 	"palm": {"carriageway": 0.3, "building": 0.5, "drive": 0.8, "ramp": 0.8, "crosswalk": 0.8, "hydrant": 1.0, "lamp": 1.2, "pole": 1.2, "sight": 6.0},
 	"sign": {"carriageway": 0.5, "building": 0.3, "drive": 0.8, "ramp": 0.6, "crosswalk": 0.6, "hydrant": 1.0, "lamp": 0.8, "pole": 0.8},
+	# B3: cluster pieces (Clusters); tall ones also keep the street corner clear and stay off doorways
+	"prop": {"carriageway": 0.3, "building": 0.05, "drive": 0.6, "ramp": 0.8, "crosswalk": 1.0, "hydrant": 1.0, "lamp": 0.5, "pole": 0.5, "well": 0.5, "mailbox": 0.6, "bin": 0.6},
+	"tall_prop": {"carriageway": 0.5, "building": 0.1, "drive": 0.8, "ramp": 1.0, "crosswalk": 1.5, "hydrant": 1.5, "lamp": 0.8, "pole": 0.8, "well": 0.6, "door": 2.0, "sight": 6.0, "mailbox": 0.8, "bin": 0.8},
 	# California rules of thumb: 15 ft from a hydrant, 20 ft from a crosswalk, clear of driveways and corners
 	"car": {"building": 0.5, "drive": 2.9, "ramp": 6.0, "crosswalk": 6.0, "hydrant": 4.6, "corner": 6.0},
 }
@@ -96,6 +99,9 @@ func _build(city_data: CityData) -> void:
 		_file(_fixed, r["c"], 1.0, ["ramp", r["c"], []])
 	for w in city.tree_wells:
 		_file(_fixed, w, 1.0, ["well", w, []])
+	for b in city.buildings:   # B3: tall props stay off doorways
+		if b.get("door", Vector2.INF) != Vector2.INF:
+			_file(_fixed, b["door"], 1.0, ["door", b["door"], []])
 	_hydrants()
 
 ## 1. Hydrants: the map's own, then a regular run along every kerbed street.

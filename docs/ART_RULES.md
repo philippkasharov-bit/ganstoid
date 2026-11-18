@@ -79,8 +79,30 @@ A thing that breaks a rule slides along the kerb up to 4.5 m (cars 3 m) to a leg
 spot, or is left out (trees and palms: left out). "Street corner" is the sight
 triangle: nothing tall within 6 m of two streets' carriageways. Lamps and traffic
 signals are the sim's (witnesses see by them) and stay put: everything else keeps
-clear of them. The designed clusters (stoops, bus stops, corner stores, alley
-dumpsters) come in B3.
+clear of them.
+
+## Clusters (VS2B3)
+
+Designed groups, not random scatter (`Clusters` picks and stands them, `ClusterProps3D`
+draws them). At most 4 groups per 96 m block, the ones with the best hash, so the
+pick never depends on build order. A required piece with no legal spot drops the
+whole group. Pieces are `prop` (low) or `tall_prop` (also clear of street corners
+and 2 m from doors) in Placement's rules, and keep clear of mailboxes and bins.
+
+| Group | Anchor | Share | Pieces |
+|-------|--------|-------|--------|
+| Stoop | apartment front door | 45% | chairs, a crate, a trash bag |
+| Corner store | shop door within 25 m of a junction | 70% | payphone, newspaper boxes, A-board |
+| Laundromat | other shop doors | 8% | bench, laundry carts |
+| Taco stand | other shop doors | 6% | cart, umbrella, cooler, chair |
+| Car wash | big shop or industrial lot (over 900 m2) | 3% | tall sign, buckets |
+| Bus stop | the map's bus stops | all | shelter, bench, trash bag |
+| Car on blocks | a driveway | 6% | car shell on blocks, tyres |
+| Alley dumpster | every 45 m along an alley | 55% | dumpster, pallet, trash bag |
+| Shop dumpster | behind a shop (one per shop) | 25% | dumpster, pallet |
+| Vacant lot | open lots, vacant land | all | mattress, tyres, trash, a crate |
+| Construction | construction sites | all | chain-link panels, a work sign, a portable toilet |
+| Court corner | sports pitches | all | hoop, bench, boombox |
 
 ## Contact shading (baked, VS2-0)
 

@@ -33,6 +33,7 @@ static func add(m: CityMesh3D, city: CityData, real: CityReal, centre: Vector2, 
 	_paint(m, city, centre, r2)
 	StreetDetail3D.add(m, city, real, centre, r2)   # G2: kerbs, gutters, road wear
 	StreetClutter3D.add(m, city, real, centre, r2)   # G4: mailboxes, bins, fence posts, street signs
+	ClusterProps3D.add(m, city, centre, r2)   # VS2B3: stoops, bus stops, corner stores, dumpsters...
 	for lot in real.lots:
 		if CityMesh3D._near(lot["poly"], centre, r2):
 			m._flat_poly(CityMesh3D._open(lot["poly"]), LOT_H, SurfaceDetail.mark(_lot_colour(lot), LOT_SURFACE.get(lot["use"], SurfaceDetail.NONE)))

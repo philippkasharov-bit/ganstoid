@@ -8,6 +8,8 @@
 ##   - B2: power poles break no rule (driveways, lamps, hydrants, ramps), and
 ##     mailboxes and bins keep clear of them and of lamps too; it counts the
 ##     palms left out by a driveway, pole, lamp or street corner
+##   - B3: every piece of every designed group (stoops, bus stops, corner
+##     stores, dumpsters...) keeps its rules; groups per template are printed
 ## It prints what was placed, moved and refused per kind. Built twice, asked in
 ## a different order, the placements are identical, and so are the parked cars
 ## of two worlds made from the same seed.
@@ -43,6 +45,10 @@ func _initialize() -> void:
 				for rule in place.violations(kind, it[0]) + Placement.conflicts(kind, it[0], others):
 					broken["%s/%s" % [kind, rule]] = int(broken.get("%s/%s" % [kind, rule], 0)) + 1
 	var b2 := _b2(city, place, broken)
+	t0 = Time.get_ticks_msec()
+	var groups := Clusters.of(place)
+	var anchors := Time.get_ticks_msec() - t0
+	var pieces := _b3(place, groups, broken)
 	var hydrant_count := place.near("hydrant", Vector2(3000, 3000), 6000.0).size()
 	if hydrant_count < 1000:
 		fail = "only %d hydrants in the city" % hydrant_count
@@ -54,6 +60,7 @@ func _initialize() -> void:
 		fail = _same(city, place)
 	print("PLACEMENT: built in %d ms, a district's driveway items in %d ms; %d hydrants in the city" % [built, items, hydrant_count])
 	print("PLACEMENT: in the districts %s; %s" % [counts, b2])
+	print("PLACEMENT: clusters (anchors found in %d ms) %s; pieces in the districts %s" % [anchors, groups.counts(), pieces])
 	print("PLACEMENT: placed / moved / refused %s" % [place.stats])
 	print("PLACEMENT_VERIFY: %s" % ("PASS" if fail == "" else "FAIL - " + fail))
 	quit(0 if fail == "" else 1)
@@ -75,6 +82,23 @@ func _b2(city: CityData, place: Placement, broken: Dictionary) -> Dictionary:
 				out["palms kept" if not place.find("palm", place.space.clear(w, 0.8)).is_empty() else "palms left out"] += 1
 	if out["poles"] == 0:
 		broken["no poles"] = 1
+	return out
+
+## B3: every cluster piece in the districts keeps its rules (and clear of mailboxes and bins).
+func _b3(place: Placement, groups: Clusters, broken: Dictionary) -> Dictionary:
+	var out := {}
+	for c in DISTRICTS:
+		var items: Array = []
+		for k2 in ["mailbox", "bin"]:
+			for o in place.near(k2, c, RADIUS + 15.0):
+				items.append([k2, o[0]])
+		for it in groups.near(c, RADIUS):
+			out[it[0]] = int(out.get(it[0], 0)) + 1
+			var kind: String = "tall_prop" if it[1] in Clusters.TALL else "prop"
+			for rule in place.violations(kind, it[2]) + Placement.conflicts(kind, it[2], items):
+				broken["%s/%s" % [it[1], rule]] = int(broken.get("%s/%s" % [it[1], rule], 0)) + 1
+	if out.is_empty():
+		broken["no clusters in the districts"] = 1
 	return out
 
 ## Parked cars from VehicleSeeder in each district keep every car rule and their gaps.
@@ -127,6 +151,16 @@ func _same(city: CityData, place: Placement) -> String:
 			b.sort_custom(func(x: Array, y: Array) -> bool: return x[0] < y[0])
 			if str(a) != str(b):
 				return "%s round %s differ between two builds" % [kind, c]
+	var other_groups := Clusters.new()
+	other_groups.place = other
+	other_groups._anchors()
+	for c in order:
+		var a: Array = Clusters.of(place).near(c, RADIUS)
+		var b: Array = other_groups.near(c, RADIUS)
+		a.sort_custom(func(x: Array, y: Array) -> bool: return x[2] < y[2])
+		b.sort_custom(func(x: Array, y: Array) -> bool: return x[2] < y[2])
+		if str(a) != str(b):
+			return "clusters round %s differ between two builds" % c
 	var cars: Array[String] = []
 	for n in 2:
 		var world := World.new()
