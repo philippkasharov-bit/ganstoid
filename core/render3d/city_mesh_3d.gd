@@ -66,9 +66,12 @@ static func build(city: CityData, centre: Vector2, radius: float, at_origin: Vec
 	var out: Array[Node3D] = b._commit()
 	out.append_array(CityProps3D.build(city, real, centre, radius, b.origin, keep))   # D2: shade trees, power lines
 	var wells := PackedVector2Array()
+	var place := Placement.of(city)
 	for w in city.tree_wells:
 		if w.distance_squared_to(centre) < r2 and (not keep.has_area() or keep.has_point(w)):
-			wells.append(b.space.clear(w, 0.8))   # B1: no palm in the lane
+			var at := b.space.clear(w, 0.8)   # B1: no palm in the lane
+			if not place.find("palm", at).is_empty():   # VS2B: nor by a driveway, pole, lamp or corner
+				wells.append(at)
 	out.append_array(Palms3D.build(wells, b._v))   # G3: ringed, leaning, skirted palms
 	return out
 

@@ -25,13 +25,14 @@ static func build(city: CityData, real: CityReal, centre: Vector2, radius: float
 		origin = centre
 	var spots := PackedVector2Array()
 	var space := RoadSpace.of(city)
+	var place := Placement.of(city)
 	for t in real.trees:
 		if t.distance_to(centre) < radius:
 			spots.append(space.clear(t, 0.8))   # B1: a surveyed tree a little off is moved to the verge, not the lane
 	spots.append_array(_yard_trees(city, real, centre, radius))
 	var kept := PackedVector2Array()
 	for t in spots:
-		if not keep.has_area() or keep.has_point(t):
+		if (not keep.has_area() or keep.has_point(t)) and not place.find("tree", t).is_empty():   # VS2B: clear of driveways, poles, lamps, corners
 			kept.append(t)
 	var out: Array[Node3D] = []
 	out.append_array(_trees(kept, origin))
@@ -81,25 +82,19 @@ static func _trees(spots: PackedVector2Array, centre: Vector2) -> Array[Node3D]:
 static func _power(city: CityData, centre: Vector2, radius: float, origin: Vector2, keep: Rect2) -> Array[Node3D]:
 	var poles: Array = []   # [point, along-road direction]
 	var wires: Array = []   # [a, b]
+	var place := Placement.of(city)
 	for r in city.roads:
 		var pts: PackedVector2Array = r["pts"]
 		if r["tier"] != "res" or pts[0].distance_to(centre) > radius:
 			continue
-		var off: float = float(r.get("w", 6.0)) * 0.5 + 1.1
-		var run := POLE_EVERY * 0.5
 		var last := Vector2.INF
-		for i in pts.size() - 1:
-			var seg := pts[i + 1] - pts[i]
-			var length := seg.length()
-			while run < length and length > 0.0:
-				var at := RoadSpace.of(city).clear(pts[i] + seg * (run / length) + seg.normalized().orthogonal() * off, 0.5)
-				if not keep.has_area() or keep.has_point(at):
-					poles.append([at, seg.normalized()])
-					if last != Vector2.INF and last.distance_to(at) < POLE_EVERY * 1.6:
-						wires.append([last, at])
-				last = at
-				run += POLE_EVERY
-			run -= length
+		for q in place.poles_of(place.road_index(r)):   # VS2B: Placement stands the poles (clear of driveways, lamps, hydrants)
+			var at: Vector2 = q[0]
+			if not keep.has_area() or keep.has_point(at):
+				poles.append([at, q[1]])
+				if last != Vector2.INF and last.distance_to(at) < POLE_EVERY * 1.6:
+					wires.append([last, at])
+			last = at
 	return _poles_and_wires(poles, wires, origin)
 
 static func _poles_and_wires(poles: Array, wires: Array, centre: Vector2) -> Array[Node3D]:

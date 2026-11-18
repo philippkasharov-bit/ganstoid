@@ -5,6 +5,8 @@ Newest first. The in-game admin panel (F11, Bugs & updates) shows the top of it.
 
 ## 2026-11-18
 
+- VS2B1: speed notes for the batch
+- VS2B1: one placement system; hydrants, parked cars, mailboxes and bins obey it
 - VS2A: speed notes for the batch
 - VS2A: clean kerbs, rounded corners, ramps and smooth road bends
 

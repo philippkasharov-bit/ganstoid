@@ -5,6 +5,9 @@
 ##   - no parked car breaks a car rule (hydrant 4.6 m, crosswalk and ramp 6 m,
 ##     corner 6 m, driveway), nor sits within 0.5 m of the next car
 ##   - hydrants stand every 90-120 m or so along the kerbs (not only the map's 80)
+##   - B2: power poles break no rule (driveways, lamps, hydrants, ramps), and
+##     mailboxes and bins keep clear of them and of lamps too; it counts the
+##     palms left out by a driveway, pole, lamp or street corner
 ## It prints what was placed, moved and refused per kind. Built twice, asked in
 ## a different order, the placements are identical, and so are the parked cars
 ## of two worlds made from the same seed.
@@ -16,6 +19,7 @@ const SEED := 4242
 
 func _initialize() -> void:
 	var city := CityData.load_file()
+	StreetLights.install(city, city.spawn, 6500.0)   # as the game does: poles, trees and signs keep clear of lamps
 	var t0 := Time.get_ticks_msec()
 	var place := Placement.new()
 	place._build(city)
@@ -38,6 +42,7 @@ func _initialize() -> void:
 			for it in got:
 				for rule in place.violations(kind, it[0]) + Placement.conflicts(kind, it[0], others):
 					broken["%s/%s" % [kind, rule]] = int(broken.get("%s/%s" % [kind, rule], 0)) + 1
+	var b2 := _b2(city, place, broken)
 	var hydrant_count := place.near("hydrant", Vector2(3000, 3000), 6000.0).size()
 	if hydrant_count < 1000:
 		fail = "only %d hydrants in the city" % hydrant_count
@@ -48,10 +53,29 @@ func _initialize() -> void:
 	if fail == "":
 		fail = _same(city, place)
 	print("PLACEMENT: built in %d ms, a district's driveway items in %d ms; %d hydrants in the city" % [built, items, hydrant_count])
-	print("PLACEMENT: in the districts %s" % [counts])
+	print("PLACEMENT: in the districts %s; %s" % [counts, b2])
 	print("PLACEMENT: placed / moved / refused %s" % [place.stats])
 	print("PLACEMENT_VERIFY: %s" % ("PASS" if fail == "" else "FAIL - " + fail))
 	quit(0 if fail == "" else 1)
+
+## B2: poles break no rule; palms and street trees that would are left out (counted).
+func _b2(city: CityData, place: Placement, broken: Dictionary) -> Dictionary:
+	var out := {"poles": 0, "palms kept": 0, "palms left out": 0}
+	for c in DISTRICTS:
+		for i in city.roads.size():
+			var r: Dictionary = city.roads[i]
+			if r["tier"] != "res" or not KerbRuns._seg_near(r["pts"], c, RADIUS):
+				continue
+			for q in place.poles_of(i):
+				out["poles"] += 1
+				for rule in place.violations("pole", q[0]):
+					broken["pole/" + rule] = int(broken.get("pole/" + rule, 0)) + 1
+		for w in city.tree_wells:
+			if w.distance_to(c) < RADIUS:
+				out["palms kept" if not place.find("palm", place.space.clear(w, 0.8)).is_empty() else "palms left out"] += 1
+	if out["poles"] == 0:
+		broken["no poles"] = 1
+	return out
 
 ## Parked cars from VehicleSeeder in each district keep every car rule and their gaps.
 func _cars(city: CityData, place: Placement) -> String:

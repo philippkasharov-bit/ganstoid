@@ -141,7 +141,7 @@ Each mistake below is checked against the game and owned by a batch.
 | B2 | ~~Your crib (CR1)~~ **done** · | Upgrade home from mattress to stash house: safe, workbench, trophies, crew hanging out | 1-2 |
 | B3 | **Camera (CM1)** | Over-the-shoulder view on a key (Phil: no first person) | 1 |
 | B4 | **Visuals: people (VS1)** | Better NPC figures (shared rigged models, variety), the biggest visual gap | 2 |
-| B5 | **Visuals: streets (VS2)** | Parked cars, clutter, fences, graffiti, kerbs, worn ground; flats and shops less boxy. ~~Step 0 audit~~ **done** · ~~Batch 0: golden block, contact shading, colour grade, grey test~~ **done** · ~~Batch A: clean kerbs~~ **done** · ~~Batch B1: Placement, hydrants, parked cars, mailboxes and bins~~ **done** · next: B2 lamps, poles, signs, trees and graffiti on Placement, B3 clusters and dumpsters, C surfaces, D detail | 2 |
+| B5 | **Visuals: streets (VS2)** | Parked cars, clutter, fences, graffiti, kerbs, worn ground; flats and shops less boxy. ~~Step 0 audit~~ **done** · ~~Batch 0: golden block, contact shading, colour grade, grey test~~ **done** · ~~Batch A: clean kerbs~~ **done** · ~~Batch B1: Placement, hydrants, parked cars, mailboxes and bins~~ **done** · ~~B2: poles, signs, trees, palms and graffiti on Placement~~ **done** · next: B3 clusters and dumpsters, C surfaces, D detail | 2 |
 | B6 | ~~RP jobs and property (RP2)~~ **done** · | A list of legal jobs (delivery, taxi, security), buy a flat or house, a driving licence | 2 |
 | B7 | ~~Join a gang (RP3)~~ **done** · | Join a gang and rise in its ranks instead of only fighting them | 2 |
 | B8 | ~~Prison (JL1)~~ **done** · | Real jail time: crew and business run without you, a way out | 1-2 |

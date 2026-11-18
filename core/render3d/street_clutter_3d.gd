@@ -36,7 +36,7 @@ static func add(m: CityMesh3D, city: CityData, real: CityReal, centre: Vector2, 
 		if b["kind"] == "fence" and CityMesh3D._near(b["pts"], centre, r2):
 			_fence(m, b["pts"])
 	for x in CityDetail3D._junctions().near(centre, sqrt(r2)):
-		_street_sign(m, x, RoadSpace.of(city))
+		_street_sign(m, x, RoadSpace.of(city), place)
 
 ## A box of `size` whose bottom is at `y`: the mailbox on its post, a bin's lid.
 static func _raised(m: CityMesh3D, p: Vector2, size: Vector3, y: float, angle: float, col: Color) -> void:
@@ -66,14 +66,18 @@ static func _fence(m: CityMesh3D, pts: PackedVector2Array) -> void:
 		_raised(m, (pts[i] + pts[i + 1]) * 0.5, Vector3(length, 0.06, 0.06), 1.42, seg.angle(), FENCE_POST)
 
 ## A green street-name sign on the corner between a junction's first two legs.
-static func _street_sign(m: CityMesh3D, x: Dictionary, space: RoadSpace) -> void:
+static func _street_sign(m: CityMesh3D, x: Dictionary, space: RoadSpace, place: Placement) -> void:
 	var legs: Array = x["legs"]
 	if legs.size() < 2:
 		return
 	var a: Vector2 = legs[0][0]
 	var b: Vector2 = legs[1][0]
 	var corner := (a + b).normalized() if (a + b).length() > 0.1 else a.orthogonal()
-	var at: Vector2 = space.clear(x["c"] + corner * (maxf(legs[0][1], legs[1][1]) * 0.5 + 2.2), 0.6)
+	var want: Vector2 = space.clear(x["c"] + corner * (maxf(legs[0][1], legs[1][1]) * 0.5 + 2.2), 0.6)
+	var got := place.find("sign", want, corner)   # VS2B: clear of driveways, hydrants, lamps and poles
+	if got.is_empty():
+		return
+	var at: Vector2 = got["pos"]
 	CityDetail3D._box(m, at, Vector3(0.07, 3.1, 0.07), 0.0, SIGN_POLE)
 	_raised(m, at + a * 0.45, Vector3(0.9, 0.2, 0.03), 2.75, a.angle(), SIGN)
 	_raised(m, at + b * 0.45, Vector3(0.9, 0.2, 0.03), 2.98, b.angle(), SIGN)

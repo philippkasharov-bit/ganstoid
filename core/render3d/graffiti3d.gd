@@ -35,10 +35,11 @@ static func on_building(m: CityMesh3D, b: Dictionary, tag: int) -> void:
 		return
 	var poly := CityMesh3D._open(b["poly"])
 	var i := (roll / 100) % poly.size()
+	var door := int(InteriorSolid.door_span(poly, b.get("door", Vector2.INF)).x)   # VS2B: never across the front door
 	for tries in poly.size():   # the first wall long enough, from a hashed start
 		var a := poly[(i + tries) % poly.size()]
 		var c := poly[(i + tries + 1) % poly.size()]
-		if a.distance_to(c) >= MIN_WALL_M:
+		if a.distance_to(c) >= MIN_WALL_M and (i + tries) % poly.size() != door:
 			var e := c - a
 			var out := (Vector2(e.y, -e.x) if CityMesh3D._ccw(poly) else Vector2(-e.y, e.x)).normalized()
 			_stamp(m, a, c, out, tag, roll)

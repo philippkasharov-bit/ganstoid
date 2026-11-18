@@ -19,8 +19,13 @@ extends RefCounted
 const CELL_M := 24.0
 const RULES := {
 	"hydrant": {"carriageway": 0.3, "building": 0.3, "drive": 1.5, "ramp": 1.5, "crosswalk": 1.5, "hydrant": 25.0},
-	"mailbox": {"carriageway": 0.3, "building": 0.2, "drive": 0.5, "ramp": 0.8, "crosswalk": 1.0, "hydrant": 0.9, "well": 0.8, "lamp": 0.5, "mailbox": 0.6, "bin": 0.6},
-	"bin": {"carriageway": 0.3, "building": 0.2, "drive": 0.4, "ramp": 0.8, "crosswalk": 1.0, "hydrant": 0.9, "well": 0.8, "lamp": 0.5, "mailbox": 0.6, "bin": 0.7},
+	"mailbox": {"carriageway": 0.3, "building": 0.2, "drive": 0.5, "ramp": 0.8, "crosswalk": 1.0, "hydrant": 0.9, "well": 0.8, "lamp": 0.5, "pole": 0.5, "mailbox": 0.6, "bin": 0.6},
+	"bin": {"carriageway": 0.3, "building": 0.2, "drive": 0.4, "ramp": 0.8, "crosswalk": 1.0, "hydrant": 0.9, "well": 0.8, "lamp": 0.5, "pole": 0.5, "mailbox": 0.6, "bin": 0.7},
+	# B2: what stands up along the street ("sight": nothing tall within 6 m of a street corner)
+	"pole": {"carriageway": 0.4, "building": 0.3, "drive": 1.0, "ramp": 1.0, "crosswalk": 1.0, "hydrant": 1.0, "lamp": 2.0},
+	"tree": {"carriageway": 0.6, "building": 1.0, "drive": 1.0, "ramp": 1.0, "crosswalk": 1.0, "hydrant": 1.0, "lamp": 1.5, "pole": 1.5, "sight": 6.0},
+	"palm": {"carriageway": 0.3, "building": 0.5, "drive": 0.8, "ramp": 0.8, "crosswalk": 0.8, "hydrant": 1.0, "lamp": 1.2, "pole": 1.2, "sight": 6.0},
+	"sign": {"carriageway": 0.5, "building": 0.3, "drive": 0.8, "ramp": 0.6, "crosswalk": 0.6, "hydrant": 1.0, "lamp": 0.8, "pole": 0.8},
 	# California rules of thumb: 15 ft from a hydrant, 20 ft from a crosswalk, clear of driveways and corners
 	"car": {"building": 0.5, "drive": 2.9, "ramp": 6.0, "crosswalk": 6.0, "hydrant": 4.6, "corner": 6.0},
 }
@@ -28,6 +33,8 @@ const SEEN_M := {"hydrant": 25.0}   # a kind whose own rule reaches further is f
 const HYDRANT_EVERY := Vector2(90.0, 120.0)
 const HYDRANT_BACK := 0.5        # behind the kerb line, on the parkway
 const KERBED := ["art", "res"]
+const CORNER_TIERS := ["art", "res", "ramp", "hill"]
+const POLE_EVERY := 42.0
 const NUDGES := [1.0, -1.0, 2.0, -2.0, 3.0, -3.0, 4.5, -4.5]   # along the kerb, to find a legal spot
 const CAR_NUDGES := [1.5, -1.5, 3.0, -3.0]
 const CAR_GAP := 5.3              # centre to centre: a 4.8 m car and 0.5 m to the next
@@ -47,6 +54,8 @@ var stats := {}                  # kind -> {ok, moved, refused}
 var _fixed := {}                 # cell -> [[kind, pos, extra]]: drives [c, dir, w, len], crosswalks [c, dir, len], points
 var _placed := {}                # cell -> [[kind, pos, heading]]
 var _drive_cells := {}           # cell -> [driveway index]
+var _poles := {}                 # road index -> its poles [[pos, dir]] (made on first ask)
+var _road_ix := {}               # road id -> index in the whole city
 var _items := {}                 # driveway index -> its items [[kind, pos, heading, tag]] (made on first ask)
 
 static func _reaches() -> Dictionary:
@@ -75,6 +84,8 @@ func _build(city_data: CityData) -> void:
 	real = CityReal.load_files()
 	space = RoadSpace.of(city)
 	solid = CityCollision.new(city)
+	for i in city.roads.size():
+		_road_ix[city.roads[i].get("id", "")] = i
 	for i in city.driveways.size():
 		var d: Dictionary = city.driveways[i]
 		_file(_fixed, d["c"], 6.0, ["drive", d["c"], [d["dir"], float(d["w"]), float(d["len"])]])
@@ -209,6 +220,18 @@ func violations(kind: String, pos: Vector2, own: int = -1) -> Array:
 		broke.append("corner")
 	if rule.has("building") and solid.blocked(pos, float(rule["building"])):
 		broke.append("building")
+	if rule.has("sight") and _at_corner(pos, float(rule["sight"])):
+		broke.append("sight")
+	if rule.has("lamp") and StreetLights.active != null:
+		for l in StreetLights.active.near(pos, float(rule["lamp"]) + 1.0):
+			if Vector2(l.x, l.y).distance_to(pos) < float(rule["lamp"]):
+				broke.append("lamp")
+				break
+	if rule.has("pole"):
+		for q in poles_near(pos, float(rule["pole"])):
+			if (q[0] as Vector2).distance_to(pos) > 0.001:
+				broke.append("pole")
+				break
 	for grid in [_fixed, _placed]:
 		for it in grid.get(_cell(pos), []):
 			var what: String = it[0]
@@ -219,6 +242,77 @@ func violations(kind: String, pos: Vector2, own: int = -1) -> Array:
 			if far < clear and not (grid == _placed and (it[1] as Vector2).distance_to(pos) < 0.001):
 				broke.append(what)
 	return broke
+
+## B2: is `pos` within `m` of two or more streets' carriageways (a corner's sight triangle)?
+func _at_corner(pos: Vector2, m: float) -> bool:
+	var seen := {}
+	for it in space._grid.get(Vector2i((pos / RoadSpace.CELL_M).floor()), []):
+		if seen.has(it[3]) or not city.roads[it[3]]["tier"] in CORNER_TIERS:
+			continue
+		if Geometry2D.get_closest_point_to_segment(pos, it[0], it[1]).distance_to(pos) < float(it[2]) + m:
+			seen[it[3]] = true
+			if seen.size() >= 2:
+				return true
+	return false
+
+## B2: wooden power poles down one side of a residential street (road `i`), every
+## POLE_EVERY, each nudged along the road to a legal spot or left out. [[pos, dir]],
+## made per road on first ask (after the lamps are known).
+func poles_of(i: int) -> Array:
+	_lock.lock()   # (recursive: safe inside near())
+	if _poles.has(i):
+		_lock.unlock()
+		return _poles[i]
+	_poles[i] = []   # no recursion through our own pole check
+	var r: Dictionary = city.roads[i]
+	var out: Array = []
+	if r["tier"] == "res":
+		var pts: PackedVector2Array = r["pts"]
+		var off: float = float(r.get("w", 6.0)) * 0.5 + 1.1
+		var run := POLE_EVERY * 0.5
+		for k in pts.size() - 1:
+			var seg := pts[k + 1] - pts[k]
+			var length := seg.length()
+			while run < length and length > 0.0:
+				var at := space.clear(pts[k] + seg * (run / length) + seg.normalized().orthogonal() * off, 0.5)
+				var got := find("pole", at, seg.normalized())
+				if not got.is_empty():
+					out.append([got["pos"], seg.normalized()])
+				run += POLE_EVERY
+			run -= length
+	_poles[i] = out
+	_lock.unlock()
+	return out
+
+## Poles within `r` of `p` (from every residential road near it).
+func poles_near(p: Vector2, r: float) -> Array:
+	var out: Array = []
+	var roads := {}
+	for it in space._grid.get(Vector2i((p / RoadSpace.CELL_M).floor()), []):
+		roads[it[3]] = true
+	for i in roads:
+		for q in poles_of(i):
+			if (q[0] as Vector2).distance_to(p) <= r:
+				out.append(q)
+	return out
+
+## Where a `kind` may stand at `pos` or nudged along `slide` (nothing is recorded):
+## {pos, state: ok|moved} or {} if nowhere near. A slide of zero: here or nowhere.
+func find(kind: String, pos: Vector2, slide: Vector2 = Vector2.ZERO) -> Dictionary:
+	_lock.lock()
+	var out := {}
+	for n in ([0.0] + NUDGES if slide != Vector2.ZERO else [0.0]):
+		var p: Vector2 = pos + slide.normalized() * float(n)
+		if violations(kind, p).is_empty():
+			out = {"pos": p, "state": "ok" if n == 0.0 else "moved"}
+			break
+	stats.get_or_add(kind, {"ok": 0, "moved": 0, "refused": 0})[out.get("state", "refused")] += 1
+	_lock.unlock()
+	return out
+
+## The whole-city index of road `r` (a chunk slice holds the same road dictionaries).
+func road_index(r: Dictionary) -> int:
+	return int(_road_ix.get(r.get("id", ""), -1))
 
 ## How far `pos` is from a filed thing (a driveway apron, a crosswalk stripe, or a point).
 static func _distance(what: String, it: Array, pos: Vector2) -> float:

@@ -69,9 +69,18 @@ chunk loads first, and saves rebuild the same cars.
 | Bins (3) | beside 35% of driveways, the other side | as a mailbox; bins 0.7 apart |
 | Parked car | kerb side, parallel, centre 1.2 m in from the kerb | hydrant 4.6, crosswalk and ramp 6, corner (another street) 6, driveway apron 2.9 (body 0.5 m clear), next car 0.5 end to end |
 
+| Power pole (B2) | one side of residential streets, every 42 m | carriageway 0.4, building 0.3, driveway 1, ramp 1, crosswalk 1, hydrant 1, lamp 2 |
+| Street tree (B2) | surveyed spots and house yards | carriageway 0.6, building 1, driveway 1, ramp and crosswalk 1, hydrant 1, lamp 1.5, pole 1.5, street corner 6 |
+| Palm (B2) | tree wells | carriageway 0.3, building 0.5, driveway 0.8, ramp and crosswalk 0.8, hydrant 1, lamp 1.2, pole 1.2, street corner 6 |
+| Street sign (B2) | the corner between a junction's first two legs | carriageway 0.5, building 0.3, driveway 0.8, ramp and crosswalk 0.6, hydrant 1, lamp 0.8, pole 0.8 |
+| Graffiti (B2) | building walls and free-standing walls | never the wall with the front door |
+
 A thing that breaks a rule slides along the kerb up to 4.5 m (cars 3 m) to a legal
-spot, or is left out. Lamps, poles, signs, trees and graffiti move onto Placement in B2;
-the designed clusters (stoops, bus stops, corner stores, alley dumpsters) come in B3.
+spot, or is left out (trees and palms: left out). "Street corner" is the sight
+triangle: nothing tall within 6 m of two streets' carriageways. Lamps and traffic
+signals are the sim's (witnesses see by them) and stay put: everything else keeps
+clear of them. The designed clusters (stoops, bus stops, corner stores, alley
+dumpsters) come in B3.
 
 ## Contact shading (baked, VS2-0)
 

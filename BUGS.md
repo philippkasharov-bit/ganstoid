@@ -13,7 +13,6 @@ Severity: **high** = breaks a game or loses progress · **medium** = clearly wro
 
 | ID | Severity | What happens | Where | Found by |
 |----|----------|--------------|-------|----------|
-| BUG-32 | low | Street signs, lamps, power poles, trees and graffiti still each place themselves by their own rules, not Placement's (signs and lamps only keep out of the carriageway). | `StreetClutter3D` signs, `CityProps3D`, `StreetFurniture3D`, `Palms3D`, `Graffiti3D` | VS2 Batch B1 (left for B2) |
 | BUG-30 | low | The ground texture repeats in a visible diamond pattern on sandy lots and plazas; some ground looks flat and washed out. | ground materials | VS2 audit (`docs/VS2_AUDIT.md`) |
 | BUG-9 | low (to check on Phil's PC) | In the shop (`--store` picture) a dark curved band runs across the shop floor, under the player. It could be a curved wall drawn at floor height, or a drawing glitch. | shop interior / cutaway | album `shop_counter` |
 
@@ -32,6 +31,7 @@ Severity: **high** = breaks a game or loses progress · **medium** = clearly wro
 
 | ID | What it was | Fix | Guarded by |
 |----|-------------|-----|-----------|
+| BUG-32 | Signs, power poles, trees, palms and graffiti each placed themselves by their own rules. | On Placement (VS2B2): poles clear of driveways, lamps (2 m), hydrants and ramps; trees and palms clear of driveways, poles, lamps and street corners (nothing tall within 6 m); signs clear of driveways, hydrants, lamps and poles; graffiti never on the front-door wall. Lamps and signals stay where the sim has them (witnesses see by them) and the rest keeps clear | `verify_placement` |
 | BUG-31 | The city data had only 80 fire hydrants, so red kerbs were rare. | Placement adds one every 90-120 m along both kerbs of every kerbed street (3,179 in all), clear of driveways, ramps and crosswalks; red kerbs follow them | `verify_placement`, `verify_kerbs` |
 | BUG-29 | Parked cars, mailboxes and bins were placed without checking driveways, hydrants, crosswalks or each other. | Placement (VS2B): cars keep 4.6 m from hydrants, 6 m from crosswalks, ramps and corners, and clear of driveways; mailboxes and bins clear of the road, buildings, trees, lamps and each other | `verify_placement` |
 | BUG-28 | Service roads had no kerb: the pavement and road met with nothing between. | By the data, only main and residential roads have a sidewalk; service roads, alleys, aisles and driveways now drop the main road's kerb where they come in (a lowered entrance with sloped flares) | `verify_kerbs` (drops) |
